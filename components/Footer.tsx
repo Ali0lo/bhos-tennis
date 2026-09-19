@@ -15,8 +15,8 @@ export default function Footer() {
           {/* Brand & Description */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-bhos-cyan to-bhos-blue flex items-center justify-center text-bhos-navy font-bold font-display text-lg">
-                BANM
+              <div className="w-11 h-11 rounded-xl bg-white p-1 flex items-center justify-center shadow-md overflow-hidden">
+                <img src="/images/bhos-logo.png" alt="BHOS Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <h3 className="text-white font-bold font-display text-base">

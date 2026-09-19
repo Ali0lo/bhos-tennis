@@ -53,9 +53,12 @@ export default function Navbar() {
   }
 
   const roleDemoUsers = [
-    { id: 'p-1', role: 'president' as UserRole, label: `${t('roles.president')} (Elvin)` },
-    { id: 'p-2', role: 'coach' as UserRole, label: `${t('roles.coach')} (Murad)` },
-    { id: 'p-3', role: 'player' as UserRole, label: `${t('roles.player')} (Ayan)` },
+    { id: 'p-1', role: 'president' as UserRole, label: `${t('roles.president')} (Ali Iskandarli)` },
+    { id: 'p-2', role: 'coach' as UserRole, label: `${t('roles.coach')} (Iftixar Meherremov)` },
+    { id: 'p-3', role: 'player' as UserRole, label: `${t('roles.player')} (Ali Abdulov)` },
+    { id: 'p-4', role: 'player' as UserRole, label: `${t('roles.player')} (Ali Aghayev)` },
+    { id: 'p-5', role: 'player' as UserRole, label: `${t('roles.player')} (Huseyn Muradzade)` },
+    { id: 'p-6', role: 'player' as UserRole, label: `${t('roles.player')} (Fateh Memmedli)` },
   ];
 
   const handleRoleChange = (userId: string) => {
@@ -82,8 +85,8 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16">
             {/* Brand Logo & Title */}
             <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-cyan-500 to-blue-700 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform">
-                <span className="font-display font-black text-xl tracking-wider">BANM</span>
+              <div className="w-10 h-10 rounded-xl bg-white p-0.5 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform overflow-hidden">
+                <img src="/images/bhos-logo.png" alt="BHOS Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <div className="flex items-center gap-2">

@@ -54,22 +54,23 @@ export default function HomePage() {
         <div className="absolute -top-24 -right-24 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -left-24 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 max-w-3xl space-y-6">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-bhos-cyan/30 bg-bhos-cyan/10 text-bhos-cyan text-xs font-semibold">
-            <Zap className="w-3.5 h-3.5" />
-            <span>tabletennis.az Inspired • Official BHOS ELO System</span>
-          </div>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-8">
+          <div className="max-w-2xl space-y-6">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-bhos-cyan/30 bg-bhos-cyan/10 text-bhos-cyan text-xs font-semibold">
+              <Zap className="w-3.5 h-3.5" />
+              <span>tabletennis.az Inspired • Official BHOS ELO System</span>
+            </div>
 
-          <h1 className="text-3xl md:text-5xl font-display font-black text-white tracking-tight leading-tight">
-            {t('brand.title')}
-          </h1>
+            <h1 className="text-3xl md:text-5xl font-display font-black text-white tracking-tight leading-tight">
+              {t('brand.title')}
+            </h1>
 
-          <p className="text-base md:text-lg text-slate-300 leading-relaxed">
-            {t('brand.subtitle')}. Real-time ITTF-compliant ELO tracking, visual knockout tournament brackets, and sports hall table reservation for Baku Higher Oil School engineers and athletes.
-          </p>
+            <p className="text-base md:text-lg text-slate-300 leading-relaxed">
+              {t('brand.subtitle')}. Real-time ITTF-compliant ELO tracking, visual knockout tournament brackets, and sports hall table reservation for Baku Higher Oil School engineers and athletes.
+            </p>
 
-          {/* Call to action buttons */}
-          <div className="flex flex-wrap items-center gap-4 pt-2">
+            {/* Call to action buttons */}
+            <div className="flex flex-wrap items-center gap-4 pt-2">
             <Link
               href="/leaderboard"
               className="px-6 py-3 rounded-xl bg-gradient-to-r from-bhos-cyan to-bhos-blue text-bhos-navy font-display font-bold text-sm hover:opacity-95 shadow-lg shadow-cyan-500/25 active:scale-95 transition flex items-center gap-2"
@@ -95,6 +96,19 @@ export default function HomePage() {
                 <span>{t('nav.log_match')}</span>
               </button>
             )}
+          </div>
+        </div>
+
+          {/* BHOS Official Emblem Display Card */}
+          <div className="hidden lg:flex flex-col items-center justify-center p-6 rounded-2xl bg-white/95 text-slate-900 shadow-2xl border border-white/30 max-w-[240px] text-center shrink-0">
+            <img
+              src="/images/bhos-logo.png"
+              alt="Baku Higher Oil School"
+              className="w-36 h-auto object-contain drop-shadow"
+            />
+            <div className="mt-3 pt-3 border-t border-slate-200 text-[11px] font-semibold text-slate-600 uppercase tracking-wider">
+              Baku Higher Oil School
+            </div>
           </div>
         </div>
 

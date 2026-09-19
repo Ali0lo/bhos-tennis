@@ -11,16 +11,21 @@ export default function TablesPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div>
-        <div className="flex items-center gap-2">
-          <TableIcon className="w-6 h-6 text-bhos-cyan" />
-          <h1 className="text-2xl md:text-3xl font-display font-black text-white">
-            {t('tables.title')}
-          </h1>
+      <div className="flex items-center gap-3">
+        <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-md overflow-hidden shrink-0">
+          <img src="/images/bhos-logo.png" alt="BHOS Logo" className="w-full h-full object-contain" />
         </div>
-        <p className="text-xs text-slate-400 mt-1">
-          {t('tables.subtitle')}
-        </p>
+        <div>
+          <div className="flex items-center gap-2">
+            <TableIcon className="w-6 h-6 text-bhos-cyan" />
+            <h1 className="text-2xl md:text-3xl font-display font-black text-white">
+              {t('tables.title')}
+            </h1>
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            {t('tables.subtitle')}
+          </p>
+        </div>
       </div>
 
       {/* Hall Rules & Info Banner */}
