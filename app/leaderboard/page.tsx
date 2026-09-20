@@ -408,5 +408,3 @@ export default function LeaderboardPage() {
   );
 }
 
-
-// Ticker on win rates
