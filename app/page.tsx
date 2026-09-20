@@ -564,5 +564,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-// FormDots and EloToastBadge integrated on matches
