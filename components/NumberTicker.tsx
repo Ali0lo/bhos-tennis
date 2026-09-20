@@ -59,5 +59,3 @@ export default function NumberTicker({
     </span>
   );
 }
-
-// High performance rolling number ticker with spring physics
