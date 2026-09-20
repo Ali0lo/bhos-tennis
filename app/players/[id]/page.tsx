@@ -586,3 +586,5 @@ export default function PlayerProfilePage() {
   );
 }
 
+
+// High contrast typography
