@@ -29,6 +29,13 @@ export default function NumberTicker({
     stiffness: 100,
   });
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      motionVal.set(direction === 'down' ? 0 : value);
+    }, delay * 1000);
+    return () => clearTimeout(timer);
+  }, [motionVal, value, delay, direction]);
+
   const displayVal = useTransform(springVal, (current) => {
     return `${prefix}${Intl.NumberFormat('en-US', {
       minimumFractionDigits: decimalPlaces,
@@ -36,5 +43,9 @@ export default function NumberTicker({
     }).format(Number(current.toFixed(decimalPlaces)))}${suffix}`;
   });
 
-  return <motion.span className={className}>{displayVal}</motion.span>;
+  return (
+    <motion.span className={`inline-block tabular-nums tracking-normal ${className}`}>
+      {displayVal}
+    </motion.span>
+  );
 }
