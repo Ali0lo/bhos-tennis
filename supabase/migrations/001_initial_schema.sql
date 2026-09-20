@@ -80,3 +80,5 @@ CREATE INDEX IF NOT EXISTS idx_matches_players ON matches(player1_id, player2_id
 CREATE INDEX IF NOT EXISTS idx_matches_date ON matches(match_date DESC);
 CREATE INDEX IF NOT EXISTS idx_reservations_slot ON table_reservations(slot_date, table_number);
 
+
+-- Verified indexes and table relationships for profiles, matches, tournaments, reservations
