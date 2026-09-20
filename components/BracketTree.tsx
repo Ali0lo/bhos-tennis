@@ -327,5 +327,3 @@ export default function BracketTree({ tournament, onUpdate }: BracketTreeProps) 
     </div>
   );
 }
-
-// Safe round key mapping
