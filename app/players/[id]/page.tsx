@@ -23,6 +23,10 @@ import {
   X, 
   Check 
 } from 'lucide-react';
+import NumberTicker from '../../../components/NumberTicker';
+import FormDots, { MatchFormItem } from '../../../components/FormDots';
+import EloToastBadge from '../../../components/EloToastBadge';
+import TiltCard from '../../../components/TiltCard';
 
 export default function PlayerProfilePage() {
   const params = useParams();
@@ -102,6 +106,24 @@ export default function PlayerProfilePage() {
 
     return points;
   }, [profile, matches, playerId]);
+
+  const recentForm: MatchFormItem[] = useMemo(() => {
+    return matches.slice(0, 5).map((m) => {
+      const isPlayer1 = m.player1_id === playerId;
+      const opponentName = isPlayer1 ? m.player2_name : m.player1_name;
+      const myScore = isPlayer1 ? m.player1_score : m.player2_score;
+      const opScore = isPlayer1 ? m.player2_score : m.player1_score;
+      const won = myScore > opScore;
+      return {
+        id: m.id,
+        result: won ? 'W' : 'L',
+        opponentName,
+        score: `${myScore}-${opScore}`,
+        eloDelta: isPlayer1 ? m.elo_delta : -m.elo_delta,
+        date: new Date(m.match_date).toLocaleDateString(),
+      };
+    });
+  }, [matches, playerId]);
 
   // Head to Head calculations
   const opponent = useMemo(() => {
@@ -225,8 +247,8 @@ export default function PlayerProfilePage() {
               <span className="text-[10px] uppercase font-bold text-slate-400 block">
                 Current ELO
               </span>
-              <span className="text-3xl font-mono font-black text-bhos-cyan">
-                {profile.current_elo}
+              <span className="text-3xl font-mono font-black text-cyan-400">
+                <NumberTicker value={profile.current_elo} />
               </span>
             </div>
 
@@ -246,7 +268,9 @@ export default function PlayerProfilePage() {
         <div className="mt-8 pt-6 border-t border-slate-800/80 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div>
             <span className="text-[11px] text-slate-400 uppercase font-semibold">Matches</span>
-            <div className="text-xl font-mono font-bold text-white">{profile.matches_played}</div>
+            <div className="text-xl font-mono font-bold text-white flex items-baseline gap-1">
+              <NumberTicker value={profile.matches_played} />
+            </div>
           </div>
           <div>
             <span className="text-[11px] text-slate-400 uppercase font-semibold">Record (W - L)</span>
@@ -256,11 +280,15 @@ export default function PlayerProfilePage() {
           </div>
           <div>
             <span className="text-[11px] text-slate-400 uppercase font-semibold">Win Rate</span>
-            <div className="text-xl font-mono font-bold text-white">{winRate}%</div>
+            <div className="text-xl font-mono font-bold text-white">
+              <NumberTicker value={winRate} suffix="%" />
+            </div>
           </div>
           <div>
-            <span className="text-[11px] text-slate-400 uppercase font-semibold">Playing Style</span>
-            <div className="text-sm font-semibold text-slate-200 mt-1">{profile.playing_style}</div>
+            <span className="text-[11px] text-slate-400 uppercase font-semibold">Recent Form (Last 5)</span>
+            <div className="mt-1.5 flex items-center">
+              <FormDots form={recentForm} size="md" />
+            </div>
           </div>
         </div>
       </div>
