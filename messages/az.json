@@ -14,7 +14,8 @@
     "log_match": "Oyun Qeydiyyatı",
     "book_table": "Masa Sifarişi",
     "switch_role": "İstifadəçini Dəyiş",
-    "join_whatsapp": "WhatsApp"
+    "join_whatsapp": "WhatsApp",
+    "about": "Haqqında"
   },
   "roles": {
     "president": "Klub Prezidenti",
