@@ -28,5 +28,13 @@ export default function NumberTicker({
     damping: 30,
     stiffness: 100,
   });
-  return <span ref={ref} className={className} />;
+
+  const displayVal = useTransform(springVal, (current) => {
+    return `${prefix}${Intl.NumberFormat('en-US', {
+      minimumFractionDigits: decimalPlaces,
+      maximumFractionDigits: decimalPlaces,
+    }).format(Number(current.toFixed(decimalPlaces)))}${suffix}`;
+  });
+
+  return <motion.span className={className}>{displayVal}</motion.span>;
 }
