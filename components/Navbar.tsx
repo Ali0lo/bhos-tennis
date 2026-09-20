@@ -17,7 +17,9 @@ import {
   X, 
   PlusCircle, 
   Languages, 
-  ChevronDown 
+  ChevronDown,
+  MessageCircle,
+  ExternalLink
 } from 'lucide-react';
 import MatchLoggerModal from './MatchLoggerModal';
 
@@ -45,7 +47,7 @@ export default function Navbar() {
     { href: '/leaderboard', label: t('nav.leaderboard') },
     { href: '/matches', label: t('nav.matches') },
     { href: '/tournaments', label: t('nav.tournaments') },
-    { href: '/tables', label: t('nav.tables') },
+    { href: '/tables', label: 'Hall & Tables' },
   ];
 
   if (currentUser.role === 'president') {
@@ -53,12 +55,13 @@ export default function Navbar() {
   }
 
   const roleDemoUsers = [
-    { id: 'p-1', role: 'president' as UserRole, label: `${t('roles.president')} (Ali Iskandarli)` },
-    { id: 'p-2', role: 'coach' as UserRole, label: `${t('roles.coach')} (Iftixar Meherremov)` },
-    { id: 'p-3', role: 'player' as UserRole, label: `${t('roles.player')} (Ali Abdulov)` },
-    { id: 'p-4', role: 'player' as UserRole, label: `${t('roles.player')} (Ali Aghayev)` },
-    { id: 'p-5', role: 'player' as UserRole, label: `${t('roles.player')} (Huseyn Muradzade)` },
-    { id: 'p-6', role: 'player' as UserRole, label: `${t('roles.player')} (Fateh Memmedli)` },
+    { id: 'p-1', role: 'president' as UserRole, label: `Ali Iskandarli (${t('roles.president')})` },
+    { id: 'p-2', role: 'coach' as UserRole, label: `Iftixar Meherremov (${t('roles.coach')})` },
+    { id: 'p-3', role: 'player' as UserRole, label: `Ali Abdulov (Player)` },
+    { id: 'p-4', role: 'player' as UserRole, label: `Ali Aghayev (Player)` },
+    { id: 'p-5', role: 'player' as UserRole, label: `Huseyn Muradzade (Player)` },
+    { id: 'p-6', role: 'player' as UserRole, label: `Fateh Memmedli (Player)` },
+    { id: 'p-7', role: 'player' as UserRole, label: `Ayan Aliyeva (Player)` },
   ];
 
   const handleRoleChange = (userId: string) => {
@@ -80,126 +83,141 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full border-b border-bhos-border bg-bhos-navy/90 backdrop-blur-md">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            {/* Brand Logo & Title */}
-            <Link href="/" className="flex items-center gap-3 group">
-              <div className="w-10 h-10 rounded-xl bg-white p-0.5 flex items-center justify-center shadow-lg shadow-cyan-500/20 group-hover:scale-105 transition-transform overflow-hidden">
-                <img src="/images/bhos-logo.png" alt="BHOS Logo" className="w-full h-full object-contain" />
+      {/* Floating Glassmorphism Pill Header */}
+      <header className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+        <div className="w-full max-w-6xl rounded-full border border-white/10 bg-slate-950/70 backdrop-blur-xl px-4 sm:px-6 py-2 shadow-2xl shadow-black/80 pointer-events-auto flex items-center justify-between transition-all">
+          {/* Brand Crest & Title */}
+          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+            {/* Transparent BHOS Crest Logo with subtle glow */}
+            <div className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center p-1 group-hover:scale-105 transition-transform">
+              <img
+                src="/images/bhos-crest.png"
+                alt="BHOS Crest"
+                className="w-full h-full object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.6)]"
+              />
+            </div>
+            <div>
+              <div className="flex items-center gap-1.5">
+                <span className="font-display font-black text-sm sm:text-base text-white group-hover:text-cyan-400 transition-colors tracking-tight">
+                  BHOS TT
+                </span>
+                <span className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-bold uppercase rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                  CLUB
+                </span>
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-display font-bold text-lg text-white group-hover:text-bhos-cyan transition-colors">
-                    BHOS Table Tennis
-                  </span>
-                  <span className="hidden sm:inline-block px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider rounded bg-bhos-blue/30 text-bhos-cyan border border-bhos-blue/40">
-                    BANM TT
-                  </span>
+            </div>
+          </Link>
+
+          {/* Center Navigation Links (Pill Style) */}
+          <nav className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/5 rounded-full p-1">
+            {navLinks.map((link) => {
+              const isActive = pathname === link.href;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    isActive
+                      ? 'bg-cyan-400 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                      : 'text-slate-300 hover:text-white hover:bg-white/10'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
+          </nav>
+
+          {/* Right Action Toolbar: WhatsApp CTA, Language, Role Switcher */}
+          <div className="flex items-center gap-2">
+            {/* WhatsApp Community Link Button */}
+            <a
+              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/40 text-emerald-300 text-xs font-semibold transition active:scale-95 shadow-sm"
+              title="Join official BHOS Table Tennis WhatsApp Community"
+            >
+              <MessageCircle className="w-3.5 h-3.5 fill-emerald-400" />
+              <span>WhatsApp</span>
+            </a>
+
+            {/* Quick Log Match (Coach / President) */}
+            {(currentUser.role === 'coach' || currentUser.role === 'president') && (
+              <button
+                onClick={() => setShowMatchModal(true)}
+                className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-bold hover:bg-cyan-300 shadow-md shadow-cyan-500/20 transition active:scale-95"
+              >
+                <PlusCircle className="w-3.5 h-3.5" />
+                <span>Log Match</span>
+              </button>
+            )}
+
+            {/* Language Switcher Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setLangDropdownOpen(!langDropdownOpen)}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-white/10 bg-white/5 text-xs text-slate-300 hover:text-white hover:border-white/20 transition"
+              >
+                <Languages className="w-3 h-3 text-cyan-400" />
+                <span className="uppercase font-bold text-[11px]">{locale}</span>
+                <ChevronDown className="w-2.5 h-2.5 text-slate-400" />
+              </button>
+              {langDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-28 rounded-2xl border border-white/10 bg-slate-950 p-1.5 shadow-2xl z-50">
+                  {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
+                    <button
+                      key={loc}
+                      onClick={() => {
+                        setLocale(loc);
+                        setLangDropdownOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 rounded-xl text-xs transition uppercase ${
+                        locale === loc
+                          ? 'bg-cyan-500/20 text-cyan-300 font-bold'
+                          : 'text-slate-300 hover:bg-white/10'
+                      }`}
+                    >
+                      {loc === 'az' ? 'Azərbaycan' : loc === 'en' ? 'English' : 'Русский'}
+                    </button>
+                  ))}
                 </div>
-                <p className="text-[11px] text-slate-400 hidden sm:block">
-                  Bakı Ali Neft Məktəbi • tabletennis.az
-                </p>
-              </div>
-            </Link>
-
-            {/* Desktop Navigation Links */}
-            <nav className="hidden lg:flex items-center gap-1">
-              {navLinks.map((link) => {
-                const isActive = pathname === link.href;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    className={`px-3.5 py-2 rounded-lg text-sm font-medium transition-all ${
-                      isActive
-                        ? 'bg-bhos-border text-bhos-cyan shadow-inner font-semibold'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800/60'
-                    }`}
-                  >
-                    {link.label}
-                  </Link>
-                );
-              })}
-            </nav>
-
-            {/* Right Action Toolbar: Role Switcher, Quick Match Log, Lang */}
-            <div className="hidden sm:flex items-center gap-2.5">
-              {/* Quick Log Match Button (Coach / President) */}
-              {(currentUser.role === 'coach' || currentUser.role === 'president') && (
-                <button
-                  onClick={() => setShowMatchModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold bg-gradient-to-r from-bhos-cyan to-bhos-blue text-bhos-navy hover:opacity-95 shadow-md shadow-cyan-500/20 transition-transform active:scale-95"
-                >
-                  <PlusCircle className="w-3.5 h-3.5" />
-                  <span>{t('nav.log_match')}</span>
-                </button>
               )}
+            </div>
 
-              {/* Language Selector */}
-              <div className="relative">
-                <button
-                  onClick={() => setLangDropdownOpen(!langDropdownOpen)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg border border-bhos-border bg-bhos-darkCard/60 text-xs text-slate-300 hover:text-white hover:border-slate-700 transition"
-                  title="Switch Language"
-                >
-                  <Languages className="w-3.5 h-3.5 text-bhos-cyan" />
-                  <span className="uppercase font-bold">{locale}</span>
-                  <ChevronDown className="w-3 h-3 text-slate-400" />
-                </button>
-                {langDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-28 rounded-lg border border-bhos-border bg-bhos-midnight p-1 shadow-xl z-50">
-                    {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
-                      <button
-                        key={loc}
-                        onClick={() => {
-                          setLocale(loc);
-                          setLangDropdownOpen(false);
-                        }}
-                        className={`w-full text-left px-3 py-1.5 rounded text-xs transition uppercase ${
-                          locale === loc
-                            ? 'bg-bhos-blue/30 text-bhos-cyan font-bold'
-                            : 'text-slate-300 hover:bg-slate-800'
-                        }`}
-                      >
-                        {loc === 'az' ? 'Azərbaycan' : loc === 'en' ? 'English' : 'Русский'}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Role Switcher Demo Dropdown */}
-              <div className="relative">
-                <button
-                  onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                  className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-xs font-medium transition ${getRoleBadgeColor(
-                    currentUser.role
-                  )}`}
-                >
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  <span className="font-semibold">{currentUser.full_name}</span>
-                  <span className="text-[10px] opacity-80 uppercase">({currentUser.role})</span>
-                  <ChevronDown className="w-3 h-3 opacity-60" />
-                </button>
-                {roleDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-56 rounded-xl border border-bhos-border bg-bhos-midnight p-2 shadow-2xl z-50">
-                    <p className="px-2 py-1 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-                      {t('nav.switch_role')} (Demo Mode)
-                    </p>
+            {/* Role Switcher Demo Dropdown */}
+            <div className="relative">
+              <button
+                onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition ${getRoleBadgeColor(
+                  currentUser.role
+                )}`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span className="font-semibold max-w-[90px] sm:max-w-none truncate">
+                  {currentUser.full_name.split(' ')[0]}
+                </span>
+                <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+              </button>
+              {roleDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-white/10 bg-slate-950 p-2 shadow-2xl z-50">
+                  <p className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Switch Active User (Demo)
+                  </p>
+                  <div className="space-y-1 mt-1">
                     {roleDemoUsers.map((item) => (
                       <button
                         key={item.id}
                         onClick={() => handleRoleChange(item.id)}
-                        className={`w-full text-left px-2.5 py-2 rounded-lg text-xs flex items-center justify-between transition ${
+                        className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between transition ${
                           currentUser.id === item.id
-                            ? 'bg-slate-800 text-white font-bold'
-                            : 'text-slate-300 hover:bg-slate-800/60'
+                            ? 'bg-white/15 text-white font-bold'
+                            : 'text-slate-300 hover:bg-white/5'
                         }`}
                       >
-                        <span>{item.label}</span>
+                        <span className="truncate">{item.label}</span>
                         <span
-                          className={`text-[9px] px-1.5 py-0.5 rounded border uppercase ${getRoleBadgeColor(
+                          className={`text-[9px] px-1.5 py-0.5 rounded-full border uppercase shrink-0 ${getRoleBadgeColor(
                             item.role
                           )}`}
                         >
@@ -207,47 +225,33 @@ export default function Navbar() {
                         </span>
                       </button>
                     ))}
-                    <div className="mt-2 pt-2 border-t border-slate-800 px-2">
-                      <Link
-                        href={`/players/${currentUser.id}`}
-                        onClick={() => setRoleDropdownOpen(false)}
-                        className="text-[11px] text-bhos-cyan hover:underline flex items-center gap-1"
-                      >
-                        <UserCheck className="w-3 h-3" />
-                        {t('profile.details')}
-                      </Link>
-                    </div>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
             </div>
 
-            {/* Mobile Hamburger Button */}
-            <div className="flex items-center gap-2 lg:hidden">
-              <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="p-2 rounded-lg border border-bhos-border bg-bhos-darkCard/60 text-slate-300 hover:text-white"
-              >
-                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-              </button>
-            </div>
+            {/* Mobile Hamburger Menu */}
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
           </div>
         </div>
 
-        {/* Mobile menu dropdown */}
+        {/* Mobile Menu Dropdown */}
         {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-bhos-border bg-bhos-midnight px-4 pt-3 pb-5 space-y-2">
-            <div className="grid grid-cols-3 gap-1 mb-3">
+          <div className="w-full max-w-sm mx-auto mt-2 rounded-3xl border border-white/10 bg-slate-950/95 backdrop-blur-2xl p-4 shadow-2xl pointer-events-auto space-y-3">
+            <div className="grid grid-cols-3 gap-1">
               {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
                 <button
                   key={loc}
-                  onClick={() => {
-                    setLocale(loc);
-                  }}
-                  className={`py-1.5 text-xs text-center rounded uppercase font-semibold ${
+                  onClick={() => setLocale(loc)}
+                  className={`py-1.5 text-xs text-center rounded-xl uppercase font-semibold ${
                     locale === loc
-                      ? 'bg-bhos-cyan text-bhos-navy font-bold'
-                      : 'bg-slate-800 text-slate-300'
+                      ? 'bg-cyan-400 text-slate-950 font-bold'
+                      : 'bg-white/5 text-slate-300'
                   }`}
                 >
                   {loc}
@@ -261,10 +265,10 @@ export default function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-3 py-2 rounded-lg text-sm ${
+                  className={`block px-3 py-2 rounded-xl text-xs font-semibold ${
                     pathname === link.href
-                      ? 'bg-bhos-blue/20 text-bhos-cyan font-bold'
-                      : 'text-slate-300 hover:bg-slate-800'
+                      ? 'bg-cyan-500/20 text-cyan-300'
+                      : 'text-slate-300 hover:bg-white/5'
                   }`}
                 >
                   {link.label}
@@ -272,30 +276,21 @@ export default function Navbar() {
               ))}
             </div>
 
-            <div className="pt-3 border-t border-slate-800">
-              <p className="text-xs text-slate-400 mb-2">{t('nav.switch_role')}:</p>
-              <div className="space-y-1">
-                {roleDemoUsers.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      handleRoleChange(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 rounded text-xs flex items-center justify-between ${
-                      currentUser.id === item.id
-                        ? 'bg-bhos-blue text-white font-bold'
-                        : 'text-slate-300 hover:bg-slate-800'
-                    }`}
-                  >
-                    <span>{item.label}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
+            <a
+              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-4 h-4 fill-slate-950" />
+              <span>Join WhatsApp Group</span>
+            </a>
           </div>
         )}
       </header>
+
+      {/* Spacing spacer for floating navbar */}
+      <div className="h-20" />
 
       {/* Match Logger Modal */}
       {showMatchModal && (
@@ -304,4 +299,3 @@ export default function Navbar() {
     </>
   );
 }
-

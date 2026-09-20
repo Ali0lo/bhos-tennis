@@ -20,6 +20,7 @@ export interface PlayerProfile {
   email: string;
   major_faculty: BHOSFaculty | string;
   admission_year: number;
+  gender?: 'female' | 'male' | 'other';
   role: UserRole;
   playing_style: PlayingStyle | string;
   blade_equipment: string;

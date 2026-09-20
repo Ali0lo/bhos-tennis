@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   email VARCHAR(120) UNIQUE NOT NULL,
   major_faculty VARCHAR(100) NOT NULL, -- e.g., Chemical Eng., Information Security, Petroleum Eng., Computer Science, Process Automation
   admission_year INT NOT NULL, -- e.g., 2021, 2022, 2023, 2024
+  gender VARCHAR(10) CHECK (gender IN ('female', 'male', 'other')),
   role VARCHAR(20) DEFAULT 'player' CHECK (role IN ('player', 'coach', 'president')),
   playing_style VARCHAR(50), -- Shakehand / Penhold, Offensive / Defensive / All-round
   blade_equipment VARCHAR(100),

@@ -15,8 +15,8 @@ export default function Footer() {
           {/* Brand & Description */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-xl bg-white p-1 flex items-center justify-center shadow-md overflow-hidden">
-                <img src="/images/bhos-logo.png" alt="BHOS Logo" className="w-full h-full object-contain" />
+              <div className="w-11 h-11 rounded-full bg-cyan-500/10 border border-cyan-500/30 p-1 flex items-center justify-center shadow-lg">
+                <img src="/images/bhos-crest.png" alt="BHOS Logo" className="w-full h-full object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.6)]" />
               </div>
               <div>
                 <h3 className="text-white font-bold font-display text-base">
@@ -61,8 +61,19 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/tables" className="hover:text-bhos-cyan transition">
-                  {t('nav.tables')}
+                  Hall & Tables
                 </Link>
+              </li>
+              <li>
+                <a
+                  href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 text-emerald-400 font-semibold hover:underline"
+                >
+                  <span>Official WhatsApp Chat</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </li>
             </ul>
           </div>
