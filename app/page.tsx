@@ -564,5 +564,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-// Unobstructed hero visual layout
