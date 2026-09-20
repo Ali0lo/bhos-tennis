@@ -319,5 +319,3 @@ export default function Navbar() {
     </>
   );
 }
-
-// Mobile responsive drawer menu
