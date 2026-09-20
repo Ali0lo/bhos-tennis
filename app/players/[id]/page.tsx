@@ -586,5 +586,3 @@ export default function PlayerProfilePage() {
   );
 }
 
-
-// H2H predictor
