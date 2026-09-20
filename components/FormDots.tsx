@@ -83,3 +83,5 @@ export default function FormDots({ form, className = '', size = 'md' }: FormDots
     </div>
   );
 }
+
+// FormDots with full score and opponent tooltip
