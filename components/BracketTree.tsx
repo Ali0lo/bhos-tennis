@@ -327,3 +327,5 @@ export default function BracketTree({ tournament, onUpdate }: BracketTreeProps) 
     </div>
   );
 }
+
+// Non-path match dimming
