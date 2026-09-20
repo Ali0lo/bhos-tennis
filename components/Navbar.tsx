@@ -319,3 +319,5 @@ export default function Navbar() {
     </>
   );
 }
+
+// Direct WhatsApp community CTA link
