@@ -47,7 +47,7 @@ export default function Navbar() {
     { href: '/leaderboard', label: t('nav.leaderboard') },
     { href: '/matches', label: t('nav.matches') },
     { href: '/tournaments', label: t('nav.tournaments') },
-    { href: '/tables', label: 'Hall & Tables' },
+    { href: '/tables', label: t('nav.tables') || 'Hall & Tables' },
   ];
 
   if (currentUser.role === 'president') {
@@ -57,11 +57,11 @@ export default function Navbar() {
   const roleDemoUsers = [
     { id: 'p-1', role: 'president' as UserRole, label: `Ali Iskandarli (${t('roles.president')})` },
     { id: 'p-2', role: 'coach' as UserRole, label: `Iftixar Meherremov (${t('roles.coach')})` },
-    { id: 'p-3', role: 'player' as UserRole, label: `Ali Abdulov (Player)` },
-    { id: 'p-4', role: 'player' as UserRole, label: `Ali Aghayev (Player)` },
-    { id: 'p-5', role: 'player' as UserRole, label: `Huseyn Muradzade (Player)` },
-    { id: 'p-6', role: 'player' as UserRole, label: `Fateh Memmedli (Player)` },
-    { id: 'p-7', role: 'player' as UserRole, label: `Ayan Aliyeva (Player)` },
+    { id: 'p-3', role: 'player' as UserRole, label: 'Ali Abdulov (Player)' },
+    { id: 'p-4', role: 'player' as UserRole, label: 'Ali Aghayev (Player)' },
+    { id: 'p-5', role: 'player' as UserRole, label: 'Huseyn Muradzade (Player)' },
+    { id: 'p-6', role: 'player' as UserRole, label: 'Fateh Memmedli (Player)' },
+    { id: 'p-7', role: 'player' as UserRole, label: 'Ayan Aliyeva (Player)' },
   ];
 
   const handleRoleChange = (userId: string) => {
@@ -85,10 +85,9 @@ export default function Navbar() {
     <>
       {/* Floating Glassmorphism Pill Header */}
       <header className="fixed top-4 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div className="w-full max-w-6xl rounded-full border border-white/10 bg-slate-950/70 backdrop-blur-xl px-4 sm:px-6 py-2 shadow-2xl shadow-black/80 pointer-events-auto flex items-center justify-between transition-all">
+        <div className="w-full max-w-6xl rounded-full border border-white/10 bg-slate-950/80 backdrop-blur-xl px-4 sm:px-6 py-2.5 shadow-2xl shadow-black/80 pointer-events-auto flex items-center justify-between transition-all">
           {/* Brand Crest & Title */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            {/* Transparent BHOS Crest Logo with subtle glow */}
             <div className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center p-1 group-hover:scale-105 transition-transform">
               <img
                 src="/images/bhos-crest.png"
@@ -105,6 +104,9 @@ export default function Navbar() {
                   CLUB
                 </span>
               </div>
+              <p className="text-[10px] text-slate-400 hidden sm:block leading-none">
+                Baku Higher Oil School
+              </p>
             </div>
           </Link>
 
@@ -225,12 +227,22 @@ export default function Navbar() {
                         </span>
                       </button>
                     ))}
+                    <div className="mt-2 pt-2 border-t border-white/10 px-2">
+                      <Link
+                        href={`/players/${currentUser.id}`}
+                        onClick={() => setRoleDropdownOpen(false)}
+                        className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
+                      >
+                        <UserCheck className="w-3 h-3" />
+                        {t('profile.details')}
+                      </Link>
+                    </div>
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Mobile Hamburger Menu */}
+            {/* Mobile Hamburger Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white"
@@ -274,6 +286,30 @@ export default function Navbar() {
                   {link.label}
                 </Link>
               ))}
+            </div>
+
+            <div className="pt-3 border-t border-white/10">
+              <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-2">
+                {t('nav.switch_role')}:
+              </p>
+              <div className="space-y-1">
+                {roleDemoUsers.map((item) => (
+                  <button
+                    key={item.id}
+                    onClick={() => {
+                      handleRoleChange(item.id);
+                      setMobileMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs flex items-center justify-between ${
+                      currentUser.id === item.id
+                        ? 'bg-cyan-500/20 text-cyan-300 font-bold'
+                        : 'text-slate-300 hover:bg-white/5'
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             <a

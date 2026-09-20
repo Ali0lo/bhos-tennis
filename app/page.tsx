@@ -17,13 +17,10 @@ import {
   Award, 
   Zap, 
   ShieldCheck, 
-  MessageCircle,
-  ExternalLink,
-  ChevronRight,
-  Sparkles,
-  Info,
-  MapPin,
-  X
+  MessageCircle, 
+  ExternalLink, 
+  Sparkles, 
+  X 
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -271,6 +268,16 @@ export default function HomePage() {
               <MessageCircle className="w-4 h-4 fill-slate-950" />
               <span>Join WhatsApp Group</span>
             </a>
+
+            {(currentUser.role === 'president' || currentUser.role === 'coach') && (
+              <button
+                onClick={() => setShowMatchModal(true)}
+                className="px-5 py-3.5 rounded-full border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 font-display font-semibold text-sm transition flex items-center gap-2"
+              >
+                <Zap className="w-4 h-4" />
+                <span>{t('nav.log_match')}</span>
+              </button>
+            )}
           </div>
         </div>
 

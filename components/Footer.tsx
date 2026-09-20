@@ -61,7 +61,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link href="/tables" className="hover:text-bhos-cyan transition">
-                  Hall & Tables
+                  {t('nav.tables')}
                 </Link>
               </li>
               <li>
