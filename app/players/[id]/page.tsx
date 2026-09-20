@@ -586,5 +586,3 @@ export default function PlayerProfilePage() {
   );
 }
 
-
-// NumberTicker on stats
