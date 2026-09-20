@@ -66,3 +66,5 @@ export default function TiltCard({
     </div>
   );
 }
+
+// Specular reflection with 3D depth and smooth dampening
