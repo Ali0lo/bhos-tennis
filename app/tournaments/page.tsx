@@ -190,7 +190,7 @@ export default function TournamentsPage() {
                   type="text"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. BHOS Winter Cup 2024"
+                  placeholder="e.g. BHOS Winter Cup 2026"
                   required
                   className="w-full px-3 py-2 rounded-lg bg-bhos-darkCard border border-bhos-border text-white focus:outline-none focus:border-bhos-cyan"
                 />

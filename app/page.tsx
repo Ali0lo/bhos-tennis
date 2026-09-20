@@ -13,14 +13,11 @@ import {
   Activity, 
   ArrowRight, 
   TrendingUp, 
-  Users, 
   Award, 
   Zap, 
   ShieldCheck, 
   MessageCircle, 
-  ExternalLink, 
-  Sparkles, 
-  X 
+  ExternalLink 
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -32,9 +29,6 @@ export default function HomePage() {
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [currentUser, setCurrentUser] = useState<PlayerProfile>(store.getCurrentUser());
   const [showMatchModal, setShowMatchModal] = useState(false);
-
-  // Active Hotspot state (null = none open, 1 = Table Hall, 2 = League, 3 = Coaching)
-  const [activeHotspot, setActiveHotspot] = useState<number | null>(null);
 
   useEffect(() => {
     const update = () => {
@@ -49,21 +43,20 @@ export default function HomePage() {
 
   const top3 = profiles.slice(0, 3);
   const recentMatches = matches.slice(0, 5);
-  const ongoingTournaments = tournaments.filter((t) => t.status === 'ongoing');
 
   return (
     <div className="space-y-16">
-      {/* 1. Full-Bleed Cinematic Hero Section with Hotspot Pins */}
-      <section className="relative -mt-6 rounded-3xl overflow-hidden border border-white/10 shadow-2xl min-h-[640px] md:min-h-[740px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
+      {/* 1. Full-Bleed Cinematic Hero Section (Clean & Unobstructed Photo View) */}
+      <section className="relative -mt-6 rounded-3xl overflow-hidden border border-white/10 shadow-2xl min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
         {/* Full-bleed high-res background image */}
         <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-105"
+          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-100"
           style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}
         />
 
-        {/* Cinematic dark gradients & vignette */}
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0A192F] via-slate-950/60 to-slate-950/70" />
-        <div className="absolute inset-0 bg-radial-gradient from-transparent via-black/40 to-black/80" />
+        {/* Cinematic dark gradients: left gradient allows text readability while keeping center & right athlete photo clear */}
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-slate-950/60" />
 
         {/* Top Hero Meta Badges */}
         <div className="relative z-20 flex flex-wrap items-center justify-between gap-4">
@@ -75,10 +68,10 @@ export default function HomePage() {
             />
             <span className="text-cyan-400 font-bold tracking-wide">BHOS TABLE TENNIS</span>
             <span className="text-slate-400">•</span>
-            <span className="text-slate-300">Official Campus Portal</span>
+            <span className="text-slate-300">{t('hero.portal_tag')}</span>
           </div>
 
-          {/* Social Proof: WhatsApp Community Tag */}
+          {/* WhatsApp Community Tag */}
           <a
             href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
             target="_blank"
@@ -87,157 +80,19 @@ export default function HomePage() {
           >
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
             <MessageCircle className="w-3.5 h-3.5 fill-emerald-400" />
-            <span>Join 100+ BHOS Players on WhatsApp</span>
+            <span>{t('hero.community_tag')}</span>
             <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
           </a>
         </div>
 
-        {/* Interactive Hotspot 1: Table Tennis Hall (Positioned on the table) */}
-        <div className="absolute top-[68%] right-[10%] sm:right-[16%] z-30">
-          <div className="relative">
-            <button
-              onClick={() => setActiveHotspot(activeHotspot === 1 ? null : 1)}
-              className="group relative flex items-center justify-center cursor-pointer focus:outline-none"
-              title="Table Tennis Hall Specifications"
-            >
-              <span className="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-pink-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-7 w-7 bg-pink-500/90 text-white items-center justify-center border-2 border-white shadow-lg shadow-pink-500/50 group-hover:scale-110 transition-transform">
-                <TableIcon className="w-3.5 h-3.5" />
-              </span>
-              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-bold text-white shadow">
-                4 Hall Tables
-              </span>
-            </button>
-
-            {/* Hotspot 1 Tooltip Card */}
-            {activeHotspot === 1 && (
-              <div className="absolute bottom-10 right-0 w-72 sm:w-80 rounded-2xl border border-white/15 bg-slate-950/95 backdrop-blur-2xl p-4 shadow-2xl z-50 text-xs space-y-2.5 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
-                  <span className="font-display font-bold text-white flex items-center gap-1.5">
-                    <TableIcon className="w-4 h-4 text-pink-400" />
-                    <span>Table Tennis Hall Setup</span>
-                  </span>
-                  <button onClick={() => setActiveHotspot(null)} className="text-slate-400 hover:text-white">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-slate-300 leading-relaxed text-[11px]">
-                  4 ITTF competition tables at Bibiheybat Campus:
-                </p>
-                <div className="space-y-1 text-[11px]">
-                  <div className="p-1.5 rounded-lg bg-pink-500/15 border border-pink-500/30 text-pink-200 font-semibold">
-                    🚺 Table 1: Dedicated for Girls & Women Practice
-                  </div>
-                  <div className="p-1.5 rounded-lg bg-cyan-500/15 border border-cyan-500/30 text-cyan-200 font-semibold">
-                    🚹 Tables 2, 3 & 4: Dedicated for Boys & League Matches
-                  </div>
-                </div>
-                <Link
-                  href="/tables"
-                  className="mt-2 block w-full py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-center font-bold text-white text-[11px] transition"
-                >
-                  View Hall & Table Details →
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Interactive Hotspot 2: Official BHOS League (Positioned near the player) */}
-        <div className="absolute top-[38%] left-[45%] sm:left-[48%] z-30">
-          <div className="relative">
-            <button
-              onClick={() => setActiveHotspot(activeHotspot === 2 ? null : 2)}
-              className="group relative flex items-center justify-center cursor-pointer focus:outline-none"
-              title="Official BHOS League"
-            >
-              <span className="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-cyan-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-7 w-7 bg-cyan-400 text-slate-950 items-center justify-center border-2 border-white shadow-lg shadow-cyan-400/50 group-hover:scale-110 transition-transform">
-                <Trophy className="w-3.5 h-3.5" />
-              </span>
-              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-bold text-white shadow">
-                Official ELO League
-              </span>
-            </button>
-
-            {/* Hotspot 2 Tooltip Card */}
-            {activeHotspot === 2 && (
-              <div className="absolute bottom-10 -left-20 sm:left-0 w-72 sm:w-80 rounded-2xl border border-white/15 bg-slate-950/95 backdrop-blur-2xl p-4 shadow-2xl z-50 text-xs space-y-2.5 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
-                  <span className="font-display font-bold text-white flex items-center gap-1.5">
-                    <Trophy className="w-4 h-4 text-cyan-400" />
-                    <span>Official BHOS ELO League</span>
-                  </span>
-                  <button onClick={() => setActiveHotspot(null)} className="text-slate-400 hover:text-white">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-slate-300 leading-relaxed text-[11px]">
-                  Real-time table tennis rating algorithm with dynamic K-factors (K=32 club, K=48 tournament) inspired by tabletennis.az standards.
-                </p>
-                <div className="flex items-center justify-between text-[11px] p-2 rounded-xl bg-white/5 border border-white/10">
-                  <span>Current #1:</span>
-                  <span className="font-bold text-cyan-400">{top3[0]?.full_name || 'Ali Iskandarli'} ({top3[0]?.current_elo || 1650} ELO)</span>
-                </div>
-                <Link
-                  href="/leaderboard"
-                  className="mt-2 block w-full py-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-center font-bold text-[11px] transition shadow"
-                >
-                  Explore Leaderboard →
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Interactive Hotspot 3: Coaching & Practice (Positioned top left) */}
-        <div className="absolute top-[28%] left-[8%] sm:left-[12%] z-30">
-          <div className="relative">
-            <button
-              onClick={() => setActiveHotspot(activeHotspot === 3 ? null : 3)}
-              className="group relative flex items-center justify-center cursor-pointer focus:outline-none"
-              title="Coaching & Practice"
-            >
-              <span className="animate-ping absolute inline-flex h-8 w-8 rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-7 w-7 bg-emerald-500 text-slate-950 items-center justify-center border-2 border-white shadow-lg shadow-emerald-400/50 group-hover:scale-110 transition-transform">
-                <ShieldCheck className="w-3.5 h-3.5" />
-              </span>
-              <span className="hidden sm:inline-block ml-2 px-2 py-0.5 rounded-md bg-black/60 backdrop-blur-md border border-white/10 text-[11px] font-bold text-white shadow">
-                Varsity Coaching
-              </span>
-            </button>
-
-            {/* Hotspot 3 Tooltip Card */}
-            {activeHotspot === 3 && (
-              <div className="absolute top-10 left-0 w-72 sm:w-80 rounded-2xl border border-white/15 bg-slate-950/95 backdrop-blur-2xl p-4 shadow-2xl z-50 text-xs space-y-2.5 animate-in fade-in zoom-in-95 duration-200">
-                <div className="flex items-center justify-between pb-1.5 border-b border-white/10">
-                  <span className="font-display font-bold text-white flex items-center gap-1.5">
-                    <ShieldCheck className="w-4 h-4 text-emerald-400" />
-                    <span>Structured Coaching</span>
-                  </span>
-                  <button onClick={() => setActiveHotspot(null)} className="text-slate-400 hover:text-white">
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-                <p className="text-slate-300 leading-relaxed text-[11px]">
-                  Guided by Head Coach <strong className="text-white">Iftixar Meherremov</strong>. Technique calibration, footwork patterns, and multi-ball training for student athletes.
-                </p>
-                <div className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-[11px]">
-                  Training Sessions: Mon, Wed, Fri (16:00 - 18:00)
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Hero Bottom Content & Massive Headline */}
-        <div className="relative z-20 max-w-3xl space-y-6 pt-32 pb-4">
+        {/* Hero Bottom Content & Headline (Left-aligned, leaving the player with BHOS jersey fully visible in the center/right) */}
+        <div className="relative z-20 max-w-2xl space-y-6 pt-28 pb-2">
           <div className="space-y-3">
-            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-display font-black text-white tracking-tight leading-[1.05] drop-shadow-2xl">
-              WHERE PASSION MEETS EVERY RALLY.
+            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black text-white tracking-tight leading-[1.08] drop-shadow-2xl">
+              {t('hero.headline')}
             </h1>
-            <p className="text-base sm:text-lg text-slate-200 leading-relaxed font-sans max-w-2xl drop-shadow">
-              The official table tennis management platform for Baku Higher Oil School. Live ELO ratings, campus championships, and sports hall court access for all BHOS engineering students.
+            <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-sans max-w-xl drop-shadow">
+              {t('hero.subtitle')}
             </p>
           </div>
 
@@ -245,7 +100,7 @@ export default function HomePage() {
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link
               href="/leaderboard"
-              className="px-6 py-3.5 rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-display font-bold text-sm shadow-xl shadow-cyan-500/25 active:scale-95 transition flex items-center gap-2"
+              className="px-6 py-3 rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-display font-bold text-xs sm:text-sm shadow-xl shadow-cyan-500/25 active:scale-95 transition flex items-center gap-2"
             >
               <Trophy className="w-4 h-4" />
               <span>{t('nav.leaderboard')}</span>
@@ -253,26 +108,26 @@ export default function HomePage() {
 
             <Link
               href="/tables"
-              className="px-6 py-3.5 rounded-full border border-white/20 bg-slate-950/60 hover:bg-slate-900/80 backdrop-blur-md text-white font-display font-semibold text-sm transition flex items-center gap-2"
+              className="px-6 py-3 rounded-full border border-white/20 bg-slate-950/60 hover:bg-slate-900/80 backdrop-blur-md text-white font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
             >
               <TableIcon className="w-4 h-4 text-pink-400" />
-              <span>Hall & Tables</span>
+              <span>{t('hero.hall_tables_btn')}</span>
             </Link>
 
             <a
               href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-6 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-sm shadow-xl shadow-emerald-500/25 active:scale-95 transition flex items-center gap-2"
+              className="px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-xs sm:text-sm shadow-xl shadow-emerald-500/25 active:scale-95 transition flex items-center gap-2"
             >
               <MessageCircle className="w-4 h-4 fill-slate-950" />
-              <span>Join WhatsApp Group</span>
+              <span>{t('hero.join_whatsapp_btn')}</span>
             </a>
 
             {(currentUser.role === 'president' || currentUser.role === 'coach') && (
               <button
                 onClick={() => setShowMatchModal(true)}
-                className="px-5 py-3.5 rounded-full border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 font-display font-semibold text-sm transition flex items-center gap-2"
+                className="px-5 py-3 rounded-full border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
               >
                 <Zap className="w-4 h-4" />
                 <span>{t('nav.log_match')}</span>
@@ -282,39 +137,55 @@ export default function HomePage() {
         </div>
 
         {/* Bottom Hero Stats Strip */}
-        <div className="relative z-20 pt-8 mt-6 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="relative z-20 pt-6 mt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Active Members</span>
-            <div className="text-2xl sm:text-3xl font-mono font-black text-white">{profiles.length} Players</div>
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              {t('hero.stats_members')}
+            </span>
+            <div className="text-xl sm:text-2xl font-mono font-black text-white">
+              {profiles.length} {t('hero.players_count')}
+            </div>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Matches Logged</span>
-            <div className="text-2xl sm:text-3xl font-mono font-black text-cyan-400">{matches.length} Official</div>
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              {t('hero.stats_matches')}
+            </span>
+            <div className="text-xl sm:text-2xl font-mono font-black text-cyan-400">
+              {matches.length} {t('hero.official_count')}
+            </div>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Campus Tables</span>
-            <div className="text-2xl sm:text-3xl font-mono font-black text-pink-400">4 Tables (1 Girls / 3 Boys)</div>
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              {t('hero.stats_tables')}
+            </span>
+            <div className="text-xl sm:text-2xl font-mono font-black text-pink-400">
+              {t('hero.stats_tables_sub')}
+            </div>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">#1 ELO Leader</span>
-            <div className="text-2xl sm:text-3xl font-mono font-black text-amber-400">{top3[0]?.current_elo || 1650} ELO</div>
+            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+              {t('hero.stats_leader')}
+            </span>
+            <div className="text-xl sm:text-2xl font-mono font-black text-amber-400">
+              {top3[0]?.current_elo || 1650} ELO
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 2. Hall & Table Information Section (Replaces table reservation flow) */}
+      {/* 2. Hall & Table Information Section */}
       <section className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-2 text-pink-400 text-xs font-semibold uppercase tracking-wider mb-1">
               <TableIcon className="w-4 h-4" />
-              <span>Campus Facility Guide</span>
+              <span>{t('facility.badge')}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-display font-black text-white">
-              BHOS Table Tennis Hall & Court Allocation
+              {t('facility.title')}
             </h2>
             <p className="text-xs text-slate-400 mt-1">
-              Table 1 dedicated for Women / Girls; Tables 2, 3, and 4 dedicated for Men / Boys.
+              {t('facility.subtitle')}
             </p>
           </div>
 
@@ -322,7 +193,7 @@ export default function HomePage() {
             href="/tables"
             className="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1 shrink-0"
           >
-            <span>Full Hall Guide</span>
+            <span>{t('facility.full_guide')}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -339,14 +210,14 @@ export default function HomePage() {
               <span>{t('leaderboard.top_podium')}</span>
             </h2>
             <p className="text-xs text-slate-400">
-              Top 3 BHOS athletes by official ELO rating
+              {t('home_podium.subtitle')}
             </p>
           </div>
           <Link
             href="/leaderboard"
             className="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1"
           >
-            <span>View Full Leaderboard ({profiles.length})</span>
+            <span>{t('home_podium.view_full')} ({profiles.length})</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -371,11 +242,11 @@ export default function HomePage() {
                     {top3[1].current_elo} <span className="text-xs text-slate-400 font-sans">ELO</span>
                   </div>
                   <span className="text-xs text-emerald-400 font-semibold">
-                    {Math.round((top3[1].wins / (top3[1].matches_played || 1)) * 100)}% Win
+                    {Math.round((top3[1].wins / (top3[1].matches_played || 1)) * 100)}% {t('home_podium.win_rate')}
                   </span>
                 </div>
                 <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
-                  <span>Matches: {top3[1].matches_played}</span>
+                  <span>{t('home_podium.matches_label')}: {top3[1].matches_played}</span>
                   <span>{top3[1].wins}W - {top3[1].losses}L</span>
                 </div>
               </div>
@@ -390,7 +261,7 @@ export default function HomePage() {
               </div>
               <div className="pt-4 text-center">
                 <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-amber-500/30">
-                  Club Leader & President
+                  {t('roles.president')} • #1
                 </div>
                 <Link
                   href={`/players/${top3[0].id}`}
@@ -403,11 +274,11 @@ export default function HomePage() {
                   {top3[0].current_elo} <span className="text-xs text-slate-300 font-sans">ELO</span>
                 </div>
                 <div className="mt-2 text-xs text-emerald-400 font-semibold">
-                  {Math.round((top3[0].wins / (top3[0].matches_played || 1)) * 100)}% Win Rate ({top3[0].wins}W - {top3[0].losses}L)
+                  {Math.round((top3[0].wins / (top3[0].matches_played || 1)) * 100)}% {t('home_podium.win_rate')} ({top3[0].wins}W - {top3[0].losses}L)
                 </div>
                 <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
-                  <span>Blade: {top3[0].blade_equipment.split(' ')[0]}</span>
-                  <span>Class of {top3[0].admission_year}</span>
+                  <span>{top3[0].blade_equipment.split(' ')[0]}</span>
+                  <span>{top3[0].admission_year}</span>
                 </div>
               </div>
             </div>
@@ -432,11 +303,11 @@ export default function HomePage() {
                     {top3[2].current_elo} <span className="text-xs text-slate-400 font-sans">ELO</span>
                   </div>
                   <span className="text-xs text-emerald-400 font-semibold">
-                    {Math.round((top3[2].wins / (top3[2].matches_played || 1)) * 100)}% Win
+                    {Math.round((top3[2].wins / (top3[2].matches_played || 1)) * 100)}% {t('home_podium.win_rate')}
                   </span>
                 </div>
                 <div className="mt-3 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
-                  <span>Matches: {top3[2].matches_played}</span>
+                  <span>{t('home_podium.matches_label')}: {top3[2].matches_played}</span>
                   <span>{top3[2].wins}W - {top3[2].losses}L</span>
                 </div>
               </div>
@@ -452,13 +323,13 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
               <Activity className="w-5 h-5 text-cyan-400" />
-              <span>{t('matches.title')}</span>
+              <span>{t('home_recent.title')}</span>
             </h3>
             <Link
               href="/matches"
               className="text-xs text-cyan-400 hover:underline flex items-center gap-1"
             >
-              <span>Full Archive</span>
+              <span>{t('home_recent.view_all')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -504,7 +375,7 @@ export default function HomePage() {
                       </div>
 
                       <div className="text-[11px] font-mono text-slate-500">
-                        Sets: {m.set_scores}
+                        {t('home_recent.sets_label')}: {m.set_scores}
                       </div>
                     </div>
                   </div>
@@ -534,13 +405,13 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
               <Trophy className="w-5 h-5 text-amber-400" />
-              <span>{t('tournaments.title')}</span>
+              <span>{t('home_tournaments.title')}</span>
             </h3>
             <Link
               href="/tournaments"
               className="text-xs text-cyan-400 hover:underline flex items-center gap-1"
             >
-              <span>All</span>
+              <span>{t('home_tournaments.view_all')}</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>
@@ -559,10 +430,10 @@ export default function HomePage() {
                         : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
                     }`}
                   >
-                    {tourn.status}
+                    {t(`tournaments.status_${tourn.status}`) || tourn.status}
                   </span>
                   <span className="text-[11px] text-slate-400 font-mono">
-                    Max {tourn.max_participants} Players
+                    Max {tourn.max_participants} {t('home_tournaments.registered')}
                   </span>
                 </div>
 
@@ -582,7 +453,7 @@ export default function HomePage() {
                     href={`/tournaments/${tourn.slug}`}
                     className="text-xs text-cyan-400 font-semibold hover:underline flex items-center gap-1"
                   >
-                    <span>View Knockout Bracket</span>
+                    <span>{t('home_tournaments.view_bracket')}</span>
                     <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>

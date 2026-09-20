@@ -57,11 +57,11 @@ export default function Navbar() {
   const roleDemoUsers = [
     { id: 'p-1', role: 'president' as UserRole, label: `Ali Iskandarli (${t('roles.president')})` },
     { id: 'p-2', role: 'coach' as UserRole, label: `Iftixar Meherremov (${t('roles.coach')})` },
-    { id: 'p-3', role: 'player' as UserRole, label: 'Ali Abdulov (Player)' },
-    { id: 'p-4', role: 'player' as UserRole, label: 'Ali Aghayev (Player)' },
-    { id: 'p-5', role: 'player' as UserRole, label: 'Huseyn Muradzade (Player)' },
-    { id: 'p-6', role: 'player' as UserRole, label: 'Fateh Memmedli (Player)' },
-    { id: 'p-7', role: 'player' as UserRole, label: 'Ayan Aliyeva (Player)' },
+    { id: 'p-3', role: 'player' as UserRole, label: `Ali Abdulov (${t('roles.player')})` },
+    { id: 'p-4', role: 'player' as UserRole, label: `Ali Aghayev (${t('roles.player')})` },
+    { id: 'p-5', role: 'player' as UserRole, label: `Huseyn Muradzade (${t('roles.player')})` },
+    { id: 'p-6', role: 'player' as UserRole, label: `Fateh Memmedli (${t('roles.player')})` },
+    { id: 'p-7', role: 'player' as UserRole, label: `Ayan Aliyeva (${t('roles.player')})` },
   ];
 
   const handleRoleChange = (userId: string) => {
@@ -151,7 +151,7 @@ export default function Navbar() {
                 className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-bold hover:bg-cyan-300 shadow-md shadow-cyan-500/20 transition active:scale-95"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span>Log Match</span>
+                <span>{t('nav.log_match')}</span>
               </button>
             )}
 
@@ -204,7 +204,7 @@ export default function Navbar() {
               {roleDropdownOpen && (
                 <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-white/10 bg-slate-950 p-2 shadow-2xl z-50">
                   <p className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    Switch Active User (Demo)
+                    {t('nav.switch_role')} (Demo)
                   </p>
                   <div className="space-y-1 mt-1">
                     {roleDemoUsers.map((item) => (
@@ -319,7 +319,7 @@ export default function Navbar() {
               className="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2"
             >
               <MessageCircle className="w-4 h-4 fill-slate-950" />
-              <span>Join WhatsApp Group</span>
+              <span>{t('hero.join_whatsapp_btn')}</span>
             </a>
           </div>
         )}

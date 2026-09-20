@@ -28,12 +28,12 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed max-w-md">
-              {t('brand.motto')}. Dedicated to developing competitive table tennis talent, collegiate ranking systems, and sportsmanship across Baku Higher Oil School engineering faculties.
+              {t('brand.motto')}. {t('footer.tagline')}
             </p>
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1 text-slate-300">
                 <MapPin className="w-3.5 h-3.5 text-bhos-cyan" />
-                <span>BHOS Bibiheybat Campus Sports Complex</span>
+                <span>{t('footer.campus')}</span>
               </div>
             </div>
           </div>
@@ -71,7 +71,7 @@ export default function Footer() {
                   rel="noopener noreferrer"
                   className="flex items-center gap-1 text-emerald-400 font-semibold hover:underline"
                 >
-                  <span>Official WhatsApp Chat</span>
+                  <span>{t('footer.whatsapp_chat')}</span>
                   <ExternalLink className="w-3 h-3" />
                 </a>
               </li>
@@ -81,7 +81,7 @@ export default function Footer() {
           {/* Affiliation & Federation Links */}
           <div className="space-y-3">
             <h4 className="text-white font-semibold text-xs uppercase tracking-wider">
-              Standards & Affiliation
+              {t('footer.affiliations')}
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
@@ -108,7 +108,7 @@ export default function Footer() {
               </li>
               <li>
                 <span className="inline-block px-2 py-1 rounded bg-slate-800 text-[11px] text-emerald-400 border border-emerald-500/30">
-                  ITTF Rules Compliant
+                  {t('footer.ittf_compliant')}
                 </span>
               </li>
             </ul>
@@ -116,14 +116,13 @@ export default function Footer() {
         </div>
 
         <div className="mt-12 pt-6 border-t border-bhos-border flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
-          <p>© {new Date().getFullYear()} BHOS Table Tennis Club. Built for Baku Higher Oil School.</p>
+          <p>© {new Date().getFullYear()} {t('footer.rights')}</p>
           <p className="flex items-center gap-1">
             <ShieldCheck className="w-3.5 h-3.5 text-bhos-cyan" />
-            <span>Official ELO Rating Engine (K=32 / K=48)</span>
+            <span>{t('footer.elo_badge')}</span>
           </p>
         </div>
       </div>
     </footer>
   );
 }
-

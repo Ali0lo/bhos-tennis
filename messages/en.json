@@ -9,16 +9,95 @@
     "leaderboard": "Leaderboard",
     "matches": "Matches & Results",
     "tournaments": "Tournaments",
-    "tables": "Table Booking",
+    "tables": "Hall & Tables",
     "admin": "President Panel",
     "log_match": "Log Match",
     "book_table": "Book Table",
-    "switch_role": "Switch Role"
+    "switch_role": "Switch Active User",
+    "join_whatsapp": "WhatsApp"
   },
   "roles": {
     "president": "Club President",
     "coach": "Coach",
     "player": "Student / Player"
+  },
+  "hero": {
+    "portal_tag": "Official Campus Portal",
+    "community_tag": "Join 100+ BHOS Players on WhatsApp",
+    "headline": "WHERE PASSION MEETS EVERY RALLY.",
+    "subtitle": "The official table tennis management platform for Baku Higher Oil School. Live ELO ratings, campus championships, and sports hall court access for all BHOS engineering students.",
+    "hall_tables_btn": "Hall & Tables",
+    "join_whatsapp_btn": "Join WhatsApp Group",
+    "stats_members": "Active Members",
+    "stats_matches": "Matches Logged",
+    "stats_tables": "Campus Tables",
+    "stats_tables_sub": "4 Tables (1 Girls / 3 Boys)",
+    "stats_leader": "#1 ELO Leader",
+    "players_count": "Players",
+    "official_count": "Official"
+  },
+  "facility": {
+    "badge": "Campus Facility Guide",
+    "title": "BHOS Table Tennis Hall & Court Allocation",
+    "subtitle": "Table 1 dedicated for Women / Girls; Tables 2, 3, and 4 dedicated for Men / Boys.",
+    "full_guide": "Full Hall Guide",
+    "allocation_rule": "Table Allocation Rule",
+    "allocation_desc": "Table 1 is strictly dedicated for Women & Girls. Tables 2, 3, and 4 are assigned for Men & Open Free Play.",
+    "equipment_rule": "Equipment Available",
+    "equipment_desc": "Donic 3-Star ITTF balls and standard club paddles can be collected from the Sports Complex desk.",
+    "footwear_rule": "Footwear Requirement",
+    "footwear_desc": "Non-marking indoor sports court shoes are strictly required to preserve professional rubberized flooring.",
+    "whatsapp_matchmaking": "WhatsApp Matchmaking Chat"
+  },
+  "hall_tables": {
+    "category_girls": "Women / Girls Table",
+    "category_boys": "Men / Boys Table",
+    "status_league_ready": "League Ready",
+    "status_coaching": "Coaching Available",
+    "status_open": "Open Practice",
+    "status_challenge": "Challenge Court",
+    "table_1_title": "Women / Girls Table",
+    "table_1_sub": "Dedicated for BHOS Female Athletes & Students",
+    "table_1_desc": "Prioritized exclusively for women and girls practice sessions, friendly rallies, and official female league championship fixtures.",
+    "table_1_active": "Ayan Aliyeva & BHOS Female Club Members",
+    "table_2_title": "Men / Boys League Court",
+    "table_2_sub": "Official Ranked & Tournament Table",
+    "table_2_desc": "Primary arena table equipped for official BHOS ELO ranked matches, varsity selection trials, and tournament knockouts.",
+    "table_2_active": "Ali Iskandarli (President) & Varsity Roster",
+    "table_3_title": "Men / Boys Coaching & Drills",
+    "table_3_sub": "Structured Technical Training",
+    "table_3_desc": "Specialized for topspin looping, footwork drills, serve-and-attack routines, and training sessions led by Head Coach Iftixar Meherremov.",
+    "table_3_active": "Head Coach Iftixar Meherremov & Trainees",
+    "table_4_title": "Men / Boys Free Play & Challenge",
+    "table_4_sub": "Open Rallies & King-of-the-Table",
+    "table_4_desc": "Open to all engineering students for casual sparring, doubles matches, and rapid winner-stays-on campus challenges.",
+    "table_4_active": "Ali Abdulov, Ali Aghayev, Huseyn Muradzade, Fateh Memmedli",
+    "active_now": "Currently Active:",
+    "key_features": "Court Features",
+    "open_walkin": "Walk-in Access",
+    "competition_spec": "Competition Spec",
+    "dedicated_womens": "Dedicated Women's Table",
+    "table_nav_badge": "TABLE"
+  },
+  "home_podium": {
+    "subtitle": "Top 3 BHOS athletes by official ELO rating",
+    "view_full": "View Full Leaderboard",
+    "win_rate": "Win",
+    "matches_label": "Matches"
+  },
+  "home_recent": {
+    "title": "Recent Match Results",
+    "subtitle": "Verified campus matches recorded into the ELO rating engine",
+    "view_all": "All Results",
+    "official_badge": "OFFICIAL",
+    "sets_label": "Sets"
+  },
+  "home_tournaments": {
+    "title": "Tournaments & Championships",
+    "subtitle": "Official inter-faculty tournaments and campus cups",
+    "view_all": "All Tournaments",
+    "view_bracket": "View Bracket",
+    "registered": "Registered Players"
   },
   "leaderboard": {
     "title": "Official Club Leaderboard",
@@ -117,6 +196,14 @@
     "total_players": "Total Members",
     "total_matches": "Matches Logged",
     "active_tournaments": "Active Tournaments"
+  },
+  "footer": {
+    "tagline": "Dedicated to developing competitive table tennis talent, collegiate ranking systems, and sportsmanship across Baku Higher Oil School engineering faculties.",
+    "campus": "BHOS Bibiheybat Campus Sports Complex",
+    "affiliations": "Standards & Affiliation",
+    "ittf_compliant": "ITTF Rules Compliant",
+    "whatsapp_chat": "Official WhatsApp Chat",
+    "rights": "BHOS Table Tennis Club. Built for Baku Higher Oil School.",
+    "elo_badge": "Official ELO Rating Engine (K=32 / K=48)"
   }
 }
-
