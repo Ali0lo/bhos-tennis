@@ -1,43 +1,68 @@
 'use client';
 
-import React, { useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import { motion, useMotionValue, useSpring, useTransform } from 'framer-motion';
 
-export interface TiltCardProps {
+interface TiltCardProps {
   children: React.ReactNode;
   className?: string;
-  maxTilt?: number;
-  glare?: boolean;
+  maxRotation?: number;
 }
 
 export default function TiltCard({
   children,
   className = '',
-  maxTilt = 12,
-  glare = true,
+  maxRotation = 8,
 }: TiltCardProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [isHovered, setIsHovered] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const x = useMotionValue(0.5);
   const y = useMotionValue(0.5);
 
-  const mouseXSpring = useSpring(x, { stiffness: 220, damping: 20 });
-  const mouseYSpring = useSpring(y, { stiffness: 220, damping: 20 });
+  const springConfig = { damping: 20, stiffness: 200 };
+  const mouseXSpring = useSpring(x, springConfig);
+  const mouseYSpring = useSpring(y, springConfig);
 
-  const rotateX = useTransform(mouseYSpring, [0, 1], [maxTilt, -maxTilt]);
-  const rotateY = useTransform(mouseXSpring, [0, 1], [-maxTilt, maxTilt]);
+  const rotateX = useTransform(mouseYSpring, [0, 1], [maxRotation, -maxRotation]);
+  const rotateY = useTransform(mouseXSpring, [0, 1], [-maxRotation, maxRotation]);
+  const glareOpacity = useTransform(mouseXSpring, [0, 0.5, 1], [0.15, 0, 0.15]);
 
-  const glareX = useTransform(mouseXSpring, [0, 1], ['0%', '100%']);
-  const glareY = useTransform(mouseYSpring, [0, 1], ['0%', '100%']);
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    x.set(mouseX / rect.width);
+    y.set(mouseY / rect.height);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0.5);
+    y.set(0.5);
+  };
 
   return (
-    <motion.div
-      ref={ref}
-      style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
-      className={`relative ${className}`}
-    >
-      {children}
-    </motion.div>
+    <div style={{ perspective: 1000 }} className="w-full">
+      <motion.div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        style={{
+          rotateX,
+          rotateY,
+          transformStyle: 'preserve-3d',
+        }}
+        whileHover={{ scale: 1.02 }}
+        transition={{ duration: 0.2 }}
+        className={`relative transition-shadow duration-300 ${className}`}
+      >
+        {children}
+        {/* Specular Glare Reflection */}
+        <motion.div
+          style={{ opacity: glareOpacity }}
+          className="pointer-events-none absolute inset-0 rounded-[inherit] bg-gradient-to-tr from-cyan-400/10 via-white/10 to-transparent"
+        />
+      </motion.div>
+    </div>
   );
 }
