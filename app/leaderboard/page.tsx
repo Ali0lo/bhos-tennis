@@ -408,5 +408,3 @@ export default function LeaderboardPage() {
   );
 }
 
-
-// Opponent name fallback
