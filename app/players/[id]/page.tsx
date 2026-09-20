@@ -586,5 +586,3 @@ export default function PlayerProfilePage() {
   );
 }
 
-
-// FormDots in profile quick stats
