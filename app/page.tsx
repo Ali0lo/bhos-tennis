@@ -564,5 +564,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-// Table 1 Female Dedication configured
