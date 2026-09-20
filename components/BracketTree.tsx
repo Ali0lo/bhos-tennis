@@ -327,3 +327,5 @@ export default function BracketTree({ tournament, onUpdate }: BracketTreeProps) 
     </div>
   );
 }
+
+// Trace tournament journey path
