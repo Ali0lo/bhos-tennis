@@ -564,5 +564,3 @@ export default function HomePage() {
     </div>
   );
 }
-
-// 3D TiltCard applied to podium
