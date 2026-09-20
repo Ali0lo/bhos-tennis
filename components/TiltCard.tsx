@@ -28,5 +28,16 @@ export default function TiltCard({
   const rotateX = useTransform(mouseYSpring, [0, 1], [maxTilt, -maxTilt]);
   const rotateY = useTransform(mouseXSpring, [0, 1], [-maxTilt, maxTilt]);
 
-  return <motion.div style={{ rotateX, rotateY }}>{children}</motion.div>;
+  const glareX = useTransform(mouseXSpring, [0, 1], ['0%', '100%']);
+  const glareY = useTransform(mouseYSpring, [0, 1], ['0%', '100%']);
+
+  return (
+    <motion.div
+      ref={ref}
+      style={{ rotateX, rotateY, transformStyle: 'preserve-3d' }}
+      className={`relative ${className}`}
+    >
+      {children}
+    </motion.div>
+  );
 }
