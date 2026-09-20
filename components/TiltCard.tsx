@@ -22,14 +22,11 @@ export default function TiltCard({
   const x = useMotionValue(0.5);
   const y = useMotionValue(0.5);
 
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!ref.current) return;
-    const rect = ref.current.getBoundingClientRect();
-    const mouseX = (e.clientX - rect.left) / rect.width;
-    const mouseY = (e.clientY - rect.top) / rect.height;
-    x.set(mouseX);
-    y.set(mouseY);
-  };
+  const mouseXSpring = useSpring(x, { stiffness: 220, damping: 20 });
+  const mouseYSpring = useSpring(y, { stiffness: 220, damping: 20 });
 
-  return <div ref={ref} onMouseMove={handleMouseMove}>{children}</div>;
+  const rotateX = useTransform(mouseYSpring, [0, 1], [maxTilt, -maxTilt]);
+  const rotateY = useTransform(mouseXSpring, [0, 1], [-maxTilt, maxTilt]);
+
+  return <motion.div style={{ rotateX, rotateY }}>{children}</motion.div>;
 }
