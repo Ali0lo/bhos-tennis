@@ -192,3 +192,5 @@ export default function HeroHotspotPin({ type, className = '', badgeLabel }: Her
     </div>
   );
 }
+
+// Stacked avatar preview for BHOS community hotspot
