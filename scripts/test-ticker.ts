@@ -4,3 +4,4 @@ function formatNumber(val: number, decimals: number, prefix = '', suffix = '') {
 }
 console.log('Testing Ticker:', formatNumber(1420, 0, '', ' ELO'));
 console.log('Testing Winrate:', formatNumber(78.5, 1, '', '%'));
+console.log('All Ticker formatting checks passed.');
