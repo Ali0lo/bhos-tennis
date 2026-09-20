@@ -14,7 +14,8 @@
     "log_match": "Записать матч",
     "book_table": "Забронировать стол",
     "switch_role": "Сменить пользователя",
-    "join_whatsapp": "WhatsApp"
+    "join_whatsapp": "WhatsApp",
+    "about": "О клубе"
   },
   "roles": {
     "president": "Президент клуба",
