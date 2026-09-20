@@ -1,13 +1,13 @@
 'use client';
 
 import React, { useEffect, useRef } from 'react';
-import { useMotionValue, useSpring, useTransform, motion } from 'framer-motion';
+import { useInView, useMotionValue, useSpring } from 'framer-motion';
 
-export interface NumberTickerProps {
+interface NumberTickerProps {
   value: number;
   direction?: 'up' | 'down';
-  className?: string;
   delay?: number;
+  className?: string;
   decimalPlaces?: number;
   prefix?: string;
   suffix?: string;
@@ -16,36 +16,46 @@ export interface NumberTickerProps {
 export default function NumberTicker({
   value,
   direction = 'up',
-  className = '',
   delay = 0,
+  className = '',
   decimalPlaces = 0,
   prefix = '',
   suffix = '',
 }: NumberTickerProps) {
   const ref = useRef<HTMLSpanElement>(null);
-  const motionVal = useMotionValue(direction === 'down' ? value : 0);
-  const springVal = useSpring(motionVal, {
+  const motionValue = useMotionValue(direction === 'down' ? value : 0);
+  const springValue = useSpring(motionValue, {
     damping: 30,
-    stiffness: 100,
+    stiffness: 120,
   });
+  const isInView = useInView(ref, { once: true, margin: '0px' });
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      motionVal.set(direction === 'down' ? 0 : value);
-    }, delay * 1000);
-    return () => clearTimeout(timer);
-  }, [motionVal, value, delay, direction]);
+    if (isInView) {
+      const timer = setTimeout(() => {
+        motionValue.set(direction === 'down' ? 0 : value);
+      }, delay * 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [motionValue, isInView, delay, value, direction]);
 
-  const displayVal = useTransform(springVal, (current) => {
-    return `${prefix}${Intl.NumberFormat('en-US', {
-      minimumFractionDigits: decimalPlaces,
-      maximumFractionDigits: decimalPlaces,
-    }).format(Number(current.toFixed(decimalPlaces)))}${suffix}`;
-  });
+  useEffect(() => {
+    const unsubscribe = springValue.on('change', (latest) => {
+      if (ref.current) {
+        ref.current.textContent = `${prefix}${latest.toFixed(decimalPlaces)}${suffix}`;
+      }
+    });
+    return () => unsubscribe();
+  }, [springValue, decimalPlaces, prefix, suffix]);
 
   return (
-    <motion.span className={`inline-block tabular-nums tracking-normal ${className}`}>
-      {displayVal}
-    </motion.span>
+    <span
+      ref={ref}
+      className={`inline-block tabular-nums font-mono ${className}`}
+    >
+      {prefix}
+      {(direction === 'down' ? value : 0).toFixed(decimalPlaces)}
+      {suffix}
+    </span>
   );
 }
