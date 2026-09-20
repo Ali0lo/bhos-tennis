@@ -14,7 +14,8 @@
     "log_match": "Log Match",
     "book_table": "Book Table",
     "switch_role": "Switch Active User",
-    "join_whatsapp": "WhatsApp"
+    "join_whatsapp": "WhatsApp",
+    "about": "About"
   },
   "roles": {
     "president": "Club President",
