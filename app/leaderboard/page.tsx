@@ -16,12 +16,16 @@ import {
   ArrowUpDown, 
   ShieldCheck 
 } from 'lucide-react';
+import NumberTicker from '../../components/NumberTicker';
+import FormDots, { MatchFormItem } from '../../components/FormDots';
+import { MatchRecord } from '../../lib/data/types';
 
 export default function LeaderboardPage() {
   const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
 
   const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
+  const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFaculty, setSelectedFaculty] = useState('ALL');
   const [selectedYear, setSelectedYear] = useState('ALL');
@@ -29,10 +33,34 @@ export default function LeaderboardPage() {
   const [sortBy, setSortBy] = useState<'elo' | 'wins' | 'winrate'>('elo');
 
   useEffect(() => {
-    const update = () => setProfiles(store.getProfiles());
+    const update = () => {
+      setProfiles(store.getProfiles());
+      setMatches(store.getMatches());
+    };
     update();
     return store.subscribe(update);
   }, [store]);
+
+  const getPlayerForm = (playerId: string): MatchFormItem[] => {
+    const playerMatches = matches
+      .filter((m) => m.player1_id === playerId || m.player2_id === playerId)
+      .slice(0, 5);
+
+    return playerMatches.map((m) => {
+      const isP1 = m.player1_id === playerId;
+      const won = isP1 ? m.player1_score > m.player2_score : m.player2_score > m.player1_score;
+      const oppName = (isP1 ? m.player2_name : m.player1_name) || 'Opponent';
+      const score = isP1 ? `${m.player1_score}-${m.player2_score}` : `${m.player2_score}-${m.player1_score}`;
+      return {
+        id: m.id,
+        result: won ? 'W' : 'L',
+        opponentName: oppName,
+        score,
+        eloDelta: isP1 ? m.elo_delta : -m.elo_delta,
+        date: new Date(m.match_date).toLocaleDateString(),
+      };
+    });
+  };
 
   const faculties = useMemo(() => {
     const set = new Set<string>();
@@ -297,7 +325,13 @@ export default function LeaderboardPage() {
                             </span>
                           )}
                         </Link>
-                        <div className="md:hidden text-[10px] text-slate-400">
+                        <div className="mt-1 flex items-center gap-2">
+                          <FormDots form={getPlayerForm(player.id)} size="sm" />
+                          <span className="text-[10px] text-slate-500 hidden sm:inline">
+                            (Recent Form)
+                          </span>
+                        </div>
+                        <div className="md:hidden text-[10px] text-slate-400 mt-0.5">
                           {player.major_faculty} • {player.admission_year}
                         </div>
                       </td>
@@ -321,8 +355,8 @@ export default function LeaderboardPage() {
 
                       {/* ELO Rating */}
                       <td className="py-3.5 px-4 text-center font-mono">
-                        <span className="font-extrabold text-sm text-bhos-cyan">
-                          {player.current_elo}
+                        <span className="font-extrabold text-sm text-cyan-400">
+                          <NumberTicker value={player.current_elo} />
                         </span>
                       </td>
 
@@ -349,7 +383,7 @@ export default function LeaderboardPage() {
                               : 'text-amber-400'
                           }`}
                         >
-                          {winRate}%
+                          <NumberTicker value={winRate} suffix="%" />
                         </span>
                       </td>
 
