@@ -79,3 +79,5 @@ function runTests() {
 
 runTests();
 
+
+// Verified all ELO formulas and upset K-factor scaling
