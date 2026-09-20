@@ -319,3 +319,5 @@ export default function Navbar() {
     </>
   );
 }
+
+// Main nav items
