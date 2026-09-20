@@ -564,3 +564,5 @@ export default function HomePage() {
     </div>
   );
 }
+
+// Timetable section
