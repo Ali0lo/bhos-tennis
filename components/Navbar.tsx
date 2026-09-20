@@ -14,3 +14,5 @@ export default function Navbar() {
     </header>
   );
 }
+
+// Pill navbar with glassmorphism
