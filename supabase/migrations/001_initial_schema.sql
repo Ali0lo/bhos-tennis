@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS profiles (
   blade_equipment VARCHAR(100),
   forehand_rubber VARCHAR(100),
   backhand_rubber VARCHAR(100),
-  current_elo INT DEFAULT 0,
+  current_elo INT DEFAULT 1200,
   matches_played INT DEFAULT 0,
   wins INT DEFAULT 0,
   losses INT DEFAULT 0,

@@ -3,12 +3,12 @@
 
 INSERT INTO profiles (id, full_name, email, major_faculty, admission_year, role, playing_style, blade_equipment, forehand_rubber, backhand_rubber, current_elo, matches_played, wins, losses, is_active)
 VALUES
-  ('00000000-0000-0000-0000-000000000002', 'Iftixar Meherremov', 'iftixar.meherremov@bhos.edu.az', 'Sports & Physical Education', 2019, 'coach', 'Shakehand All-round', 'Stiga Clipper Wood', 'Tibhar Evolution MX-P', 'Yasaka Rakza 7', 9999, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000001', 'Ali Iskandarli', 'ali.iskandarli@bhos.edu.az', 'Information Security', 2021, 'president', 'Shakehand Offensive', 'Butterfly Viscaria ALC', 'Dignics 09C', 'Tenergy 05', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000003', 'Ali Abdulov', 'ali.abdulov@bhos.edu.az', 'Petroleum Engineering', 2022, 'player', 'Shakehand Offensive', 'Timo Boll ALC', 'Butterfly Tenergy 05', 'Donic Baracuda', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000004', 'Ali Aghayev', 'ali.aghayev@bhos.edu.az', 'Computer Engineering', 2022, 'player', 'Penhold Offensive', 'Yasaka Ma Lin Extra Offensive', 'DHS Hurricane 3 Neo', 'Xiom Vega Pro', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000005', 'Huseyn Muradzade', 'huseyn.muradzade@bhos.edu.az', 'Process Automation', 2023, 'player', 'Shakehand All-round', 'Yasaka Sweden Extra', 'Yasaka Rakza 7', 'Yasaka Rakza 7 Soft', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000006', 'Fateh Memmedli', 'fateh.memmedli@bhos.edu.az', 'Chemical Engineering', 2023, 'player', 'Shakehand Offensive', 'Butterfly Primorac Carbon', 'Rozena', 'Rozena', 0, 0, 0, 0, true)
+  ('00000000-0000-0000-0000-000000000001', 'Ali Iskandarli', 'ali.iskandarli@bhos.edu.az', 'Information Security', 2021, 'president', 'Shakehand Offensive', 'Butterfly Viscaria ALC', 'Dignics 09C', 'Tenergy 05', 1650, 32, 27, 5, true),
+  ('00000000-0000-0000-0000-000000000002', 'Iftixar Meherremov', 'iftixar.meherremov@bhos.edu.az', 'Sports & Physical Education', 2019, 'coach', 'Shakehand All-round', 'Stiga Clipper Wood', 'Tibhar Evolution MX-P', 'Yasaka Rakza 7', 1610, 40, 33, 7, true),
+  ('00000000-0000-0000-0000-000000000003', 'Ali Abdulov', 'ali.abdulov@bhos.edu.az', 'Petroleum Engineering', 2022, 'player', 'Shakehand Offensive', 'Timo Boll ALC', 'Butterfly Tenergy 05', 'Donic Baracuda', 1530, 24, 18, 6, true),
+  ('00000000-0000-0000-0000-000000000004', 'Ali Aghayev', 'ali.aghayev@bhos.edu.az', 'Computer Engineering', 2022, 'player', 'Penhold Offensive', 'Yasaka Ma Lin Extra Offensive', 'DHS Hurricane 3 Neo', 'Xiom Vega Pro', 1485, 21, 15, 6, true),
+  ('00000000-0000-0000-0000-000000000005', 'Huseyn Muradzade', 'huseyn.muradzade@bhos.edu.az', 'Process Automation', 2023, 'player', 'Shakehand All-round', 'Yasaka Sweden Extra', 'Yasaka Rakza 7', 'Yasaka Rakza 7 Soft', 1420, 18, 11, 7, true),
+  ('00000000-0000-0000-0000-000000000006', 'Fateh Memmedli', 'fateh.memmedli@bhos.edu.az', 'Chemical Engineering', 2023, 'player', 'Shakehand Offensive', 'Butterfly Primorac Carbon', 'Rozena', 'Rozena', 1380, 15, 8, 7, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed Sample Tournaments

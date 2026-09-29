@@ -5,18 +5,16 @@ import Footer from '../components/Footer';
 import { I18nProvider } from '../lib/i18n';
 
 export const metadata: Metadata = {
-  title: 'BHOS Table Tennis Club | Baku Higher Oil School',
+  title: 'BHOS Official Table Tennis Club & Ranking Portal',
   description:
-    'Official table tennis management and ELO ranking portal for Baku Higher Oil School (BHOS) students, coaches, and athletes. Inspired by tabletennis.az.',
+    'A home for every rally. Follow the campus rankings, find your table, and compete with the BHOS community.',
   keywords: [
     'BHOS',
     'Baku Higher Oil School',
     'Table Tennis',
     'BANM',
-    'tabletennis.az',
     'ELO Rating',
     'Tournament Bracket',
-    'Table Reservation',
   ],
 };
 
@@ -26,11 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="az" className="dark">
-      <body className="min-h-screen flex flex-col bg-[#0A192F] text-slate-100 antialiased selection:bg-bhos-cyan selection:text-bhos-navy">
+    <html lang="en" className="dark">
+      <body className="min-h-screen flex flex-col bg-[#0B0E14] text-[#F8FAFC] antialiased selection:bg-[#4E8FF7] selection:text-[#081226]">
         <I18nProvider>
           <Navbar />
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="flex-1 w-full max-w-[1060px] mx-auto px-4 sm:px-6 py-6 sm:py-10">
             {children}
           </main>
           <Footer />
