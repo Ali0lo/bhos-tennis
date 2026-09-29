@@ -3,14 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation, Locale } from '../lib/i18n';
 import { BHOSDataStore } from '../lib/data/store';
 import { PlayerProfile, UserRole } from '../lib/data/types';
 import { 
-  Trophy, 
-  Table as TableIcon, 
-  Calendar, 
-  History, 
   ShieldCheck, 
   UserCheck, 
   Menu, 
@@ -57,7 +54,9 @@ export default function Navbar() {
     { id: 'p-4', role: 'player' as UserRole, label: `Ali Aghayev (${t('roles.player')})` },
     { id: 'p-5', role: 'player' as UserRole, label: `Huseyn Muradzade (${t('roles.player')})` },
     { id: 'p-6', role: 'player' as UserRole, label: `Fateh Memmedli (${t('roles.player')})` },
-    { id: 'p-7', role: 'player' as UserRole, label: `Ayan Aliyeva (${t('roles.player')})` },
+    { id: 'p-7', role: 'player' as UserRole, label: `Rinad Avazzade (${t('roles.player')})` },
+    { id: 'p-8', role: 'player' as UserRole, label: `Anar Alakbarli (${t('roles.player')})` },
+    { id: 'p-9', role: 'player' as UserRole, label: `Nihat Ismayilzade (${t('roles.player')})` },
   ];
 
   const handleRoleChange = (userId: string) => {
@@ -79,18 +78,27 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Floating Pill Navigation per specification */}
-      <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+      {/* Smooth Spring Floating Pill Navigation */}
+      <motion.header
+        initial={{ y: -32, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+        className="fixed top-6 left-0 right-0 z-50 flex flex-col items-center justify-center px-4 pointer-events-none"
+      >
         <div className="w-full max-w-6xl rounded-full border border-white/10 bg-black/40 backdrop-blur-md px-6 py-3 shadow-2xl shadow-black/80 pointer-events-auto flex items-center justify-between transition-all">
           {/* Brand Crest & Title */}
           <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center p-1 group-hover:scale-105 transition-transform">
+            <motion.div
+              whileHover={{ scale: 1.08, rotate: 4 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 18 }}
+              className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center p-1"
+            >
               <img
                 src="/images/bhos-crest.png"
                 alt="BHOS Crest"
                 className="w-full h-full object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.6)] mix-blend-screen"
               />
-            </div>
+            </motion.div>
             <div>
               <div className="flex items-center gap-1.5">
                 <span className="font-display font-black text-sm sm:text-base text-white group-hover:text-cyan-400 transition-colors tracking-tight">
@@ -106,7 +114,7 @@ export default function Navbar() {
             </div>
           </Link>
 
-          {/* Center Navigation Links (Pill Style) */}
+          {/* Center Navigation Links (Pill Style with Sliding Active Highlight) */}
           <nav className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/5 rounded-full p-1">
             {navLinks.map((link) => {
               const isActive = pathname === link.href;
@@ -114,13 +122,20 @@ export default function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  className={`relative px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
                     isActive
-                      ? 'bg-cyan-400 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                      ? 'text-slate-950 font-bold'
                       : 'text-slate-300 hover:text-white hover:bg-white/10'
                   }`}
                 >
-                  {link.label}
+                  {isActive && (
+                    <motion.span
+                      layoutId="activeNavPill"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                      className="absolute inset-0 rounded-full bg-cyan-400 shadow-md shadow-cyan-500/20 -z-10"
+                    />
+                  )}
+                  <span className="relative z-10">{link.label}</span>
                 </Link>
               );
             })}
@@ -129,26 +144,30 @@ export default function Navbar() {
           {/* Right Action Toolbar: WhatsApp CTA, Minimalist Language Toggle, Role Switcher */}
           <div className="flex items-center gap-2.5">
             {/* Direct WhatsApp Community CTA Button */}
-            <a
+            <motion.a
+              whileHover={{ scale: 1.04 }}
+              whileTap={{ scale: 0.96 }}
               href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold transition active:scale-95 shadow-sm"
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold transition shadow-sm"
               title="Official WhatsApp Community"
             >
               <MessageCircle className="w-3.5 h-3.5 fill-emerald-400" />
               <span className="hidden sm:inline font-bold">WhatsApp</span>
-            </a>
+            </motion.a>
 
             {/* Quick Log Match (Coach / President) */}
             {(currentUser.role === 'coach' || currentUser.role === 'president') && (
-              <button
+              <motion.button
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.96 }}
                 onClick={() => setShowMatchModal(true)}
-                className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-bold hover:bg-cyan-300 shadow-md shadow-cyan-500/20 transition active:scale-95"
+                className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-bold hover:bg-cyan-300 shadow-md shadow-cyan-500/20 transition"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
                 <span>{t('nav.log_match')}</span>
-              </button>
+              </motion.button>
             )}
 
             {/* Minimalist Segmented Language Switcher (AZ | EN | RU) */}
@@ -159,13 +178,20 @@ export default function Navbar() {
                   <button
                     key={loc}
                     onClick={() => setLocale(loc)}
-                    className={`px-2 py-0.5 rounded-full uppercase transition-all ${
+                    className={`relative px-2 py-0.5 rounded-full uppercase transition-all ${
                       isActive
-                        ? 'bg-cyan-400 text-slate-950 shadow-sm font-extrabold'
+                        ? 'text-slate-950 font-extrabold'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
-                    {loc}
+                    {isActive && (
+                      <motion.span
+                        layoutId="activeLocalePill"
+                        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+                        className="absolute inset-0 rounded-full bg-cyan-400 shadow-sm -z-10"
+                      />
+                    )}
+                    <span className="relative z-10">{loc}</span>
                   </button>
                 );
               })}
@@ -185,45 +211,53 @@ export default function Navbar() {
                 </span>
                 <ChevronDown className="w-2.5 h-2.5 opacity-60" />
               </button>
-              {roleDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-white/10 bg-slate-950/95 backdrop-blur-xl p-2 shadow-2xl z-50">
-                  <p className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    {t('nav.switch_role')} (Demo)
-                  </p>
-                  <div className="space-y-1 mt-1">
-                    {roleDemoUsers.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => handleRoleChange(item.id)}
-                        className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between transition ${
-                          currentUser.id === item.id
-                            ? 'bg-white/15 text-white font-bold'
-                            : 'text-slate-300 hover:bg-white/5'
-                        }`}
-                      >
-                        <span className="truncate">{item.label}</span>
-                        <span
-                          className={`text-[9px] px-1.5 py-0.5 rounded-full border uppercase shrink-0 ${getRoleBadgeColor(
-                            item.role
-                          )}`}
+              <AnimatePresence>
+                {roleDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
+                    transition={{ duration: 0.18, ease: 'easeOut' }}
+                    className="absolute right-0 mt-2 w-64 rounded-2xl border border-white/10 bg-slate-950/95 backdrop-blur-xl p-2 shadow-2xl z-50"
+                  >
+                    <p className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                      {t('nav.switch_role')} (Demo)
+                    </p>
+                    <div className="space-y-1 mt-1 max-h-64 overflow-y-auto">
+                      {roleDemoUsers.map((item) => (
+                        <button
+                          key={item.id}
+                          onClick={() => handleRoleChange(item.id)}
+                          className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between transition ${
+                            currentUser.id === item.id
+                              ? 'bg-white/15 text-white font-bold'
+                              : 'text-slate-300 hover:bg-white/5'
+                          }`}
                         >
-                          {item.role}
-                        </span>
-                      </button>
-                    ))}
-                    <div className="mt-2 pt-2 border-t border-white/10 px-2">
-                      <Link
-                        href={`/players/${currentUser.id}`}
-                        onClick={() => setRoleDropdownOpen(false)}
-                        className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
-                      >
-                        <UserCheck className="w-3 h-3" />
-                        {t('profile.details')}
-                      </Link>
+                          <span className="truncate">{item.label}</span>
+                          <span
+                            className={`text-[9px] px-1.5 py-0.5 rounded-full border uppercase shrink-0 ${getRoleBadgeColor(
+                              item.role
+                            )}`}
+                          >
+                            {item.role}
+                          </span>
+                        </button>
+                      ))}
+                      <div className="mt-2 pt-2 border-t border-white/10 px-2">
+                        <Link
+                          href={`/players/${currentUser.id}`}
+                          onClick={() => setRoleDropdownOpen(false)}
+                          className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
+                        >
+                          <UserCheck className="w-3 h-3" />
+                          {t('profile.details')}
+                        </Link>
+                      </div>
                     </div>
-                  </div>
-                </div>
-              )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Mobile Hamburger Menu Button */}
@@ -237,77 +271,85 @@ export default function Navbar() {
         </div>
 
         {/* Mobile Menu Dropdown */}
-        {mobileMenuOpen && (
-          <div className="w-full max-w-sm mx-auto mt-2 rounded-3xl border border-white/10 bg-slate-950/95 backdrop-blur-2xl p-4 shadow-2xl pointer-events-auto space-y-3">
-            <div className="grid grid-cols-3 gap-1">
-              {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
-                <button
-                  key={loc}
-                  onClick={() => setLocale(loc)}
-                  className={`py-1.5 text-xs text-center rounded-xl uppercase font-semibold ${
-                    locale === loc
-                      ? 'bg-cyan-400 text-slate-950 font-bold'
-                      : 'bg-white/5 text-slate-300'
-                  }`}
-                >
-                  {loc}
-                </button>
-              ))}
-            </div>
-
-            <div className="space-y-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-3 py-2 rounded-xl text-xs font-semibold ${
-                    pathname === link.href
-                      ? 'bg-cyan-500/20 text-cyan-300'
-                      : 'text-slate-300 hover:bg-white/5'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-
-            <div className="pt-3 border-t border-white/10">
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-2">
-                {t('nav.switch_role')}:
-              </p>
-              <div className="space-y-1">
-                {roleDemoUsers.map((item) => (
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <motion.div
+              initial={{ opacity: 0, y: -12, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.97 }}
+              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+              className="w-full max-w-sm mx-auto mt-2 rounded-3xl border border-white/10 bg-slate-950/95 backdrop-blur-2xl p-4 shadow-2xl pointer-events-auto space-y-3"
+            >
+              <div className="grid grid-cols-3 gap-1">
+                {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
                   <button
-                    key={item.id}
-                    onClick={() => {
-                      handleRoleChange(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs flex items-center justify-between ${
-                      currentUser.id === item.id
-                        ? 'bg-cyan-500/20 text-cyan-300 font-bold'
-                        : 'text-slate-300 hover:bg-white/5'
+                    key={loc}
+                    onClick={() => setLocale(loc)}
+                    className={`py-1.5 text-xs text-center rounded-xl uppercase font-semibold ${
+                      locale === loc
+                        ? 'bg-cyan-400 text-slate-950 font-bold'
+                        : 'bg-white/5 text-slate-300'
                     }`}
                   >
-                    <span>{item.label}</span>
+                    {loc}
                   </button>
                 ))}
               </div>
-            </div>
 
-            <a
-              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2"
-            >
-              <MessageCircle className="w-4 h-4 fill-slate-950" />
-              <span>{t('hero.join_whatsapp_btn')}</span>
-            </a>
-          </div>
-        )}
-      </header>
+              <div className="space-y-1">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`block px-3 py-2 rounded-xl text-xs font-semibold ${
+                      pathname === link.href
+                        ? 'bg-cyan-500/20 text-cyan-300'
+                        : 'text-slate-300 hover:bg-white/5'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
+              </div>
+
+              <div className="pt-3 border-t border-white/10">
+                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-2">
+                  {t('nav.switch_role')}:
+                </p>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {roleDemoUsers.map((item) => (
+                    <button
+                      key={item.id}
+                      onClick={() => {
+                        handleRoleChange(item.id);
+                        setMobileMenuOpen(false);
+                      }}
+                      className={`w-full text-left px-3 py-1.5 rounded-lg text-xs flex items-center justify-between ${
+                        currentUser.id === item.id
+                          ? 'bg-cyan-500/20 text-cyan-300 font-bold'
+                          : 'text-slate-300 hover:bg-white/5'
+                      }`}
+                    >
+                      <span>{item.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <a
+                href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4 fill-slate-950" />
+                <span>{t('hero.join_whatsapp_btn')}</span>
+              </a>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.header>
 
       {/* Spacing spacer for floating navbar */}
       <div className="h-24" />

@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { BHOSDataStore } from '../../lib/data/store';
 import { PlayerProfile } from '../../lib/data/types';
 import { useTranslation } from '../../lib/i18n';
@@ -18,6 +19,7 @@ import {
 } from 'lucide-react';
 import NumberTicker from '../../components/NumberTicker';
 import FormDots, { MatchFormItem } from '../../components/FormDots';
+import SmoothReveal from '../../components/SmoothReveal';
 import { MatchRecord } from '../../lib/data/types';
 
 export default function LeaderboardPage() {
@@ -142,157 +144,165 @@ export default function LeaderboardPage() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-md overflow-hidden shrink-0">
-            <img src="/images/bhos-logo.png" alt="BHOS Logo" className="w-full h-full object-contain" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <Trophy className="w-6 h-6 text-bhos-gold" />
-              <h1 className="text-2xl md:text-3xl font-display font-black text-white">
-                {t('leaderboard.title')}
-              </h1>
+      <SmoothReveal>
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-md overflow-hidden shrink-0">
+              <img src="/images/bhos-logo.png" alt="BHOS Logo" className="w-full h-full object-contain" />
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              {t('leaderboard.subtitle')}
-            </p>
+            <div>
+              <div className="flex items-center gap-2">
+                <Trophy className="w-6 h-6 text-bhos-gold" />
+                <h1 className="text-2xl md:text-3xl font-display font-black text-white">
+                  {t('leaderboard.title')}
+                </h1>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                {t('leaderboard.subtitle')}
+              </p>
+            </div>
           </div>
-        </div>
 
-        {/* Sort selector */}
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 flex items-center gap-1">
-            <ArrowUpDown className="w-3.5 h-3.5" /> Sort:
-          </span>
-          <div className="bg-bhos-darkCard p-1 rounded-xl border border-bhos-border flex items-center gap-1">
-            <button
-              onClick={() => setSortBy('elo')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                sortBy === 'elo' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              ELO
-            </button>
-            <button
-              onClick={() => setSortBy('winrate')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                sortBy === 'winrate' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              Win Rate %
-            </button>
-            <button
-              onClick={() => setSortBy('wins')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                sortBy === 'wins' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              Wins
-            </button>
+          {/* Sort selector */}
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-400 flex items-center gap-1">
+              <ArrowUpDown className="w-3.5 h-3.5" /> Sort:
+            </span>
+            <div className="bg-bhos-darkCard p-1 rounded-xl border border-bhos-border flex items-center gap-1">
+              <button
+                onClick={() => setSortBy('elo')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  sortBy === 'elo' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                ELO
+              </button>
+              <button
+                onClick={() => setSortBy('winrate')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  sortBy === 'winrate' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                Win Rate %
+              </button>
+              <button
+                onClick={() => setSortBy('wins')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                  sortBy === 'wins' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
+                }`}
+              >
+                Wins
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      </SmoothReveal>
 
       {/* Filter Bar */}
-      <div className="p-4 rounded-2xl border border-bhos-border bg-bhos-midnight/90 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shadow-lg">
-        {/* Search */}
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('leaderboard.search_placeholder')}
-            className="w-full pl-9 pr-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-bhos-cyan"
-          />
-        </div>
+      <SmoothReveal delay={0.08}>
+        <div className="p-4 rounded-2xl border border-bhos-border bg-bhos-midnight/90 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shadow-lg">
+          {/* Search */}
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={t('leaderboard.search_placeholder')}
+              className="w-full pl-9 pr-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-bhos-cyan transition"
+            />
+          </div>
 
-        {/* Faculty */}
-        <div>
-          <select
-            value={selectedFaculty}
-            onChange={(e) => setSelectedFaculty(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan"
-          >
-            <option value="ALL">{t('leaderboard.filter_faculty')}</option>
-            {faculties.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Faculty */}
+          <div>
+            <select
+              value={selectedFaculty}
+              onChange={(e) => setSelectedFaculty(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan transition"
+            >
+              <option value="ALL">{t('leaderboard.filter_faculty')}</option>
+              {faculties.map((f) => (
+                <option key={f} value={f}>
+                  {f}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Year */}
-        <div>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan"
-          >
-            <option value="ALL">{t('leaderboard.filter_year')}</option>
-            {years.map((y) => (
-              <option key={y} value={String(y)}>
-                Class of {y}
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Year */}
+          <div>
+            <select
+              value={selectedYear}
+              onChange={(e) => setSelectedYear(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan transition"
+            >
+              <option value="ALL">{t('leaderboard.filter_year')}</option>
+              {years.map((y) => (
+                <option key={y} value={String(y)}>
+                  Class of {y}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Style */}
-        <div>
-          <select
-            value={selectedStyle}
-            onChange={(e) => setSelectedStyle(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan"
-          >
-            <option value="ALL">{t('leaderboard.filter_style')}</option>
-            {playstyles.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
+          {/* Style */}
+          <div>
+            <select
+              value={selectedStyle}
+              onChange={(e) => setSelectedStyle(e.target.value)}
+              className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan transition"
+            >
+              <option value="ALL">{t('leaderboard.filter_style')}</option>
+              {playstyles.map((s) => (
+                <option key={s} value={s}>
+                  {s}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
-      </div>
+      </SmoothReveal>
 
       {/* Main Leaderboard Table */}
-      <div className="rounded-2xl border border-bhos-border bg-bhos-midnight/90 overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-bhos-border bg-bhos-darkCard/90 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              <tr>
-                <th className="py-3.5 px-4 w-16 text-center">{t('leaderboard.rank')}</th>
-                <th className="py-3.5 px-4">{t('leaderboard.player')}</th>
-                <th className="py-3.5 px-4 hidden md:table-cell">{t('leaderboard.faculty')}</th>
-                <th className="py-3.5 px-4 hidden sm:table-cell">{t('leaderboard.year')}</th>
-                <th className="py-3.5 px-4 hidden lg:table-cell">{t('leaderboard.style')}</th>
-                <th className="py-3.5 px-4 text-center">{t('leaderboard.elo')}</th>
-                <th className="py-3.5 px-4 text-center hidden sm:table-cell">{t('leaderboard.matches')}</th>
-                <th className="py-3.5 px-4 text-center">{t('leaderboard.wins')} / {t('leaderboard.losses')}</th>
-                <th className="py-3.5 px-4 text-center">{t('leaderboard.winrate')}</th>
-                <th className="py-3.5 px-4 w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-bhos-border/60">
-              {filteredProfiles.length === 0 ? (
+      <SmoothReveal delay={0.15}>
+        <div className="rounded-2xl border border-bhos-border bg-bhos-midnight/90 overflow-hidden shadow-2xl">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="border-b border-bhos-border bg-bhos-darkCard/90 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
                 <tr>
-                  <td colSpan={10} className="py-12 text-center text-slate-500">
-                    No players found matching current filters.
-                  </td>
+                  <th className="py-3.5 px-4 w-16 text-center">{t('leaderboard.rank')}</th>
+                  <th className="py-3.5 px-4">{t('leaderboard.player')}</th>
+                  <th className="py-3.5 px-4 hidden md:table-cell">{t('leaderboard.faculty')}</th>
+                  <th className="py-3.5 px-4 hidden sm:table-cell">{t('leaderboard.year')}</th>
+                  <th className="py-3.5 px-4 hidden lg:table-cell">{t('leaderboard.style')}</th>
+                  <th className="py-3.5 px-4 text-center">{t('leaderboard.elo')}</th>
+                  <th className="py-3.5 px-4 text-center hidden sm:table-cell">{t('leaderboard.matches')}</th>
+                  <th className="py-3.5 px-4 text-center">{t('leaderboard.wins')} / {t('leaderboard.losses')}</th>
+                  <th className="py-3.5 px-4 text-center">{t('leaderboard.winrate')}</th>
+                  <th className="py-3.5 px-4 w-10"></th>
                 </tr>
-              ) : (
-                filteredProfiles.map((player, idx) => {
-                  const winRate = Math.round(
-                    (player.wins / (player.matches_played || 1)) * 100
-                  );
+              </thead>
+              <tbody className="divide-y divide-bhos-border/60">
+                {filteredProfiles.length === 0 ? (
+                  <tr>
+                    <td colSpan={10} className="py-12 text-center text-slate-500">
+                      No players found matching current filters.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredProfiles.map((player, idx) => {
+                    const winRate = Math.round(
+                      (player.wins / (player.matches_played || 1)) * 100
+                    );
 
-                  return (
-                    <tr
-                      key={player.id}
-                      className="hover:bg-bhos-darkCard/50 transition-colors group"
-                    >
+                    return (
+                      <motion.tr
+                        key={player.id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.35, delay: idx * 0.04, ease: [0.22, 1, 0.36, 1] }}
+                        className="hover:bg-bhos-darkCard/50 transition-colors group"
+                      >
                       {/* Rank & Trend */}
                       <td className="py-3.5 px-4 text-center">
                         <div className="flex items-center justify-center gap-1.5">
@@ -391,19 +401,20 @@ export default function LeaderboardPage() {
                       <td className="py-3.5 px-4 text-right">
                         <Link
                           href={`/players/${player.id}`}
-                          className="p-1 text-slate-500 hover:text-bhos-cyan transition"
+                          className="p-1 text-slate-500 hover:text-bhos-cyan transition inline-block group-hover:translate-x-0.5"
                         >
                           <ChevronRight className="w-4 h-4" />
                         </Link>
                       </td>
-                    </tr>
+                    </motion.tr>
                   );
                 })
               )}
-            </tbody>
-          </table>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      </SmoothReveal>
     </div>
   );
 }
