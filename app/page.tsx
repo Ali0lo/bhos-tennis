@@ -210,7 +210,7 @@ export default function HomePage() {
               {t('hero.stats_leader')}
             </span>
             <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 flex items-baseline gap-1">
-              <NumberTicker value={top3[0]?.current_elo || 1650} />
+              <NumberTicker value={top3[0]?.current_elo ?? 9999} />
               <span className="text-xs font-sans text-slate-400">ELO</span>
             </div>
           </div>
@@ -311,7 +311,7 @@ export default function HomePage() {
               </div>
               <div className="pt-4 text-center">
                 <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-amber-500/30">
-                  {t('roles.president')} • #1
+                  {t(`roles.${top3[0].role}`)} • #1
                 </div>
                 <Link
                   href={`/players/${top3[0].id}`}
@@ -397,65 +397,77 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-3">
-            {recentMatches.map((m) => {
-              const p1Won = m.player1_score > m.player2_score;
-              return (
-                <div
-                  key={m.id}
-                  className="p-4 rounded-2xl border border-white/10 bg-slate-900/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-700 transition shadow-md"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-slate-950 border border-white/10 font-mono font-black text-lg text-white shadow-inner">
-                      <span>{m.player1_score}</span>
-                      <span className="text-[10px] text-slate-500 -mt-1 font-normal">:</span>
-                      <span>{m.player2_score}</span>
+            {recentMatches.length === 0 ? (
+              <div className="p-8 rounded-2xl border border-white/10 bg-slate-900/60 text-center space-y-2">
+                <Activity className="w-8 h-8 text-slate-500 mx-auto" />
+                <p className="text-sm font-semibold text-slate-300">
+                  No official matches recorded yet
+                </p>
+                <p className="text-xs text-slate-500">
+                  Points will be awarded as official BHOS club matches are logged by the Coach or President.
+                </p>
+              </div>
+            ) : (
+              recentMatches.map((m) => {
+                const p1Won = m.player1_score > m.player2_score;
+                return (
+                  <div
+                    key={m.id}
+                    className="p-4 rounded-2xl border border-white/10 bg-slate-900/80 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-700 transition shadow-md"
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-slate-950 border border-white/10 font-mono font-black text-lg text-white shadow-inner">
+                        <span>{m.player1_score}</span>
+                        <span className="text-[10px] text-slate-500 -mt-1 font-normal">:</span>
+                        <span>{m.player2_score}</span>
+                      </div>
+
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/players/${m.player1_id}`}
+                            className={`text-sm font-semibold hover:text-cyan-400 transition ${
+                              p1Won ? 'text-white font-bold' : 'text-slate-400'
+                            }`}
+                          >
+                            {m.player1_name}
+                          </Link>
+                          {p1Won && <Award className="w-3.5 h-3.5 text-emerald-400" />}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <Link
+                            href={`/players/${m.player2_id}`}
+                            className={`text-sm font-semibold hover:text-cyan-400 transition ${
+                              !p1Won ? 'text-white font-bold' : 'text-slate-400'
+                            }`}
+                          >
+                            {m.player2_name}
+                          </Link>
+                          {!p1Won && <Award className="w-3.5 h-3.5 text-emerald-400" />}
+                        </div>
+
+                        <div className="text-[11px] font-mono text-slate-500">
+                          {t('home_recent.sets_label')}: {m.set_scores}
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="space-y-1">
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/players/${m.player1_id}`}
-                          className={`text-sm font-semibold hover:text-cyan-400 transition ${
-                            p1Won ? 'text-white font-bold' : 'text-slate-400'
-                          }`}
-                        >
-                          {m.player1_name}
-                        </Link>
-                        {p1Won && <Award className="w-3.5 h-3.5 text-emerald-400" />}
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <Link
-                          href={`/players/${m.player2_id}`}
-                          className={`text-sm font-semibold hover:text-cyan-400 transition ${
-                            !p1Won ? 'text-white font-bold' : 'text-slate-400'
-                          }`}
-                        >
-                          {m.player2_name}
-                        </Link>
-                        {!p1Won && <Award className="w-3.5 h-3.5 text-emerald-400" />}
-                      </div>
-
-                      <div className="text-[11px] font-mono text-slate-500">
-                        {t('home_recent.sets_label')}: {m.set_scores}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 pt-2 sm:pt-0 border-white/10">
-                    <EloToastBadge delta={m.elo_delta} size="sm" />
-                    <span className="text-[10px] text-slate-500 mt-1">
-                      {new Date(m.match_date).toLocaleDateString()}
-                    </span>
-                    {m.tournament_title && (
-                      <span className="mt-1 text-[9px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 truncate max-w-[150px]">
-                        {m.tournament_title}
+                    <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 pt-2 sm:pt-0 border-white/10">
+                      <EloToastBadge delta={m.elo_delta} size="sm" />
+                      <span className="text-[10px] text-slate-500 mt-1">
+                        {new Date(m.match_date).toLocaleDateString()}
                       </span>
-                    )}
+                      {m.tournament_title && (
+                        <span className="mt-1 text-[9px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 truncate max-w-[150px]">
+                          {m.tournament_title}
+                        </span>
+                      )}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
+                );
+              })
+            )}
           </div>
         </div>
 
