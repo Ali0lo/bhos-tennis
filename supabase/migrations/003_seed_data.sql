@@ -3,15 +3,15 @@
 
 INSERT INTO profiles (id, full_name, email, major_faculty, admission_year, role, playing_style, blade_equipment, forehand_rubber, backhand_rubber, current_elo, matches_played, wins, losses, is_active)
 VALUES
-  ('00000000-0000-0000-0000-000000000002', 'Iftixar Meherremov', 'iftixar.meherremov@bhos.edu.az', 'Sports & Physical Education', 2019, 'coach', 'Shakehand All-round', 'Stiga Clipper Wood', 'Tibhar Evolution MX-P', 'Yasaka Rakza 7', 9999, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000001', 'Ali Iskandarli', 'ali.iskandarli@bhos.edu.az', 'Information Security', 2021, 'president', 'Shakehand Offensive', 'Butterfly Viscaria ALC', 'Dignics 09C', 'Tenergy 05', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000003', 'Ali Abdulov', 'ali.abdulov@bhos.edu.az', 'Petroleum Engineering', 2022, 'player', 'Shakehand Offensive', 'Timo Boll ALC', 'Butterfly Tenergy 05', 'Donic Baracuda', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000004', 'Ali Aghayev', 'ali.aghayev@bhos.edu.az', 'Computer Engineering', 2022, 'player', 'Penhold Offensive', 'Yasaka Ma Lin Extra Offensive', 'DHS Hurricane 3 Neo', 'Xiom Vega Pro', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000005', 'Huseyn Muradzade', 'huseyn.muradzade@bhos.edu.az', 'Process Automation', 2023, 'player', 'Shakehand All-round', 'Yasaka Sweden Extra', 'Yasaka Rakza 7', 'Yasaka Rakza 7 Soft', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000006', 'Fateh Memmedli', 'fateh.memmedli@bhos.edu.az', 'Chemical Engineering', 2023, 'player', 'Shakehand Offensive', 'Butterfly Primorac Carbon', 'Rozena', 'Rozena', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000007', 'Rinad Avazzade', 'rinad.avazzade@bhos.edu.az', 'Information Security', 2023, 'player', 'Shakehand Offensive', 'Butterfly Timo Boll ALC', 'Butterfly Tenergy 05', 'Donic Baracuda', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000008', 'Anar Alakbarli', 'anar.alakbarli@bhos.edu.az', 'Computer Engineering', 2023, 'player', 'Shakehand All-round', 'Butterfly Innerforce Layer ALC', 'DHS Hurricane 3 Neo', 'Butterfly Rozena', 0, 0, 0, 0, true),
-  ('00000000-0000-0000-0000-000000000009', 'Nihat Ismayilzade', 'nihat.ismayilzade@bhos.edu.az', 'Petroleum Engineering', 2024, 'player', 'Shakehand Offensive', 'Stiga Offensive Classic', 'Yasaka Rakza 7', 'Xiom Vega Europe', 0, 0, 0, 0, true)
+  ('00000000-0000-0000-0000-000000000002', 'Iftixar Meherremov', 'iftixar.meherremov@bhos.edu.az', 'Coach / BHOS', 2019, 'coach', 'Shakehand All-round', 'Donic / Rubbers pending', 'Tibhar Evolution MX-P', 'Yasaka Rakza 7', 9999, 0, 0, 0, true),
+  ('00000000-0000-0000-0000-000000000001', 'Ali Iskandarli', 'ali.iskandarli@bhos.edu.az', 'Information Security', 2021, 'president', 'Shakehand Offensive', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true),
+  ('00000000-0000-0000-0000-000000000003', 'Ali Abdulov', 'ali.abdulov@bhos.edu.az', 'Petroleum Engineering', 2022, 'player', 'Shakehand Offensive', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true),
+  ('00000000-0000-0000-0000-000000000004', 'Ali Aghayev', 'ali.aghayev@bhos.edu.az', 'Computer Engineering', 2022, 'player', 'Penhold Offensive', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true),
+  ('00000000-0000-0000-0000-000000000005', 'Huseyn Muradzade', 'huseyn.muradzade@bhos.edu.az', 'Process Automation', 2023, 'player', 'Shakehand All-round', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true),
+  ('00000000-0000-0000-0000-000000000006', 'Fateh Memmedli', 'fateh.memmedli@bhos.edu.az', 'Chemical Engineering', 2023, 'player', 'Shakehand Offensive', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true),
+  ('00000000-0000-0000-0000-000000000007', 'Rinad Avazzade', 'rinad.avazzade@bhos.edu.az', 'Information Security', 2024, 'player', 'Shakehand Offensive', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true),
+  ('00000000-0000-0000-0000-000000000008', 'Anar Alakbarli', 'anar.alakbarli@bhos.edu.az', 'Computer Engineering', 2024, 'player', 'Shakehand All-round', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true),
+  ('00000000-0000-0000-0000-000000000009', 'Nihat Ismayilzade', 'nihat.ismayilzade@bhos.edu.az', 'Petroleum Engineering', 2024, 'player', 'Shakehand Offensive', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true)
 ON CONFLICT (id) DO NOTHING;
 
 -- Seed Sample Tournaments

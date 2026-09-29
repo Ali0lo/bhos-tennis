@@ -3,29 +3,18 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { useTranslation, Locale } from '../lib/i18n';
 import { BHOSDataStore } from '../lib/data/store';
-import { PlayerProfile, UserRole } from '../lib/data/types';
-import { 
-  ShieldCheck, 
-  UserCheck, 
-  Menu, 
-  X, 
-  PlusCircle, 
-  MessageCircle, 
-  ChevronDown 
-} from 'lucide-react';
+import { PlayerProfile } from '../lib/data/types';
 import MatchLoggerModal from './MatchLoggerModal';
 
 export default function Navbar() {
-  const { t, locale, setLocale } = useTranslation();
+  const { locale, setLocale } = useTranslation();
   const pathname = usePathname();
   const store = BHOSDataStore.getInstance();
 
   const [currentUser, setCurrentUser] = useState<PlayerProfile>(store.getCurrentUser());
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
 
   useEffect(() => {
@@ -37,324 +26,149 @@ export default function Navbar() {
   }, [store]);
 
   const navLinks = [
-    { href: '/leaderboard', label: t('nav.leaderboard') },
-    { href: '/tournaments', label: t('nav.tournaments') },
-    { href: '/tables', label: t('nav.tables') || 'Hall Info' },
-    { href: '/#about', label: t('nav.about') || 'About' },
+    { href: '/#leaderboard', pageHref: '/leaderboard', label: 'Leaderboard' },
+    { href: '/#tournaments', pageHref: '/tournaments', label: 'Tournaments' },
+    { href: '/#tables', pageHref: '/tables', label: 'Hall & Tables' },
+    { href: '/#about', pageHref: '/#about', label: 'About' },
   ];
 
-  if (currentUser.role === 'president') {
-    navLinks.push({ href: '/admin', label: t('nav.admin') });
-  }
+  const renderBrand = () => (
+    <Link href="/" className="inline-flex items-center gap-2.5 group shrink-0">
+      <div className="w-8 h-8 rounded-full bg-[#111927] border border-white/10 flex items-center justify-center p-1 group-hover:scale-105 transition-transform">
+        <img
+          src="/images/bhos-crest.png"
+          alt="BHOS Crest"
+          className="w-full h-full object-contain filter drop-shadow-[0_0_4px_rgba(59,130,246,0.5)] mix-blend-screen"
+        />
+      </div>
+      <div className="text-left">
+        <div className="font-display font-extrabold text-xs text-white tracking-wider uppercase leading-none">
+          BHOS / TT
+        </div>
+        <div className="text-[8px] font-bold tracking-[0.18em] text-slate-500 uppercase mt-1 leading-none">
+          TABLE TENNIS CLUB
+        </div>
+      </div>
+    </Link>
+  );
 
-  const roleDemoUsers = [
-    { id: 'p-1', role: 'president' as UserRole, label: `Ali Iskandarli (${t('roles.president')})` },
-    { id: 'p-2', role: 'coach' as UserRole, label: `Iftixar Meherremov (${t('roles.coach')})` },
-    { id: 'p-3', role: 'player' as UserRole, label: `Ali Abdulov (${t('roles.player')})` },
-    { id: 'p-4', role: 'player' as UserRole, label: `Ali Aghayev (${t('roles.player')})` },
-    { id: 'p-5', role: 'player' as UserRole, label: `Huseyn Muradzade (${t('roles.player')})` },
-    { id: 'p-6', role: 'player' as UserRole, label: `Fateh Memmedli (${t('roles.player')})` },
-    { id: 'p-7', role: 'player' as UserRole, label: `Rinad Avazzade (${t('roles.player')})` },
-    { id: 'p-8', role: 'player' as UserRole, label: `Anar Alakbarli (${t('roles.player')})` },
-    { id: 'p-9', role: 'player' as UserRole, label: `Nihat Ismayilzade (${t('roles.player')})` },
-  ];
+  const renderLangSwitcher = () => (
+    <div className="inline-flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-slate-500">
+      {(['az', 'en', 'ru'] as Locale[]).map((loc, idx) => {
+        const isActive = locale === loc;
+        return (
+          <React.Fragment key={loc}>
+            <button
+              onClick={() => setLocale(loc)}
+              className={`uppercase transition-colors ${
+                isActive ? 'text-white font-extrabold' : 'text-slate-500 hover:text-slate-300'
+              }`}
+            >
+              {loc}
+            </button>
+            {idx < 2 && <span className="text-slate-700">|</span>}
+          </React.Fragment>
+        );
+      })}
+    </div>
+  );
 
-  const handleRoleChange = (userId: string) => {
-    store.setCurrentUser(userId);
-    setRoleDropdownOpen(false);
-  };
-
-  const getRoleBadgeColor = (role: UserRole) => {
-    switch (role) {
-      case 'president':
-        return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
-      case 'coach':
-        return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
-      case 'player':
-      default:
-        return 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40';
-    }
-  };
+  const renderWhatsAppBtn = () => (
+    <a
+      href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+      target="_blank"
+      rel="noopener noreferrer"
+      className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-[#22C55E] hover:bg-[#16A34A] text-slate-950 font-bold text-[11px] tracking-tight transition-all duration-200 hover:scale-[1.02] active:scale-95 shadow-sm"
+    >
+      Join WhatsApp
+    </a>
+  );
 
   return (
     <>
-      {/* Smooth Spring Floating Pill Navigation */}
       <motion.header
-        initial={{ y: -32, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-        className="fixed top-6 left-0 right-0 z-50 flex flex-col items-center justify-center px-4 pointer-events-none"
+        initial={{ opacity: 0, y: -12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+        className="w-full max-w-5xl mx-auto px-5 sm:px-8 pt-5"
       >
-        <div className="w-full max-w-6xl rounded-full border border-white/10 bg-black/40 backdrop-blur-md px-6 py-3 shadow-2xl shadow-black/80 pointer-events-auto flex items-center justify-between transition-all">
-          {/* Brand Crest & Title */}
-          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            <motion.div
-              whileHover={{ scale: 1.08, rotate: 4 }}
-              transition={{ type: 'spring', stiffness: 300, damping: 18 }}
-              className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center p-1"
-            >
-              <img
-                src="/images/bhos-crest.png"
-                alt="BHOS Crest"
-                className="w-full h-full object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.6)] mix-blend-screen"
-              />
-            </motion.div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-display font-black text-sm sm:text-base text-white group-hover:text-cyan-400 transition-colors tracking-tight">
-                  BHOS TT
-                </span>
-                <span className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-bold uppercase rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                  CLUB
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-400 hidden sm:block leading-none">
-                Baku Higher Oil School
-              </p>
-            </div>
-          </Link>
+        <div className="rounded-2xl bg-[#0C121E] border border-white/[0.07] px-5 py-4 shadow-xl">
+          {/* Desktop Layout (lg and up): Single Row */}
+          <div className="hidden lg:flex items-center justify-between gap-6">
+            {renderBrand()}
 
-          {/* Center Navigation Links (Pill Style with Sliding Active Highlight) */}
-          <nav className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/5 rounded-full p-1">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`relative px-4 py-1.5 rounded-full text-xs font-semibold transition-colors ${
-                    isActive
-                      ? 'text-slate-950 font-bold'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {isActive && (
-                    <motion.span
-                      layoutId="activeNavPill"
-                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                      className="absolute inset-0 rounded-full bg-cyan-400 shadow-md shadow-cyan-500/20 -z-10"
-                    />
-                  )}
-                  <span className="relative z-10">{link.label}</span>
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Right Action Toolbar: WhatsApp CTA, Minimalist Language Toggle, Role Switcher */}
-          <div className="flex items-center gap-2.5">
-            {/* Direct WhatsApp Community CTA Button */}
-            <motion.a
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold transition shadow-sm"
-              title="Official WhatsApp Community"
-            >
-              <MessageCircle className="w-3.5 h-3.5 fill-emerald-400" />
-              <span className="hidden sm:inline font-bold">WhatsApp</span>
-            </motion.a>
-
-            {/* Quick Log Match (Coach / President) */}
-            {(currentUser.role === 'coach' || currentUser.role === 'president') && (
-              <motion.button
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.96 }}
-                onClick={() => setShowMatchModal(true)}
-                className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-bold hover:bg-cyan-300 shadow-md shadow-cyan-500/20 transition"
-              >
-                <PlusCircle className="w-3.5 h-3.5" />
-                <span>{t('nav.log_match')}</span>
-              </motion.button>
-            )}
-
-            {/* Minimalist Segmented Language Switcher (AZ | EN | RU) */}
-            <div className="inline-flex items-center rounded-full bg-white/5 border border-white/10 p-0.5 text-[11px] font-bold">
-              {(['az', 'en', 'ru'] as Locale[]).map((loc) => {
-                const isActive = locale === loc;
+            <nav className="flex items-center gap-6">
+              {navLinks.map((link) => {
+                const targetHref = pathname === '/' ? link.href : link.pageHref;
+                const isActive = pathname === link.pageHref;
                 return (
-                  <button
-                    key={loc}
-                    onClick={() => setLocale(loc)}
-                    className={`relative px-2 py-0.5 rounded-full uppercase transition-all ${
-                      isActive
-                        ? 'text-slate-950 font-extrabold'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    {isActive && (
-                      <motion.span
-                        layoutId="activeLocalePill"
-                        transition={{ type: 'spring', stiffness: 400, damping: 28 }}
-                        className="absolute inset-0 rounded-full bg-cyan-400 shadow-sm -z-10"
-                      />
-                    )}
-                    <span className="relative z-10">{loc}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Role Switcher Demo Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition ${getRoleBadgeColor(
-                  currentUser.role
-                )}`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span className="font-semibold max-w-[80px] sm:max-w-none truncate">
-                  {currentUser.full_name.split(' ')[0]}
-                </span>
-                <ChevronDown className="w-2.5 h-2.5 opacity-60" />
-              </button>
-              <AnimatePresence>
-                {roleDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 8, scale: 0.96 }}
-                    animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: 6, scale: 0.96 }}
-                    transition={{ duration: 0.18, ease: 'easeOut' }}
-                    className="absolute right-0 mt-2 w-64 rounded-2xl border border-white/10 bg-slate-950/95 backdrop-blur-xl p-2 shadow-2xl z-50"
-                  >
-                    <p className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                      {t('nav.switch_role')} (Demo)
-                    </p>
-                    <div className="space-y-1 mt-1 max-h-64 overflow-y-auto">
-                      {roleDemoUsers.map((item) => (
-                        <button
-                          key={item.id}
-                          onClick={() => handleRoleChange(item.id)}
-                          className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between transition ${
-                            currentUser.id === item.id
-                              ? 'bg-white/15 text-white font-bold'
-                              : 'text-slate-300 hover:bg-white/5'
-                          }`}
-                        >
-                          <span className="truncate">{item.label}</span>
-                          <span
-                            className={`text-[9px] px-1.5 py-0.5 rounded-full border uppercase shrink-0 ${getRoleBadgeColor(
-                              item.role
-                            )}`}
-                          >
-                            {item.role}
-                          </span>
-                        </button>
-                      ))}
-                      <div className="mt-2 pt-2 border-t border-white/10 px-2">
-                        <Link
-                          href={`/players/${currentUser.id}`}
-                          onClick={() => setRoleDropdownOpen(false)}
-                          className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
-                        >
-                          <UserCheck className="w-3 h-3" />
-                          {t('profile.details')}
-                        </Link>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Mobile Hamburger Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white"
-            >
-              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu Dropdown */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <motion.div
-              initial={{ opacity: 0, y: -12, scale: 0.97 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: -10, scale: 0.97 }}
-              transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-              className="w-full max-w-sm mx-auto mt-2 rounded-3xl border border-white/10 bg-slate-950/95 backdrop-blur-2xl p-4 shadow-2xl pointer-events-auto space-y-3"
-            >
-              <div className="grid grid-cols-3 gap-1">
-                {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
-                  <button
-                    key={loc}
-                    onClick={() => setLocale(loc)}
-                    className={`py-1.5 text-xs text-center rounded-xl uppercase font-semibold ${
-                      locale === loc
-                        ? 'bg-cyan-400 text-slate-950 font-bold'
-                        : 'bg-white/5 text-slate-300'
-                    }`}
-                  >
-                    {loc}
-                  </button>
-                ))}
-              </div>
-
-              <div className="space-y-1">
-                {navLinks.map((link) => (
                   <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-3 py-2 rounded-xl text-xs font-semibold ${
-                      pathname === link.href
-                        ? 'bg-cyan-500/20 text-cyan-300'
-                        : 'text-slate-300 hover:bg-white/5'
+                    key={link.label}
+                    href={targetHref}
+                    className={`text-xs font-medium transition-colors ${
+                      isActive ? 'text-white font-semibold' : 'text-slate-400 hover:text-white'
                     }`}
                   >
                     {link.label}
                   </Link>
-                ))}
-              </div>
+                );
+              })}
+            </nav>
 
-              <div className="pt-3 border-t border-white/10">
-                <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-2">
-                  {t('nav.switch_role')}:
-                </p>
-                <div className="space-y-1 max-h-48 overflow-y-auto">
-                  {roleDemoUsers.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => {
-                        handleRoleChange(item.id);
-                        setMobileMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-3 py-1.5 rounded-lg text-xs flex items-center justify-between ${
-                        currentUser.id === item.id
-                          ? 'bg-cyan-500/20 text-cyan-300 font-bold'
-                          : 'text-slate-300 hover:bg-white/5'
-                      }`}
+            <div className="flex items-center gap-4">
+              {renderLangSwitcher()}
+              {renderWhatsAppBtn()}
+            </div>
+          </div>
+
+          {/* Tablet Layout (md to lg): Centered Brand top row, Links + Actions second row */}
+          <div className="hidden md:flex lg:hidden flex-col items-center gap-3.5">
+            <div className="flex justify-center">{renderBrand()}</div>
+            <div className="w-full flex items-center justify-between gap-4 pt-1">
+              <nav className="flex items-center gap-5">
+                {navLinks.map((link) => {
+                  const targetHref = pathname === '/' ? link.href : link.pageHref;
+                  return (
+                    <Link
+                      key={link.label}
+                      href={targetHref}
+                      className="text-xs font-medium text-slate-400 hover:text-white transition-colors"
                     >
-                      <span>{item.label}</span>
-                    </button>
-                  ))}
-                </div>
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+              <div className="flex items-center gap-4">
+                {renderLangSwitcher()}
+                {renderWhatsAppBtn()}
               </div>
+            </div>
+          </div>
 
-              <a
-                href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2"
-              >
-                <MessageCircle className="w-4 h-4 fill-slate-950" />
-                <span>{t('hero.join_whatsapp_btn')}</span>
-              </a>
-            </motion.div>
-          )}
-        </AnimatePresence>
+          {/* Phone Layout (below md): Left-aligned vertical stack matching screenshot */}
+          <div className="flex md:hidden flex-col items-start gap-3.5">
+            {renderBrand()}
+            <nav className="flex flex-col items-start gap-2 pt-1">
+              {navLinks.map((link) => {
+                const targetHref = pathname === '/' ? link.href : link.pageHref;
+                return (
+                  <Link
+                    key={link.label}
+                    href={targetHref}
+                    className="text-xs font-medium text-slate-400 hover:text-white transition-colors"
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
+            <div className="pt-0.5">{renderLangSwitcher()}</div>
+            <div className="pt-0.5">{renderWhatsAppBtn()}</div>
+          </div>
+        </div>
       </motion.header>
 
-      {/* Spacing spacer for floating navbar */}
-      <div className="h-24" />
-
-      {/* Match Logger Modal */}
       {showMatchModal && (
         <MatchLoggerModal onClose={() => setShowMatchModal(false)} />
       )}

@@ -27,10 +27,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="az" className="dark">
-      <body className="min-h-screen flex flex-col bg-[#0A192F] text-slate-100 antialiased selection:bg-bhos-cyan selection:text-bhos-navy">
+      <body className="min-h-screen flex flex-col bg-[#080D16] text-slate-100 antialiased selection:bg-[#3B82F6] selection:text-white">
         <I18nProvider>
           <Navbar />
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="flex-1 w-full max-w-5xl mx-auto px-5 sm:px-8 py-6">
             {children}
           </main>
           <Footer />

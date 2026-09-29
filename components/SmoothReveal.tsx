@@ -18,15 +18,20 @@ export default function SmoothReveal({
   className = '',
   duration = 0.65,
 }: SmoothRevealProps) {
-  const offset = 28;
-  const initialX = direction === 'left' ? offset : direction === 'right' ? -offset : 0;
-  const initialY = direction === 'up' ? offset : direction === 'down' ? -offset : 0;
+  const offset = 24;
+  const initialMap = {
+    up: { opacity: 0, y: offset, x: 0 },
+    down: { opacity: 0, y: -offset, x: 0 },
+    left: { opacity: 0, x: offset, y: 0 },
+    right: { opacity: 0, x: -offset, y: 0 },
+    none: { opacity: 0, x: 0, y: 0 },
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, x: initialX, y: initialY }}
+      initial={initialMap[direction]}
       whileInView={{ opacity: 1, x: 0, y: 0 }}
-      viewport={{ once: true, margin: '-50px' }}
+      viewport={{ once: true, margin: '-40px' }}
       transition={{
         duration,
         delay,

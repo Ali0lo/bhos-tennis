@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  --background: #0A192F;
+  --background: #080D16;
   --foreground: #F8FAFC;
 }
 
@@ -27,23 +27,22 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0A192F;
+  background: #080D16;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1E293B;
+  background: #1A2333;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #334155;
+  background: #2A374F;
 }
 
 /* Glassmorphism utility */
 .glass-panel {
-  background: rgba(15, 23, 42, 0.75);
+  background: rgba(15, 22, 35, 0.85);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
-
