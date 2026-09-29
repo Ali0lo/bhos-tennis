@@ -20,16 +20,16 @@ const dictionaries: Record<Locale, any> = {
 };
 
 const I18nContext = createContext<I18nContextType>({
-  locale: 'en',
+  locale: 'az',
   setLocale: () => {},
   t: (key: string) => key,
 });
 
 export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('en');
+  const [locale, setLocaleState] = useState<Locale>('az');
 
   useEffect(() => {
-    const saved = localStorage.getItem('bhos_tt_locale_v2') as Locale;
+    const saved = localStorage.getItem('bhos_tt_locale') as Locale;
     if (saved && (saved === 'az' || saved === 'en' || saved === 'ru')) {
       setLocaleState(saved);
     }
@@ -37,7 +37,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
 
   const setLocale = (newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem('bhos_tt_locale_v2', newLocale);
+    localStorage.setItem('bhos_tt_locale', newLocale);
   };
 
   const t = (path: string, fallback?: string): string => {

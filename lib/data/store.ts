@@ -6,11 +6,11 @@ import { calculateMatchElo, parseSetScores } from '../elo';
 import { advanceBracketWinner, generateSingleEliminationBracket } from '../tournament';
 
 const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v3',
-  MATCHES: 'bhos_tt_matches_v3',
-  TOURNAMENTS: 'bhos_tt_tournaments_v3',
-  RESERVATIONS: 'bhos_tt_reservations_v3',
-  CURRENT_USER_ID: 'bhos_tt_active_user_id_v3',
+  PROFILES: 'bhos_tt_profiles_v2',
+  MATCHES: 'bhos_tt_matches_v2',
+  TOURNAMENTS: 'bhos_tt_tournaments_v2',
+  RESERVATIONS: 'bhos_tt_reservations_v2',
+  CURRENT_USER_ID: 'bhos_tt_active_user_id_v2',
 };
 
 // Safe browser local storage access
