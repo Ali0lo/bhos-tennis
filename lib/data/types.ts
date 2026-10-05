@@ -59,6 +59,7 @@ export interface MatchRecord {
   player1_elo_after: number;
   player2_elo_after: number;
   elo_delta: number; // Positive number (winner gained, loser lost)
+  status?: 'confirmed' | 'pending' | 'rejected' | string;
   match_date: string;
 }
 

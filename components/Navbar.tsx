@@ -136,8 +136,7 @@ export default function Navbar() {
               <span className="hidden sm:inline font-bold">WhatsApp</span>
             </a>
 
-            {/* Quick Log Match (Coach / President) */}
-            {currentUser && (currentUser.role === 'coach' || currentUser.role === 'president') && (
+            {currentUser && currentUser.is_verified !== false && (
               <button
                 onClick={() => setShowMatchModal(true)}
                 className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-bold hover:bg-cyan-300 shadow-md shadow-cyan-500/20 transition active:scale-95"

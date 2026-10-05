@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { BHOSDataStore } from '../../lib/data/store';
 import { MatchRecord, PlayerProfile } from '../../lib/data/types';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
+import PendingApprovals from '../../components/PendingApprovals';
 import { 
   Activity, 
   PlusCircle, 
@@ -27,17 +28,17 @@ export default function MatchesPage() {
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'TOURNAMENT' | 'RANKED'>('ALL');
-
-  useEffect(() => {
-    const update = () => {
-      setMatches(store.getMatches());
-      setCurrentUser(store.getCurrentUser());
-    };
-    update();
-    return store.subscribe(update);
+  const updateData = useCallback(() => {
+    setMatches(store.getMatches());
+    setCurrentUser(store.getCurrentUser());
   }, [store]);
 
-  const canLog = currentUser?.role === 'coach' || currentUser?.role === 'president';
+  useEffect(() => {
+    updateData();
+    return store.subscribe(updateData);
+  }, [updateData]);
+
+  const canLog = !!currentUser && currentUser.is_verified !== false;
 
   const filteredMatches = useMemo(() => {
     return matches.filter((m) => {
@@ -81,6 +82,8 @@ export default function MatchesPage() {
           </button>
         )}
       </div>
+
+      <PendingApprovals onMatchUpdated={updateData} />
 
       {/* Filter & Search Bar */}
       <div className="p-4 rounded-2xl border border-bhos-border bg-bhos-midnight/90 flex flex-col sm:flex-row items-center justify-between gap-3 shadow-lg">

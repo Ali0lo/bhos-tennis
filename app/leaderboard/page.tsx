@@ -91,7 +91,8 @@ export default function LeaderboardPage() {
       .filter((p) => {
         const matchesSearch =
           p.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.major_faculty.toLowerCase().includes(searchQuery.toLowerCase());
+          p.major_faculty.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          p.blade_equipment?.toLowerCase().includes(searchQuery.toLowerCase());
         const matchesFaculty = selectedFaculty === 'ALL' || p.major_faculty === selectedFaculty;
         const matchesYear = selectedYear === 'ALL' || String(p.admission_year) === selectedYear;
         const matchesStyle = selectedStyle === 'ALL' || p.playing_style === selectedStyle;
@@ -260,11 +261,12 @@ export default function LeaderboardPage() {
       <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-4 sm:p-6 shadow-2xl space-y-3">
         {/* Header Grid */}
         <div className="hidden md:grid grid-cols-12 gap-3 sm:gap-4 px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 bg-[#131C2B]/50 rounded-xl">
-          <div className="col-span-1 text-center">Rank</div>
-          <div className="col-span-4">Player</div>
-          <div className="col-span-3">Faculty / Major</div>
-          <div className="col-span-2 text-center">Matches</div>
-          <div className="col-span-2 text-right pr-2">Points</div>
+          <div className="col-span-2 sm:col-span-1 text-center">Rank</div>
+          <div className="col-span-6 sm:col-span-4 md:col-span-3">Player</div>
+          <div className="hidden md:block md:col-span-3 lg:col-span-2">Faculty</div>
+          <div className="hidden lg:block lg:col-span-2">Equipment</div>
+          <div className="hidden md:block md:col-span-2 text-center">Matches</div>
+          <div className="col-span-4 sm:col-span-7 md:col-span-3 lg:col-span-2 text-right pr-2">Points</div>
         </div>
 
         {/* Player Rows */}
@@ -299,7 +301,7 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* Name & Role */}
-                    <div className="col-span-6 sm:col-span-5 md:col-span-4 min-w-0">
+                    <div className="col-span-6 sm:col-span-4 md:col-span-3 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-white group-hover:text-[#3B82F6] transition truncate text-xs sm:text-sm">
                           {player.full_name}
@@ -324,17 +326,27 @@ export default function LeaderboardPage() {
                       </div>
 
                       <div className="md:hidden text-[10px] text-slate-400 mt-1 truncate">
-                        {player.major_faculty} • Class of {player.admission_year}
+                        {player.major_faculty} {player.blade_equipment ? `• ${player.blade_equipment}` : ''}
                       </div>
                     </div>
 
                     {/* Faculty */}
-                    <div className="hidden md:block md:col-span-3 min-w-0">
+                    <div className="hidden md:block md:col-span-3 lg:col-span-2 min-w-0">
                       <div className="text-xs text-slate-200 font-medium truncate">
                         {player.major_faculty || 'Faculty of Engineering'}
                       </div>
                       <div className="text-[11px] text-slate-500 font-mono">
                         Class of {player.admission_year || 2024}
+                      </div>
+                    </div>
+
+                    {/* Equipment */}
+                    <div className="hidden lg:block lg:col-span-2 min-w-0">
+                      <div className="text-xs text-slate-300 truncate font-medium">
+                        {player.blade_equipment || player.playing_style || 'ITTF Spec Blade'}
+                      </div>
+                      <div className="text-[11px] text-slate-500 truncate">
+                        {player.forehand_rubber ? `FH: ${player.forehand_rubber}` : 'Standard Rubber'}
                       </div>
                     </div>
 
@@ -351,7 +363,7 @@ export default function LeaderboardPage() {
                     </div>
 
                     {/* Points (ELO) & Chevron */}
-                    <div className="col-span-4 sm:col-span-6 md:col-span-2 flex items-center justify-end gap-2.5 text-right">
+                    <div className="col-span-4 sm:col-span-7 md:col-span-3 lg:col-span-2 flex items-center justify-end gap-2.5 text-right">
                       <div>
                         <div className="font-mono font-black text-sm sm:text-base text-cyan-400 group-hover:text-blue-400 transition">
                           <NumberTicker value={player.current_elo} />

@@ -333,8 +333,8 @@ export default function HomePage() {
                   <FormDots form={getPlayerForm(top3[0].id)} size="sm" />
                 </div>
                 <div className="mt-2 text-[11px] text-slate-400 flex justify-between">
-                  <span>{t('home_podium.matches_label')}: {top3[0].matches_played}</span>
-                  <span>Class of {top3[0].admission_year}</span>
+                  <span>{top3[0].blade_equipment.split(' ')[0]}</span>
+                  <span>{top3[0].admission_year}</span>
                 </div>
               </div>
             </TiltCard>
