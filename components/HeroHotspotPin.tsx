@@ -35,7 +35,7 @@ export default function HeroHotspotPin({ type, className = '', badgeLabel }: Her
       label: badgeLabel || 'Hall & Tables',
       title: 'BHOS Sports Hall',
       subtitle: '4 Competition Tables',
-      description: 'BHOS Sports Hall — 4 Tables (Table 1: Women / Girls Dedicated, Tables 2–4: Men / Boys).',
+      description: 'BHOS Sports Hall — 4 Tables (Table 1: Girls Dedicated, Tables 2–4: Boys).',
       link: '/tables',
       linkText: 'View Hall Guide',
     },
@@ -72,7 +72,6 @@ export default function HeroHotspotPin({ type, className = '', badgeLabel }: Her
 
   return (
     <div className={`relative ${className}`}>
-      {/* Radar Pulse Trigger Button */}
       <motion.button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -82,21 +81,17 @@ export default function HeroHotspotPin({ type, className = '', badgeLabel }: Her
         className="group relative flex items-center justify-center cursor-pointer focus:outline-none"
         aria-label={config.label}
       >
-        {/* Radar ping rings */}
         <span className={`animate-ping absolute inline-flex h-7 w-7 rounded-full ${config.pingColor} opacity-75`} />
         
-        {/* Center glowing core pin */}
         <span className={`relative inline-flex rounded-full h-6 w-6 ${config.bgColor} text-slate-950 items-center justify-center border-2 border-white shadow-lg ${config.shadowColor} transition-transform`}>
           <Icon className="w-3 h-3 fill-current" />
         </span>
 
-        {/* Minimal pill label */}
         <span className="hidden md:inline-block ml-2 px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-md border border-white/15 text-[11px] font-bold text-white shadow-lg group-hover:border-cyan-400/40 transition">
           {config.label}
         </span>
       </motion.button>
 
-      {/* Frosted Glass Tool-Card */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -107,7 +102,6 @@ export default function HeroHotspotPin({ type, className = '', badgeLabel }: Her
             onMouseLeave={() => setIsOpen(false)}
             className="absolute bottom-10 left-0 sm:-left-6 w-72 sm:w-80 rounded-3xl border border-white/15 bg-slate-950/85 backdrop-blur-2xl p-5 shadow-2xl z-50 text-xs space-y-3"
           >
-            {/* Header */}
             <div className="flex items-center justify-between pb-2 border-b border-white/10">
               <div className="flex items-center gap-2">
                 <span className={`w-6 h-6 rounded-lg ${config.bgColor} text-slate-950 flex items-center justify-center font-bold`}>
@@ -134,12 +128,10 @@ export default function HeroHotspotPin({ type, className = '', badgeLabel }: Her
               </button>
             </div>
 
-            {/* Description */}
             <p className="text-slate-300 leading-relaxed text-[11px]">
               {config.description}
             </p>
 
-            {/* Special Section: Stacked Avatars for Community Pin */}
             {type === 'community' && (
               <div className="p-2.5 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
                 <div className="flex items-center -space-x-2">
@@ -166,7 +158,6 @@ export default function HeroHotspotPin({ type, className = '', badgeLabel }: Her
               </div>
             )}
 
-            {/* CTA Link Button */}
             {config.isExternal ? (
               <a
                 href={config.link}
