@@ -342,6 +342,15 @@ export class BHOSDataStore {
     return this.profiles.find((p) => p.id === id);
   }
 
+  public addProfile(profile: PlayerProfile): void {
+    const exists = this.profiles.some((p) => p.id === profile.id);
+    if (!exists) {
+      this.profiles.push(profile);
+      this.recalculateRanks();
+      this.saveLocal();
+    }
+  }
+
   public updateProfile(id: string, updates: Partial<PlayerProfile>): PlayerProfile {
     const index = this.profiles.findIndex((p) => p.id === id);
     if (index === -1) throw new Error(`Profile ${id} not found`);
