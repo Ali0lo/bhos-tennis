@@ -1,283 +1,309 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { getSupabaseClient } from '../../lib/supabase/client';
 import { BHOSDataStore } from '../../lib/data/store';
 import { Tournament, PlayerProfile } from '../../lib/data/types';
-import { useTranslation } from '../../lib/i18n';
+import SmoothReveal from '../../components/SmoothReveal';
 import { 
   Trophy, 
   Plus, 
   Calendar, 
   Users, 
-  CheckCircle2, 
   ArrowRight, 
   X, 
-  ShieldCheck, 
-  FileText 
+  Loader2 
 } from 'lucide-react';
 
 export default function TournamentsPage() {
-  const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
-
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
+  const [loading, setLoading] = useState(true);
   const [createModalOpen, setCreateModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Tournament Form state
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [customRules, setCustomRules] = useState(
-    '### Rules & Regulations\n1. Best of 5 sets (Final Best of 7).\n2. ITTF service rules apply.\n3. Rackets must have approved rubbers.'
-  );
-  const [format, setFormat] = useState<Tournament['format']>('single_elimination');
-  const [maxParticipants, setMaxParticipants] = useState<number>(8);
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const loadData = () => {
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user?.email) {
+          const { data: profile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('email', user.email)
+            .single();
+          if (profile) setCurrentUser(profile as PlayerProfile);
+        }
+        const { data, error } = await supabase
+          .from('tournaments')
+          .select('*')
+          .order('start_date', { ascending: false });
+
+        if (!error && data && data.length > 0) {
+          setTournaments(data as Tournament[]);
+          setLoading(false);
+          return;
+        }
+      } catch (err) {
+      }
+    }
+
     setTournaments(store.getTournaments());
     setCurrentUser(store.getCurrentUser());
-  };
+    setLoading(false);
+  }, [store]);
 
   useEffect(() => {
     loadData();
-    const unsub = store.subscribe(loadData);
+    const unsub = store.subscribe(() => {
+      setTournaments(store.getTournaments());
+      setCurrentUser(store.getCurrentUser());
+    });
     return unsub;
-  }, [store]);
+  }, [loadData, store]);
 
-  const handleCreateTournament = (e: React.FormEvent) => {
+  const handleCreateTournament = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim()) {
+      setFormError('Please enter a tournament title');
+      return;
+    }
+
+    setSubmitting(true);
+    setFormError(null);
 
     try {
       const allPlayers = store.getProfiles();
-      const initialParticipantIds = allPlayers.slice(0, maxParticipants).map((p) => p.id);
+      const initialParticipantIds = allPlayers.slice(0, 8).map((p) => p.id);
 
-      store.createTournament({
+      const created = store.createTournament({
         title,
         description,
-        custom_rules: customRules,
-        format,
-        max_participants: maxParticipants,
+        custom_rules: '1. Single Elimination format.\n2. Best of 5 sets.\n3. Official ITTF service and rubber regulations apply.',
+        format: 'single_elimination',
+        max_participants: 8,
         start_date: startDate,
         created_by: currentUser?.id || 'admin',
         participant_ids: initialParticipantIds,
       });
 
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        await supabase.from('tournaments').upsert([created]);
+      }
+
       setCreateModalOpen(false);
       setTitle('');
       setDescription('');
+      await loadData();
     } catch (err: any) {
-      alert(err.message || 'Failed to create tournament');
+      setFormError(err.message || 'Failed to create tournament');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const isPresident = currentUser?.role === 'president';
+  const isAdmin = currentUser?.role === 'president' || currentUser?.role === 'coach';
+
+  const formatStatus = (status?: string) => {
+    if (status === 'ongoing' || status === 'In Progress' || status === 'in_progress') {
+      return { label: 'In Progress', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
+    }
+    if (status === 'completed' || status === 'Completed') {
+      return { label: 'Completed', color: 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30' };
+    }
+    return { label: 'Upcoming', color: 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30' };
+  };
 
   return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <Trophy className="w-6 h-6 text-amber-400" />
-            <h1 className="text-2xl md:text-3xl font-display font-black text-white">
-              {t('tournaments.title')}
-            </h1>
-          </div>
-          <p className="text-xs text-slate-400 mt-1">
-            {t('tournaments.subtitle')}
-          </p>
-        </div>
-
-        {isPresident && (
-          <button
-            onClick={() => setCreateModalOpen(true)}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-bhos-cyan to-bhos-blue text-bhos-navy font-display font-bold text-xs hover:opacity-95 shadow-lg shadow-cyan-500/20 active:scale-95 transition"
-          >
-            <Plus className="w-4 h-4" />
-            <span>{t('tournaments.create_tournament')}</span>
-          </button>
-        )}
-      </div>
-
-      {/* Tournaments Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {tournaments.map((tourn) => {
-          const isOngoing = tourn.status === 'ongoing';
-          const isUpcoming = tourn.status === 'upcoming';
-
-          return (
-            <div
-              key={tourn.id}
-              className="rounded-2xl border border-bhos-border bg-bhos-midnight/90 p-6 shadow-xl flex flex-col justify-between space-y-4 hover:border-slate-700 transition"
-            >
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span
-                    className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase ${
-                      isOngoing
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                        : isUpcoming
-                        ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                        : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40'
-                    }`}
-                  >
-                    {tourn.status}
-                  </span>
-
-                  <span className="text-xs text-slate-400 font-mono flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Max {tourn.max_participants} Players</span>
-                  </span>
-                </div>
-
-                <Link
-                  href={`/tournaments/${tourn.slug}`}
-                  className="block font-display font-black text-xl text-white hover:text-bhos-cyan transition"
-                >
-                  {tourn.title}
-                </Link>
-
-                <p className="text-xs text-slate-400 line-clamp-3 leading-relaxed">
-                  {tourn.description}
-                </p>
+    <div className="space-y-8 max-w-6xl mx-auto pb-16">
+      <SmoothReveal delay={0.05}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-md">
+                <Trophy className="w-5 h-5" />
               </div>
-
-              <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between text-xs">
-                <span className="text-slate-500 font-mono flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {new Date(tourn.start_date).toLocaleDateString()}
-                </span>
-
-                <Link
-                  href={`/tournaments/${tourn.slug}`}
-                  className="px-4 py-2 rounded-xl bg-bhos-darkCard hover:bg-slate-800 border border-bhos-border text-xs font-semibold text-bhos-cyan hover:text-white transition flex items-center gap-1.5"
-                >
-                  <span>{t('tournaments.bracket')}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
+              <h1 className="text-2xl md:text-3xl font-display font-black text-white">
+                Tournament Hub
+              </h1>
             </div>
-          );
-        })}
-      </div>
+            <p className="text-xs text-slate-400 mt-1">
+              Official BHOS Table Tennis Club tournaments, knockout draws, and championship brackets
+            </p>
+          </div>
 
-      {/* President Tournament Creator Modal */}
+          {isAdmin && (
+            <button
+              onClick={() => setCreateModalOpen(true)}
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-display font-bold text-xs shadow-lg shadow-blue-500/20 active:scale-95 transition"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Create Tournament</span>
+            </button>
+          )}
+        </div>
+      </SmoothReveal>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-64 rounded-2xl bg-[#0F1623] border border-white/10 animate-pulse" />
+          ))}
+        </div>
+      ) : tournaments.length === 0 ? (
+        <SmoothReveal delay={0.1}>
+          <div className="p-12 rounded-2xl bg-[#0F1623] border border-white/10 text-center space-y-3">
+            <Trophy className="w-10 h-10 text-slate-600 mx-auto" />
+            <h3 className="text-base font-bold text-white">No Tournaments Scheduled</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Check back soon for upcoming inter-faculty and club championships.
+            </p>
+          </div>
+        </SmoothReveal>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {tournaments.map((t, idx) => {
+            const statusConfig = formatStatus(t.status);
+            const participantCount = t.participants ? t.participants.length : (t.max_participants || 8);
+
+            return (
+              <SmoothReveal key={t.id} delay={0.08 * (idx + 1)}>
+                <Link
+                  href={`/tournaments/${t.slug}`}
+                  className="group block rounded-2xl bg-[#0F1623] border border-white/10 p-6 shadow-xl hover:border-[#3B82F6]/50 hover:shadow-[0_0_25px_rgba(59,130,246,0.15)] transition-all duration-300 relative overflow-hidden flex flex-col justify-between h-full"
+                >
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusConfig.color}`}>
+                        {statusConfig.label}
+                      </span>
+                      <span className="text-[11px] font-mono text-slate-400 flex items-center gap-1.5">
+                        <Users className="w-3.5 h-3.5 text-[#3B82F6]" />
+                        <span>{participantCount} Players</span>
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-display font-bold text-white group-hover:text-[#3B82F6] transition-colors leading-snug">
+                        {t.title}
+                      </h3>
+                      {t.description && (
+                        <p className="text-xs text-slate-400 mt-2 line-clamp-2 leading-relaxed">
+                          {t.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                      <span>{new Date(t.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                    </span>
+
+                    <span className="inline-flex items-center gap-1 text-[#3B82F6] font-bold group-hover:translate-x-1 transition-transform">
+                      <span>View Bracket</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </Link>
+              </SmoothReveal>
+            );
+          })}
+        </div>
+      )}
+
       {createModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="w-full max-w-lg rounded-2xl border border-bhos-border bg-bhos-midnight p-6 shadow-2xl overflow-y-auto max-h-[90vh]">
-            <div className="flex items-center justify-between pb-3 border-b border-bhos-border">
-              <h4 className="font-display font-bold text-white text-base flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-bhos-cyan" />
-                <span>{t('tournaments.create_tournament')}</span>
-              </h4>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+          <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#0F1623] p-6 shadow-2xl space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-white/10">
+              <div className="flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-amber-400" />
+                <h3 className="font-display font-bold text-white text-base">
+                  Create New Tournament
+                </h3>
+              </div>
               <button
+                type="button"
                 onClick={() => setCreateModalOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-white transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateTournament} className="mt-4 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+            {formError && (
+              <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-xs font-medium">
+                {formError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateTournament} className="space-y-4 text-xs">
+              <div className="space-y-1.5">
+                <label className="block font-semibold text-slate-300">
                   Tournament Title
                 </label>
                 <input
                   type="text"
+                  required
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. BHOS Winter Cup 2026"
-                  required
-                  className="w-full px-3 py-2 rounded-lg bg-bhos-darkCard border border-bhos-border text-white focus:outline-none focus:border-bhos-cyan"
+                  placeholder="e.g. BHOS Winter Invitational 2026"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#131C2B] border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-[#3B82F6]"
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+              <div className="space-y-1.5">
+                <label className="block font-semibold text-slate-300">
                   Description
                 </label>
                 <textarea
+                  rows={3}
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  rows={2}
-                  placeholder="Brief summary of the championship..."
-                  className="w-full px-3 py-2 rounded-lg bg-bhos-darkCard border border-bhos-border text-white focus:outline-none focus:border-bhos-cyan"
+                  placeholder="Details, prize, eligible faculties..."
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#131C2B] border border-white/10 text-white placeholder:text-slate-500 focus:outline-none focus:border-[#3B82F6]"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">
-                    Format
-                  </label>
-                  <select
-                    value={format}
-                    onChange={(e) => setFormat(e.target.value as Tournament['format'])}
-                    className="w-full px-3 py-2 rounded-lg bg-bhos-darkCard border border-bhos-border text-white focus:outline-none focus:border-bhos-cyan"
-                  >
-                    <option value="single_elimination">{t('tournaments.format_single')}</option>
-                    <option value="round_robin">{t('tournaments.format_round_robin')}</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">
-                    Max Participants
-                  </label>
-                  <select
-                    value={maxParticipants}
-                    onChange={(e) => setMaxParticipants(parseInt(e.target.value, 10))}
-                    className="w-full px-3 py-2 rounded-lg bg-bhos-darkCard border border-bhos-border text-white focus:outline-none focus:border-bhos-cyan"
-                  >
-                    <option value={4}>4 Players (Semifinals)</option>
-                    <option value={8}>8 Players (Quarterfinals)</option>
-                    <option value={16}>16 Players (Round of 16)</option>
-                  </select>
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-slate-300 mb-1">
+              <div className="space-y-1.5">
+                <label className="block font-semibold text-slate-300">
                   Start Date
                 </label>
                 <input
                   type="date"
+                  required
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg bg-bhos-darkCard border border-bhos-border text-white focus:outline-none focus:border-bhos-cyan"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-[#131C2B] border border-white/10 text-white focus:outline-none focus:border-[#3B82F6]"
                 />
               </div>
 
-              <div>
-                <label className="block font-semibold text-slate-300 mb-1 flex items-center justify-between">
-                  <span>Custom Rules (Markdown)</span>
-                  <span className="text-[10px] text-slate-500">ITTF / President Regulations</span>
-                </label>
-                <textarea
-                  value={customRules}
-                  onChange={(e) => setCustomRules(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 rounded-lg bg-bhos-darkCard border border-bhos-border text-white font-mono text-[11px] focus:outline-none focus:border-bhos-cyan"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
                 <button
                   type="button"
                   onClick={() => setCreateModalOpen(false)}
-                  className="px-4 py-2 rounded-lg text-slate-400 hover:text-white"
+                  className="px-4 py-2 rounded-xl text-slate-400 hover:text-white transition"
                 >
-                  {t('profile.cancel')}
+                  Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-gradient-to-r from-bhos-cyan to-bhos-blue text-bhos-navy font-bold hover:opacity-95 shadow-md shadow-cyan-500/20"
+                  disabled={submitting}
+                  className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-bold transition shadow-lg shadow-blue-500/20 disabled:opacity-50"
                 >
-                  Create & Seed Bracket
+                  {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Generate Tournament & Bracket</span>
                 </button>
               </div>
             </form>
@@ -287,4 +313,3 @@ export default function TournamentsPage() {
     </div>
   );
 }
-
