@@ -4,13 +4,14 @@ import { PlayerProfile, MatchRecord, Tournament, TableReservation, UserRole } fr
 import { INITIAL_PROFILES, INITIAL_MATCHES, INITIAL_TOURNAMENTS, INITIAL_RESERVATIONS } from './mockData';
 import { calculateMatchElo, parseSetScores } from '../elo';
 import { advanceBracketWinner, generateSingleEliminationBracket } from '../tournament';
+import { getSupabaseClient } from '../supabase/client';
 
 const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v2',
-  MATCHES: 'bhos_tt_matches_v2',
-  TOURNAMENTS: 'bhos_tt_tournaments_v2',
-  RESERVATIONS: 'bhos_tt_reservations_v2',
-  CURRENT_USER_ID: 'bhos_tt_active_user_id_v2',
+  PROFILES: 'bhos_tt_profiles_v5',
+  MATCHES: 'bhos_tt_matches_v5',
+  TOURNAMENTS: 'bhos_tt_tournaments_v5',
+  RESERVATIONS: 'bhos_tt_reservations_v5',
+  CURRENT_USER_ID: 'bhos_tt_active_user_id_v5',
 };
 
 // Safe browser local storage access
@@ -40,16 +41,24 @@ export class BHOSDataStore {
   private matches: MatchRecord[] = INITIAL_MATCHES;
   private tournaments: Tournament[] = INITIAL_TOURNAMENTS;
   private reservations: TableReservation[] = INITIAL_RESERVATIONS;
-  private currentUserId: string = 'p-1'; // Default: Elvin (President)
+  private currentUserId: string = 'p-1'; // Default: Ali Iskandarli (President)
+  private isCloudConnected: boolean = false;
+  private realtimeChannel: any = null;
+
+  private listeners: (() => void)[] = [];
 
   private constructor() {
     if (typeof window !== 'undefined') {
+      // 1. Load local fallback / cached data first for instant first-paint
       this.profiles = getStored(STORAGE_KEYS.PROFILES, INITIAL_PROFILES);
       this.matches = getStored(STORAGE_KEYS.MATCHES, INITIAL_MATCHES);
       this.tournaments = getStored(STORAGE_KEYS.TOURNAMENTS, INITIAL_TOURNAMENTS);
       this.reservations = getStored(STORAGE_KEYS.RESERVATIONS, INITIAL_RESERVATIONS);
       this.currentUserId = getStored(STORAGE_KEYS.CURRENT_USER_ID, 'p-1');
       this.recalculateRanks();
+
+      // 2. Initialize Supabase cloud sync & realtime subscription
+      this.initializeCloudSync();
     }
   }
 
@@ -60,7 +69,229 @@ export class BHOSDataStore {
     return BHOSDataStore.instance;
   }
 
-  private save() {
+  /**
+   * Initializes Supabase cloud data fetching and real-time subscription.
+   */
+  private async initializeCloudSync() {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.info('[BHOS Store] Running in client-side LocalStorage mode (Supabase env vars not set).');
+      return;
+    }
+
+    try {
+      this.isCloudConnected = true;
+
+      // Initial cloud pull
+      await Promise.allSettled([
+        this.fetchProfilesFromCloud(),
+        this.fetchMatchesFromCloud(),
+        this.fetchTournamentsFromCloud(),
+        this.fetchReservationsFromCloud(),
+      ]);
+
+      // Setup Realtime Subscription
+      this.setupRealtimeSubscription(supabase);
+    } catch (err) {
+      console.warn('[BHOS Store] Cloud sync initialization error:', err);
+    }
+  }
+
+  /**
+   * Fetches latest profiles from Supabase.
+   */
+  public async fetchProfilesFromCloud(): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('current_elo', { ascending: false });
+
+      if (error) {
+        console.warn('[BHOS Store] Could not fetch profiles from Supabase:', error.message);
+        return;
+      }
+
+      if (data && data.length > 0) {
+        this.profiles = data as PlayerProfile[];
+        this.recalculateRanks();
+        setStored(STORAGE_KEYS.PROFILES, this.profiles);
+        this.notify();
+      }
+    } catch (err) {
+      console.warn('[BHOS Store] Error fetching profiles:', err);
+    }
+  }
+
+  /**
+   * Fetches latest matches from Supabase.
+   */
+  public async fetchMatchesFromCloud(): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('matches')
+        .select('*')
+        .order('match_date', { ascending: false });
+
+      if (error) {
+        console.warn('[BHOS Store] Could not fetch matches from Supabase:', error.message);
+        return;
+      }
+
+      if (data) {
+        this.matches = data as MatchRecord[];
+        setStored(STORAGE_KEYS.MATCHES, this.matches);
+        this.notify();
+      }
+    } catch (err) {
+      console.warn('[BHOS Store] Error fetching matches:', err);
+    }
+  }
+
+  /**
+   * Fetches tournaments from Supabase.
+   */
+  public async fetchTournamentsFromCloud(): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('tournaments')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (!error && data && data.length > 0) {
+        this.tournaments = data as Tournament[];
+        setStored(STORAGE_KEYS.TOURNAMENTS, this.tournaments);
+        this.notify();
+      }
+    } catch (err) {
+      console.warn('[BHOS Store] Error fetching tournaments:', err);
+    }
+  }
+
+  /**
+   * Fetches table reservations from Supabase.
+   */
+  public async fetchReservationsFromCloud(): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('table_reservations')
+        .select('*')
+        .order('slot_date', { ascending: true });
+
+      if (!error && data && data.length > 0) {
+        this.reservations = data as TableReservation[];
+        setStored(STORAGE_KEYS.RESERVATIONS, this.reservations);
+        this.notify();
+      }
+    } catch (err) {
+      console.warn('[BHOS Store] Error fetching reservations:', err);
+    }
+  }
+
+  /**
+   * Connects to Supabase Realtime channel for live updates across all clients.
+   */
+  private setupRealtimeSubscription(supabase: any) {
+    if (this.realtimeChannel) {
+      supabase.removeChannel(this.realtimeChannel);
+    }
+
+    this.realtimeChannel = supabase
+      .channel('bhos-cloud-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'profiles' },
+        (payload: any) => {
+          this.handleRealtimeProfile(payload);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'matches' },
+        (payload: any) => {
+          this.handleRealtimeMatch(payload);
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'tournaments' },
+        (payload: any) => {
+          this.handleRealtimeTournament(payload);
+        }
+      )
+      .subscribe((status: string) => {
+        if (status === 'SUBSCRIBED') {
+          console.info('[BHOS Store] Live Realtime channel subscribed.');
+        }
+      });
+  }
+
+  private handleRealtimeProfile(payload: any) {
+    const { eventType, new: newRecord, old: oldRecord } = payload;
+
+    if (eventType === 'INSERT') {
+      const exists = this.profiles.some((p) => p.id === newRecord.id);
+      if (!exists) {
+        this.profiles.push(newRecord);
+      }
+    } else if (eventType === 'UPDATE') {
+      const idx = this.profiles.findIndex((p) => p.id === newRecord.id);
+      if (idx !== -1) {
+        this.profiles[idx] = { ...this.profiles[idx], ...newRecord };
+      } else {
+        this.profiles.push(newRecord);
+      }
+    } else if (eventType === 'DELETE') {
+      this.profiles = this.profiles.filter((p) => p.id !== oldRecord.id);
+    }
+
+    this.recalculateRanks();
+    setStored(STORAGE_KEYS.PROFILES, this.profiles);
+    this.notify();
+  }
+
+  private handleRealtimeMatch(payload: any) {
+    const { eventType, new: newRecord } = payload;
+
+    if (eventType === 'INSERT') {
+      const exists = this.matches.some((m) => m.id === newRecord.id);
+      if (!exists) {
+        this.matches.unshift(newRecord);
+        setStored(STORAGE_KEYS.MATCHES, this.matches);
+        // Refresh profiles to ensure ELO changes are synced
+        this.fetchProfilesFromCloud();
+        this.notify();
+      }
+    }
+  }
+
+  private handleRealtimeTournament(payload: any) {
+    const { eventType, new: newRecord } = payload;
+    if (eventType === 'INSERT' || eventType === 'UPDATE') {
+      const idx = this.tournaments.findIndex((t) => t.id === newRecord.id);
+      if (idx !== -1) {
+        this.tournaments[idx] = { ...this.tournaments[idx], ...newRecord };
+      } else {
+        this.tournaments.unshift(newRecord);
+      }
+      setStored(STORAGE_KEYS.TOURNAMENTS, this.tournaments);
+      this.notify();
+    }
+  }
+
+  private saveLocal() {
     setStored(STORAGE_KEYS.PROFILES, this.profiles);
     setStored(STORAGE_KEYS.MATCHES, this.matches);
     setStored(STORAGE_KEYS.TOURNAMENTS, this.tournaments);
@@ -68,8 +299,6 @@ export class BHOSDataStore {
     setStored(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
     this.notify();
   }
-
-  private listeners: (() => void)[] = [];
 
   public subscribe(listener: () => void): () => void {
     this.listeners.push(listener);
@@ -92,7 +321,7 @@ export class BHOSDataStore {
   // --- Auth / Active User ---
   public getCurrentUser(): PlayerProfile {
     const user = this.profiles.find((p) => p.id === this.currentUserId);
-    return user || this.profiles[0];
+    return user || this.profiles[0] || INITIAL_PROFILES[0];
   }
 
   public setCurrentUser(userId: string): void {
@@ -116,25 +345,67 @@ export class BHOSDataStore {
   public updateProfile(id: string, updates: Partial<PlayerProfile>): PlayerProfile {
     const index = this.profiles.findIndex((p) => p.id === id);
     if (index === -1) throw new Error(`Profile ${id} not found`);
+
     this.profiles[index] = { ...this.profiles[index], ...updates };
-    this.save();
+    this.saveLocal();
+
+    // Async Supabase Sync
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.warn('[BHOS Store] Supabase updateProfile failed:', error.message);
+        });
+    }
+
     return this.profiles[index];
   }
 
   public overrideElo(id: string, newElo: number, note?: string): PlayerProfile {
     const profile = this.getProfile(id);
     if (!profile) throw new Error(`Profile ${id} not found`);
+
     profile.current_elo = Math.round(newElo);
     this.recalculateRanks();
-    this.save();
+    this.saveLocal();
+
+    // Async Supabase Sync
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('profiles')
+        .update({ current_elo: profile.current_elo })
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.warn('[BHOS Store] Supabase overrideElo failed:', error.message);
+        });
+    }
+
     return profile;
   }
 
   public updateUserRole(id: string, role: UserRole): PlayerProfile {
     const profile = this.getProfile(id);
     if (!profile) throw new Error(`Profile ${id} not found`);
+
     profile.role = role;
-    this.save();
+    this.saveLocal();
+
+    // Async Supabase Sync
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('profiles')
+        .update({ role })
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.warn('[BHOS Store] Supabase updateUserRole failed:', error.message);
+        });
+    }
+
     return profile;
   }
 
@@ -217,7 +488,40 @@ export class BHOSDataStore {
     };
 
     this.matches.unshift(matchRecord);
-    this.save();
+    this.saveLocal();
+
+    // Async Supabase Sync: Insert match and update both player profiles
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      Promise.all([
+        supabase.from('matches').insert([matchRecord]),
+        supabase
+          .from('profiles')
+          .update({
+            current_elo: p1.current_elo,
+            matches_played: p1.matches_played,
+            wins: p1.wins,
+            losses: p1.losses,
+          })
+          .eq('id', p1.id),
+        supabase
+          .from('profiles')
+          .update({
+            current_elo: p2.current_elo,
+            matches_played: p2.matches_played,
+            wins: p2.wins,
+            losses: p2.losses,
+          })
+          .eq('id', p2.id),
+      ]).then((results) => {
+        results.forEach((res, i) => {
+          if (res.error) {
+            console.warn(`[BHOS Store] Supabase match sync step ${i} warning:`, res.error.message);
+          }
+        });
+      });
+    }
+
     return matchRecord;
   }
 
@@ -274,7 +578,18 @@ export class BHOSDataStore {
     };
 
     this.tournaments.push(newTournament);
-    this.save();
+    this.saveLocal();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('tournaments')
+        .insert([newTournament])
+        .then(({ error }) => {
+          if (error) console.warn('[BHOS Store] Supabase createTournament failed:', error.message);
+        });
+    }
+
     return newTournament;
   }
 
@@ -310,7 +625,19 @@ export class BHOSDataStore {
       });
     }
 
-    this.save();
+    this.saveLocal();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('tournaments')
+        .update({ bracket_data: tournament.bracket_data })
+        .eq('id', tournamentId)
+        .then(({ error }) => {
+          if (error) console.warn('[BHOS Store] Supabase updateTournamentBracketMatch failed:', error.message);
+        });
+    }
+
     return tournament;
   }
 
@@ -331,7 +658,6 @@ export class BHOSDataStore {
     purpose: TableReservation['purpose'];
     notes?: string;
   }): TableReservation {
-    // Conflict check
     const existing = this.reservations.find(
       (r) =>
         r.status === 'confirmed' &&
@@ -366,7 +692,18 @@ export class BHOSDataStore {
     };
 
     this.reservations.push(newRes);
-    this.save();
+    this.saveLocal();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('table_reservations')
+        .insert([newRes])
+        .then(({ error }) => {
+          if (error) console.warn('[BHOS Store] Supabase createReservation failed:', error.message);
+        });
+    }
+
     return newRes;
   }
 
@@ -374,7 +711,18 @@ export class BHOSDataStore {
     const res = this.reservations.find((r) => r.id === id);
     if (!res) throw new Error('Reservation not found');
     res.status = 'cancelled';
-    this.save();
+    this.saveLocal();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('table_reservations')
+        .update({ status: 'cancelled' })
+        .eq('id', id)
+        .then(({ error }) => {
+          if (error) console.warn('[BHOS Store] Supabase cancelReservation failed:', error.message);
+        });
+    }
   }
 
   public resetToDefault(): void {
@@ -383,6 +731,6 @@ export class BHOSDataStore {
     this.tournaments = [...INITIAL_TOURNAMENTS];
     this.reservations = [...INITIAL_RESERVATIONS];
     this.currentUserId = 'p-1';
-    this.save();
+    this.saveLocal();
   }
 }
