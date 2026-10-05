@@ -69,6 +69,8 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
+export default middleware;
+
 export const config = {
   matcher: [
     /*
