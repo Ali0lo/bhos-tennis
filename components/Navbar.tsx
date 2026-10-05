@@ -75,56 +75,62 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Floating Pill Navigation per specification */}
       <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div className="w-full max-w-6xl rounded-full border border-white/10 bg-black/40 backdrop-blur-md px-6 py-3 shadow-2xl shadow-black/80 pointer-events-auto flex items-center justify-between transition-all">
-          {/* Brand Crest & Title */}
-          <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-            <div className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center p-1 group-hover:scale-105 transition-transform">
-              <img
-                src="/images/bhos-crest.png"
-                alt="BHOS Crest"
-                className="w-full h-full object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.6)] mix-blend-screen"
-              />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="font-display font-black text-sm sm:text-base text-white group-hover:text-cyan-400 transition-colors tracking-tight">
-                  BHOS TT
-                </span>
-                <span className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-bold uppercase rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                  CLUB
-                </span>
+        <div className="w-full max-w-6xl rounded-full border border-white/10 bg-black/40 backdrop-blur-md px-6 py-3 shadow-2xl shadow-black/80 pointer-events-auto relative flex items-center justify-between transition-all">
+          <div className="flex-1 flex items-center justify-start gap-2">
+            <button
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              className="lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white"
+            >
+              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            </button>
+
+            <nav className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/5 rounded-full p-1">
+              {navLinks.map((link) => {
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                      isActive
+                        ? 'bg-cyan-400 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
+                        : 'text-slate-300 hover:text-white hover:bg-white/10'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
+            </nav>
+          </div>
+
+          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto">
+            <Link href="/" className="flex items-center gap-2.5 group shrink-0">
+              <div className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center p-1 group-hover:scale-105 transition-transform">
+                <img
+                  src="/images/bhos-crest.png"
+                  alt="BHOS Crest"
+                  className="w-full h-full object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.6)] mix-blend-screen"
+                />
               </div>
-              <p className="text-[10px] text-slate-400 hidden sm:block leading-none">
-                Baku Higher Oil School
-              </p>
-            </div>
-          </Link>
+              <div className="text-left">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-display font-black text-sm sm:text-base text-white group-hover:text-cyan-400 transition-colors tracking-tight">
+                    BHOS TT
+                  </span>
+                  <span className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-bold uppercase rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                    CLUB
+                  </span>
+                </div>
+                <p className="text-[10px] text-slate-400 hidden sm:block leading-none">
+                  Baku Higher Oil School
+                </p>
+              </div>
+            </Link>
+          </div>
 
-          {/* Center Navigation Links (Pill Style) */}
-          <nav className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/5 rounded-full p-1">
-            {navLinks.map((link) => {
-              const isActive = pathname === link.href;
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all ${
-                    isActive
-                      ? 'bg-cyan-400 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
-                      : 'text-slate-300 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-          </nav>
-
-          {/* Right Action Toolbar: WhatsApp CTA, Quick Log Match, Language Toggle, Auth / Profile */}
-          <div className="flex items-center gap-2.5">
-            {/* Direct WhatsApp Community CTA Button */}
+          <div className="flex-1 flex items-center justify-end gap-2.5">
             <a
               href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
               target="_blank"
@@ -146,7 +152,6 @@ export default function Navbar() {
               </button>
             )}
 
-            {/* Minimalist Segmented Language Switcher (AZ | EN | RU) */}
             <div className="inline-flex items-center rounded-full bg-white/5 border border-white/10 p-0.5 text-[11px] font-bold">
               {(['az', 'en', 'ru'] as Locale[]).map((loc) => {
                 const isActive = locale === loc;
@@ -166,7 +171,6 @@ export default function Navbar() {
               })}
             </div>
 
-            {/* User Auth Section: Guest 'Sign In' vs Authenticated Profile Dropdown */}
             {currentUser ? (
               <div className="relative">
                 <button
@@ -250,18 +254,9 @@ export default function Navbar() {
                 <span>{t('nav.signin', 'Sign In')}</span>
               </Link>
             )}
-
-            {/* Mobile Hamburger Menu Button */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white"
-            >
-              {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
-            </button>
           </div>
         </div>
 
-        {/* Mobile Menu Dropdown */}
         {mobileMenuOpen && (
           <div className="w-full max-w-sm mx-auto mt-2 rounded-3xl border border-white/10 bg-slate-950/95 backdrop-blur-2xl p-4 shadow-2xl pointer-events-auto space-y-3">
             <div className="grid grid-cols-3 gap-1">
@@ -353,10 +348,8 @@ export default function Navbar() {
         )}
       </header>
 
-      {/* Spacing spacer for floating navbar */}
       <div className="h-24" />
 
-      {/* Match Logger Modal */}
       {showMatchModal && (
         <MatchLoggerModal onClose={() => setShowMatchModal(false)} />
       )}

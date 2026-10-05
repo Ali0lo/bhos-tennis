@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { BHOSDataStore } from '../../lib/data/store';
 import { PlayerProfile, UserRole } from '../../lib/data/types';
 import { useTranslation } from '../../lib/i18n';
+import { getSupabaseClient } from '../../lib/supabase/client';
 import { 
   ShieldCheck, 
   Users, 
@@ -16,7 +17,9 @@ import {
   RotateCcw, 
   Edit3, 
   UserCheck, 
-  Sliders 
+  Sliders,
+  Clock,
+  CheckCircle2
 } from 'lucide-react';
 
 export default function AdminPage() {
@@ -25,20 +28,57 @@ export default function AdminPage() {
 
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
+  const [unverifiedProfiles, setUnverifiedProfiles] = useState<PlayerProfile[]>([]);
   const [matches, setMatches] = useState(store.getMatches());
   const [tournaments, setTournaments] = useState(store.getTournaments());
 
-  // ELO Override Form
   const [targetPlayerId, setTargetPlayerId] = useState<string>('');
   const [newEloInput, setNewEloInput] = useState<string>('');
   const [overrideNote, setOverrideNote] = useState<string>('');
   const [overrideSuccess, setOverrideSuccess] = useState<string | null>(null);
 
-  const loadData = () => {
+  const [pendingEloInputs, setPendingEloInputs] = useState<Record<string, string>>({});
+  const [verifyingId, setVerifyingId] = useState<string | null>(null);
+  const [verificationSuccess, setVerificationSuccess] = useState<string | null>(null);
+
+  const getRecommendedElo = (level?: string): number => {
+    switch (level) {
+      case 'Beginner':
+        return 1000;
+      case 'Intermediate':
+        return 1300;
+      case 'Advanced':
+        return 1600;
+      default:
+        return 1200;
+    }
+  };
+
+  const loadData = async () => {
     setCurrentUser(store.getCurrentUser());
     setProfiles(store.getProfiles());
     setMatches(store.getMatches());
     setTournaments(store.getTournaments());
+
+    const localUnverified = store.getUnverifiedProfiles();
+    setUnverifiedProfiles(localUnverified);
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('is_verified', false)
+          .order('created_at', { ascending: false });
+
+        if (!error && data) {
+          setUnverifiedProfiles(data as PlayerProfile[]);
+        }
+      } catch (err) {
+        console.warn('Pending verification query note:', err);
+      }
+    }
   };
 
   useEffect(() => {
@@ -77,6 +117,41 @@ export default function AdminPage() {
     }
   };
 
+  const handleVerifyPlayer = async (player: PlayerProfile) => {
+    const customElo = pendingEloInputs[player.id];
+    const eloVal = parseInt(customElo || String(getRecommendedElo(player.playing_level)), 10);
+
+    if (isNaN(eloVal) || eloVal < 100 || eloVal > 3000) {
+      alert('Please provide a valid starting ELO between 100 and 3000');
+      return;
+    }
+
+    setVerifyingId(player.id);
+    setVerificationSuccess(null);
+
+    try {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        await supabase
+          .from('profiles')
+          .update({
+            is_verified: true,
+            current_elo: eloVal,
+          })
+          .eq('id', player.id);
+      }
+
+      await store.verifyPlayer(player.id, eloVal);
+      setVerificationSuccess(`Successfully verified ${player.full_name} with initial rating of ${eloVal} ELO.`);
+      setUnverifiedProfiles((prev) => prev.filter((p) => p.id !== player.id));
+      loadData();
+    } catch (err: any) {
+      alert(err?.message || 'Failed to verify member.');
+    } finally {
+      setVerifyingId(null);
+    }
+  };
+
   const handleResetData = () => {
     if (confirm('Reset all club data to default sample fixtures?')) {
       store.resetToDefault();
@@ -105,7 +180,6 @@ export default function AdminPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-md overflow-hidden shrink-0">
@@ -133,7 +207,6 @@ export default function AdminPage() {
         </button>
       </div>
 
-      {/* KPI Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="p-5 rounded-2xl border border-bhos-border bg-bhos-midnight/90 space-y-1 shadow-md">
           <span className="text-[11px] font-semibold text-slate-400 uppercase">
@@ -164,15 +237,108 @@ export default function AdminPage() {
 
         <div className="p-5 rounded-2xl border border-bhos-border bg-bhos-midnight/90 space-y-1 shadow-md">
           <span className="text-[11px] font-semibold text-slate-400 uppercase">
-            Hall Tables Status
+            Pending Verifications
           </span>
-          <div className="text-2xl md:text-3xl font-mono font-bold text-emerald-400">
-            6 / 6 Online
+          <div className={`text-2xl md:text-3xl font-mono font-bold ${unverifiedProfiles.length > 0 ? 'text-amber-400' : 'text-emerald-400'}`}>
+            {unverifiedProfiles.length}
           </div>
         </div>
       </div>
 
-      {/* Manual ELO Override Section */}
+      <div className="rounded-2xl border border-bhos-border bg-bhos-midnight/90 p-6 shadow-xl space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-bhos-border">
+          <div className="flex items-center gap-2">
+            <Clock className="w-5 h-5 text-amber-400" />
+            <h3 className="text-base font-display font-bold text-white">
+              Pending Verifications
+            </h3>
+          </div>
+          {unverifiedProfiles.length > 0 ? (
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse">
+              {unverifiedProfiles.length} Pending
+            </span>
+          ) : (
+            <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
+              Queue Clear
+            </span>
+          )}
+        </div>
+
+        {verificationSuccess && (
+          <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
+            <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400" />
+            <span>{verificationSuccess}</span>
+          </div>
+        )}
+
+        {unverifiedProfiles.length === 0 ? (
+          <div className="py-8 text-center space-y-2">
+            <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center justify-center mx-auto">
+              <Check className="w-5 h-5" />
+            </div>
+            <p className="text-xs font-semibold text-white">All member registrations are verified</p>
+            <p className="text-[11px] text-slate-400">New player registrations through the portal will appear here for initial rating calibration.</p>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-800/80">
+            {unverifiedProfiles.map((p) => {
+              const recElo = getRecommendedElo(p.playing_level);
+              const currentVal = pendingEloInputs[p.id] ?? String(recElo);
+              const isVerifying = verifyingId === p.id;
+
+              return (
+                <div key={p.id} className="py-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-bold text-sm text-white">{p.full_name}</span>
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        {p.playing_level || 'Beginner'}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
+                      <span>{p.email}</span>
+                      <span>•</span>
+                      <span>{p.major_faculty}</span>
+                      <span>•</span>
+                      <span>Admission Year: {p.admission_year}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 shrink-0">
+                    <div className="space-y-1">
+                      <span className="text-[10px] text-slate-400 block font-semibold">
+                        Starting ELO (Rec: {recElo})
+                      </span>
+                      <input
+                        type="number"
+                        min={100}
+                        max={3000}
+                        value={currentVal}
+                        onChange={(e) =>
+                          setPendingEloInputs((prev) => ({
+                            ...prev,
+                            [p.id]: e.target.value,
+                          }))
+                        }
+                        className="w-28 px-3 py-1.5 rounded-lg bg-bhos-darkCard border border-bhos-border text-white text-xs font-mono font-bold focus:outline-none focus:border-bhos-cyan"
+                      />
+                    </div>
+
+                    <button
+                      onClick={() => handleVerifyPlayer(p)}
+                      disabled={isVerifying}
+                      className="mt-4 md:mt-4 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-xs shadow-md shadow-emerald-500/20 transition active:scale-95 disabled:opacity-50"
+                    >
+                      {isVerifying ? 'Verifying...' : 'Verify & Activate'}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
       <div className="rounded-2xl border border-bhos-border bg-bhos-midnight/90 p-6 shadow-xl space-y-4">
         <div className="flex items-center gap-2 pb-3 border-b border-bhos-border">
           <Sliders className="w-5 h-5 text-bhos-cyan" />
@@ -252,7 +418,6 @@ export default function AdminPage() {
         </form>
       </div>
 
-      {/* Member Roster & Role Promotion */}
       <div className="rounded-2xl border border-bhos-border bg-bhos-midnight/90 overflow-hidden shadow-xl p-6 space-y-4">
         <div className="flex items-center justify-between pb-3 border-b border-bhos-border">
           <div className="flex items-center gap-2">
@@ -351,4 +516,3 @@ export default function AdminPage() {
     </div>
   );
 }
-
