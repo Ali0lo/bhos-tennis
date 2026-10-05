@@ -26,7 +26,7 @@ export default function MatchLoggerModal({
   const currentUser = store.getCurrentUser();
   const tournaments = store.getTournaments();
 
-  const [p1Id, setP1Id] = useState<string>(defaultP1Id || (profiles[0]?.id !== currentUser.id ? profiles[0]?.id : profiles[1]?.id));
+  const [p1Id, setP1Id] = useState<string>(defaultP1Id || (profiles[0]?.id !== currentUser?.id ? profiles[0]?.id : profiles[1]?.id));
   const [p2Id, setP2Id] = useState<string>(defaultP2Id || (profiles[1]?.id !== p1Id ? profiles[1]?.id : profiles[2]?.id));
   const [selectedTournament, setSelectedTournament] = useState<string>(tournamentId || '');
   
@@ -86,7 +86,7 @@ export default function MatchLoggerModal({
       store.logMatch({
         player1Id: player1.id,
         player2Id: player2.id,
-        loggedById: currentUser.id,
+        loggedById: currentUser?.id || 'official',
         setScores: setScoresText,
         tournamentId: selectedTournament || undefined,
       });
@@ -118,7 +118,7 @@ export default function MatchLoggerModal({
                 {t('matches.log_match_modal_title')}
               </h3>
               <p className="text-xs text-slate-400">
-                Official BHOS TT Match Logger • Logged by {currentUser.full_name} ({currentUser.role})
+                Official BHOS TT Match Logger • Logged by {currentUser?.full_name || 'Official'} ({currentUser?.role || 'Staff'})
               </p>
             </div>
           </div>

@@ -74,6 +74,11 @@ export default function TableScheduler() {
       return;
     }
 
+    if (!currentUser) {
+      setErrorMsg('Please sign in to reserve a table.');
+      return;
+    }
+
     try {
       store.createReservation({
         table_number: targetTable,
@@ -218,7 +223,7 @@ export default function TableScheduler() {
                   tableResList.map((res) => {
                     const badge = getPurposeBadge(res.purpose);
                     const canCancel =
-                      currentUser.role === 'president' || currentUser.id === res.reserved_by;
+                      !!currentUser && (currentUser.role === 'president' || currentUser.id === res.reserved_by);
 
                     return (
                       <div
@@ -389,10 +394,10 @@ export default function TableScheduler() {
                   className="w-full px-3 py-2 rounded-lg bg-bhos-darkCard border border-bhos-border text-white focus:outline-none focus:border-bhos-cyan"
                 >
                   <option value="free_play">{t('tables.purpose_free')}</option>
-                  {(currentUser.role === 'coach' || currentUser.role === 'president') && (
+                  {(currentUser?.role === 'coach' || currentUser?.role === 'president') && (
                     <option value="coaching">{t('tables.purpose_coaching')}</option>
                   )}
-                  {currentUser.role === 'president' && (
+                  {currentUser?.role === 'president' && (
                     <option value="tournament">{t('tables.purpose_tournament')}</option>
                   )}
                 </select>

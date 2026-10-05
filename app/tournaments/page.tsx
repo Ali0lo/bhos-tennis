@@ -22,7 +22,7 @@ export default function TournamentsPage() {
   const store = BHOSDataStore.getInstance();
 
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [currentUser, setCurrentUser] = useState<PlayerProfile>(store.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [createModalOpen, setCreateModalOpen] = useState(false);
 
   // Tournament Form state
@@ -61,7 +61,7 @@ export default function TournamentsPage() {
         format,
         max_participants: maxParticipants,
         start_date: startDate,
-        created_by: currentUser.id,
+        created_by: currentUser?.id || 'admin',
         participant_ids: initialParticipantIds,
       });
 
@@ -73,7 +73,7 @@ export default function TournamentsPage() {
     }
   };
 
-  const isPresident = currentUser.role === 'president';
+  const isPresident = currentUser?.role === 'president';
 
   return (
     <div className="space-y-8">

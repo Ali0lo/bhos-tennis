@@ -23,7 +23,7 @@ export default function MatchesPage() {
   const store = BHOSDataStore.getInstance();
 
   const [matches, setMatches] = useState<MatchRecord[]>([]);
-  const [currentUser, setCurrentUser] = useState<PlayerProfile>(store.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [showModal, setShowModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'ALL' | 'TOURNAMENT' | 'RANKED'>('ALL');
@@ -37,7 +37,7 @@ export default function MatchesPage() {
     return store.subscribe(update);
   }, [store]);
 
-  const canLog = currentUser.role === 'coach' || currentUser.role === 'president';
+  const canLog = currentUser?.role === 'coach' || currentUser?.role === 'president';
 
   const filteredMatches = useMemo(() => {
     return matches.filter((m) => {

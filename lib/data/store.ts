@@ -41,7 +41,8 @@ export class BHOSDataStore {
   private matches: MatchRecord[] = INITIAL_MATCHES;
   private tournaments: Tournament[] = INITIAL_TOURNAMENTS;
   private reservations: TableReservation[] = INITIAL_RESERVATIONS;
-  private currentUserId: string = 'p-1'; // Default: Ali Iskandarli (President)
+  private currentUserId: string | null = null;
+  private currentUser: PlayerProfile | null = null;
   private isCloudConnected: boolean = false;
   private realtimeChannel: any = null;
 
@@ -54,7 +55,10 @@ export class BHOSDataStore {
       this.matches = getStored(STORAGE_KEYS.MATCHES, INITIAL_MATCHES);
       this.tournaments = getStored(STORAGE_KEYS.TOURNAMENTS, INITIAL_TOURNAMENTS);
       this.reservations = getStored(STORAGE_KEYS.RESERVATIONS, INITIAL_RESERVATIONS);
-      this.currentUserId = getStored(STORAGE_KEYS.CURRENT_USER_ID, 'p-1');
+      this.currentUserId = getStored<string | null>(STORAGE_KEYS.CURRENT_USER_ID, null);
+      if (this.currentUserId) {
+        this.currentUser = this.profiles.find((p) => p.id === this.currentUserId) || null;
+      }
       this.recalculateRanks();
 
       // 2. Initialize Supabase cloud sync & realtime subscription
@@ -82,7 +86,30 @@ export class BHOSDataStore {
     try {
       this.isCloudConnected = true;
 
-      // Initial cloud pull
+      // 1. Listen to Supabase Auth state changes
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        if (session?.user?.email) {
+          await this.linkProfileByEmail(session.user.email);
+        } else {
+          this.currentUser = null;
+          this.currentUserId = null;
+          setStored(STORAGE_KEYS.CURRENT_USER_ID, null);
+          this.notify();
+        }
+      });
+
+      // 2. Check initial session
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user?.email) {
+        await this.linkProfileByEmail(session.user.email);
+      } else {
+        this.currentUser = null;
+        this.currentUserId = null;
+        setStored(STORAGE_KEYS.CURRENT_USER_ID, null);
+        this.notify();
+      }
+
+      // 3. Initial cloud pull
       await Promise.allSettled([
         this.fetchProfilesFromCloud(),
         this.fetchMatchesFromCloud(),
@@ -90,7 +117,7 @@ export class BHOSDataStore {
         this.fetchReservationsFromCloud(),
       ]);
 
-      // Setup Realtime Subscription
+      // 4. Setup Realtime Subscription
       this.setupRealtimeSubscription(supabase);
     } catch (err) {
       console.warn('[BHOS Store] Cloud sync initialization error:', err);
@@ -319,13 +346,85 @@ export class BHOSDataStore {
   }
 
   // --- Auth / Active User ---
-  public getCurrentUser(): PlayerProfile {
-    const user = this.profiles.find((p) => p.id === this.currentUserId);
-    return user || this.profiles[0] || INITIAL_PROFILES[0];
+  public getCurrentUser(): PlayerProfile | null {
+    if (this.currentUser) return this.currentUser;
+    if (this.currentUserId) {
+      const user = this.profiles.find((p) => p.id === this.currentUserId);
+      if (user) {
+        this.currentUser = user;
+        return user;
+      }
+    }
+    return null;
+  }
+
+  public isAuthenticated(): boolean {
+    return this.getCurrentUser() !== null;
+  }
+
+  public async linkProfileByEmail(email: string): Promise<PlayerProfile | null> {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    // 1. Look in existing local profiles first
+    let profile = this.profiles.find(
+      (p) => p.email && p.email.trim().toLowerCase() === normalizedEmail
+    );
+
+    // 2. Fetch fresh record from Supabase
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .ilike('email', normalizedEmail)
+          .maybeSingle();
+
+        if (!error && data) {
+          profile = data as PlayerProfile;
+          const idx = this.profiles.findIndex((p) => p.id === profile!.id);
+          if (idx !== -1) {
+            this.profiles[idx] = profile;
+          } else {
+            this.profiles.push(profile);
+          }
+        }
+      } catch (err) {
+        console.warn('[BHOS Store] Could not fetch profile by email:', err);
+      }
+    }
+
+    if (profile) {
+      this.currentUser = profile;
+      this.currentUserId = profile.id;
+      setStored(STORAGE_KEYS.CURRENT_USER_ID, profile.id);
+      this.recalculateRanks();
+      this.notify();
+      return profile;
+    }
+
+    return null;
+  }
+
+  public async signOut(): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.auth.signOut();
+      } catch (err) {
+        console.warn('[BHOS Store] Error signing out from Supabase:', err);
+      }
+    }
+    this.currentUser = null;
+    this.currentUserId = null;
+    setStored(STORAGE_KEYS.CURRENT_USER_ID, null);
+    this.notify();
   }
 
   public setCurrentUser(userId: string): void {
-    if (this.profiles.some((p) => p.id === userId)) {
+    const found = this.profiles.find((p) => p.id === userId);
+    if (found) {
+      this.currentUser = found;
       this.currentUserId = userId;
       setStored(STORAGE_KEYS.CURRENT_USER_ID, userId);
       this.notify();
@@ -628,7 +727,7 @@ export class BHOSDataStore {
       this.logMatch({
         player1Id: match.player1.id,
         player2Id: match.player2.id,
-        loggedById: this.currentUserId,
+        loggedById: this.currentUserId || 'system',
         setScores: scores.setScores,
         tournamentId: tournament.id,
       });

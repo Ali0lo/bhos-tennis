@@ -27,7 +27,7 @@ export default function TournamentDetailPage() {
 
   const [tournament, setTournament] = useState<Tournament | undefined>(undefined);
   const [participants, setParticipants] = useState<PlayerProfile[]>([]);
-  const [currentUser, setCurrentUser] = useState<PlayerProfile>(store.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
 
   const loadData = () => {
     const tourn = store.getTournament(slug);
@@ -120,7 +120,7 @@ export default function TournamentDetailPage() {
               {t('tournaments.bracket')}
             </h2>
           </div>
-          {(currentUser.role === 'president' || currentUser.role === 'coach') && (
+          {(currentUser?.role === 'president' || currentUser?.role === 'coach') && (
             <span className="text-[11px] px-2.5 py-1 rounded bg-bhos-blue/20 text-bhos-cyan border border-bhos-blue/30 font-medium">
               Official Bracket Management Mode Active
             </span>

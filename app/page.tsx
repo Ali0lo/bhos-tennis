@@ -35,7 +35,7 @@ export default function HomePage() {
   const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
-  const [currentUser, setCurrentUser] = useState<PlayerProfile>(store.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [showMatchModal, setShowMatchModal] = useState(false);
 
   useEffect(() => {
@@ -165,7 +165,7 @@ export default function HomePage() {
               <span>{t('hero.join_whatsapp_btn')}</span>
             </a>
 
-            {(currentUser.role === 'president' || currentUser.role === 'coach') && (
+            {(currentUser?.role === 'president' || currentUser?.role === 'coach') && (
               <button
                 onClick={() => setShowMatchModal(true)}
                 className="px-5 py-3 rounded-full border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"

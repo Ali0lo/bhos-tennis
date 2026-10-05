@@ -38,7 +38,7 @@ export default function PlayerProfilePage() {
   const [profile, setProfile] = useState<PlayerProfile | undefined>(undefined);
   const [allProfiles, setAllProfiles] = useState<PlayerProfile[]>([]);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
-  const [currentUser, setCurrentUser] = useState<PlayerProfile>(store.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
 
   // Edit Modal State
   const [editModalOpen, setEditModalOpen] = useState(false);
@@ -200,7 +200,7 @@ export default function PlayerProfilePage() {
     );
   }
 
-  const canEdit = currentUser.id === profile.id || currentUser.role === 'president';
+  const canEdit = !!currentUser && (currentUser.id === profile.id || currentUser.role === 'president');
   const winRate = Math.round((profile.wins / (profile.matches_played || 1)) * 100);
 
   return (

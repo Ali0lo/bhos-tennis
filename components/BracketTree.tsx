@@ -16,7 +16,7 @@ export default function BracketTree({ tournament, onUpdate }: BracketTreeProps) 
   const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
   const currentUser = store.getCurrentUser();
-  const isOfficial = currentUser.role === 'president' || currentUser.role === 'coach';
+  const isOfficial = currentUser?.role === 'president' || currentUser?.role === 'coach';
 
   const [activeMatchModal, setActiveMatchModal] = useState<{
     roundIndex: number;

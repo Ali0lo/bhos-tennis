@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation, Locale } from '../lib/i18n';
 import { BHOSDataStore } from '../lib/data/store';
 import { PlayerProfile, UserRole } from '../lib/data/types';
@@ -17,18 +17,21 @@ import {
   X, 
   PlusCircle, 
   MessageCircle, 
-  ChevronDown 
+  ChevronDown,
+  LogIn,
+  LogOut
 } from 'lucide-react';
 import MatchLoggerModal from './MatchLoggerModal';
 
 export default function Navbar() {
   const { t, locale, setLocale } = useTranslation();
   const pathname = usePathname();
+  const router = useRouter();
   const store = BHOSDataStore.getInstance();
 
-  const [currentUser, setCurrentUser] = useState<PlayerProfile>(store.getCurrentUser());
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
 
   useEffect(() => {
@@ -46,23 +49,16 @@ export default function Navbar() {
     { href: '/#about', label: t('nav.about') || 'About' },
   ];
 
-  if (currentUser.role === 'president') {
+  if (currentUser && (currentUser.role === 'president' || currentUser.role === 'coach')) {
     navLinks.push({ href: '/admin', label: t('nav.admin') });
   }
 
-  const roleDemoUsers = [
-    { id: 'p-1', role: 'president' as UserRole, label: `Ali Iskandarli (${t('roles.president')})` },
-    { id: 'p-2', role: 'coach' as UserRole, label: `Iftixar Meherremov (${t('roles.coach')})` },
-    { id: 'p-3', role: 'player' as UserRole, label: `Ali Abdulov (${t('roles.player')})` },
-    { id: 'p-4', role: 'player' as UserRole, label: `Ali Aghayev (${t('roles.player')})` },
-    { id: 'p-5', role: 'player' as UserRole, label: `Huseyn Muradzade (${t('roles.player')})` },
-    { id: 'p-6', role: 'player' as UserRole, label: `Fateh Memmedli (${t('roles.player')})` },
-    { id: 'p-7', role: 'player' as UserRole, label: `Ayan Aliyeva (${t('roles.player')})` },
-  ];
-
-  const handleRoleChange = (userId: string) => {
-    store.setCurrentUser(userId);
-    setRoleDropdownOpen(false);
+  const handleSignOut = async () => {
+    await store.signOut();
+    setUserDropdownOpen(false);
+    setMobileMenuOpen(false);
+    router.push('/');
+    router.refresh();
   };
 
   const getRoleBadgeColor = (role: UserRole) => {
@@ -126,7 +122,7 @@ export default function Navbar() {
             })}
           </nav>
 
-          {/* Right Action Toolbar: WhatsApp CTA, Minimalist Language Toggle, Role Switcher */}
+          {/* Right Action Toolbar: WhatsApp CTA, Quick Log Match, Language Toggle, Auth / Profile */}
           <div className="flex items-center gap-2.5">
             {/* Direct WhatsApp Community CTA Button */}
             <a
@@ -141,7 +137,7 @@ export default function Navbar() {
             </a>
 
             {/* Quick Log Match (Coach / President) */}
-            {(currentUser.role === 'coach' || currentUser.role === 'president') && (
+            {currentUser && (currentUser.role === 'coach' || currentUser.role === 'president') && (
               <button
                 onClick={() => setShowMatchModal(true)}
                 className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-bold hover:bg-cyan-300 shadow-md shadow-cyan-500/20 transition active:scale-95"
@@ -171,60 +167,90 @@ export default function Navbar() {
               })}
             </div>
 
-            {/* Role Switcher Demo Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition ${getRoleBadgeColor(
-                  currentUser.role
-                )}`}
-              >
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span className="font-semibold max-w-[80px] sm:max-w-none truncate">
-                  {currentUser.full_name.split(' ')[0]}
-                </span>
-                <ChevronDown className="w-2.5 h-2.5 opacity-60" />
-              </button>
-              {roleDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-white/10 bg-slate-950/95 backdrop-blur-xl p-2 shadow-2xl z-50">
-                  <p className="px-2.5 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    {t('nav.switch_role')} (Demo)
-                  </p>
-                  <div className="space-y-1 mt-1">
-                    {roleDemoUsers.map((item) => (
-                      <button
-                        key={item.id}
-                        onClick={() => handleRoleChange(item.id)}
-                        className={`w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between transition ${
-                          currentUser.id === item.id
-                            ? 'bg-white/15 text-white font-bold'
-                            : 'text-slate-300 hover:bg-white/5'
-                        }`}
-                      >
-                        <span className="truncate">{item.label}</span>
+            {/* User Auth Section: Guest 'Sign In' vs Authenticated Profile Dropdown */}
+            {currentUser ? (
+              <div className="relative">
+                <button
+                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition ${getRoleBadgeColor(
+                    currentUser.role
+                  )}`}
+                >
+                  {currentUser.avatar_url ? (
+                    <img
+                      src={currentUser.avatar_url}
+                      alt={currentUser.full_name}
+                      className="w-4 h-4 rounded-full object-cover"
+                    />
+                  ) : (
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                  )}
+                  <span className="font-semibold max-w-[80px] sm:max-w-none truncate">
+                    {currentUser.full_name.split(' ')[0]}
+                  </span>
+                  <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+                </button>
+
+                {userDropdownOpen && (
+                  <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-white/10 bg-[#0F1623]/95 backdrop-blur-xl p-3 shadow-2xl z-50">
+                    <div className="px-2.5 py-2 border-b border-white/10 mb-2">
+                      <p className="font-bold text-xs text-white truncate">{currentUser.full_name}</p>
+                      <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
+                      <div className="flex items-center gap-2 mt-2">
                         <span
-                          className={`text-[9px] px-1.5 py-0.5 rounded-full border uppercase shrink-0 ${getRoleBadgeColor(
-                            item.role
+                          className={`text-[9px] px-1.5 py-0.5 rounded-full border uppercase ${getRoleBadgeColor(
+                            currentUser.role
                           )}`}
                         >
-                          {item.role}
+                          {currentUser.role}
                         </span>
-                      </button>
-                    ))}
-                    <div className="mt-2 pt-2 border-t border-white/10 px-2">
+                        <span className="text-[11px] font-bold text-cyan-400">
+                          {currentUser.current_elo.toLocaleString()} PTS
+                        </span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1">
                       <Link
                         href={`/players/${currentUser.id}`}
-                        onClick={() => setRoleDropdownOpen(false)}
-                        className="text-[11px] text-cyan-400 hover:underline flex items-center gap-1"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 transition"
                       >
-                        <UserCheck className="w-3 h-3" />
-                        {t('profile.details')}
+                        <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>{t('profile.details') || 'My Profile'}</span>
                       </Link>
+
+                      {(currentUser.role === 'president' || currentUser.role === 'coach') && (
+                        <Link
+                          href="/admin"
+                          onClick={() => setUserDropdownOpen(false)}
+                          className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 transition"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                          <span>{t('nav.admin')}</span>
+                        </Link>
+                      )}
+
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center gap-2 text-rose-400 hover:bg-rose-500/10 transition border-t border-white/5 mt-1 pt-2"
+                      >
+                        <LogOut className="w-3.5 h-3.5" />
+                        <span>{t('nav.signout', 'Sign Out')}</span>
+                      </button>
                     </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#3B82F6] hover:bg-blue-600 text-white text-xs font-bold transition shadow-md shadow-blue-500/20 active:scale-95"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>{t('nav.signin', 'Sign In')}</span>
+              </Link>
+            )}
 
             {/* Mobile Hamburger Menu Button */}
             <button
@@ -273,27 +299,46 @@ export default function Navbar() {
             </div>
 
             <div className="pt-3 border-t border-white/10">
-              <p className="text-[10px] text-slate-400 uppercase tracking-wider mb-2">
-                {t('nav.switch_role')}:
-              </p>
-              <div className="space-y-1">
-                {roleDemoUsers.map((item) => (
-                  <button
-                    key={item.id}
-                    onClick={() => {
-                      handleRoleChange(item.id);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`w-full text-left px-3 py-1.5 rounded-lg text-xs flex items-center justify-between ${
-                      currentUser.id === item.id
-                        ? 'bg-cyan-500/20 text-cyan-300 font-bold'
-                        : 'text-slate-300 hover:bg-white/5'
-                    }`}
+              {currentUser ? (
+                <div className="space-y-2">
+                  <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-xs text-white truncate">{currentUser.full_name}</p>
+                      <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
+                    </div>
+                    <span
+                      className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${getRoleBadgeColor(
+                        currentUser.role
+                      )}`}
+                    >
+                      {currentUser.role}
+                    </span>
+                  </div>
+                  <Link
+                    href={`/players/${currentUser.id}`}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="block text-center py-2 rounded-xl bg-white/5 text-slate-300 hover:text-white text-xs font-semibold"
                   >
-                    <span>{item.label}</span>
+                    {t('profile.details') || 'My Profile'}
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="w-full py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5"
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span>{t('nav.signout', 'Sign Out')}</span>
                   </button>
-                ))}
-              </div>
+                </div>
+              ) : (
+                <Link
+                  href="/login"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="w-full py-2.5 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
+                >
+                  <LogIn className="w-4 h-4" />
+                  <span>{t('nav.signin', 'Sign In')}</span>
+                </Link>
+              )}
             </div>
 
             <a
