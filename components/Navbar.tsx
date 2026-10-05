@@ -106,27 +106,18 @@ export default function Navbar() {
           </div>
 
           <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-auto z-20">
-            <Link href="/" className="flex items-center gap-2.5 group shrink-0">
-              <div className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center p-1 group-hover:scale-105 transition-transform">
+            <Link
+              href="/"
+              aria-label="BHOS Table Tennis"
+              className="group flex items-center justify-center w-12 h-12 rounded-full bg-cyan-500/10 border border-cyan-500/30 hover:scale-105 transition-transform"
+            >
+              <span className="flex items-center justify-center w-full h-full">
                 <img
                   src="/images/bhos-crest.png"
                   alt="BHOS Crest"
-                  className="w-full h-full object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.6)] mix-blend-screen"
+                  className="block h-8 w-auto max-w-[2rem] drop-shadow-[0_0_6px_rgba(0,229,255,0.6)]"
                 />
-              </div>
-              <div className="text-left">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-display font-black text-sm sm:text-base text-white group-hover:text-cyan-400 transition-colors tracking-tight">
-                    BHOS TT
-                  </span>
-                  <span className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-bold uppercase rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                    KLUB
-                  </span>
-                </div>
-                <p className="text-[10px] text-slate-400 hidden sm:block leading-none">
-                  Bakı Ali Neft Məktəbi
-                </p>
-              </div>
+              </span>
             </Link>
           </div>
 

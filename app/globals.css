@@ -10,7 +10,7 @@
 body {
   color: var(--foreground);
   background-color: var(--background);
-  font-family: var(--font-outfit), system-ui, -apple-system, sans-serif;
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
 }
 
