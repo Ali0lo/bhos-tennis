@@ -257,151 +257,129 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {/* Main Leaderboard Table */}
-      <div className="rounded-2xl border border-bhos-border bg-bhos-midnight/90 overflow-hidden shadow-2xl">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs">
-            <thead className="border-b border-bhos-border bg-bhos-darkCard/90 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
-              <tr>
-                <th className="py-3.5 px-4 w-16 text-center">{t('leaderboard.rank')}</th>
-                <th className="py-3.5 px-4">{t('leaderboard.player')}</th>
-                <th className="py-3.5 px-4 hidden md:table-cell">{t('leaderboard.faculty')}</th>
-                <th className="py-3.5 px-4 hidden sm:table-cell">{t('leaderboard.year')}</th>
-                <th className="py-3.5 px-4 hidden lg:table-cell">{t('leaderboard.style')}</th>
-                <th className="py-3.5 px-4 text-center">{t('leaderboard.elo')}</th>
-                <th className="py-3.5 px-4 text-center hidden sm:table-cell">{t('leaderboard.matches')}</th>
-                <th className="py-3.5 px-4 text-center">{t('leaderboard.wins')} / {t('leaderboard.losses')}</th>
-                <th className="py-3.5 px-4 text-center">{t('leaderboard.winrate')}</th>
-                <th className="py-3.5 px-4 w-10"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-bhos-border/60">
-              {filteredProfiles.length === 0 ? (
-                <tr>
-                  <td colSpan={10} className="py-12 text-center text-slate-500">
-                    No players found matching current filters.
-                  </td>
-                </tr>
-              ) : (
-                filteredProfiles.map((player, idx) => {
-                  const winRate = Math.round(
-                    (player.wins / (player.matches_played || 1)) * 100
-                  );
+      {/* Main Leaderboard List */}
+      <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-4 sm:p-6 shadow-2xl space-y-3">
+        {/* Header Grid */}
+        <div className="hidden md:grid grid-cols-12 gap-3 sm:gap-4 px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 bg-[#131C2B]/50 rounded-xl">
+          <div className="col-span-2 sm:col-span-1 text-center">Rank</div>
+          <div className="col-span-6 sm:col-span-4 md:col-span-3">Player</div>
+          <div className="hidden md:block md:col-span-3 lg:col-span-2">Faculty</div>
+          <div className="hidden lg:block lg:col-span-2">Equipment</div>
+          <div className="hidden md:block md:col-span-2 text-center">Matches</div>
+          <div className="col-span-4 sm:col-span-7 md:col-span-3 lg:col-span-2 text-right pr-2">Points</div>
+        </div>
 
-                  return (
-                    <tr
-                      key={player.id}
-                      className="hover:bg-bhos-darkCard/50 transition-colors group"
-                    >
-                      {/* Rank & Trend */}
-                      <td className="py-3.5 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1.5">
-                          {getRankBadge(player.rank || idx + 1)}
-                          {(player.rank_change ?? 0) > 0 ? (
-                            <TrendingUp className="w-3 h-3 text-emerald-400" />
-                          ) : (player.rank_change ?? 0) < 0 ? (
-                            <TrendingDown className="w-3 h-3 text-crimson" />
-                          ) : (
-                            <Minus className="w-3 h-3 text-slate-600" />
-                          )}
-                        </div>
-                      </td>
+        {/* Player Rows */}
+        <div className="space-y-2">
+          {filteredProfiles.length === 0 ? (
+            <div className="py-12 text-center text-slate-500 bg-[#131C2B] rounded-xl border border-white/5 text-xs">
+              No players found matching current filters.
+            </div>
+          ) : (
+            filteredProfiles.map((player, idx) => {
+              const winRate = Math.round(
+                (player.wins / (player.matches_played || 1)) * 100
+              );
 
-                      {/* Player Name & Role */}
-                      <td className="py-3.5 px-4">
-                        <Link
-                          href={`/players/${player.id}`}
-                          className="font-bold text-white group-hover:text-bhos-cyan transition flex items-center gap-1.5"
-                        >
-                          <span>{player.full_name}</span>
-                          {player.role === 'president' && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                              President
-                            </span>
-                          )}
-                          {player.role === 'coach' && (
-                            <span className="text-[9px] px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                              Coach
-                            </span>
-                          )}
-                        </Link>
-                        <div className="mt-1 flex items-center gap-2">
-                          <FormDots form={getPlayerForm(player.id)} size="sm" />
-                          <span className="text-[10px] text-slate-500 hidden sm:inline">
-                            (Recent Form)
+              return (
+                <Link
+                  key={player.id}
+                  href={`/players/${player.id}`}
+                  className="block bg-[#131C2B] border border-white/5 rounded-xl p-3.5 sm:p-4 hover:bg-white/[0.04] hover:border-white/10 hover:-translate-y-[1px] transition-all cursor-pointer group shadow-sm"
+                >
+                  <div className="grid grid-cols-12 gap-3 sm:gap-4 items-center">
+                    {/* Rank & Trend */}
+                    <div className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5">
+                      {getRankBadge(player.rank || idx + 1)}
+                      {(player.rank_change ?? 0) > 0 ? (
+                        <TrendingUp className="w-3 h-3 text-emerald-400 shrink-0" />
+                      ) : (player.rank_change ?? 0) < 0 ? (
+                        <TrendingDown className="w-3 h-3 text-red-400 shrink-0" />
+                      ) : (
+                        <Minus className="w-3 h-3 text-slate-600 shrink-0" />
+                      )}
+                    </div>
+
+                    {/* Name & Role */}
+                    <div className="col-span-6 sm:col-span-4 md:col-span-3 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="font-bold text-white group-hover:text-[#3B82F6] transition truncate text-xs sm:text-sm">
+                          {player.full_name}
+                        </span>
+                        {player.role === 'president' && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
+                            President
                           </span>
-                        </div>
-                        <div className="md:hidden text-[10px] text-slate-400 mt-0.5">
-                          {player.major_faculty} • {player.admission_year}
-                        </div>
-                      </td>
+                        )}
+                        {player.role === 'coach' && (
+                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
+                            Coach
+                          </span>
+                        )}
+                      </div>
 
-                      {/* Faculty */}
-                      <td className="py-3.5 px-4 text-slate-300 hidden md:table-cell">
-                        {player.major_faculty}
-                      </td>
-
-                      {/* Year */}
-                      <td className="py-3.5 px-4 text-slate-400 font-mono hidden sm:table-cell">
-                        {player.admission_year}
-                      </td>
-
-                      {/* Playstyle */}
-                      <td className="py-3.5 px-4 text-slate-400 hidden lg:table-cell">
-                        <span className="px-2 py-0.5 rounded bg-slate-800 text-[11px] text-slate-300 border border-slate-700">
-                          {player.playing_style}
+                      <div className="mt-1 flex items-center gap-2">
+                        <FormDots form={getPlayerForm(player.id)} size="sm" />
+                        <span className="text-[10px] text-slate-500 hidden sm:inline">
+                          (Recent Form)
                         </span>
-                      </td>
+                      </div>
 
-                      {/* ELO Rating */}
-                      <td className="py-3.5 px-4 text-center font-mono">
-                        <span className="font-extrabold text-sm text-cyan-400">
+                      <div className="md:hidden text-[10px] text-slate-400 mt-1 truncate">
+                        {player.major_faculty} {player.blade_equipment ? `• ${player.blade_equipment}` : ''}
+                      </div>
+                    </div>
+
+                    {/* Faculty */}
+                    <div className="hidden md:block md:col-span-3 lg:col-span-2 min-w-0">
+                      <div className="text-xs text-slate-200 font-medium truncate">
+                        {player.major_faculty || 'Faculty of Engineering'}
+                      </div>
+                      <div className="text-[11px] text-slate-500 font-mono">
+                        Class of {player.admission_year || 2024}
+                      </div>
+                    </div>
+
+                    {/* Equipment */}
+                    <div className="hidden lg:block lg:col-span-2 min-w-0">
+                      <div className="text-xs text-slate-300 truncate font-medium">
+                        {player.blade_equipment || player.playing_style || 'ITTF Spec Blade'}
+                      </div>
+                      <div className="text-[11px] text-slate-500 truncate">
+                        {player.forehand_rubber ? `FH: ${player.forehand_rubber}` : 'Standard Rubber'}
+                      </div>
+                    </div>
+
+                    {/* Matches */}
+                    <div className="hidden md:block md:col-span-2 text-center">
+                      <div className="text-xs font-mono font-semibold text-slate-300">
+                        <span className="text-emerald-400">{player.wins}W</span>
+                        <span className="text-slate-600 mx-1">-</span>
+                        <span className="text-red-400">{player.losses}L</span>
+                      </div>
+                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">
+                        {winRate}% win rate ({player.matches_played || 0} played)
+                      </div>
+                    </div>
+
+                    {/* Points (ELO) & Chevron */}
+                    <div className="col-span-4 sm:col-span-7 md:col-span-3 lg:col-span-2 flex items-center justify-end gap-2.5 text-right">
+                      <div>
+                        <div className="font-mono font-black text-sm sm:text-base text-cyan-400 group-hover:text-blue-400 transition">
                           <NumberTicker value={player.current_elo} />
-                        </span>
-                      </td>
-
-                      {/* Matches */}
-                      <td className="py-3.5 px-4 text-center font-mono text-slate-300 hidden sm:table-cell">
-                        {player.matches_played}
-                      </td>
-
-                      {/* Wins / Losses */}
-                      <td className="py-3.5 px-4 text-center font-mono">
-                        <span className="text-emerald-400 font-bold">{player.wins}</span>
-                        <span className="text-slate-600 mx-1">/</span>
-                        <span className="text-red-400 font-bold">{player.losses}</span>
-                      </td>
-
-                      {/* Win Rate % */}
-                      <td className="py-3.5 px-4 text-center">
-                        <span
-                          className={`font-mono font-bold text-xs ${
-                            winRate >= 60
-                              ? 'text-emerald-400'
-                              : winRate >= 45
-                              ? 'text-slate-300'
-                              : 'text-amber-400'
-                          }`}
-                        >
-                          <NumberTicker value={winRate} suffix="%" />
-                        </span>
-                      </td>
-
-                      {/* Profile Arrow */}
-                      <td className="py-3.5 px-4 text-right">
-                        <Link
-                          href={`/players/${player.id}`}
-                          className="p-1 text-slate-500 hover:text-bhos-cyan transition"
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })
-              )}
-            </tbody>
-          </table>
+                          <span className="text-[10px] font-bold text-slate-500 ml-1">PTS</span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 hidden sm:block">
+                          Official Rating
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" />
+                    </div>
+                  </div>
+                </Link>
+              );
+            })
+          )}
         </div>
       </div>
     </div>

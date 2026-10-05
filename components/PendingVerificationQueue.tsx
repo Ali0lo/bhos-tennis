@@ -75,7 +75,7 @@ export default function PendingVerificationQueue({ onVerificationComplete }: Pen
     const localPending = store.getUnverifiedProfiles();
     setPendingPlayers(localPending);
     const initialMap: Record<string, number> = {};
-    localPending.forEach((p: PlayerProfile) => {
+    localPending.forEach((p) => {
       initialMap[p.id] = getDefaultEloForLevel(p.playing_level);
     });
     setAssignedElos((prev) => ({ ...initialMap, ...prev }));
