@@ -117,7 +117,7 @@ export class BHOSDataStore {
         this.fetchReservationsFromCloud(),
       ]);
 
-      // 4. Setup Realtime Subscription
+      // Setup Realtime Subscription
       this.setupRealtimeSubscription(supabase);
     } catch (err) {
       console.warn('[BHOS Store] Cloud sync initialization error:', err);
@@ -339,10 +339,19 @@ export class BHOSDataStore {
   }
 
   private recalculateRanks() {
-    this.profiles.sort((a, b) => b.current_elo - a.current_elo);
-    this.profiles.forEach((p, idx) => {
+    // Only verified players participate in rankings
+    const verified = this.profiles.filter((p) => p.is_verified !== false);
+    verified.sort((a, b) => b.current_elo - a.current_elo);
+    verified.forEach((p, idx) => {
       p.rank = idx + 1;
     });
+
+    // Unverified players do not get an official rank
+    this.profiles
+      .filter((p) => p.is_verified === false)
+      .forEach((p) => {
+        p.rank = undefined;
+      });
   }
 
   // --- Auth / Active User ---
@@ -432,9 +441,48 @@ export class BHOSDataStore {
   }
 
   // --- Profiles ---
-  public getProfiles(): PlayerProfile[] {
+  public getProfiles(verifiedOnly: boolean = false): PlayerProfile[] {
     this.recalculateRanks();
+    if (verifiedOnly) {
+      return this.profiles.filter((p) => p.is_verified !== false);
+    }
     return [...this.profiles];
+  }
+
+  public getVerifiedProfiles(): PlayerProfile[] {
+    return this.getProfiles(true);
+  }
+
+  public getUnverifiedProfiles(): PlayerProfile[] {
+    return this.profiles.filter((p) => p.is_verified === false);
+  }
+
+  public async verifyPlayer(id: string, initialElo: number = 0): Promise<PlayerProfile> {
+    const profile = this.getProfile(id);
+    if (!profile) throw new Error(`Profile ${id} not found`);
+
+    profile.is_verified = true;
+    profile.current_elo = Math.round(initialElo);
+    this.recalculateRanks();
+    this.saveLocal();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          is_verified: true,
+          current_elo: profile.current_elo,
+        })
+        .eq('id', id);
+
+      if (error) {
+        console.warn('[BHOS Store] Supabase verifyPlayer failed:', error.message);
+        throw error;
+      }
+    }
+
+    return profile;
   }
 
   public getProfile(id: string): PlayerProfile | undefined {

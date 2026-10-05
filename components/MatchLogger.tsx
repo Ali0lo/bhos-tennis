@@ -91,6 +91,7 @@ export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
+          .neq('is_verified', false)
           .order('full_name', { ascending: true });
 
         if (!error && data) {
@@ -104,7 +105,7 @@ export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
     }
 
     // Fallback to local store profiles
-    setPlayers(store.getProfiles());
+    setPlayers(store.getVerifiedProfiles());
     setLoadingPlayers(false);
   };
 

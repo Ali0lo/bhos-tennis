@@ -14,6 +14,8 @@ export type BHOSFaculty =
   | 'Petroleum Engineering'
   | 'Process Automation';
 
+export type PlayingLevel = 'Beginner' | 'Intermediate' | 'Advanced';
+
 export interface PlayerProfile {
   id: string;
   full_name: string;
@@ -22,6 +24,7 @@ export interface PlayerProfile {
   admission_year: number;
   gender?: 'female' | 'male' | 'other';
   role: UserRole;
+  playing_level?: PlayingLevel | string;
   playing_style: PlayingStyle | string;
   blade_equipment: string;
   forehand_rubber: string;
@@ -30,6 +33,7 @@ export interface PlayerProfile {
   matches_played: number;
   wins: number;
   losses: number;
+  is_verified?: boolean;
   is_active: boolean;
   avatar_url?: string;
   rank?: number;

@@ -7,6 +7,7 @@ import { PlayerProfile, UserRole } from '../../lib/data/types';
 import { useTranslation } from '../../lib/i18n';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import MatchLogger from '../../components/MatchLogger';
+import PendingVerificationQueue from '../../components/PendingVerificationQueue';
 import { 
   ShieldCheck, 
   Users, 
@@ -115,6 +116,7 @@ export default function AdminPage() {
         matches_played: 0,
         wins: 0,
         losses: 0,
+        is_verified: true, // Directly added by Admin -> verified
         is_active: true,
         created_at: new Date().toISOString(),
       };
@@ -132,7 +134,7 @@ export default function AdminPage() {
       store.addProfile(newPlayer);
 
       // 3. Feedback & Form Reset
-      setPlayerAddSuccess(`Successfully added ${trimmedName} (${trimmedEmail}) to the BHOS roster with 0 ELO.`);
+      setPlayerAddSuccess(`Successfully added ${trimmedName} (${trimmedEmail}) to the BHOS roster.`);
       setFullName('');
       setEmail('');
       setFaculty('Information Security');
@@ -271,6 +273,9 @@ export default function AdminPage() {
         </div>
       </div>
 
+      {/* PENDING VERIFICATIONS QUEUE (Admin Review & Initial ELO Assignment) */}
+      <PendingVerificationQueue onVerificationComplete={loadData} />
+
       {/* MATCH LOGGER COMPONENT (K=32 Standard ELO & Cloud Mutation) */}
       <MatchLogger onMatchLogged={loadData} />
 
@@ -289,7 +294,7 @@ export default function AdminPage() {
         </div>
 
         <p className="text-xs text-slate-400 leading-relaxed">
-          Register a new student athlete into the official BHOS Table Tennis database. New players start with <strong>0 ELO, 0 matches, 0W - 0L</strong>. All connected clients update in real time.
+          Directly register a student athlete into the official BHOS Table Tennis database with immediate verification. All connected clients update in real time.
         </p>
 
         {playerAddSuccess && (

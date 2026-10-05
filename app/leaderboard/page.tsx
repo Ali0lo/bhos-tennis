@@ -34,7 +34,7 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     const update = () => {
-      setProfiles(store.getProfiles());
+      setProfiles(store.getVerifiedProfiles());
       setMatches(store.getMatches());
     };
     update();

@@ -40,7 +40,7 @@ export default function HomePage() {
 
   useEffect(() => {
     const update = () => {
-      setProfiles(store.getProfiles());
+      setProfiles(store.getVerifiedProfiles());
       setMatches(store.getMatches());
       setTournaments(store.getTournaments());
       setCurrentUser(store.getCurrentUser());

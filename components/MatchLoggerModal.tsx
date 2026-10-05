@@ -22,7 +22,7 @@ export default function MatchLoggerModal({
 }: MatchLoggerModalProps) {
   const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
-  const profiles = store.getProfiles();
+  const profiles = store.getVerifiedProfiles();
   const currentUser = store.getCurrentUser();
   const tournaments = store.getTournaments();
 
