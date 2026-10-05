@@ -10,7 +10,6 @@ import MatchLoggerModal from '../components/MatchLoggerModal';
 import HeroHotspotPin from '../components/HeroHotspotPin';
 import NumberTicker from '../components/NumberTicker';
 import TiltCard from '../components/TiltCard';
-import FormDots, { MatchFormItem } from '../components/FormDots';
 import EloToastBadge from '../components/EloToastBadge';
 import { 
   Trophy, 
@@ -51,28 +50,6 @@ export default function HomePage() {
 
   const top3 = profiles.slice(0, 3);
   const recentMatches = matches.slice(0, 5);
-
-  // Helper to extract last 5 matches for a player
-  const getPlayerForm = (playerId: string): MatchFormItem[] => {
-    const playerMatches = matches
-      .filter((m) => m.player1_id === playerId || m.player2_id === playerId)
-      .slice(0, 5);
-
-    return playerMatches.map((m) => {
-      const isP1 = m.player1_id === playerId;
-      const won = isP1 ? m.player1_score > m.player2_score : m.player2_score > m.player1_score;
-      const oppName = isP1 ? m.player2_name : m.player1_name;
-      const score = isP1 ? `${m.player1_score}-${m.player2_score}` : `${m.player2_score}-${m.player1_score}`;
-      return {
-        id: m.id,
-        result: won ? 'W' : 'L',
-        opponentName: oppName,
-        score,
-        eloDelta: isP1 ? m.elo_delta : -m.elo_delta,
-        date: new Date(m.match_date).toLocaleDateString(),
-      };
-    });
-  };
 
   return (
     <div className="space-y-16">
@@ -290,12 +267,7 @@ export default function HomePage() {
                     {Math.round((top3[1].wins / (top3[1].matches_played || 1)) * 100)}% {t('home_podium.win_rate')}
                   </span>
                 </div>
-                {/* Form indicator dots */}
-                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Recent Form:</span>
-                  <FormDots form={getPlayerForm(top3[1].id)} size="sm" />
-                </div>
-                <div className="mt-2 text-[11px] text-slate-400 flex justify-between">
+                <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
                   <span>{t('home_podium.matches_label')}: {top3[1].matches_played}</span>
                   <span>{top3[1].wins}W - {top3[1].losses}L</span>
                 </div>
@@ -327,12 +299,7 @@ export default function HomePage() {
                 <div className="mt-2 text-xs text-emerald-400 font-semibold">
                   {Math.round((top3[0].wins / (top3[0].matches_played || 1)) * 100)}% {t('home_podium.win_rate')} ({top3[0].wins}W - {top3[0].losses}L)
                 </div>
-                {/* Form indicator dots */}
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Recent Form:</span>
-                  <FormDots form={getPlayerForm(top3[0].id)} size="sm" />
-                </div>
-                <div className="mt-2 text-[11px] text-slate-400 flex justify-between">
+                <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
                   <span>{top3[0].blade_equipment.split(' ')[0]}</span>
                   <span>{top3[0].admission_year}</span>
                 </div>
@@ -363,12 +330,7 @@ export default function HomePage() {
                     {Math.round((top3[2].wins / (top3[2].matches_played || 1)) * 100)}% {t('home_podium.win_rate')}
                   </span>
                 </div>
-                {/* Form indicator dots */}
-                <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-[11px] text-slate-400">
-                  <span>Recent Form:</span>
-                  <FormDots form={getPlayerForm(top3[2].id)} size="sm" />
-                </div>
-                <div className="mt-2 text-[11px] text-slate-400 flex justify-between">
+                <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
                   <span>{t('home_podium.matches_label')}: {top3[2].matches_played}</span>
                   <span>{top3[2].wins}W - {top3[2].losses}L</span>
                 </div>

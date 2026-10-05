@@ -134,7 +134,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
         .single();
 
       if (p1Error || !p1 || p2Error || !p2) {
-        throw new Error('Could not retrieve latest player rating profiles.');
+        throw new Error('Oyunçu reytinq məlumatlarını əldə etmək mümkün olmadı.');
       }
 
       const p1Elo = p1.current_elo;
@@ -191,14 +191,14 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       setPendingMatches((prev) => prev.filter((m) => m.id !== match.id));
       setFeedback({
         type: 'success',
-        message: `Match confirmed! Ratings updated (${p1.full_name} +${delta} PTS, ${p2.full_name} -${delta} PTS).`,
+        message: `Oyun təsdiqləndi! Reytinqlər yeniləndi (${p1.full_name} +${delta} XAL, ${p2.full_name} -${delta} XAL).`,
       });
 
       onMatchUpdated?.();
     } catch (err: any) {
       setFeedback({
         type: 'error',
-        message: err.message || 'Failed to confirm match.',
+        message: err.message || 'Oyunu təsdiqləmək mümkün olmadı.',
       });
     } finally {
       setProcessingId(null);
@@ -224,14 +224,14 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       setPendingMatches((prev) => prev.filter((m) => m.id !== match.id));
       setFeedback({
         type: 'success',
-        message: 'Match result rejected and removed from pending queue.',
+        message: 'Oyun nəticəsi rədd edildi və növbədən silindi.',
       });
 
       onMatchUpdated?.();
     } catch (err: any) {
       setFeedback({
         type: 'error',
-        message: err.message || 'Failed to reject match.',
+        message: err.message || 'Oyunu rədd etmək mümkün olmadı.',
       });
     } finally {
       setProcessingId(null);
@@ -251,13 +251,13 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
           </div>
           <div>
             <h3 className="text-sm font-display font-bold text-white flex items-center gap-2">
-              Action Required: Pending Match Confirmations
+              Təsdiq Gözləyən Oyunlar
               <span className="px-2 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
                 {pendingMatches.length}
               </span>
             </h3>
             <p className="text-[11px] text-slate-400">
-              An opponent submitted a match with you. Please review and confirm or reject the score.
+              Rəqibiniz sizinlə olan oyun nəticəsini təqdim edib. Zəhmət olmasa hesabı yoxlayın və təsdiq və ya rədd edin.
             </p>
           </div>
         </div>
@@ -285,12 +285,12 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
           const submitterName =
             m.logged_by_name ||
             (m.logged_by === m.player1_id ? m.player1_name : m.player2_name) ||
-            'Opponent';
+            'Rəqib';
 
           const isWinner = m.player1_id === currentUser.id;
           const userScore = isWinner ? m.player1_score : m.player2_score;
           const oppScore = isWinner ? m.player2_score : m.player1_score;
-          const outcomeText = isWinner ? 'Reported You Won' : 'Reported You Lost';
+          const outcomeText = isWinner ? 'Qələbəniz qeyd olunub' : 'Məğlubiyyətiniz qeyd olunub';
 
           return (
             <div
@@ -310,10 +310,10 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
 
                 <div>
                   <div className="text-xs font-bold text-white">
-                    Logged by <span className="text-[#3B82F6]">{submitterName}</span>
+                    Qeyd edən: <span className="text-[#3B82F6]">{submitterName}</span>
                   </div>
                   <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2 mt-0.5">
-                    <span>Score: <strong className="text-white">{userScore} - {oppScore}</strong></span>
+                    <span>Hesab: <strong className="text-white">{userScore} - {oppScore}</strong></span>
                     {m.set_scores && <span>({m.set_scores})</span>}
                     <span>•</span>
                     <span>{new Date(m.match_date).toLocaleDateString()}</span>
@@ -333,21 +333,21 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
                   ) : (
                     <X className="w-3.5 h-3.5" />
                   )}
-                  <span>Reject</span>
+                  <span>Rədd et</span>
                 </button>
 
                 <button
                   type="button"
                   disabled={processingId === m.id}
                   onClick={() => handleConfirm(m)}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#22C55E] hover:bg-emerald-600 text-slate-950 font-bold text-xs transition shadow-md shadow-emerald-500/20 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#22C55E] hover:bg-emerald-600 text-slate-950 font-bold text-xs transition shadow-md shadow-emerald-500/20 disabled:opacity-50"
                 >
                   {processingId === m.id ? (
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-slate-950" />
                   ) : (
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   )}
-                  <span>Confirm</span>
+                  <span>Təsdiqlə</span>
                 </button>
               </div>
             </div>

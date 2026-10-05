@@ -43,14 +43,14 @@ export default function Navbar() {
   }, [store]);
 
   const navLinks = [
-    { href: '/leaderboard', label: t('nav.leaderboard') },
-    { href: '/tournaments', label: t('nav.tournaments') },
-    { href: '/tables', label: t('nav.tables') || 'Hall Info' },
-    { href: '/#about', label: t('nav.about') || 'About' },
+    { href: '/leaderboard', label: t('nav.leaderboard') || 'Reytinq Cədvəli' },
+    { href: '/tournaments', label: t('nav.tournaments') || 'Turnirlər' },
+    { href: '/tables', label: t('nav.tables') || 'Zal & Masalar' },
+    { href: '/#about', label: t('nav.about') || 'Haqqında' },
   ];
 
   if (currentUser && (currentUser.role === 'president' || currentUser.role === 'coach')) {
-    navLinks.push({ href: '/admin', label: t('nav.admin') });
+    navLinks.push({ href: '/admin', label: t('nav.admin') || 'Prezident Paneli' });
   }
 
   const handleSignOut = async () => {
@@ -77,7 +77,7 @@ export default function Navbar() {
     <>
       <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
         <div className="w-full max-w-6xl rounded-full border border-white/10 bg-black/40 backdrop-blur-md px-6 py-3 shadow-2xl shadow-black/80 pointer-events-auto relative flex items-center justify-between transition-all">
-          <div className="flex-1 flex items-center justify-start gap-2">
+          <div className="flex items-center justify-start gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white"
@@ -105,7 +105,7 @@ export default function Navbar() {
             </nav>
           </div>
 
-          <div className="absolute left-1/2 -translate-x-1/2 flex items-center justify-center pointer-events-auto">
+          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-auto z-20">
             <Link href="/" className="flex items-center gap-2.5 group shrink-0">
               <div className="w-9 h-9 rounded-full bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center p-1 group-hover:scale-105 transition-transform">
                 <img
@@ -120,23 +120,23 @@ export default function Navbar() {
                     BHOS TT
                   </span>
                   <span className="hidden sm:inline-block px-1.5 py-0.2 text-[9px] font-bold uppercase rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
-                    CLUB
+                    KLUB
                   </span>
                 </div>
                 <p className="text-[10px] text-slate-400 hidden sm:block leading-none">
-                  Baku Higher Oil School
+                  Bakı Ali Neft Məktəbi
                 </p>
               </div>
             </Link>
           </div>
 
-          <div className="flex-1 flex items-center justify-end gap-2.5">
+          <div className="flex items-center justify-end gap-2.5 ml-auto">
             <a
               href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 text-xs font-semibold transition active:scale-95 shadow-sm"
-              title="Official WhatsApp Community"
+              title="Rəsmi WhatsApp İcması"
             >
               <MessageCircle className="w-3.5 h-3.5 fill-emerald-400" />
               <span className="hidden sm:inline font-bold">WhatsApp</span>
@@ -148,7 +148,7 @@ export default function Navbar() {
                 className="hidden md:inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-cyan-400 text-slate-950 text-xs font-bold hover:bg-cyan-300 shadow-md shadow-cyan-500/20 transition active:scale-95"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span>{t('nav.log_match')}</span>
+                <span>{t('nav.log_match') || 'Oyun Qeyd Et'}</span>
               </button>
             )}
 
@@ -205,10 +205,10 @@ export default function Navbar() {
                             currentUser.role
                           )}`}
                         >
-                          {currentUser.role}
+                          {currentUser.role === 'president' ? 'Prezident' : currentUser.role === 'coach' ? 'Məşqçi' : 'Oyunçu'}
                         </span>
                         <span className="text-[11px] font-bold text-cyan-400">
-                          {currentUser.current_elo.toLocaleString()} PTS
+                          {currentUser.current_elo.toLocaleString()} XAL
                         </span>
                       </div>
                     </div>
@@ -220,7 +220,7 @@ export default function Navbar() {
                         className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 transition"
                       >
                         <UserCheck className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>{t('profile.details') || 'My Profile'}</span>
+                        <span>{t('profile.details') || 'Profilim'}</span>
                       </Link>
 
                       {(currentUser.role === 'president' || currentUser.role === 'coach') && (
@@ -230,7 +230,7 @@ export default function Navbar() {
                           className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 transition"
                         >
                           <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
-                          <span>{t('nav.admin')}</span>
+                          <span>{t('nav.admin') || 'Prezident Paneli'}</span>
                         </Link>
                       )}
 
@@ -239,7 +239,7 @@ export default function Navbar() {
                         className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center gap-2 text-rose-400 hover:bg-rose-500/10 transition border-t border-white/5 mt-1 pt-2"
                       >
                         <LogOut className="w-3.5 h-3.5" />
-                        <span>{t('nav.signout', 'Sign Out')}</span>
+                        <span>{t('nav.signout', 'Çıxış')}</span>
                       </button>
                     </div>
                   </div>
@@ -251,7 +251,7 @@ export default function Navbar() {
                 className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-[#3B82F6] hover:bg-blue-600 text-white text-xs font-bold transition shadow-md shadow-blue-500/20 active:scale-95"
               >
                 <LogIn className="w-3.5 h-3.5" />
-                <span>{t('nav.signin', 'Sign In')}</span>
+                <span>{t('nav.signin', 'Daxil ol')}</span>
               </Link>
             )}
           </div>
@@ -305,7 +305,7 @@ export default function Navbar() {
                         currentUser.role
                       )}`}
                     >
-                      {currentUser.role}
+                      {currentUser.role === 'president' ? 'Prezident' : currentUser.role === 'coach' ? 'Məşqçi' : 'Oyunçu'}
                     </span>
                   </div>
                   <Link
@@ -313,14 +313,14 @@ export default function Navbar() {
                     onClick={() => setMobileMenuOpen(false)}
                     className="block text-center py-2 rounded-xl bg-white/5 text-slate-300 hover:text-white text-xs font-semibold"
                   >
-                    {t('profile.details') || 'My Profile'}
+                    {t('profile.details') || 'Profilim'}
                   </Link>
                   <button
                     onClick={handleSignOut}
                     className="w-full py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5"
                   >
                     <LogOut className="w-3.5 h-3.5" />
-                    <span>{t('nav.signout', 'Sign Out')}</span>
+                    <span>{t('nav.signout', 'Çıxış')}</span>
                   </button>
                 </div>
               ) : (
@@ -330,7 +330,7 @@ export default function Navbar() {
                   className="w-full py-2.5 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25"
                 >
                   <LogIn className="w-4 h-4" />
-                  <span>{t('nav.signin', 'Sign In')}</span>
+                  <span>{t('nav.signin', 'Daxil ol')}</span>
                 </Link>
               )}
             </div>
@@ -342,7 +342,7 @@ export default function Navbar() {
               className="w-full py-2.5 rounded-xl bg-emerald-500 text-slate-950 font-bold text-xs flex items-center justify-center gap-2"
             >
               <MessageCircle className="w-4 h-4 fill-slate-950" />
-              <span>{t('hero.join_whatsapp_btn')}</span>
+              <span>{t('hero.join_whatsapp_btn') || 'WhatsApp Qrupuna Qoşul'}</span>
             </a>
           </div>
         )}

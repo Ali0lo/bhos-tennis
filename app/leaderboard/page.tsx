@@ -1,25 +1,22 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { BHOSDataStore } from '../../lib/data/store';
-import { PlayerProfile } from '../../lib/data/types';
+import { PlayerProfile, MatchRecord } from '../../lib/data/types';
 import { useTranslation } from '../../lib/i18n';
+import NumberTicker from '../../components/NumberTicker';
+import PendingApprovals from '../../components/PendingApprovals';
 import { 
   Trophy, 
   Search, 
-  Filter, 
   TrendingUp, 
   TrendingDown, 
   Minus, 
+  Medal, 
   ChevronRight, 
-  ArrowUpDown, 
-  ShieldCheck 
+  ArrowUpDown
 } from 'lucide-react';
-import NumberTicker from '../../components/NumberTicker';
-import FormDots, { MatchFormItem } from '../../components/FormDots';
-import PendingApprovals from '../../components/PendingApprovals';
-import { MatchRecord } from '../../lib/data/types';
 
 export default function LeaderboardPage() {
   const { t } = useTranslation();
@@ -28,54 +25,21 @@ export default function LeaderboardPage() {
   const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFaculty, setSelectedFaculty] = useState('ALL');
-  const [selectedYear, setSelectedYear] = useState('ALL');
-  const [selectedStyle, setSelectedStyle] = useState('ALL');
-  const [sortBy, setSortBy] = useState<'elo' | 'wins' | 'winrate'>('elo');
+  const [selectedFaculty, setSelectedFaculty] = useState<string>('ALL');
+  const [selectedYear, setSelectedYear] = useState<string>('ALL');
+  const [selectedStyle, setSelectedStyle] = useState<string>('ALL');
+  const [sortBy, setSortBy] = useState<'elo' | 'winrate' | 'wins'>('elo');
 
-  const loadData = useCallback(async () => {
+  const loadData = () => {
     setProfiles(store.getProfiles());
     setMatches(store.getMatches());
-    try {
-      await Promise.allSettled([
-        store.fetchProfilesFromCloud(),
-        store.fetchMatchesFromCloud(),
-      ]);
-      setProfiles(store.getProfiles());
-      setMatches(store.getMatches());
-    } catch {
-      // ignore
-    }
-  }, [store]);
+  };
 
   useEffect(() => {
     loadData();
-    return store.subscribe(() => {
-      setProfiles(store.getProfiles());
-      setMatches(store.getMatches());
-    });
-  }, [loadData, store]);
-
-  const getPlayerForm = (playerId: string): MatchFormItem[] => {
-    const playerMatches = matches
-      .filter((m) => m.player1_id === playerId || m.player2_id === playerId)
-      .slice(0, 5);
-
-    return playerMatches.map((m) => {
-      const isP1 = m.player1_id === playerId;
-      const won = isP1 ? m.player1_score > m.player2_score : m.player2_score > m.player1_score;
-      const oppName = (isP1 ? m.player2_name : m.player1_name) || 'Opponent';
-      const score = isP1 ? `${m.player1_score}-${m.player2_score}` : `${m.player2_score}-${m.player1_score}`;
-      return {
-        id: m.id,
-        result: won ? 'W' : 'L',
-        opponentName: oppName,
-        score,
-        eloDelta: isP1 ? m.elo_delta : -m.elo_delta,
-        date: new Date(m.match_date).toLocaleDateString(),
-      };
-    });
-  };
+    const unsub = store.subscribe(loadData);
+    return unsub;
+  }, [store]);
 
   const faculties = useMemo(() => {
     const set = new Set<string>();
@@ -114,27 +78,28 @@ export default function LeaderboardPage() {
         return matchesSearch && matchesFaculty && matchesYear && matchesStyle;
       })
       .sort((a, b) => {
-        if (sortBy === 'wins') return b.wins - a.wins;
+        if (sortBy === 'elo') return b.current_elo - a.current_elo;
         if (sortBy === 'winrate') {
-          const rateA = a.wins / (a.matches_played || 1);
-          const rateB = b.wins / (b.matches_played || 1);
-          return rateB - rateA;
+          const aRate = a.matches_played > 0 ? a.wins / a.matches_played : 0;
+          const bRate = b.matches_played > 0 ? b.wins / b.matches_played : 0;
+          return bRate - aRate;
         }
-        return b.current_elo - a.current_elo;
+        if (sortBy === 'wins') return b.wins - a.wins;
+        return 0;
       });
   }, [profiles, searchQuery, selectedFaculty, selectedYear, selectedStyle, sortBy]);
 
-  const getRankBadge = (rank?: number) => {
+  const getRankBadge = (rank: number) => {
     if (rank === 1) {
       return (
-        <span className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-bhos-navy font-black text-xs flex items-center justify-center shadow-md shadow-amber-500/20">
-          1
+        <span className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 font-black text-xs flex items-center justify-center shadow-lg shadow-amber-500/30">
+          <Medal className="w-3.5 h-3.5" />
         </span>
       );
     }
     if (rank === 2) {
       return (
-        <span className="w-7 h-7 rounded-full bg-slate-300 text-bhos-navy font-black text-xs flex items-center justify-center shadow">
+        <span className="w-7 h-7 rounded-full bg-slate-300 text-slate-950 font-black text-xs flex items-center justify-center shadow">
           2
         </span>
       );
@@ -155,7 +120,6 @@ export default function LeaderboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-md overflow-hidden shrink-0">
@@ -165,19 +129,18 @@ export default function LeaderboardPage() {
             <div className="flex items-center gap-2">
               <Trophy className="w-6 h-6 text-bhos-gold" />
               <h1 className="text-2xl md:text-3xl font-display font-black text-white">
-                {t('leaderboard.title')}
+                {t('leaderboard.title') || 'Reytinq Cədvəli'}
               </h1>
             </div>
             <p className="text-xs text-slate-400 mt-1">
-              {t('leaderboard.subtitle')}
+              {t('leaderboard.subtitle') || 'Bakı Ali Neft Məktəbi rəsmi canlı ELO reytinq cədvəli'}
             </p>
           </div>
         </div>
 
-        {/* Sort selector */}
         <div className="flex items-center gap-2">
           <span className="text-xs text-slate-400 flex items-center gap-1">
-            <ArrowUpDown className="w-3.5 h-3.5" /> Sort:
+            <ArrowUpDown className="w-3.5 h-3.5" /> Sıralama:
           </span>
           <div className="bg-bhos-darkCard p-1 rounded-xl border border-bhos-border flex items-center gap-1">
             <button
@@ -194,7 +157,7 @@ export default function LeaderboardPage() {
                 sortBy === 'winrate' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
               }`}
             >
-              Win Rate %
+              Qələbə faizi %
             </button>
             <button
               onClick={() => setSortBy('wins')}
@@ -202,7 +165,7 @@ export default function LeaderboardPage() {
                 sortBy === 'wins' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
               }`}
             >
-              Wins
+              Qələbələr
             </button>
           </div>
         </div>
@@ -210,28 +173,25 @@ export default function LeaderboardPage() {
 
       <PendingApprovals onMatchUpdated={loadData} />
 
-      {/* Filter Bar */}
       <div className="p-4 rounded-2xl border border-bhos-border bg-bhos-midnight/90 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shadow-lg">
-        {/* Search */}
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={t('leaderboard.search_placeholder')}
+            placeholder="Oyunçu və ya fakültə axtarışı..."
             className="w-full pl-9 pr-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-bhos-cyan"
           />
         </div>
 
-        {/* Faculty */}
         <div>
           <select
             value={selectedFaculty}
             onChange={(e) => setSelectedFaculty(e.target.value)}
             className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan"
           >
-            <option value="ALL">{t('leaderboard.filter_faculty')}</option>
+            <option value="ALL">{t('leaderboard.filter_faculty') || 'Bütün Fakültələr'}</option>
             {faculties.map((f) => (
               <option key={f} value={f}>
                 {f}
@@ -240,30 +200,28 @@ export default function LeaderboardPage() {
           </select>
         </div>
 
-        {/* Year */}
         <div>
           <select
             value={selectedYear}
             onChange={(e) => setSelectedYear(e.target.value)}
             className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan"
           >
-            <option value="ALL">{t('leaderboard.filter_year')}</option>
+            <option value="ALL">{t('leaderboard.filter_year') || 'Bütün İllər'}</option>
             {years.map((y) => (
               <option key={y} value={String(y)}>
-                Class of {y}
+                {y} Qəbul ili
               </option>
             ))}
           </select>
         </div>
 
-        {/* Style */}
         <div>
           <select
             value={selectedStyle}
             onChange={(e) => setSelectedStyle(e.target.value)}
             className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan"
           >
-            <option value="ALL">{t('leaderboard.filter_style')}</option>
+            <option value="ALL">{t('leaderboard.filter_style') || 'Bütün Stillər'}</option>
             {playstyles.map((s) => (
               <option key={s} value={s}>
                 {s}
@@ -273,22 +231,19 @@ export default function LeaderboardPage() {
         </div>
       </div>
 
-      {/* Main Leaderboard List */}
       <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-4 sm:p-6 shadow-2xl space-y-3">
-        {/* Header Grid */}
         <div className="hidden md:grid grid-cols-12 gap-3 sm:gap-4 px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 bg-[#131C2B]/50 rounded-xl">
-          <div className="col-span-1 text-center">Rank</div>
-          <div className="col-span-4">Player</div>
-          <div className="col-span-3">Faculty / Major</div>
-          <div className="col-span-2 text-center">Matches</div>
-          <div className="col-span-2 text-right pr-2">Points</div>
+          <div className="col-span-1 text-center">Sıra</div>
+          <div className="col-span-4">Oyunçu</div>
+          <div className="col-span-3">Fakültə / İxtisas</div>
+          <div className="col-span-2 text-center">Oyunlar</div>
+          <div className="col-span-2 text-right pr-2">Xal</div>
         </div>
 
-        {/* Player Rows */}
         <div className="space-y-2">
           {filteredProfiles.length === 0 ? (
             <div className="py-12 text-center text-slate-500 bg-[#131C2B] rounded-xl border border-white/5 text-xs">
-              No players found matching current filters.
+              Cari filtrlərə uyğun oyunçu tapılmadı.
             </div>
           ) : (
             filteredProfiles.map((player, idx) => {
@@ -303,7 +258,6 @@ export default function LeaderboardPage() {
                   className="block bg-[#131C2B] border border-white/5 rounded-xl p-3.5 sm:p-4 hover:bg-white/[0.04] hover:border-white/10 hover:-translate-y-[1px] transition-all cursor-pointer group shadow-sm"
                 >
                   <div className="grid grid-cols-12 gap-3 sm:gap-4 items-center">
-                    {/* Rank & Trend */}
                     <div className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5">
                       {getRankBadge(player.rank || idx + 1)}
                       {(player.rank_change ?? 0) > 0 ? (
@@ -315,7 +269,6 @@ export default function LeaderboardPage() {
                       )}
                     </div>
 
-                    {/* Name & Role */}
                     <div className="col-span-6 sm:col-span-5 md:col-span-4 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="font-bold text-white group-hover:text-[#3B82F6] transition truncate text-xs sm:text-sm">
@@ -323,59 +276,49 @@ export default function LeaderboardPage() {
                         </span>
                         {player.role === 'president' && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
-                            President
+                            Prezident
                           </span>
                         )}
                         {player.role === 'coach' && (
                           <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-                            Coach
+                            Məşqçi
                           </span>
                         )}
                       </div>
 
-                      <div className="mt-1 flex items-center gap-2">
-                        <FormDots form={getPlayerForm(player.id)} size="sm" />
-                        <span className="text-[10px] text-slate-500 hidden sm:inline">
-                          (Recent Form)
-                        </span>
-                      </div>
-
                       <div className="md:hidden text-[10px] text-slate-400 mt-1 truncate">
-                        {player.major_faculty} • Class of {player.admission_year || 2024}
+                        {player.major_faculty} • {player.admission_year || 2024} Qəbul ili
                       </div>
                     </div>
 
-                    {/* Faculty */}
                     <div className="hidden md:block md:col-span-3 min-w-0">
                       <div className="text-xs text-slate-200 font-medium truncate">
-                        {player.major_faculty || 'Faculty of Engineering'}
+                        {player.major_faculty || 'Mühəndislik Fakültəsi'}
                       </div>
                       <div className="text-[11px] text-slate-500 font-mono">
-                        Class of {player.admission_year || 2024}
+                        {player.admission_year || 2024} Qəbul ili
                       </div>
                     </div>
 
-                    {/* Matches */}
                     <div className="hidden md:block md:col-span-2 text-center">
                       <div className="text-xs font-mono font-semibold text-slate-300">
-                        <span className="text-emerald-400">{player.wins}W</span>
+                        <span className="text-emerald-400">{player.wins}Q</span>
                         <span className="text-slate-600 mx-1">-</span>
-                        <span className="text-red-400">{player.losses}L</span>
+                        <span className="text-red-400">{player.losses}M</span>
                       </div>
                       <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                        {winRate}% win rate ({player.matches_played || 0} played)
+                        {winRate}% qələbə ({player.matches_played || 0} oyun)
                       </div>
                     </div>
 
-                    {/* Points (ELO) & Chevron */}
                     <div className="col-span-4 sm:col-span-6 md:col-span-2 flex items-center justify-end gap-2.5 text-right">
                       <div>
                         <div className="font-mono font-black text-sm sm:text-base text-cyan-400 group-hover:text-blue-400 transition">
                           <NumberTicker value={player.current_elo} />
-                          <span className="text-[10px] font-bold text-slate-500 ml-1">PTS</span>
+                          <span className="text-[10px] font-bold text-slate-500 ml-1">XAL</span>
                         </div>
                         <div className="text-[10px] text-slate-500 hidden sm:block">
-                          Official Rating
+                          Rəsmi Reytinq
                         </div>
                       </div>
                       <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" />
@@ -390,4 +333,3 @@ export default function LeaderboardPage() {
     </div>
   );
 }
-
