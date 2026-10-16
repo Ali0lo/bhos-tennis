@@ -2,334 +2,502 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { BHOSDataStore } from '../../lib/data/store';
-import { PlayerProfile, MatchRecord } from '../../lib/data/types';
-import { useTranslation } from '../../lib/i18n';
+import { PlayerProfile } from '../../lib/data/types';
+import { getSupabaseClient } from '../../lib/supabase/client';
 import NumberTicker from '../../components/NumberTicker';
-import PendingApprovals from '../../components/PendingApprovals';
-import { 
-  Trophy, 
-  Search, 
-  TrendingUp, 
-  TrendingDown, 
-  Minus, 
-  Medal, 
-  ChevronRight, 
-  ArrowUpDown
+import SmoothReveal from '../../components/SmoothReveal';
+import {
+  Search,
+  Trophy,
+  ArrowUpRight,
+  ArrowDownRight,
+  Minus,
+  SlidersHorizontal,
+  Medal,
+  Crown,
+  Sparkles,
+  UserCheck,
+  Briefcase,
+  GraduationCap,
 } from 'lucide-react';
 
+const FACULTIES = [
+  'Hamısı',
+  'Information Security',
+  'Computer Engineering',
+  'Chemical Engineering',
+  'Petroleum Engineering',
+  'Process Automation',
+  'İdman Klubu',
+  'Riyaziyyat və Təbii Elmlər',
+  'İnformasiya Texnologiyaları',
+];
+
+const COHORT_PILLS: { id: string; label: string }[] = [
+  { id: 'ALL', label: 'Hamısı' },
+  { id: 'STAFF', label: 'Müəllim / Əməkdaş' },
+  { id: '2026', label: '2026' },
+  { id: '2025', label: '2025' },
+  { id: '2024', label: '2024' },
+  { id: '2023', label: '2023' },
+  { id: '2022', label: '2022' },
+  { id: '2021', label: '2021' },
+  { id: '2020', label: '2020' },
+];
+
+const SMOOTH_EASE: [number, number, number, number] = [0.21, 0.47, 0.32, 0.98];
+
+function isStaffMember(player: PlayerProfile): boolean {
+  return (
+    player.user_type === 'teacher' ||
+    player.user_type === 'staff' ||
+    player.role === 'coach' ||
+    !player.admission_year
+  );
+}
+
 export default function LeaderboardPage() {
-  const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
 
   const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
-  const [matches, setMatches] = useState<MatchRecord[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFaculty, setSelectedFaculty] = useState<string>('ALL');
-  const [selectedYear, setSelectedYear] = useState<string>('ALL');
-  const [selectedStyle, setSelectedStyle] = useState<string>('ALL');
-  const [sortBy, setSortBy] = useState<'elo' | 'winrate' | 'wins'>('elo');
-
-  const loadData = () => {
-    setProfiles(store.getProfiles());
-    setMatches(store.getMatches());
-  };
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [selectedFaculty, setSelectedFaculty] = useState<string>('Hamısı');
+  const [genderFilter, setGenderFilter] = useState<'ALL' | 'male' | 'female'>('ALL');
+  const [cohortFilter, setCohortFilter] = useState<string>('ALL');
 
   useEffect(() => {
-    loadData();
-    const unsub = store.subscribe(loadData);
-    return unsub;
+    let isMounted = true;
+
+    async function loadLeaderboard() {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        try {
+          const { data: sessionData } = await supabase.auth.getSession();
+          const sessionEmail = sessionData?.session?.user?.email;
+
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .order('current_elo', { ascending: false });
+
+          if (!error && data && data.length > 0 && isMounted) {
+            const verifiedList = (data as PlayerProfile[])
+              .filter((p) => p.is_verified !== false)
+              .map((p, idx) => ({
+                ...p,
+                rank: idx + 1,
+              }));
+
+            setProfiles(verifiedList);
+
+            if (sessionEmail) {
+              const found = (data as PlayerProfile[]).find(
+                (p) => p.email?.toLowerCase() === sessionEmail.toLowerCase()
+              );
+              if (found) setCurrentUser(found);
+            } else {
+              setCurrentUser(store.getCurrentUser());
+            }
+
+            setLoading(false);
+            return;
+          }
+        } catch {
+        }
+      }
+
+      if (isMounted) {
+        setProfiles(store.getVerifiedProfiles());
+        setCurrentUser(store.getCurrentUser());
+        setLoading(false);
+      }
+    }
+
+    loadLeaderboard();
+
+    const unsub = store.subscribe(() => {
+      if (isMounted) {
+        setProfiles(store.getVerifiedProfiles());
+        setCurrentUser(store.getCurrentUser());
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      unsub();
+    };
   }, [store]);
 
-  const faculties = useMemo(() => {
-    const set = new Set<string>();
-    profiles.forEach((p) => {
-      if (p.major_faculty) set.add(p.major_faculty);
-    });
-    return Array.from(set);
-  }, [profiles]);
-
-  const years = useMemo(() => {
-    const set = new Set<number>();
-    profiles.forEach((p) => {
-      if (p.admission_year) set.add(p.admission_year);
-    });
-    return Array.from(set).sort((a, b) => b - a);
-  }, [profiles]);
-
-  const playstyles = useMemo(() => {
-    const set = new Set<string>();
-    profiles.forEach((p) => {
-      if (p.playing_style) set.add(p.playing_style);
-    });
-    return Array.from(set);
-  }, [profiles]);
-
   const filteredProfiles = useMemo(() => {
-    return profiles
-      .filter((p) => {
-        const matchesSearch =
-          p.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.major_faculty.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesFaculty = selectedFaculty === 'ALL' || p.major_faculty === selectedFaculty;
-        const matchesYear = selectedYear === 'ALL' || String(p.admission_year) === selectedYear;
-        const matchesStyle = selectedStyle === 'ALL' || p.playing_style === selectedStyle;
+    return profiles.filter((p) => {
+      const q = searchQuery.trim().toLowerCase();
+      const matchesSearch =
+        !q ||
+        p.full_name.toLowerCase().includes(q) ||
+        (p.major_faculty && p.major_faculty.toLowerCase().includes(q)) ||
+        (p.blade_equipment && p.blade_equipment.toLowerCase().includes(q));
 
-        return matchesSearch && matchesFaculty && matchesYear && matchesStyle;
-      })
-      .sort((a, b) => {
-        if (sortBy === 'elo') return b.current_elo - a.current_elo;
-        if (sortBy === 'winrate') {
-          const aRate = a.matches_played > 0 ? a.wins / a.matches_played : 0;
-          const bRate = b.matches_played > 0 ? b.wins / b.matches_played : 0;
-          return bRate - aRate;
-        }
-        if (sortBy === 'wins') return b.wins - a.wins;
-        return 0;
-      });
-  }, [profiles, searchQuery, selectedFaculty, selectedYear, selectedStyle, sortBy]);
+      const matchesFaculty =
+        selectedFaculty === 'Hamısı' ||
+        (p.major_faculty &&
+          p.major_faculty.toLowerCase().includes(selectedFaculty.toLowerCase()));
 
-  const getRankBadge = (rank: number) => {
-    if (rank === 1) {
-      return (
-        <span className="w-7 h-7 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 font-black text-xs flex items-center justify-center shadow-lg shadow-amber-500/30">
-          <Medal className="w-3.5 h-3.5" />
-        </span>
-      );
-    }
-    if (rank === 2) {
-      return (
-        <span className="w-7 h-7 rounded-full bg-slate-300 text-slate-950 font-black text-xs flex items-center justify-center shadow">
-          2
-        </span>
-      );
-    }
-    if (rank === 3) {
-      return (
-        <span className="w-7 h-7 rounded-full bg-amber-700 text-white font-black text-xs flex items-center justify-center shadow">
-          3
-        </span>
-      );
-    }
-    return (
-      <span className="w-7 h-7 rounded-full bg-slate-800 text-slate-300 font-mono text-xs flex items-center justify-center border border-slate-700">
-        {rank}
-      </span>
-    );
-  };
+      const matchesGender =
+        genderFilter === 'ALL' ||
+        (p.gender && p.gender.toLowerCase() === genderFilter);
+
+      const staff = isStaffMember(p);
+      const matchesCohort =
+        cohortFilter === 'ALL'
+          ? true
+          : cohortFilter === 'STAFF'
+          ? staff
+          : !staff && String(p.admission_year) === cohortFilter;
+
+      return matchesSearch && matchesFaculty && matchesGender && matchesCohort;
+    });
+  }, [profiles, searchQuery, selectedFaculty, genderFilter, cohortFilter]);
+
+  const filterKey = `${selectedFaculty}-${genderFilter}-${cohortFilter}-${searchQuery}`;
 
   return (
-    <div className="space-y-8">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-white p-1 flex items-center justify-center shadow-md overflow-hidden shrink-0">
-            <img src="/images/bhos-logo.png" alt="BHOS Logo" className="w-full h-full object-contain" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <Trophy className="w-6 h-6 text-bhos-gold" />
-              <h1 className="text-2xl md:text-3xl font-display font-black text-white">
-                {t('leaderboard.title') || 'Reytinq Cədvəli'}
+    <SmoothReveal>
+      <div className="space-y-8 pb-12">
+        <div className="relative rounded-2xl border border-white/10 bg-[#0F1623] p-6 sm:p-8 shadow-2xl overflow-hidden">
+          <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#3B82F6]/10 blur-3xl" />
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div className="space-y-2">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#131C2B] border border-white/10 text-[#3B82F6] text-xs font-bold uppercase tracking-wider">
+                <Trophy className="w-3.5 h-3.5" />
+                <span>Rəsmi Universitet Reytinqi</span>
+              </div>
+              <h1 className="text-2xl sm:text-4xl font-display font-black text-white tracking-tight">
+                BANM Canlı ELO Reytinq Cədvəli
               </h1>
+              <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
+                Bakı Ali Neft Məktəbinin təsdiqlənmiş stolüstü tennis oyunçularının rəsmi reytinq siyahısı. Dinamik ELO hesablama sistemi (K=32).
+              </p>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
-              {t('leaderboard.subtitle') || 'Bakı Ali Neft Məktəbi rəsmi canlı ELO reytinq cədvəli'}
-            </p>
+
+            {currentUser && (
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#131C2B] border border-[#3B82F6]/30 shadow-lg shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-[#3B82F6]/20 border border-[#3B82F6]/40 flex items-center justify-center text-[#3B82F6] font-display font-black text-base">
+                  {currentUser.full_name.charAt(0)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#3B82F6]">
+                      Sizin Reytinqiniz
+                    </span>
+                    {currentUser.rank && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#3B82F6]/20 text-white">
+                        #{currentUser.rank}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm font-bold text-white">{currentUser.full_name}</div>
+                  <div className="text-xs font-mono text-slate-400">
+                    <strong className="text-white">{currentUser.current_elo}</strong> ELO •{' '}
+                    <span className="text-[#22C55E]">{currentUser.wins}Q</span> -{' '}
+                    <span className="text-[#EF4444]">{currentUser.losses}M</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <span className="text-xs text-slate-400 flex items-center gap-1">
-            <ArrowUpDown className="w-3.5 h-3.5" /> Sıralama:
-          </span>
-          <div className="bg-bhos-darkCard p-1 rounded-xl border border-bhos-border flex items-center gap-1">
-            <button
-              onClick={() => setSortBy('elo')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                sortBy === 'elo' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              ELO
-            </button>
-            <button
-              onClick={() => setSortBy('winrate')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                sortBy === 'winrate' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              Qələbə faizi %
-            </button>
-            <button
-              onClick={() => setSortBy('wins')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                sortBy === 'wins' ? 'bg-bhos-cyan text-bhos-navy' : 'text-slate-300 hover:text-white'
-              }`}
-            >
-              Qələbələr
-            </button>
+        <div className="space-y-3">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
+            <div className="md:col-span-5 relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Oyunçu adı və ya ixtisas üzrə axtarış..."
+                className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0F1623] border border-white/10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-[#3B82F6] transition shadow-lg"
+              />
+            </div>
+
+            <div className="md:col-span-4 relative">
+              <SlidersHorizontal className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <select
+                value={selectedFaculty}
+                onChange={(e) => setSelectedFaculty(e.target.value)}
+                className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0F1623] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-[#3B82F6] transition shadow-lg appearance-none"
+              >
+                {FACULTIES.map((fac) => (
+                  <option key={fac} value={fac} className="bg-[#0F1623] text-white">
+                    {fac === 'Hamısı' ? 'Bütün Fakültələr / Kafedralar' : fac}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="md:col-span-3 flex p-1 rounded-xl bg-[#0F1623] border border-white/10 shadow-lg">
+              {(['ALL', 'male', 'female'] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setGenderFilter(g)}
+                  className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${
+                    genderFilter === g
+                      ? 'bg-[#3B82F6] text-white shadow'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {g === 'ALL' ? 'Hamısı' : g === 'male' ? 'Oğlan' : 'Qız'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {COHORT_PILLS.map((pill) => {
+              const active = cohortFilter === pill.id;
+              const isStaffPill = pill.id === 'STAFF';
+              return (
+                <button
+                  key={pill.id}
+                  type="button"
+                  onClick={() => setCohortFilter(pill.id)}
+                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition border ${
+                    active
+                      ? isStaffPill
+                        ? 'bg-indigo-500/25 text-indigo-200 border-indigo-400/50 shadow-lg shadow-indigo-500/10'
+                        : 'bg-[#3B82F6] text-white border-[#3B82F6] shadow-lg shadow-blue-500/20'
+                      : isStaffPill
+                      ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20'
+                      : 'bg-[#0F1623] text-slate-400 border-white/10 hover:text-white hover:border-white/20'
+                  }`}
+                >
+                  {isStaffPill ? (
+                    <Briefcase className="w-3.5 h-3.5" />
+                  ) : pill.id !== 'ALL' ? (
+                    <GraduationCap className="w-3.5 h-3.5" />
+                  ) : null}
+                  <span>{pill.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      </div>
 
-      <PendingApprovals onMatchUpdated={loadData} />
-
-      <div className="p-4 rounded-2xl border border-bhos-border bg-bhos-midnight/90 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 shadow-lg">
-        <div className="relative">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Oyunçu və ya fakültə axtarışı..."
-            className="w-full pl-9 pr-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-bhos-cyan"
-          />
-        </div>
-
-        <div>
-          <select
-            value={selectedFaculty}
-            onChange={(e) => setSelectedFaculty(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan"
-          >
-            <option value="ALL">{t('leaderboard.filter_faculty') || 'Bütün Fakültələr'}</option>
-            {faculties.map((f) => (
-              <option key={f} value={f}>
-                {f}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <select
-            value={selectedYear}
-            onChange={(e) => setSelectedYear(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan"
-          >
-            <option value="ALL">{t('leaderboard.filter_year') || 'Bütün İllər'}</option>
-            {years.map((y) => (
-              <option key={y} value={String(y)}>
-                {y} Qəbul ili
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div>
-          <select
-            value={selectedStyle}
-            onChange={(e) => setSelectedStyle(e.target.value)}
-            className="w-full px-3 py-2 rounded-xl bg-bhos-darkCard border border-bhos-border text-white text-xs focus:outline-none focus:border-bhos-cyan"
-          >
-            <option value="ALL">{t('leaderboard.filter_style') || 'Bütün Stillər'}</option>
-            {playstyles.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-4 sm:p-6 shadow-2xl space-y-3">
-        <div className="hidden md:grid grid-cols-12 gap-3 sm:gap-4 px-4 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-white/5 bg-[#131C2B]/50 rounded-xl">
-          <div className="col-span-1 text-center">Sıra</div>
-          <div className="col-span-4">Oyunçu</div>
-          <div className="col-span-3">Fakültə / İxtisas</div>
-          <div className="col-span-2 text-center">Oyunlar</div>
-          <div className="col-span-2 text-right pr-2">Xal</div>
-        </div>
-
-        <div className="space-y-2">
-          {filteredProfiles.length === 0 ? (
-            <div className="py-12 text-center text-slate-500 bg-[#131C2B] rounded-xl border border-white/5 text-xs">
-              Cari filtrlərə uyğun oyunçu tapılmadı.
+        <div className="rounded-2xl border border-white/10 bg-[#0F1623] shadow-2xl overflow-hidden">
+          {loading ? (
+            <div className="p-8 space-y-3">
+              {[1, 2, 3, 4, 5, 6].map((n) => (
+                <div
+                  key={n}
+                  className="h-14 rounded-xl bg-[#131C2B] animate-pulse border border-white/5"
+                />
+              ))}
+            </div>
+          ) : filteredProfiles.length === 0 ? (
+            <div className="p-12 text-center space-y-2">
+              <Sparkles className="w-8 h-8 text-slate-500 mx-auto" />
+              <div className="text-sm font-bold text-white">Uyğun oyunçu tapılmadı</div>
+              <p className="text-xs text-slate-400">
+                Axtarış sorğusunu və ya filtrləri dəyişərək yenidən yoxlayın.
+              </p>
             </div>
           ) : (
-            filteredProfiles.map((player, idx) => {
-              const winRate = Math.round(
-                (player.wins / (player.matches_played || 1)) * 100
-              );
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-white/10 bg-[#131C2B]/80 text-[11px] uppercase font-bold tracking-wider text-slate-400">
+                    <th className="py-4 px-4 sm:px-6 w-20">Sıra</th>
+                    <th className="py-4 px-4">Oyunçu</th>
+                    <th className="py-4 px-4 hidden md:table-cell">Fakültə / İxtisas</th>
+                    <th className="py-4 px-4 text-center">Oyunlar</th>
+                    <th className="py-4 px-4 text-center hidden sm:table-cell">Qələbə faizi</th>
+                    <th className="py-4 px-4 sm:px-6 text-right">Xal</th>
+                  </tr>
+                </thead>
+                <tbody key={filterKey} className="divide-y divide-white/5 text-xs sm:text-sm">
+                  {filteredProfiles.map((player, idx) => {
+                    const rank = player.rank ?? idx + 1;
+                    const isMe = currentUser?.id === player.id;
+                    const totalGames = player.matches_played || player.wins + player.losses;
+                    const winRate =
+                      totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
+                    const rankChange = player.rank_change ?? 0;
+                    const staff = isStaffMember(player);
+                    const facultySubtitle = staff
+                      ? `${player.major_faculty || 'İdman Klubu'} • Müəllim`
+                      : `${player.major_faculty || 'Mühəndislik'} • ${player.admission_year}`;
 
-              return (
-                <Link
-                  key={player.id}
-                  href={`/players/${player.id}`}
-                  className="block bg-[#131C2B] border border-white/5 rounded-xl p-3.5 sm:p-4 hover:bg-white/[0.04] hover:border-white/10 hover:-translate-y-[1px] transition-all cursor-pointer group shadow-sm"
-                >
-                  <div className="grid grid-cols-12 gap-3 sm:gap-4 items-center">
-                    <div className="col-span-2 sm:col-span-1 flex items-center justify-center gap-1.5">
-                      {getRankBadge(player.rank || idx + 1)}
-                      {(player.rank_change ?? 0) > 0 ? (
-                        <TrendingUp className="w-3 h-3 text-emerald-400 shrink-0" />
-                      ) : (player.rank_change ?? 0) < 0 ? (
-                        <TrendingDown className="w-3 h-3 text-red-400 shrink-0" />
-                      ) : (
-                        <Minus className="w-3 h-3 text-slate-600 shrink-0" />
-                      )}
-                    </div>
+                    return (
+                      <motion.tr
+                        key={player.id}
+                        initial={{ opacity: 0, y: 18, filter: 'blur(4px)' }}
+                        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                        transition={{
+                          duration: 0.5,
+                          delay: Math.min(idx * 0.04, 0.4),
+                          ease: SMOOTH_EASE,
+                        }}
+                        className={`transition-colors group ${
+                          isMe
+                            ? 'bg-[#3B82F6]/15 hover:bg-[#3B82F6]/20 border-l-4 border-l-[#3B82F6]'
+                            : rank === 1
+                            ? 'bg-amber-500/[0.04] hover:bg-white/[0.04]'
+                            : 'hover:bg-white/[0.03]'
+                        }`}
+                      >
+                        <td className="py-4 px-4 sm:px-6 font-mono font-bold">
+                          <div className="flex items-center gap-2">
+                            {rank === 1 ? (
+                              <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-black shadow-md shadow-amber-500/20">
+                                <Crown className="w-4 h-4" />
+                              </span>
+                            ) : rank === 2 ? (
+                              <span className="w-8 h-8 rounded-xl bg-slate-300 text-slate-950 flex items-center justify-center font-black">
+                                2
+                              </span>
+                            ) : rank === 3 ? (
+                              <span className="w-8 h-8 rounded-xl bg-amber-700 text-amber-100 flex items-center justify-center font-black">
+                                3
+                              </span>
+                            ) : (
+                              <span className="w-8 h-8 rounded-xl bg-[#131C2B] border border-white/10 text-slate-300 flex items-center justify-center">
+                                {rank}
+                              </span>
+                            )}
 
-                    <div className="col-span-6 sm:col-span-5 md:col-span-4 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-white group-hover:text-[#3B82F6] transition truncate text-xs sm:text-sm">
-                          {player.full_name}
-                        </span>
-                        {player.role === 'president' && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase bg-purple-500/20 text-purple-300 border border-purple-500/30 shrink-0">
-                            Prezident
+                            {rankChange > 0 ? (
+                              <span className="inline-flex items-center text-[10px] text-[#22C55E] font-mono">
+                                <ArrowUpRight className="w-3 h-3" />
+                                {rankChange}
+                              </span>
+                            ) : rankChange < 0 ? (
+                              <span className="inline-flex items-center text-[10px] text-[#EF4444] font-mono">
+                                <ArrowDownRight className="w-3 h-3" />
+                                {Math.abs(rankChange)}
+                              </span>
+                            ) : (
+                              <Minus className="w-3 h-3 text-slate-600 hidden sm:inline" />
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-10 h-10 rounded-xl flex items-center justify-center font-display font-bold text-sm shrink-0 border ${
+                                isMe
+                                  ? 'bg-[#3B82F6] text-white border-white/20'
+                                  : staff
+                                  ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
+                                  : 'bg-[#131C2B] text-slate-200 border-white/10'
+                              }`}
+                            >
+                              {player.full_name.charAt(0)}
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <Link
+                                  href={`/players/${player.id}`}
+                                  className="font-bold text-white group-hover:text-[#3B82F6] transition truncate"
+                                >
+                                  {player.full_name}
+                                </Link>
+
+                                {isMe && (
+                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#3B82F6] text-white">
+                                    <UserCheck className="w-2.5 h-2.5" />
+                                    <span>Siz</span>
+                                  </span>
+                                )}
+
+                                {staff && (
+                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                    Müəllim / Əməkdaş
+                                  </span>
+                                )}
+
+                                {player.role !== 'player' && (
+                                  <span
+                                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
+                                      player.role === 'president'
+                                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                                        : 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                                    }`}
+                                  >
+                                    {player.role === 'president' ? 'Prezident' : 'Məşqçi'}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="text-[11px] text-slate-400 md:hidden truncate">
+                                {facultySubtitle}
+                              </div>
+                            </div>
+                          </div>
+                        </td>
+
+                        <td className="py-4 px-4 hidden md:table-cell">
+                          <span className="text-xs text-slate-300 font-medium">
+                            {facultySubtitle}
                           </span>
-                        )}
-                        {player.role === 'coach' && (
-                          <span className="text-[9px] px-1.5 py-0.5 rounded font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30 shrink-0">
-                            Məşqçi
-                          </span>
-                        )}
-                      </div>
+                        </td>
 
-                      <div className="md:hidden text-[10px] text-slate-400 mt-1 truncate">
-                        {player.major_faculty} • {player.admission_year || 2024} Qəbul ili
-                      </div>
-                    </div>
+                        <td className="py-4 px-4 text-center font-mono">
+                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#131C2B] border border-white/5 text-xs">
+                            <span className="text-[#22C55E] font-bold">{player.wins}Q</span>
+                            <span className="text-slate-600">/</span>
+                            <span className="text-[#EF4444] font-bold">{player.losses}M</span>
+                          </div>
+                        </td>
 
-                    <div className="hidden md:block md:col-span-3 min-w-0">
-                      <div className="text-xs text-slate-200 font-medium truncate">
-                        {player.major_faculty || 'Mühəndislik Fakültəsi'}
-                      </div>
-                      <div className="text-[11px] text-slate-500 font-mono">
-                        {player.admission_year || 2024} Qəbul ili
-                      </div>
-                    </div>
+                        <td className="py-4 px-4 text-center hidden sm:table-cell">
+                          <div className="flex flex-col items-center gap-1">
+                            <span
+                              className={`font-mono text-xs font-bold ${
+                                winRate >= 60
+                                  ? 'text-[#22C55E]'
+                                  : winRate >= 40
+                                  ? 'text-slate-200'
+                                  : 'text-slate-400'
+                              }`}
+                            >
+                              {winRate}%
+                            </span>
+                            <div className="w-16 h-1.5 rounded-full bg-[#131C2B] overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${
+                                  winRate >= 60 ? 'bg-[#22C55E]' : 'bg-[#3B82F6]'
+                                }`}
+                                style={{ width: `${winRate}%` }}
+                              />
+                            </div>
+                          </div>
+                        </td>
 
-                    <div className="hidden md:block md:col-span-2 text-center">
-                      <div className="text-xs font-mono font-semibold text-slate-300">
-                        <span className="text-emerald-400">{player.wins}Q</span>
-                        <span className="text-slate-600 mx-1">-</span>
-                        <span className="text-red-400">{player.losses}M</span>
-                      </div>
-                      <div className="text-[11px] text-slate-400 font-mono mt-0.5">
-                        {winRate}% qələbə ({player.matches_played || 0} oyun)
-                      </div>
-                    </div>
-
-                    <div className="col-span-4 sm:col-span-6 md:col-span-2 flex items-center justify-end gap-2.5 text-right">
-                      <div>
-                        <div className="font-mono font-black text-sm sm:text-base text-cyan-400 group-hover:text-blue-400 transition">
-                          <NumberTicker value={player.current_elo} />
-                          <span className="text-[10px] font-bold text-slate-500 ml-1">XAL</span>
-                        </div>
-                        <div className="text-[10px] text-slate-500 hidden sm:block">
-                          Rəsmi Reytinq
-                        </div>
-                      </div>
-                      <ChevronRight className="w-4 h-4 text-slate-500 group-hover:text-white group-hover:translate-x-0.5 transition-all shrink-0" />
-                    </div>
-                  </div>
-                </Link>
-              );
-            })
+                        <td className="py-4 px-4 sm:px-6 text-right">
+                          <div className="inline-flex items-baseline gap-1 font-mono text-base sm:text-lg font-black text-white">
+                            <NumberTicker value={player.current_elo} />
+                            <span className="text-[10px] font-sans font-semibold text-[#3B82F6]">
+                              XAL
+                            </span>
+                          </div>
+                        </td>
+                      </motion.tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
           )}
         </div>
       </div>
-    </div>
+    </SmoothReveal>
   );
 }

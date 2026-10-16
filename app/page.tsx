@@ -11,6 +11,7 @@ import HeroHotspotPin from '../components/HeroHotspotPin';
 import NumberTicker from '../components/NumberTicker';
 import TiltCard from '../components/TiltCard';
 import EloToastBadge from '../components/EloToastBadge';
+import SmoothReveal, { SmoothRevealItem } from '../components/SmoothReveal';
 import { 
   Trophy, 
   Table as TableIcon, 
@@ -52,254 +53,262 @@ export default function HomePage() {
 
   return (
     <div className="space-y-16">
-      <section className="relative -mt-6 rounded-3xl overflow-hidden border border-white/10 shadow-2xl min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
-        <div 
-          className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-100"
-          style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}
-        />
+      <SmoothReveal delay={0.02}>
+        <section className="relative -mt-6 rounded-3xl overflow-hidden border border-white/10 shadow-2xl min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-100"
+            style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}
+          />
 
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-slate-950/60" />
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-slate-950/60" />
 
-        <div className="relative z-20 flex flex-wrap items-center justify-between gap-4">
-          <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/15 bg-black/40 backdrop-blur-md text-xs font-semibold text-white shadow-lg">
-            <img 
-              src="/images/bhos-crest.png" 
-              alt="BHOS" 
-              className="w-4 h-4 object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.8)]" 
-            />
-            <span className="text-cyan-400 font-bold tracking-wide">BHOS TABLE TENNIS</span>
-            <span className="text-slate-400">•</span>
-            <span className="text-slate-300">{t('hero.portal_tag')}</span>
-          </div>
-
-          <a
-            href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="group inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/40 backdrop-blur-md text-xs font-semibold text-emerald-300 hover:bg-emerald-900/50 transition-all shadow-lg"
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <MessageCircle className="w-3.5 h-3.5 fill-emerald-400" />
-            <span>{t('hero.community_tag')}</span>
-            <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-          </a>
-        </div>
-
-        <div className="absolute top-[22%] right-[6%] sm:right-[10%] z-30">
-          <HeroHotspotPin type="league" badgeLabel={t('hero.stats_leader')} />
-        </div>
-        <div className="absolute top-[62%] right-[4%] sm:right-[8%] z-30">
-          <HeroHotspotPin type="hall" badgeLabel={t('hero.hall_tables_btn')} />
-        </div>
-        <div className="absolute top-[80%] right-[10%] sm:right-[15%] z-30">
-          <HeroHotspotPin type="community" badgeLabel="WhatsApp Chat" />
-        </div>
-
-        <div className="relative z-20 max-w-2xl space-y-6 pt-28 pb-2">
-          <div className="space-y-3">
-            <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black text-white tracking-tight leading-[1.08] drop-shadow-2xl">
-              {t('hero.headline')}
-            </h1>
-            <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-sans max-w-xl drop-shadow">
-              {t('hero.subtitle')}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            <Link
-              href="/leaderboard"
-              className="px-6 py-3 rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-display font-bold text-xs sm:text-sm shadow-xl shadow-cyan-500/25 active:scale-95 transition flex items-center gap-2"
-            >
-              <Trophy className="w-4 h-4" />
-              <span>{t('nav.leaderboard')}</span>
-            </Link>
-
-            <Link
-              href="/tables"
-              className="px-6 py-3 rounded-full border border-white/20 bg-slate-950/60 hover:bg-slate-900/80 backdrop-blur-md text-white font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
-            >
-              <TableIcon className="w-4 h-4 text-pink-400" />
-              <span>{t('hero.hall_tables_btn')}</span>
-            </Link>
+          <div className="relative z-20 flex flex-wrap items-center justify-between gap-4">
+            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/15 bg-black/40 backdrop-blur-md text-xs font-semibold text-white shadow-lg">
+              <img 
+                src="/images/bhos-crest.png" 
+                alt="BHOS" 
+                className="w-4 h-4 object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.8)]" 
+              />
+              <span className="text-cyan-400 font-bold tracking-wide">BHOS TABLE TENNIS</span>
+              <span className="text-slate-400">•</span>
+              <span className="text-slate-300">{t('hero.portal_tag')}</span>
+            </div>
 
             <a
               href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
               target="_blank"
               rel="noopener noreferrer"
-              className="px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-xs sm:text-sm shadow-xl shadow-emerald-500/25 active:scale-95 transition flex items-center gap-2"
+              className="group inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-emerald-500/30 bg-emerald-950/40 backdrop-blur-md text-xs font-semibold text-emerald-300 hover:bg-emerald-900/50 transition-all shadow-lg"
             >
-              <MessageCircle className="w-4 h-4 fill-slate-950" />
-              <span>{t('hero.join_whatsapp_btn')}</span>
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <MessageCircle className="w-3.5 h-3.5 fill-emerald-400" />
+              <span>{t('hero.community_tag')}</span>
+              <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
             </a>
+          </div>
 
-            {(currentUser?.role === 'president' || currentUser?.role === 'coach') && (
-              <button
-                onClick={() => setShowMatchModal(true)}
-                className="px-5 py-3 rounded-full border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
+          <div className="absolute top-[22%] right-[6%] sm:right-[10%] z-30">
+            <HeroHotspotPin type="league" badgeLabel={t('hero.stats_leader')} />
+          </div>
+          <div className="absolute top-[62%] right-[4%] sm:right-[8%] z-30">
+            <HeroHotspotPin type="hall" badgeLabel={t('hero.hall_tables_btn')} />
+          </div>
+          <div className="absolute top-[80%] right-[10%] sm:right-[15%] z-30">
+            <HeroHotspotPin type="community" badgeLabel="WhatsApp Chat" />
+          </div>
+
+          <SmoothReveal staggerChildren={0.1} className="relative z-20 max-w-2xl space-y-6 pt-28 pb-2">
+            <SmoothRevealItem className="space-y-3">
+              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black text-white tracking-tight leading-[1.08] drop-shadow-2xl">
+                {t('hero.headline')}
+              </h1>
+              <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-sans max-w-xl drop-shadow">
+                {t('hero.subtitle')}
+              </p>
+            </SmoothRevealItem>
+
+            <SmoothRevealItem className="flex flex-wrap items-center gap-3 pt-2">
+              <Link
+                href="/leaderboard"
+                className="px-6 py-3 rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-display font-bold text-xs sm:text-sm shadow-xl shadow-cyan-500/25 active:scale-95 transition flex items-center gap-2"
               >
-                <Zap className="w-4 h-4" />
-                <span>{t('nav.log_match')}</span>
-              </button>
-            )}
-          </div>
-        </div>
+                <Trophy className="w-4 h-4" />
+                <span>{t('nav.leaderboard')}</span>
+              </Link>
 
-        <div className="relative z-20 pt-6 mt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              {t('hero.stats_members')}
-            </span>
-            <div className="text-xl sm:text-2xl font-mono font-black text-white flex items-baseline gap-1.5">
-              <NumberTicker value={profiles.length} />
-              <span className="text-xs font-sans text-slate-400">{t('hero.players_count')}</span>
+              <Link
+                href="/tables"
+                className="px-6 py-3 rounded-full border border-white/20 bg-slate-950/60 hover:bg-slate-900/80 backdrop-blur-md text-white font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
+              >
+                <TableIcon className="w-4 h-4 text-pink-400" />
+                <span>{t('hero.hall_tables_btn')}</span>
+              </Link>
+
+              <a
+                href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-xs sm:text-sm shadow-xl shadow-emerald-500/25 active:scale-95 transition flex items-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4 fill-slate-950" />
+                <span>{t('hero.join_whatsapp_btn')}</span>
+              </a>
+
+              {(currentUser?.role === 'president' || currentUser?.role === 'coach') && (
+                <button
+                  onClick={() => setShowMatchModal(true)}
+                  className="px-5 py-3 rounded-full border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
+                >
+                  <Zap className="w-4 h-4" />
+                  <span>{t('nav.log_match')}</span>
+                </button>
+              )}
+            </SmoothRevealItem>
+          </SmoothReveal>
+
+          <div className="relative z-20 pt-6 mt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                {t('hero.stats_members')}
+              </span>
+              <div className="text-xl sm:text-2xl font-mono font-black text-white flex items-baseline gap-1.5">
+                <NumberTicker value={profiles.length} />
+                <span className="text-xs font-sans text-slate-400">{t('hero.players_count')}</span>
+              </div>
+            </div>
+            <div className="space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                {t('hero.stats_matches')}
+              </span>
+              <div className="text-xl sm:text-2xl font-mono font-black text-cyan-400 flex items-baseline gap-1.5">
+                <NumberTicker value={matches.length} />
+                <span className="text-xs font-sans text-slate-400">{t('hero.official_count')}</span>
+              </div>
+            </div>
+            <div className="space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                {t('hero.stats_tables')}
+              </span>
+              <div className="text-xl sm:text-2xl font-mono font-black text-pink-400">
+                {t('hero.stats_tables_sub')}
+              </div>
+            </div>
+            <div className="space-y-0.5">
+              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
+                {t('hero.stats_leader')}
+              </span>
+              <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 flex items-baseline gap-1">
+                <NumberTicker value={top3[0]?.current_elo ?? 9999} />
+                <span className="text-xs font-sans text-slate-400">ELO</span>
+              </div>
             </div>
           </div>
-          <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              {t('hero.stats_matches')}
-            </span>
-            <div className="text-xl sm:text-2xl font-mono font-black text-cyan-400 flex items-baseline gap-1.5">
-              <NumberTicker value={matches.length} />
-              <span className="text-xs font-sans text-slate-400">{t('hero.official_count')}</span>
-            </div>
-          </div>
-          <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              {t('hero.stats_tables')}
-            </span>
-            <div className="text-xl sm:text-2xl font-mono font-black text-pink-400">
-              {t('hero.stats_tables_sub')}
-            </div>
-          </div>
-          <div className="space-y-0.5">
-            <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-              {t('hero.stats_leader')}
-            </span>
-            <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 flex items-baseline gap-1">
-              <NumberTicker value={top3[0]?.current_elo ?? 9999} />
-              <span className="text-xs font-sans text-slate-400">ELO</span>
-            </div>
-          </div>
-        </div>
-      </section>
+        </section>
+      </SmoothReveal>
 
       <section className="space-y-6">
         <HallRulesSection />
       </section>
 
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl md:text-2xl font-display font-bold text-white flex items-center gap-2">
-              <Award className="w-6 h-6 text-amber-400" />
-              <span>{t('leaderboard.top_podium')}</span>
-            </h2>
-            <p className="text-xs text-slate-400">
-              {t('home_podium.subtitle')}
-            </p>
+      <SmoothReveal delay={0.1}>
+        <section className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl md:text-2xl font-display font-bold text-white flex items-center gap-2">
+                <Award className="w-6 h-6 text-amber-400" />
+                <span>{t('leaderboard.top_podium')}</span>
+              </h2>
+              <p className="text-xs text-slate-400">
+                {t('home_podium.subtitle')}
+              </p>
+            </div>
+            <Link
+              href="/leaderboard"
+              className="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1"
+            >
+              <span>{t('home_podium.view_full')} ({profiles.length})</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
           </div>
-          <Link
-            href="/leaderboard"
-            className="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1"
-          >
-            <span>{t('home_podium.view_full')} ({profiles.length})</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-          {top3[1] && (
-            <TiltCard className="order-2 md:order-1 rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-xl relative group hover:border-slate-600 transition">
-              <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow">
-                2
-              </div>
-              <div className="pt-2">
-                <Link
-                  href={`/players/${top3[1].id}`}
-                  className="font-display font-bold text-base text-white hover:text-cyan-400 transition"
-                >
-                  {top3[1].full_name}
-                </Link>
-                <p className="text-xs text-slate-400">{top3[1].major_faculty}</p>
-                <div className="mt-4 flex items-baseline justify-between">
-                  <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
-                    <NumberTicker value={top3[1].current_elo} />
-                    <span className="text-xs text-slate-400 font-sans">ELO</span>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+            {top3[1] && (
+              <TiltCard className="order-2 md:order-1 rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-xl relative group hover:border-slate-600 transition">
+                <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow">
+                  2
+                </div>
+                <div className="pt-2">
+                  <Link
+                    href={`/players/${top3[1].id}`}
+                    className="font-display font-bold text-base text-white hover:text-cyan-400 transition"
+                  >
+                    {top3[1].full_name}
+                  </Link>
+                  <p className="text-xs text-slate-400">{top3[1].major_faculty}</p>
+                  <div className="mt-4 flex items-baseline justify-between">
+                    <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
+                      <NumberTicker value={top3[1].current_elo} />
+                      <span className="text-xs text-slate-400 font-sans">ELO</span>
+                    </div>
+                    <span className="text-xs text-emerald-400 font-semibold">
+                      {Math.round((top3[1].wins / (top3[1].matches_played || 1)) * 100)}% {t('home_podium.win_rate')}
+                    </span>
                   </div>
-                  <span className="text-xs text-emerald-400 font-semibold">
-                    {Math.round((top3[1].wins / (top3[1].matches_played || 1)) * 100)}% {t('home_podium.win_rate')}
-                  </span>
-                </div>
-                <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
-                  <span>{t('home_podium.matches_label')}: {top3[1].matches_played}</span>
-                  <span>{top3[1].wins}W - {top3[1].losses}L</span>
-                </div>
-              </div>
-            </TiltCard>
-          )}
-
-          {top3[0] && (
-            <TiltCard className="order-1 md:order-2 rounded-3xl border-2 border-amber-400/80 bg-gradient-to-b from-amber-500/10 via-slate-900/90 to-slate-900 p-7 shadow-2xl relative group hover:border-amber-400 transition md:-translate-y-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-xl shadow-amber-500/30">
-                1
-              </div>
-              <div className="pt-4 text-center">
-                <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-amber-500/30">
-                  {t(`roles.${top3[0].role}`)} • #1
-                </div>
-                <Link
-                  href={`/players/${top3[0].id}`}
-                  className="block font-display font-black text-xl text-white hover:text-cyan-400 transition"
-                >
-                  {top3[0].full_name}
-                </Link>
-                <p className="text-xs text-slate-400">{top3[0].major_faculty}</p>
-                <div className="mt-4 font-mono text-3xl font-black text-amber-400 flex items-baseline justify-center gap-1">
-                  <NumberTicker value={top3[0].current_elo} />
-                  <span className="text-xs text-slate-300 font-sans">ELO</span>
-                </div>
-                <div className="mt-2 text-xs text-emerald-400 font-semibold">
-                  {Math.round((top3[0].wins / (top3[0].matches_played || 1)) * 100)}% {t('home_podium.win_rate')} ({top3[0].wins}W - {top3[0].losses}L)
-                </div>
-                <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-center">
-                  <span>{top3[0].admission_year} Qəbul ili</span>
-                </div>
-              </div>
-            </TiltCard>
-          )}
-
-          {top3[2] && (
-            <TiltCard className="order-3 rounded-3xl border border-amber-800/80 bg-slate-900/80 p-6 shadow-xl relative group hover:border-amber-700 transition">
-              <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow">
-                3
-              </div>
-              <div className="pt-2">
-                <Link
-                  href={`/players/${top3[2].id}`}
-                  className="font-display font-bold text-base text-white hover:text-cyan-400 transition"
-                >
-                  {top3[2].full_name}
-                </Link>
-                <p className="text-xs text-slate-400">{top3[2].major_faculty}</p>
-                <div className="mt-4 flex items-baseline justify-between">
-                  <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
-                    <NumberTicker value={top3[2].current_elo} />
-                    <span className="text-xs text-slate-400 font-sans">ELO</span>
+                  <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
+                    <span>{t('home_podium.matches_label')}: {top3[1].matches_played}</span>
+                    <span>{top3[1].wins}W - {top3[1].losses}L</span>
                   </div>
-                  <span className="text-xs text-emerald-400 font-semibold">
-                    {Math.round((top3[2].wins / (top3[2].matches_played || 1)) * 100)}% {t('home_podium.win_rate')}
-                  </span>
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
-                  <span>{t('home_podium.matches_label')}: {top3[2].matches_played}</span>
-                  <span>{top3[2].wins}W - {top3[2].losses}L</span>
+              </TiltCard>
+            )}
+
+            {top3[0] && (
+              <TiltCard className="order-1 md:order-2 rounded-3xl border-2 border-amber-400/80 bg-gradient-to-b from-amber-500/10 via-slate-900/90 to-slate-900 p-7 shadow-2xl relative group hover:border-amber-400 transition md:-translate-y-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-xl shadow-amber-500/30">
+                  1
                 </div>
-              </div>
-            </TiltCard>
-          )}
-        </div>
-      </section>
+                <div className="pt-4 text-center">
+                  <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-amber-500/30">
+                    {t(`roles.${top3[0].role}`)} • #1
+                  </div>
+                  <Link
+                    href={`/players/${top3[0].id}`}
+                    className="block font-display font-black text-xl text-white hover:text-cyan-400 transition"
+                  >
+                    {top3[0].full_name}
+                  </Link>
+                  <p className="text-xs text-slate-400">{top3[0].major_faculty}</p>
+                  <div className="mt-4 font-mono text-3xl font-black text-amber-400 flex items-baseline justify-center gap-1">
+                    <NumberTicker value={top3[0].current_elo} />
+                    <span className="text-xs text-slate-300 font-sans">ELO</span>
+                  </div>
+                  <div className="mt-2 text-xs text-emerald-400 font-semibold">
+                    {Math.round((top3[0].wins / (top3[0].matches_played || 1)) * 100)}% {t('home_podium.win_rate')} ({top3[0].wins}W - {top3[0].losses}L)
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-center">
+                    <span>
+                      {top3[0].user_type === 'teacher' || top3[0].user_type === 'staff' || top3[0].role === 'coach' || !top3[0].admission_year
+                        ? 'Müəllim / Əməkdaş'
+                        : `${top3[0].admission_year} Qəbul ili`}
+                    </span>
+                  </div>
+                </div>
+              </TiltCard>
+            )}
+
+            {top3[2] && (
+              <TiltCard className="order-3 rounded-3xl border border-amber-800/80 bg-slate-900/80 p-6 shadow-xl relative group hover:border-amber-700 transition">
+                <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow">
+                  3
+                </div>
+                <div className="pt-2">
+                  <Link
+                    href={`/players/${top3[2].id}`}
+                    className="font-display font-bold text-base text-white hover:text-cyan-400 transition"
+                  >
+                    {top3[2].full_name}
+                  </Link>
+                  <p className="text-xs text-slate-400">{top3[2].major_faculty}</p>
+                  <div className="mt-4 flex items-baseline justify-between">
+                    <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
+                      <NumberTicker value={top3[2].current_elo} />
+                      <span className="text-xs text-slate-400 font-sans">ELO</span>
+                    </div>
+                    <span className="text-xs text-emerald-400 font-semibold">
+                      {Math.round((top3[2].wins / (top3[2].matches_played || 1)) * 100)}% {t('home_podium.win_rate')}
+                    </span>
+                  </div>
+                  <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
+                    <span>{t('home_podium.matches_label')}: {top3[2].matches_played}</span>
+                    <span>{top3[2].wins}W - {top3[2].losses}L</span>
+                  </div>
+                </div>
+              </TiltCard>
+            )}
+          </div>
+        </section>
+      </SmoothReveal>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-4">
@@ -392,7 +401,7 @@ export default function HomePage() {
           </div>
         </div>
 
-        <div className="space-y-4">
+        <SmoothReveal delay={0.1} scale className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
               <Trophy className="w-5 h-5 text-amber-400" />
@@ -447,43 +456,45 @@ export default function HomePage() {
               </TiltCard>
             ))}
           </div>
-        </div>
+        </SmoothReveal>
       </div>
 
-      <section id="about" className="pt-8 border-t border-white/10 scroll-mt-28">
-        <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-8 sm:p-10 shadow-2xl relative overflow-hidden">
-          <div className="absolute -right-10 -bottom-10 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="max-w-3xl space-y-4 relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-semibold">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>{t('brand.title')}</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">
-              Mühəndis Dəqiqliyi və İdman Əzmi
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Bakı Ali Neft Məktəbində (BANM) yaradılmış Stolüstü Tennis Klubu İnformasiya Təhlükəsizliyi, Kompüter Mühəndisliyi, Kimya Mühəndisliyi, Neft-Qaz Mühəndisliyi və Proseslərin Avtomatlaşdırılması ixtisaslarının tələbələrini rəqabətli stolüstü tennis ətrafında birləşdirir. Baş Məşqçi <strong className="text-white">İftixar Məhərrəmov</strong> və Klub Prezidenti <strong className="text-white">Əli İsgəndərli</strong> rəhbərliyi ilə üzvlərimiz ITTF standartlı masalarda məşq edir və rəsmi ELO reytinq sistemində mübarizə aparırlar.
-            </p>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-                <Target className="w-5 h-5 text-cyan-400" />
-                <h4 className="font-bold text-white text-xs">ITTF Standartlı Arena</h4>
-                <p className="text-[11px] text-slate-400">4 ədəd Donic Waldner 25mm peşəkar yarış masası (1 Xanımlar / 3 Bəylər).</p>
+      <SmoothReveal delay={0.12}>
+        <section id="about" className="pt-8 border-t border-white/10 scroll-mt-28">
+          <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-8 sm:p-10 shadow-2xl relative overflow-hidden">
+            <div className="absolute -right-10 -bottom-10 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="max-w-3xl space-y-4 relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-semibold">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>{t('brand.title')}</span>
               </div>
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-                <Flame className="w-5 h-5 text-amber-400" />
-                <h4 className="font-bold text-white text-xs">Rəsmi ELO Sistemi</h4>
-                <p className="text-[11px] text-slate-400">Hər qarşılaşmanı izləyən dinamik K=32 iki-faktorlu təsdiq alqoritmi.</p>
-              </div>
-              <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
-                <Users className="w-5 h-5 text-emerald-400" />
-                <h4 className="font-bold text-white text-xs">Fəal İcma</h4>
-                <p className="text-[11px] text-slate-400">WhatsApp icması vasitəsilə gündəlik yoldaşlıq və reytinq oyunları.</p>
+              <h2 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">
+                Mühəndis Dəqiqliyi və İdman Əzmi
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                Bakı Ali Neft Məktəbində (BANM) yaradılmış Stolüstü Tennis Klubu İnformasiya Təhlükəsizliyi, Kompüter Mühəndisliyi, Kimya Mühəndisliyi, Neft-Qaz Mühəndisliyi və Proseslərin Avtomatlaşdırılması ixtisaslarının tələbələrini rəqabətli stolüstü tennis ətrafında birləşdirir. Baş Məşqçi <strong className="text-white">İftixar Məhərrəmov</strong> və Klub Prezidenti <strong className="text-white">Əli İsgəndərli</strong> rəhbərliyi ilə üzvlərimiz ITTF standartlı masalarda məşq edir və rəsmi ELO reytinq sistemində mübarizə aparırlar.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <Target className="w-5 h-5 text-cyan-400" />
+                  <h4 className="font-bold text-white text-xs">ITTF Standartlı Arena</h4>
+                  <p className="text-[11px] text-slate-400">4 ədəd Donic Waldner 25mm peşəkar yarış masası (1 Xanımlar / 3 Bəylər).</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <Flame className="w-5 h-5 text-amber-400" />
+                  <h4 className="font-bold text-white text-xs">Rəsmi ELO Sistemi</h4>
+                  <p className="text-[11px] text-slate-400">Hər qarşılaşmanı izləyən dinamik K=32 iki-faktorlu təsdiq alqoritmi.</p>
+                </div>
+                <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
+                  <Users className="w-5 h-5 text-emerald-400" />
+                  <h4 className="font-bold text-white text-xs">Fəal İcma</h4>
+                  <p className="text-[11px] text-slate-400">WhatsApp icması vasitəsilə gündəlik yoldaşlıq və reytinq oyunları.</p>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
+      </SmoothReveal>
 
       {showMatchModal && (
         <MatchLoggerModal onClose={() => setShowMatchModal(false)} />

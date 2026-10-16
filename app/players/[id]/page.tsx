@@ -19,6 +19,8 @@ import {
   Flame,
   Target,
   Skull,
+  Briefcase,
+  GraduationCap,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -454,6 +456,18 @@ export default function PlayerProfilePage() {
                     {profile.role === 'president' ? 'Prezident' : profile.role === 'coach' ? 'Məşqçi' : 'Oyunçu'}
                   </span>
 
+                  {(!profile.admission_year || profile.user_type === 'teacher' || profile.user_type === 'staff' || profile.role === 'coach') ? (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                      <Briefcase className="w-3 h-3" />
+                      <span>Müəllim / Əməkdaş</span>
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
+                      <GraduationCap className="w-3 h-3" />
+                      <span>Tələbə • {profile.admission_year}</span>
+                    </span>
+                  )}
+
                   {profile.playing_level && (
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       {profile.playing_level === 'Beginner' ? 'Başlanğıc' : profile.playing_level === 'Intermediate' ? 'Orta' : profile.playing_level === 'Advanced' ? 'Yüksək' : profile.playing_level}
@@ -462,7 +476,9 @@ export default function PlayerProfilePage() {
                 </div>
 
                 <p className="text-xs sm:text-sm text-slate-400 font-medium">
-                  {profile.major_faculty || 'Mühəndislik Fakültəsi'} • {profile.admission_year || 2024} Qəbul ili
+                  {(!profile.admission_year || profile.user_type === 'teacher' || profile.user_type === 'staff' || profile.role === 'coach')
+                    ? `${profile.major_faculty || 'İdman Klubu'} • ${profile.user_type === 'staff' ? 'Əməkdaş' : 'Müəllim'}`
+                    : `${profile.major_faculty || 'Mühəndislik Fakültəsi'} • ${profile.admission_year} Qəbul ili`}
                 </p>
                 <p className="text-xs text-slate-500 font-mono">{profile.email}</p>
               </div>
@@ -484,7 +500,7 @@ export default function PlayerProfilePage() {
       </SmoothReveal>
 
       <SmoothReveal delay={0.1}>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-5 backdrop-blur-md shadow-xl hover:border-white/20 transition">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
@@ -537,6 +553,40 @@ export default function PlayerProfilePage() {
               <NumberTicker value={winRatePercent} suffix="%" />
             </div>
             <p className="text-[10px] text-slate-500 mt-1">Rəsmi oyun nisbəti</p>
+          </div>
+
+          <div className="col-span-2 lg:col-span-1 rounded-2xl border border-white/10 bg-[#0F1623] p-5 backdrop-blur-md shadow-xl hover:border-white/20 transition">
+            {(!profile.admission_year || profile.user_type === 'teacher' || profile.user_type === 'staff' || profile.role === 'coach') ? (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
+                    Status / Vəzifə
+                  </span>
+                  <Briefcase className="w-4 h-4 text-indigo-400" />
+                </div>
+                <div className="text-xl sm:text-2xl font-display font-black text-indigo-300">
+                  {profile.user_type === 'staff' ? 'Əməkdaş' : 'Müəllim'}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1 truncate">
+                  {profile.major_faculty || 'BANM Heyəti'}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
+                    Qəbul İli
+                  </span>
+                  <GraduationCap className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="text-2xl sm:text-3xl font-mono font-black text-cyan-400">
+                  {profile.admission_year}
+                </div>
+                <p className="text-[10px] text-slate-500 mt-1 truncate">
+                  {profile.major_faculty || 'Tələbə'}
+                </p>
+              </>
+            )}
           </div>
         </div>
       </SmoothReveal>

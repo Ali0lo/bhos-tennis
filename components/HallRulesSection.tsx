@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import SmoothReveal from './SmoothReveal';
+import SmoothReveal, { SmoothRevealItem } from './SmoothReveal';
 import {
   ShieldAlert,
   Footprints,
@@ -104,7 +104,7 @@ const FOUR_TABLES = [
 export default function HallRulesSection() {
   return (
     <div className="space-y-8">
-      <SmoothReveal delay={0.05}>
+      <SmoothReveal delay={0.05} scale>
         <div className="relative rounded-3xl border border-white/10 bg-[#0F1623] p-6 sm:p-8 shadow-2xl overflow-hidden">
           <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-[#3B82F6]/10 blur-3xl" />
@@ -156,147 +156,144 @@ export default function HallRulesSection() {
         </div>
       </SmoothReveal>
 
-      <SmoothReveal delay={0.1}>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="rounded-3xl bg-[#0F1623] border border-rose-500/30 p-6 sm:p-7 shadow-xl relative overflow-hidden flex flex-col justify-between">
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-rose-500/10 blur-2xl" />
-            <div className="space-y-4 relative z-10">
-              <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
-                  Masa 1 • Xanımlar (Women)
-                </span>
-                <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-400 text-white font-display font-black text-sm flex items-center justify-center shadow-lg shadow-rose-500/20">
-                  #1
-                </span>
-              </div>
+      <SmoothReveal staggerChildren={0.1} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <SmoothRevealItem direction="right" className="rounded-3xl bg-[#0F1623] border border-rose-500/30 p-6 sm:p-7 shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-rose-500/10 blur-2xl" />
+          <div className="space-y-4 relative z-10">
+            <div className="flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
+                Masa 1 • Xanımlar (Women)
+              </span>
+              <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-400 text-white font-display font-black text-sm flex items-center justify-center shadow-lg shadow-rose-500/20">
+                #1
+              </span>
+            </div>
 
-              <div>
-                <h3 className="text-xl font-display font-black text-white">
-                  Table 1 — Xanımlar üçün Eksklüziv Masa
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
-                  Yalnız xanım oyunçular, məşqlər və yoldaşlıq/rəsmi oyunlar üçün ayrılmışdır.
-                </p>
-              </div>
+            <div>
+              <h3 className="text-xl font-display font-black text-white">
+                Table 1 — Xanımlar üçün Eksklüziv Masa
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
+                Yalnız xanım oyunçular, məşqlər və yoldaşlıq/rəsmi oyunlar üçün ayrılmışdır.
+              </p>
+            </div>
 
-              <div className="rounded-2xl bg-[#131C2B] border border-rose-500/20 p-4 space-y-2 text-xs text-slate-300">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />
-                  <span>Xanım tələbələr üçün daimi üstünlük və sərbəst məşq imkanı</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />
-                  <span>Donic Waldner Classic 25mm ITTF standartlı yarış masası</span>
-                </div>
+            <div className="rounded-2xl bg-[#131C2B] border border-rose-500/20 p-4 space-y-2 text-xs text-slate-300">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>Xanım tələbələr üçün daimi üstünlük və sərbəst məşq imkanı</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />
+                <span>Donic Waldner Classic 25mm ITTF standartlı yarış masası</span>
               </div>
             </div>
           </div>
+        </SmoothRevealItem>
 
-          <div className="rounded-3xl bg-[#0F1623] border border-cyan-500/30 p-6 sm:p-7 shadow-xl relative overflow-hidden flex flex-col justify-between">
-            <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-cyan-500/10 blur-2xl" />
-            <div className="space-y-4 relative z-10">
-              <div className="flex items-center justify-between gap-3">
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs font-bold uppercase tracking-wider">
-                  Masalar 2, 3 və 4 • Bəylər (Men)
-                </span>
-                <div className="flex items-center gap-1.5">
-                  {[2, 3, 4].map((num) => (
-                    <span
-                      key={num}
-                      className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-[#3B82F6] text-slate-950 font-display font-black text-xs flex items-center justify-center shadow-md shadow-cyan-500/20"
-                    >
-                      #{num}
-                    </span>
-                  ))}
-                </div>
+        <SmoothRevealItem direction="right" className="rounded-3xl bg-[#0F1623] border border-cyan-500/30 p-6 sm:p-7 shadow-xl relative overflow-hidden flex flex-col justify-between">
+          <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-cyan-500/10 blur-2xl" />
+          <div className="space-y-4 relative z-10">
+            <div className="flex items-center justify-between gap-3">
+              <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs font-bold uppercase tracking-wider">
+                Masalar 2, 3 və 4 • Bəylər (Men)
+              </span>
+              <div className="flex items-center gap-1.5">
+                {[2, 3, 4].map((num) => (
+                  <span
+                    key={num}
+                    className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-[#3B82F6] text-slate-950 font-display font-black text-xs flex items-center justify-center shadow-md shadow-cyan-500/20"
+                  >
+                    #{num}
+                  </span>
+                ))}
               </div>
+            </div>
 
-              <div>
-                <h3 className="text-xl font-display font-black text-white">
-                  Tables 2, 3 & 4 — Bəylər üçün Məşq və Reytinq Masaları
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
-                  Bəy tələbələrin gündəlik məşqləri, ELO reytinq (ladder) qarşılaşmaları və yoldaşlıq oyunları üçün təyin edilmişdir.
-                </p>
+            <div>
+              <h3 className="text-xl font-display font-black text-white">
+                Tables 2, 3 & 4 — Bəylər üçün Məşq və Reytinq Masaları
+              </h3>
+              <p className="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
+                Bəy tələbələrin gündəlik məşqləri, ELO reytinq (ladder) qarşılaşmaları və yoldaşlıq oyunları üçün təyin edilmişdir.
+              </p>
+            </div>
+
+            <div className="rounded-2xl bg-[#131C2B] border border-cyan-500/20 p-4 space-y-2 text-xs text-slate-300">
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>Rəsmi ELO reytinq oyunları, komanda məşqləri və sərbəst görüşlər</span>
               </div>
-
-              <div className="rounded-2xl bg-[#131C2B] border border-cyan-500/20 p-4 space-y-2 text-xs text-slate-300">
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span>Rəsmi ELO reytinq oyunları, komanda məşqləri və sərbəst görüşlər</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <span>3 ədəd Donic Waldner Classic 25mm ITTF standartlı yarış masası</span>
-                </div>
+              <div className="flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>3 ədəd Donic Waldner Classic 25mm ITTF standartlı yarış masası</span>
               </div>
             </div>
           </div>
-        </div>
+        </SmoothRevealItem>
       </SmoothReveal>
 
-      <SmoothReveal delay={0.14}>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {FOUR_TABLES.map((tb) => (
-            <div
-              key={tb.number}
-              className={`rounded-2xl bg-[#0F1623] border p-5 shadow-lg flex flex-col justify-between transition-all ${
-                tb.isWomen
-                  ? 'border-rose-500/30 hover:border-rose-500/60'
-                  : 'border-white/10 hover:border-cyan-500/40'
-              }`}
-            >
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span
-                    className={`w-8 h-8 rounded-xl font-display font-black text-xs flex items-center justify-center ${
-                      tb.isWomen
-                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                        : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                    }`}
-                  >
-                    #{tb.number}
-                  </span>
-                  <span
-                    className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
-                      tb.isWomen
-                        ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                        : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
-                    }`}
-                  >
-                    {tb.group}
-                  </span>
-                </div>
-
-                <div className="my-3 py-3.5 px-3 rounded-xl bg-[#131C2B] border border-white/5 relative flex items-center justify-center">
-                  <div
-                    className={`w-full h-14 rounded-lg border-2 relative flex items-center justify-center ${
-                      tb.isWomen
-                        ? 'bg-rose-950/40 border-rose-400/50'
-                        : 'bg-blue-950/50 border-cyan-400/50'
-                    }`}
-                  >
-                    <div className="absolute inset-x-0 top-1/2 h-[1px] bg-white/25" />
-                    <div className="absolute inset-y-0 left-1/2 w-[2px] bg-white/60 -translate-x-1/2" />
-                    <span className="relative z-10 px-2 py-0.5 rounded bg-slate-950/90 text-[10px] font-mono font-bold text-white border border-white/10">
-                      {tb.label}
-                    </span>
-                  </div>
-                </div>
-
-                <h4 className="font-display font-bold text-white text-sm">{tb.label}</h4>
-                <p className="text-xs text-slate-400 mt-1 leading-relaxed">{tb.usage}</p>
+      <SmoothReveal staggerChildren={0.1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {FOUR_TABLES.map((tb) => (
+          <SmoothRevealItem
+            key={tb.number}
+            direction="right"
+            className={`rounded-2xl bg-[#0F1623] border p-5 shadow-lg flex flex-col justify-between transition-all ${
+              tb.isWomen
+                ? 'border-rose-500/30 hover:border-rose-500/60'
+                : 'border-white/10 hover:border-cyan-500/40'
+            }`}
+          >
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <span
+                  className={`w-8 h-8 rounded-xl font-display font-black text-xs flex items-center justify-center ${
+                    tb.isWomen
+                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
+                      : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                  }`}
+                >
+                  #{tb.number}
+                </span>
+                <span
+                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+                    tb.isWomen
+                      ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                      : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+                  }`}
+                >
+                  {tb.group}
+                </span>
               </div>
 
-              <div className="mt-4 pt-3 border-t border-white/5 text-[11px] font-mono text-slate-400">
-                {tb.surface}
+              <div className="my-3 py-3.5 px-3 rounded-xl bg-[#131C2B] border border-white/5 relative flex items-center justify-center">
+                <div
+                  className={`w-full h-14 rounded-lg border-2 relative flex items-center justify-center ${
+                    tb.isWomen
+                      ? 'bg-rose-950/40 border-rose-400/50'
+                      : 'bg-blue-950/50 border-cyan-400/50'
+                  }`}
+                >
+                  <div className="absolute inset-x-0 top-1/2 h-[1px] bg-white/25" />
+                  <div className="absolute inset-y-0 left-1/2 w-[2px] bg-white/60 -translate-x-1/2" />
+                  <span className="relative z-10 px-2 py-0.5 rounded bg-slate-950/90 text-[10px] font-mono font-bold text-white border border-white/10">
+                    {tb.label}
+                  </span>
+                </div>
               </div>
+
+              <h4 className="font-display font-bold text-white text-sm">{tb.label}</h4>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">{tb.usage}</p>
             </div>
-          ))}
-        </div>
+
+            <div className="mt-4 pt-3 border-t border-white/5 text-[11px] font-mono text-slate-400">
+              {tb.surface}
+            </div>
+          </SmoothRevealItem>
+        ))}
       </SmoothReveal>
 
-      <SmoothReveal delay={0.18}>
+      <SmoothReveal delay={0.12}>
         <div className="rounded-3xl bg-[#0F1623] border border-white/10 p-6 sm:p-8 shadow-2xl space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-5">
             <div className="flex items-center gap-3">
@@ -317,14 +314,15 @@ export default function HallRulesSection() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <SmoothReveal staggerChildren={0.1} className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {OFFICIAL_HALL_RULES.map((rule, index) => {
               const IconComponent = rule.icon;
               const isLastOdd = index === OFFICIAL_HALL_RULES.length - 1 && OFFICIAL_HALL_RULES.length % 2 !== 0;
 
               return (
-                <div
+                <SmoothRevealItem
                   key={rule.id}
+                  direction="up"
                   className={`rounded-2xl bg-[#131C2B] border border-white/5 p-5 flex items-start gap-4 hover:border-white/15 transition ${
                     isLastOdd ? 'md:col-span-2' : ''
                   }`}
@@ -350,10 +348,10 @@ export default function HallRulesSection() {
                       {rule.description}
                     </p>
                   </div>
-                </div>
+                </SmoothRevealItem>
               );
             })}
-          </div>
+          </SmoothReveal>
         </div>
       </SmoothReveal>
     </div>

@@ -53,3 +53,4 @@ CREATE POLICY "Allow delete tournament_registrations"
   ON public.tournament_registrations
   FOR DELETE
   USING (true);
+

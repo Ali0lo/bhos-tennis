@@ -176,7 +176,7 @@ export default function TournamentsPage() {
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 pt-20 pb-16">
-      <SmoothReveal delay={0.05}>
+      <SmoothReveal delay={0.05} scale>
         <div className="relative w-full max-w-2xl mx-auto rounded-3xl bg-[#0F1623]/90 backdrop-blur-xl border border-white/10 p-8 sm:p-12 shadow-2xl shadow-black/60 overflow-hidden text-center">
           <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-[#3B82F6]/20 blur-3xl" />
 

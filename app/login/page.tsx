@@ -1,542 +1,660 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import React, { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getSupabaseClient } from '../../lib/supabase/client';
 import { BHOSDataStore } from '../../lib/data/store';
-import { 
-  Lock, 
-  Mail, 
-  ArrowLeft, 
-  AlertCircle, 
-  CheckCircle2, 
-  Loader2, 
-  Eye, 
-  EyeOff, 
-  ShieldCheck,
+import { PlayerProfile, BHOSFaculty, PlayingLevel } from '../../lib/data/types';
+import { getSupabaseClient } from '../../lib/supabase/client';
+import { useTranslation } from '../../lib/i18n';
+import SmoothReveal from '../../components/SmoothReveal';
+import {
+  Shield,
+  Lock,
+  Mail,
   User,
   GraduationCap,
-  Award,
   Calendar,
-  Clock
+  Award,
+  CheckCircle2,
+  AlertCircle,
+  ArrowRight,
+  LogOut,
+  Clock,
+  Sparkles,
+  Briefcase,
 } from 'lucide-react';
 
-function LoginForm() {
+const FACULTIES: BHOSFaculty[] = [
+  'Information Security',
+  'Computer Engineering',
+  'Chemical Engineering',
+  'Petroleum Engineering',
+  'Process Automation',
+];
+
+const STAFF_DEPARTMENTS: string[] = [
+  'İdman Klubu',
+  'Riyaziyyat və Təbii Elmlər',
+  'İnformasiya Texnologiyaları',
+  'Neft-Qaz Mühəndisliyi',
+  'Kimya Mühəndisliyi',
+  'Proseslərin Avtomatlaşdırılması',
+  'İnzibati Heyət / Dekanlıq',
+];
+
+const PLAYING_LEVELS: PlayingLevel[] = ['Beginner', 'Intermediate', 'Advanced'];
+
+const ADMISSION_YEARS = [2020, 2021, 2022, 2023, 2024, 2025, 2026];
+
+export default function LoginPage() {
+  const { t } = useTranslation();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const redirectPath = searchParams.get('redirect') || '/';
+  const store = BHOSDataStore.getInstance();
 
-  const [mode, setMode] = useState<'signin' | 'register'>('signin');
+  const [mode, setMode] = useState<'signin' | 'signup'>('signin');
+  const [userType, setUserType] = useState<'student' | 'teacher'>('student');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [major, setMajor] = useState<string>('Computer Engineering');
+  const [admissionYear, setAdmissionYear] = useState<number>(2024);
+  const [gender, setGender] = useState<'female' | 'male'>('male');
+  const [playingLevel, setPlayingLevel] = useState<PlayingLevel>('Intermediate');
 
-  const [signInEmail, setSignInEmail] = useState('');
-  const [signInPassword, setSignInPassword] = useState('');
-  const [showSignInPassword, setShowSignInPassword] = useState(false);
-
-  const [firstName, setFirstName] = useState('');
-  const [surname, setSurname] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [showRegPassword, setShowRegPassword] = useState(false);
-  const [admissionYear, setAdmissionYear] = useState<number | string>(2024);
-  const [faculty, setFaculty] = useState('Computer Engineering');
-  const [playingLevel, setPlayingLevel] = useState<'Beginner' | 'Intermediate' | 'Advanced'>('Beginner');
-
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [signInSuccess, setSignInSuccess] = useState(false);
-  const [registerSuccess, setRegisterSuccess] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  useEffect(() => {
+    const update = () => {
+      setCurrentUser(store.getCurrentUser());
+    };
+    update();
+    return store.subscribe(update);
+  }, [store]);
+
+  const handleUserTypeChange = (nextType: 'student' | 'teacher') => {
+    setUserType(nextType);
+    if (nextType === 'teacher') {
+      setMajor(STAFF_DEPARTMENTS[0]);
+    } else {
+      setMajor(FACULTIES[1]);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError(null);
+    setErrorMsg(null);
+    setSuccessMsg(null);
     setLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
     const supabase = getSupabaseClient();
-    if (!supabase) {
-      setError('Supabase connection is not configured.');
-      setLoading(false);
-      return;
-    }
 
     try {
-      const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email: signInEmail.trim().toLowerCase(),
-        password: signInPassword,
-      });
+      if (mode === 'signin') {
+        if (!cleanEmail || !password) {
+          throw new Error('Zəhmət olmasa e-poçt və şifrənizi daxil edin.');
+        }
 
-      if (authError) {
-        setError(authError.message || 'Invalid email or password.');
-        setLoading(false);
-        return;
-      }
+        if (supabase) {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: cleanEmail,
+            password,
+          });
 
-      if (data?.user?.email) {
-        const store = BHOSDataStore.getInstance();
-        await store.linkProfileByEmail(data.user.email);
-        setSignInSuccess(true);
+          if (error) {
+            throw new Error(error.message);
+          }
 
-        setTimeout(() => {
-          router.push(redirectPath);
-          router.refresh();
-        }, 500);
+          if (data.user?.email) {
+            const linked = await store.linkProfileByEmail(data.user.email);
+            if (!linked) {
+              const meta = data.user.user_metadata || {};
+              const metaUserType = meta.user_type || 'student';
+              const newProfile: PlayerProfile = {
+                id: data.user.id,
+                full_name: meta.full_name || cleanEmail.split('@')[0],
+                email: cleanEmail,
+                major_faculty: meta.major_faculty || 'Computer Engineering',
+                admission_year:
+                  metaUserType === 'teacher' || metaUserType === 'staff'
+                    ? null
+                    : Number(meta.admission_year) || 2024,
+                user_type: metaUserType,
+                gender: meta.gender || 'male',
+                role: 'player',
+                playing_level: meta.playing_level || 'Intermediate',
+                playing_style: 'Shakehand All-round',
+                blade_equipment: 'Standard Club Racket',
+                forehand_rubber: 'Standard Red',
+                backhand_rubber: 'Standard Black',
+                current_elo: 0,
+                matches_played: 0,
+                wins: 0,
+                losses: 0,
+                is_verified: false,
+                is_active: true,
+                created_at: new Date().toISOString(),
+              };
+
+              await supabase.from('profiles').upsert([newProfile]);
+              store.addProfile(newProfile);
+              store.setCurrentUser(newProfile.id);
+            }
+          }
+
+          setSuccessMsg(t('auth.login_success'));
+          setTimeout(() => router.push('/'), 800);
+          return;
+        } else {
+          const linked = await store.linkProfileByEmail(cleanEmail);
+          if (!linked) {
+            throw new Error('Bu e-poçt ünvanı ilə oyunçu profili tapılmadı. Zəhmət olmasa qeydiyyatdan keçin.');
+          }
+          setSuccessMsg(t('auth.login_success'));
+          setTimeout(() => router.push('/'), 800);
+          return;
+        }
+      } else {
+        if (!fullName.trim() || !cleanEmail || !password) {
+          throw new Error('Zəhmət olmasa bütün tələb olunan xanaları doldurun.');
+        }
+
+        const isTeacher = userType === 'teacher';
+        const resolvedAdmissionYear = isTeacher ? null : Number(admissionYear);
+        const resolvedUserType = isTeacher ? 'teacher' : 'student';
+
+        if (supabase) {
+          const { data, error } = await supabase.auth.signUp({
+            email: cleanEmail,
+            password,
+            options: {
+              data: {
+                full_name: fullName.trim(),
+                major_faculty: major,
+                admission_year: resolvedAdmissionYear,
+                user_type: resolvedUserType,
+                gender,
+                playing_level: playingLevel,
+              },
+            },
+          });
+
+          if (error) {
+            throw new Error(error.message);
+          }
+
+          const userId = data.user?.id || `p-${Date.now()}`;
+          const newProfile: PlayerProfile = {
+            id: userId,
+            full_name: fullName.trim(),
+            email: cleanEmail,
+            major_faculty: major,
+            admission_year: resolvedAdmissionYear,
+            user_type: resolvedUserType,
+            gender,
+            role: 'player',
+            playing_level: playingLevel,
+            playing_style: 'Shakehand All-round',
+            blade_equipment: 'Standard Club Racket',
+            forehand_rubber: 'Standard Red',
+            backhand_rubber: 'Standard Black',
+            current_elo: 0,
+            matches_played: 0,
+            wins: 0,
+            losses: 0,
+            is_verified: false,
+            is_active: true,
+            created_at: new Date().toISOString(),
+          };
+
+          const { error: insertError } = await supabase.from('profiles').insert([
+            {
+              id: newProfile.id,
+              full_name: newProfile.full_name,
+              email: newProfile.email,
+              major_faculty: newProfile.major_faculty,
+              admission_year: newProfile.admission_year,
+              user_type: newProfile.user_type,
+              gender: newProfile.gender,
+              role: newProfile.role,
+              playing_level: newProfile.playing_level,
+              playing_style: newProfile.playing_style,
+              blade_equipment: newProfile.blade_equipment,
+              forehand_rubber: newProfile.forehand_rubber,
+              backhand_rubber: newProfile.backhand_rubber,
+              current_elo: 0,
+              matches_played: 0,
+              wins: 0,
+              losses: 0,
+              is_verified: false,
+              is_active: true,
+            },
+          ]);
+
+          if (insertError) {
+            await supabase.from('profiles').insert([
+              {
+                id: newProfile.id,
+                full_name: newProfile.full_name,
+                email: newProfile.email,
+                major_faculty: newProfile.major_faculty,
+                admission_year: newProfile.admission_year,
+                gender: newProfile.gender,
+                role: newProfile.role,
+                playing_level: newProfile.playing_level,
+                playing_style: newProfile.playing_style,
+                blade_equipment: newProfile.blade_equipment,
+                forehand_rubber: newProfile.forehand_rubber,
+                backhand_rubber: newProfile.backhand_rubber,
+                current_elo: 0,
+                matches_played: 0,
+                wins: 0,
+                losses: 0,
+                is_verified: false,
+                is_active: true,
+              },
+            ]);
+          }
+
+          store.addProfile(newProfile);
+          if (data.session) {
+            store.setCurrentUser(newProfile.id);
+          }
+
+          setSuccessMsg(t('auth.signup_success'));
+          return;
+        } else {
+          const newProfile: PlayerProfile = {
+            id: `p-${Date.now()}`,
+            full_name: fullName.trim(),
+            email: cleanEmail,
+            major_faculty: major,
+            admission_year: resolvedAdmissionYear,
+            user_type: resolvedUserType,
+            gender,
+            role: 'player',
+            playing_level: playingLevel,
+            playing_style: 'Shakehand All-round',
+            blade_equipment: 'Standard Club Racket',
+            forehand_rubber: 'Standard Red',
+            backhand_rubber: 'Standard Black',
+            current_elo: 0,
+            matches_played: 0,
+            wins: 0,
+            losses: 0,
+            is_verified: false,
+            is_active: true,
+            created_at: new Date().toISOString(),
+          };
+          store.addProfile(newProfile);
+          store.setCurrentUser(newProfile.id);
+          setSuccessMsg(t('auth.signup_success'));
+          return;
+        }
       }
     } catch (err: any) {
-      setError(err?.message || 'An unexpected error occurred. Please try again.');
+      setErrorMsg(err.message || t('auth.error'));
     } finally {
       setLoading(false);
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    const cleanFirst = firstName.trim();
-    const cleanLast = surname.trim();
-    const cleanEmail = regEmail.trim().toLowerCase();
-    const yearNum = Number(admissionYear);
-
-    if (!cleanFirst || !cleanLast) {
-      setError('Please provide your first name and surname.');
-      return;
-    }
-
-    if (!cleanEmail) {
-      setError('Please provide your BHOS email address.');
-      return;
-    }
-
-    if (regPassword.length < 6) {
-      setError('Password must be at least 6 characters long.');
-      return;
-    }
-
-    if (isNaN(yearNum) || yearNum < 2015 || yearNum > 2030) {
-      setError('Please enter a valid admission year (e.g. 2024).');
-      return;
-    }
-
-    setLoading(true);
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setError('Supabase connection is not configured.');
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const fullName = `${cleanFirst} ${cleanLast}`;
-
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: cleanEmail,
-        password: regPassword,
-        options: {
-          data: {
-            full_name: fullName,
-            admission_year: yearNum,
-            major_faculty: faculty,
-            playing_level: playingLevel,
-          },
-        },
-      });
-
-      if (authError) {
-        setError(authError.message || 'Failed to create user account.');
-        setLoading(false);
-        return;
-      }
-
-      const userId = authData?.user?.id || `p-${Date.now()}`;
-
-      const profilePayload = {
-        id: userId,
-        full_name: fullName,
-        email: cleanEmail,
-        major_faculty: faculty,
-        admission_year: yearNum,
-        playing_level: playingLevel,
-        playing_style: 'Shakehand All-round',
-        blade_equipment: 'University Racket',
-        forehand_rubber: 'Standard',
-        backhand_rubber: 'Standard',
-        current_elo: 0,
-        matches_played: 0,
-        wins: 0,
-        losses: 0,
-        is_verified: false,
-        is_active: true,
-        role: 'player' as const,
-        created_at: new Date().toISOString(),
-      };
-
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert([profilePayload]);
-
-      if (profileError) {
-        console.warn('Profile insertion warning:', profileError.message);
-      }
-
-      const store = BHOSDataStore.getInstance();
-      store.addProfile(profilePayload as any);
-
-      setRegisterSuccess(true);
-    } catch (err: any) {
-      setError(err?.message || 'Failed to complete registration.');
-    } finally {
-      setLoading(false);
-    }
+  const handleSignOut = async () => {
+    await store.signOut();
+    setSuccessMsg('Hesabdan uğurla çıxış edildi.');
   };
 
   return (
-    <div className="w-full max-w-md">
-      <Link
-        href="/"
-        className="inline-flex items-center gap-2 text-xs text-slate-400 hover:text-white transition mb-6 group"
-      >
-        <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-        <span>Back to BHOS TT Portal</span>
-      </Link>
-
-      <div className="rounded-3xl border border-white/10 bg-[#0F1623] p-8 shadow-2xl shadow-black/80 backdrop-blur-xl relative overflow-hidden">
-        <div className="absolute -top-24 -right-24 w-48 h-48 bg-[#3B82F6]/20 rounded-full blur-3xl pointer-events-none" />
-
-        <div className="text-center space-y-3 mb-6">
-          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center mx-auto p-2 shadow-lg shadow-cyan-500/10">
+    <SmoothReveal>
+      <div className="max-w-lg mx-auto pt-4 pb-12 space-y-6">
+        <div className="text-center space-y-2">
+          <div className="w-16 h-16 rounded-2xl bg-slate-900/90 border border-cyan-500/30 flex items-center justify-center mx-auto shadow-xl shadow-cyan-500/15">
             <img
               src="/images/bhos-crest.png"
               alt="BHOS Crest"
-              className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]"
+              className="w-11 h-11 object-contain filter drop-shadow-[0_0_8px_rgba(0,229,255,0.6)]"
             />
           </div>
-          <div>
-            <h1 className="text-2xl font-display font-black text-white tracking-tight">
-              BHOS TT Portal
-            </h1>
-            <p className="text-xs text-slate-400 mt-1">
-              Baku Higher Oil School Table Tennis Club
-            </p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">
+            {mode === 'signin' ? t('auth.signin_title') : t('auth.signup_title')}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 max-w-md mx-auto">
+            {mode === 'signin' ? t('auth.signin_sub') : t('auth.signup_sub')}
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 p-1 bg-[#080D16] border border-white/10 rounded-2xl mb-6">
-          <button
-            type="button"
-            onClick={() => {
-              setMode('signin');
-              setError(null);
-            }}
-            className={`py-2 text-xs font-bold rounded-xl transition-all ${
-              mode === 'signin'
-                ? 'bg-[#3B82F6] text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Sign In
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setMode('register');
-              setError(null);
-            }}
-            className={`py-2 text-xs font-bold rounded-xl transition-all ${
-              mode === 'register'
-                ? 'bg-[#3B82F6] text-white shadow-md shadow-blue-500/20'
-                : 'text-slate-400 hover:text-white'
-            }`}
-          >
-            Register
-          </button>
-        </div>
+        {currentUser && (
+          <div className="p-5 rounded-3xl border border-cyan-500/30 bg-slate-900/80 backdrop-blur-xl shadow-xl space-y-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 font-display font-black text-base">
+                  {currentUser.full_name.charAt(0)}
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-display font-bold text-white text-sm">
+                      {currentUser.full_name}
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                      {t(`roles.${currentUser.role}`)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400">{currentUser.email}</p>
+                </div>
+              </div>
 
-        {error && (
-          <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs flex items-start gap-2.5">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <div className="leading-relaxed">{error}</div>
-          </div>
-        )}
-
-        {signInSuccess && (
-          <div className="mb-6 p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5">
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
-            <span>Authenticated successfully. Redirecting...</span>
-          </div>
-        )}
-
-        {registerSuccess && (
-          <div className="mb-6 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-2">
-            <div className="flex items-center gap-2 font-bold text-amber-300">
-              <Clock className="w-4 h-4" />
-              <span>Pending Admin Verification</span>
+              <button
+                onClick={handleSignOut}
+                className="px-3.5 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>{t('nav.sign_out')}</span>
+              </button>
             </div>
-            <p className="leading-relaxed text-[11px] text-slate-300">
-              Your account has been created successfully. It is currently waiting for admin verification to assign your starting ELO rating and activate your access.
-            </p>
+
+            {currentUser.is_verified === false ? (
+              <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-amber-300 text-xs">
+                <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
+                <div>
+                  <span className="font-bold block">{t('auth.pending_badge')}</span>
+                  <span className="text-amber-200/80 text-[11px]">{t('auth.signup_success')}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between pt-2 border-t border-white/10 text-xs">
+                <span className="text-slate-400">
+                  Hazırkı ELO: <strong className="text-cyan-400 font-mono">{currentUser.current_elo}</strong>
+                </span>
+                <Link
+                  href={`/players/${currentUser.id}`}
+                  className="text-cyan-400 hover:underline font-semibold flex items-center gap-1"
+                >
+                  <span>{t('nav.my_profile')}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
+
+        <div className="rounded-3xl border border-white/10 bg-slate-900/75 backdrop-blur-xl p-6 sm:p-8 shadow-2xl space-y-6">
+          <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-950/90 border border-white/10">
             <button
               type="button"
               onClick={() => {
-                setRegisterSuccess(false);
                 setMode('signin');
+                setErrorMsg(null);
+                setSuccessMsg(null);
               }}
-              className="mt-2 w-full py-2 px-3 rounded-xl bg-amber-400/20 hover:bg-amber-400/30 border border-amber-400/40 text-amber-200 font-semibold text-xs transition text-center"
+              className={`py-2.5 rounded-xl text-xs font-display font-bold transition-all ${
+                mode === 'signin'
+                  ? 'bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20'
+                  : 'text-slate-400 hover:text-white'
+              }`}
             >
-              Go to Sign In
+              {t('auth.signin_btn')}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signup');
+                setErrorMsg(null);
+                setSuccessMsg(null);
+              }}
+              className={`py-2.5 rounded-xl text-xs font-display font-bold transition-all ${
+                mode === 'signup'
+                  ? 'bg-cyan-400 text-slate-950 shadow-lg shadow-cyan-500/20'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              {t('auth.signup_btn')}
             </button>
           </div>
-        )}
 
-        {mode === 'signin' && !registerSuccess && (
-          <form onSubmit={handleSignIn} className="space-y-4">
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 block">
-                BHOS Email
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500 pointer-events-none" />
-                <input
-                  type="email"
-                  required
-                  value={signInEmail}
-                  onChange={(e) => setSignInEmail(e.target.value)}
-                  placeholder="name@bhos.edu.az"
-                  disabled={loading || signInSuccess}
-                  className="w-full bg-[#080D16]/80 border border-white/10 rounded-xl pl-10 pr-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition disabled:opacity-50"
-                />
-              </div>
+          {errorMsg && (
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-2.5 text-xs text-rose-300">
+              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+              <span>{errorMsg}</span>
             </div>
+          )}
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 block">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 absolute left-3.5 top-3.5 text-slate-500 pointer-events-none" />
-                <input
-                  type={showSignInPassword ? 'text' : 'password'}
-                  required
-                  value={signInPassword}
-                  onChange={(e) => setSignInPassword(e.target.value)}
-                  placeholder="••••••••"
-                  disabled={loading || signInSuccess}
-                  className="w-full bg-[#080D16]/80 border border-white/10 rounded-xl pl-10 pr-11 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition disabled:opacity-50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowSignInPassword(!showSignInPassword)}
-                  className="absolute right-3.5 top-3.5 text-slate-500 hover:text-slate-300 transition"
-                  tabIndex={-1}
-                >
-                  {showSignInPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-              </div>
+          {successMsg && (
+            <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-start gap-2.5 text-xs text-emerald-300">
+              <CheckCircle2 className="w-4 h-4 shrink-0 text-emerald-400 mt-0.5" />
+              <span>{successMsg}</span>
             </div>
+          )}
 
-            <button
-              type="submit"
-              disabled={loading || signInSuccess}
-              className="w-full mt-2 py-3 px-4 rounded-xl bg-[#3B82F6] hover:bg-blue-600 active:scale-[0.98] text-white font-bold text-sm transition shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Signing in...</span>
-                </>
-              ) : (
-                <span>Sign In</span>
-              )}
-            </button>
-          </form>
-        )}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {mode === 'signup' && (
+              <>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    Üzvlük Kateqoriyası
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-950/90 border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => handleUserTypeChange('student')}
+                      className={`py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
+                        userType === 'student'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      <span>Tələbə</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleUserTypeChange('teacher')}
+                      className={`py-2.5 px-3 rounded-lg text-xs font-bold transition flex items-center justify-center gap-2 ${
+                        userType === 'teacher'
+                          ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/40 shadow'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      <Briefcase className="w-3.5 h-3.5" />
+                      <span>Müəllim / Əməkdaş</span>
+                    </button>
+                  </div>
+                </div>
 
-        {mode === 'register' && !registerSuccess && (
-          <form onSubmit={handleRegister} className="space-y-3.5">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 block">
-                  First Name
-                </label>
-                <div className="relative">
-                  <User className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500 pointer-events-none" />
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{t('auth.full_name')}</span>
+                  </label>
                   <input
                     type="text"
                     required
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    placeholder="Ali"
-                    disabled={loading}
-                    className="w-full bg-[#080D16]/80 border border-white/10 rounded-xl pl-8 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition disabled:opacity-50"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Məs: Əli İsgəndərli"
+                    className="w-full px-4 py-3 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-white focus:outline-none focus:border-cyan-400 transition"
                   />
                 </div>
-              </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 block">
-                  Surname
-                </label>
-                <div className="relative">
-                  <User className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500 pointer-events-none" />
-                  <input
-                    type="text"
-                    required
-                    value={surname}
-                    onChange={(e) => setSurname(e.target.value)}
-                    placeholder="Iskandarli"
-                    disabled={loading}
-                    className="w-full bg-[#080D16]/80 border border-white/10 rounded-xl pl-8 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition disabled:opacity-50"
-                  />
+                <div className={userType === 'student' ? 'grid grid-cols-1 sm:grid-cols-2 gap-3' : 'grid grid-cols-1 gap-3'}>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                      {userType === 'student' ? (
+                        <GraduationCap className="w-3.5 h-3.5 text-cyan-400" />
+                      ) : (
+                        <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
+                      )}
+                      <span>
+                        {userType === 'student' ? 'Fakültə / İxtisas' : 'Kafedra / Departament'}
+                      </span>
+                    </label>
+                    <select
+                      value={major}
+                      onChange={(e) => setMajor(e.target.value)}
+                      className="w-full px-3.5 py-3 rounded-xl bg-slate-950/90 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400 transition"
+                    >
+                      {userType === 'student'
+                        ? FACULTIES.map((fac) => (
+                            <option key={fac} value={fac}>
+                              {t(`faculties.${fac}`)}
+                            </option>
+                          ))
+                        : STAFF_DEPARTMENTS.map((dept) => (
+                            <option key={dept} value={dept}>
+                              {dept}
+                            </option>
+                          ))}
+                    </select>
+                  </div>
+
+                  {userType === 'student' && (
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                        <span>Qəbul İli</span>
+                      </label>
+                      <select
+                        required
+                        value={admissionYear}
+                        onChange={(e) => setAdmissionYear(Number(e.target.value))}
+                        className="w-full px-3.5 py-3 rounded-xl bg-slate-950/90 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400 transition"
+                      >
+                        {ADMISSION_YEARS.map((yr) => (
+                          <option key={yr} value={yr}>
+                            {yr}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
-              </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 block">
-                BHOS Email
-              </label>
-              <div className="relative">
-                <Mail className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500 pointer-events-none" />
-                <input
-                  type="email"
-                  required
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                  placeholder="first.last@bhos.edu.az"
-                  disabled={loading}
-                  className="w-full bg-[#080D16]/80 border border-white/10 rounded-xl pl-8 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition disabled:opacity-50"
-                />
-              </div>
-            </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                      {t('auth.gender')}
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-950/90 border border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => setGender('female')}
+                        className={`py-2 rounded-lg text-xs font-semibold transition ${
+                          gender === 'female'
+                            ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {t('auth.gender_female')}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setGender('male')}
+                        className={`py-2 rounded-lg text-xs font-semibold transition ${
+                          gender === 'male'
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                            : 'text-slate-400 hover:text-slate-200'
+                        }`}
+                      >
+                        {t('auth.gender_male')}
+                      </button>
+                    </div>
+                  </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 block">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500 pointer-events-none" />
-                <input
-                  type={showRegPassword ? 'text' : 'password'}
-                  required
-                  value={regPassword}
-                  onChange={(e) => setRegPassword(e.target.value)}
-                  placeholder="At least 6 characters"
-                  disabled={loading}
-                  className="w-full bg-[#080D16]/80 border border-white/10 rounded-xl pl-8 pr-9 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition disabled:opacity-50"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowRegPassword(!showRegPassword)}
-                  className="absolute right-3 top-3 text-slate-500 hover:text-slate-300 transition"
-                  tabIndex={-1}
-                >
-                  {showRegPassword ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 block">
-                  Admission Year
-                </label>
-                <div className="relative">
-                  <Calendar className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500 pointer-events-none" />
-                  <input
-                    type="number"
-                    required
-                    min={2015}
-                    max={2030}
-                    value={admissionYear}
-                    onChange={(e) => setAdmissionYear(e.target.value)}
-                    placeholder="2024"
-                    disabled={loading}
-                    className="w-full bg-[#080D16]/80 border border-white/10 rounded-xl pl-8 pr-3 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition disabled:opacity-50"
-                  />
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                      <Award className="w-3.5 h-3.5 text-amber-400" />
+                      <span>{t('auth.playing_level')}</span>
+                    </label>
+                    <select
+                      value={playingLevel}
+                      onChange={(e) => setPlayingLevel(e.target.value as PlayingLevel)}
+                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/90 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400 transition"
+                    >
+                      {PLAYING_LEVELS.map((lvl) => (
+                        <option key={lvl} value={lvl}>
+                          {t(`levels.${lvl}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
-              </div>
+              </>
+            )}
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-semibold text-slate-300 block">
-                  Playing Level
-                </label>
-                <div className="relative">
-                  <Award className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500 pointer-events-none" />
-                  <select
-                    value={playingLevel}
-                    onChange={(e) => setPlayingLevel(e.target.value as any)}
-                    disabled={loading}
-                    className="w-full bg-[#080D16]/80 border border-white/10 rounded-xl pl-8 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition disabled:opacity-50"
-                  >
-                    <option value="Beginner">Beginner</option>
-                    <option value="Intermediate">Intermediate</option>
-                    <option value="Advanced">Advanced</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-300 block">
-                Specialty / Faculty
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <Mail className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{t('auth.email')}</span>
               </label>
-              <div className="relative">
-                <GraduationCap className="w-3.5 h-3.5 absolute left-3 top-3 text-slate-500 pointer-events-none" />
-                <select
-                  value={faculty}
-                  onChange={(e) => setFaculty(e.target.value)}
-                  disabled={loading}
-                  className="w-full bg-[#080D16]/80 border border-white/10 rounded-xl pl-8 pr-3 py-2.5 text-xs text-white focus:outline-none focus:border-[#3B82F6] focus:ring-1 focus:ring-[#3B82F6] transition disabled:opacity-50"
-                >
-                  <option value="Computer Engineering">Computer Engineering</option>
-                  <option value="Information Security">Information Security</option>
-                  <option value="Process Automation">Process Automation Engineering</option>
-                  <option value="Chemical Engineering">Chemical Engineering</option>
-                  <option value="Petroleum Engineering">Petroleum Engineering</option>
-                  <option value="Business Administration">Business Administration</option>
-                </select>
-              </div>
+              <input
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="ad.soyad@bhos.edu.az"
+                className="w-full px-4 py-3 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-white focus:outline-none focus:border-cyan-400 transition"
+              />
             </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
+                <Lock className="w-3.5 h-3.5 text-cyan-400" />
+                <span>{t('auth.password')}</span>
+              </label>
+              <input
+                type="password"
+                required
+                minLength={6}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                className="w-full px-4 py-3 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-white focus:outline-none focus:border-cyan-400 transition"
+              />
+            </div>
+
+            {mode === 'signup' && (
+              <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 flex items-center gap-2 text-[11px] text-slate-300">
+                <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
+                <span>
+                  Yeni üzvlər <strong className="text-cyan-300">0 ELO</strong> ilə başlayır və Klub Prezidenti / Məşqçi tərəfindən təsdiqləndikdən sonra rəsmi reytinq xalı təyin edilir.
+                </span>
+              </div>
+            )}
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full mt-3 py-3 px-4 rounded-xl bg-[#3B82F6] hover:bg-blue-600 active:scale-[0.98] text-white font-bold text-sm transition shadow-lg shadow-blue-500/25 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full py-3.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 text-slate-950 font-display font-black text-sm shadow-xl shadow-cyan-500/20 transition flex items-center justify-center gap-2"
             >
-              {loading ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Submitting registration...</span>
-                </>
-              ) : (
-                <span>Register Account</span>
-              )}
+              <Shield className="w-4 h-4" />
+              <span>
+                {loading
+                  ? 'Gözləyin...'
+                  : mode === 'signin'
+                  ? t('auth.signin_btn')
+                  : t('auth.signup_btn')}
+              </span>
             </button>
           </form>
-        )}
 
-        <div className="mt-6 pt-5 border-t border-white/10 flex items-start gap-2.5 text-[11px] text-slate-400">
-          <ShieldCheck className="w-4 h-4 text-cyan-400 shrink-0 mt-0.5" />
-          <p className="leading-relaxed">
-            Authorized Baku Higher Oil School members access real-time ELO ratings, tournament draws, and club management.
-          </p>
+          <div className="text-center pt-2 border-t border-white/10">
+            <button
+              type="button"
+              onClick={() => {
+                setMode(mode === 'signin' ? 'signup' : 'signin');
+                setErrorMsg(null);
+                setSuccessMsg(null);
+              }}
+              className="text-xs text-cyan-400 hover:underline font-medium"
+            >
+              {mode === 'signin' ? t('auth.switch_to_signup') : t('auth.switch_to_signin')}
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4 py-12 bg-[#080D16]">
-      <Suspense fallback={
-        <div className="flex items-center gap-2 text-slate-400 text-sm">
-          <Loader2 className="w-5 h-5 animate-spin text-[#3B82F6]" />
-          <span>Loading sign in...</span>
-        </div>
-      }>
-        <LoginForm />
-      </Suspense>
-    </div>
+    </SmoothReveal>
   );
 }

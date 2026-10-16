@@ -1,5 +1,7 @@
 export type UserRole = 'player' | 'coach' | 'president';
 
+export type UserType = 'student' | 'teacher' | 'staff' | 'alumni';
+
 export type PlayingStyle = 
   | 'Shakehand Offensive'
   | 'Shakehand All-round'
@@ -21,7 +23,8 @@ export interface PlayerProfile {
   full_name: string;
   email: string;
   major_faculty: BHOSFaculty | string;
-  admission_year: number;
+  admission_year?: number | null;
+  user_type?: UserType | string;
   gender?: 'female' | 'male' | 'other';
   role: UserRole;
   playing_level?: PlayingLevel | string;
@@ -37,7 +40,7 @@ export interface PlayerProfile {
   is_active: boolean;
   avatar_url?: string;
   rank?: number;
-  rank_change?: number; // positive = gained ranks, negative = dropped, 0 = same
+  rank_change?: number;
   created_at: string;
 }
 
@@ -51,14 +54,14 @@ export interface MatchRecord {
   player2_name?: string;
   logged_by: string;
   logged_by_name?: string;
-  player1_score: number; // Games won (e.g. 3)
-  player2_score: number; // Games won (e.g. 1)
-  set_scores: string; // e.g. "11-9, 8-11, 11-6, 12-10"
+  player1_score: number;
+  player2_score: number;
+  set_scores: string;
   player1_elo_before: number;
   player2_elo_before: number;
   player1_elo_after: number;
   player2_elo_after: number;
-  elo_delta: number; // Positive number (winner gained, loser lost)
+  elo_delta: number;
   status?: 'confirmed' | 'pending' | 'rejected' | string;
   match_date: string;
 }
@@ -68,8 +71,8 @@ export type TournamentStatus = 'upcoming' | 'ongoing' | 'completed';
 
 export interface BracketMatch {
   id: string;
-  roundIndex: number; // 0 = QF/Round 1, 1 = SF, 2 = Final
-  matchIndex: number; // Index within the round
+  roundIndex: number;
+  matchIndex: number;
   player1?: PlayerProfile | null;
   player2?: PlayerProfile | null;
   player1_score?: number;
@@ -99,7 +102,7 @@ export interface Tournament {
       matches: BracketMatch[];
     }[];
   };
-  participants?: string[]; // Player IDs
+  participants?: string[];
   created_at: string;
 }
 
@@ -108,13 +111,13 @@ export type ReservationStatus = 'confirmed' | 'cancelled';
 
 export interface TableReservation {
   id: string;
-  table_number: number; // 1 to 6
+  table_number: number;
   reserved_by: string;
   reserved_by_name?: string;
   reserved_by_role?: UserRole;
-  slot_date: string; // "YYYY-MM-DD"
-  start_time: string; // "HH:MM" e.g. "15:00"
-  end_time: string; // "HH:MM" e.g. "16:00"
+  slot_date: string;
+  start_time: string;
+  end_time: string;
   purpose: TablePurpose;
   status: ReservationStatus;
   notes?: string;
@@ -129,4 +132,3 @@ export interface EloHistoryPoint {
   result?: 'W' | 'L';
   delta?: number;
 }
-
