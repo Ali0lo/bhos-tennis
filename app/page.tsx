@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { BHOSDataStore } from '../lib/data/store';
 import { PlayerProfile, MatchRecord, Tournament } from '../lib/data/types';
 import { useTranslation } from '../lib/i18n';
-import HallTableWidget from '../components/HallTableWidget';
+import HallRulesSection from '../components/HallRulesSection';
 import MatchLoggerModal from '../components/MatchLoggerModal';
 import HeroHotspotPin from '../components/HeroHotspotPin';
 import NumberTicker from '../components/NumberTicker';
@@ -22,7 +22,6 @@ import {
   MessageCircle, 
   ExternalLink,
   Target,
-  Sparkles,
   Flame,
   Users
 } from 'lucide-react';
@@ -53,32 +52,27 @@ export default function HomePage() {
 
   return (
     <div className="space-y-16">
-      {/* 1. Full-Bleed Cinematic Hero Section (Clean & Unobstructed Photo View + Perimeter Hotspots) */}
       <section className="relative -mt-6 rounded-3xl overflow-hidden border border-white/10 shadow-2xl min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
-        {/* Full-bleed high-res background image */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-100"
           style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}
         />
 
-        {/* Cinematic dark gradients: left gradient allows text readability while keeping center & right athlete photo clear */}
         <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-slate-950/60" />
 
-        {/* Top Hero Meta Badges */}
         <div className="relative z-20 flex flex-wrap items-center justify-between gap-4">
           <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/15 bg-black/40 backdrop-blur-md text-xs font-semibold text-white shadow-lg">
             <img 
               src="/images/bhos-crest.png" 
               alt="BHOS" 
-              className="w-4 h-4 object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.8)] mix-blend-screen" 
+              className="w-4 h-4 object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.8)]" 
             />
             <span className="text-cyan-400 font-bold tracking-wide">BHOS TABLE TENNIS</span>
             <span className="text-slate-400">•</span>
             <span className="text-slate-300">{t('hero.portal_tag')}</span>
           </div>
 
-          {/* WhatsApp Community Tag */}
           <a
             href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
             target="_blank"
@@ -92,7 +86,6 @@ export default function HomePage() {
           </a>
         </div>
 
-        {/* Floating Perimeter Interactive Hotspot Pins (Carefully positioned on outer perimeter to avoid athlete obstruction) */}
         <div className="absolute top-[22%] right-[6%] sm:right-[10%] z-30">
           <HeroHotspotPin type="league" badgeLabel={t('hero.stats_leader')} />
         </div>
@@ -103,7 +96,6 @@ export default function HomePage() {
           <HeroHotspotPin type="community" badgeLabel="WhatsApp Chat" />
         </div>
 
-        {/* Hero Bottom Content & Headline (Left-aligned, leaving the player with BHOS jersey fully visible in center/right) */}
         <div className="relative z-20 max-w-2xl space-y-6 pt-28 pb-2">
           <div className="space-y-3">
             <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black text-white tracking-tight leading-[1.08] drop-shadow-2xl">
@@ -114,7 +106,6 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Primary Action Buttons */}
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link
               href="/leaderboard"
@@ -154,7 +145,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Bottom Hero Stats Strip with NumberTicker */}
         <div className="relative z-20 pt-6 mt-4 border-t border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-4">
           <div className="space-y-0.5">
             <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
@@ -194,35 +184,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 2. Hall & Table Information Section */}
       <section className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-2 text-pink-400 text-xs font-semibold uppercase tracking-wider mb-1">
-              <TableIcon className="w-4 h-4" />
-              <span>{t('facility.badge')}</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-display font-black text-white">
-              {t('facility.title')}
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">
-              {t('facility.subtitle')}
-            </p>
-          </div>
-
-          <Link
-            href="/tables"
-            className="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1 shrink-0"
-          >
-            <span>{t('facility.full_guide')}</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        <HallTableWidget />
+        <HallRulesSection />
       </section>
 
-      {/* 3. tabletennis.az Podium Top 3 Players with 3D TiltCard & FormDots */}
       <section className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -244,7 +209,6 @@ export default function HomePage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-          {/* Rank 2 (Silver) */}
           {top3[1] && (
             <TiltCard className="order-2 md:order-1 rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-xl relative group hover:border-slate-600 transition">
               <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow">
@@ -275,7 +239,6 @@ export default function HomePage() {
             </TiltCard>
           )}
 
-          {/* Rank 1 (Gold) - Elevated */}
           {top3[0] && (
             <TiltCard className="order-1 md:order-2 rounded-3xl border-2 border-amber-400/80 bg-gradient-to-b from-amber-500/10 via-slate-900/90 to-slate-900 p-7 shadow-2xl relative group hover:border-amber-400 transition md:-translate-y-3">
               <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-xl shadow-amber-500/30">
@@ -299,15 +262,13 @@ export default function HomePage() {
                 <div className="mt-2 text-xs text-emerald-400 font-semibold">
                   {Math.round((top3[0].wins / (top3[0].matches_played || 1)) * 100)}% {t('home_podium.win_rate')} ({top3[0].wins}W - {top3[0].losses}L)
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-between">
-                  <span>{top3[0].blade_equipment.split(' ')[0]}</span>
-                  <span>{top3[0].admission_year}</span>
+                <div className="mt-4 pt-3 border-t border-white/10 text-[11px] text-slate-400 flex justify-center">
+                  <span>{top3[0].admission_year} Qəbul ili</span>
                 </div>
               </div>
             </TiltCard>
           )}
 
-          {/* Rank 3 (Bronze) */}
           {top3[2] && (
             <TiltCard className="order-3 rounded-3xl border border-amber-800/80 bg-slate-900/80 p-6 shadow-xl relative group hover:border-amber-700 transition">
               <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow">
@@ -340,9 +301,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. Recent Matches Archive & Ongoing Tournaments */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Recent Matches Log (2 cols) */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
@@ -363,10 +322,10 @@ export default function HomePage() {
               <div className="p-8 rounded-2xl border border-white/10 bg-slate-900/60 text-center space-y-2">
                 <Activity className="w-8 h-8 text-slate-500 mx-auto" />
                 <p className="text-sm font-semibold text-slate-300">
-                  No official matches recorded yet
+                  Hələlik rəsmi oyun qeydə alınmayıb
                 </p>
                 <p className="text-xs text-slate-500">
-                  Points will be awarded as official BHOS club matches are logged by the Coach or President.
+                  Rəsmi klub oyunları təsdiqləndikcə nəticələr və ELO xalları burada görünəcək.
                 </p>
               </div>
             ) : (
@@ -433,7 +392,6 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Ongoing Tournaments (1 col) with TiltCard */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
@@ -457,36 +415,32 @@ export default function HomePage() {
               >
                 <div className="flex items-center justify-between">
                   <span
-                    className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase ${
-                      tourn.status === 'ongoing'
-                        ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                        : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                    }`}
+                    className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                   >
-                    {t(`tournaments.status_${tourn.status}`) || tourn.status}
+                    Gözlənilən
                   </span>
                   <span className="text-[11px] text-slate-400 font-mono">
-                    Max {tourn.max_participants} {t('home_tournaments.registered')}
+                    Fevral – Mart
                   </span>
                 </div>
 
                 <Link
-                  href={`/tournaments/${tourn.slug}`}
+                  href="/tournaments"
                   className="block font-display font-bold text-base text-white hover:text-cyan-400 transition"
                 >
                   {tourn.title}
                 </Link>
 
                 <p className="text-xs text-slate-400 line-clamp-2">
-                  {tourn.description}
+                  Universitet çempionatı ikinci semestrdə (Fevral - Mart aylarında) keçiriləcək.
                 </p>
 
                 <div className="pt-2 border-t border-white/10 flex items-center justify-between">
                   <Link
-                    href={`/tournaments/${tourn.slug}`}
+                    href="/tournaments"
                     className="text-xs text-cyan-400 font-semibold hover:underline flex items-center gap-1"
                   >
-                    <span>{t('home_tournaments.view_bracket')}</span>
+                    <span>Turnirə Qeydiyyatdan Keç</span>
                     <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
@@ -496,7 +450,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* 5. Club Mission & Heritage (#about Section) */}
       <section id="about" className="pt-8 border-t border-white/10 scroll-mt-28">
         <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-8 sm:p-10 shadow-2xl relative overflow-hidden">
           <div className="absolute -right-10 -bottom-10 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -506,26 +459,26 @@ export default function HomePage() {
               <span>{t('brand.title')}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">
-              Engineering Precision Meets Athletic Excellence
+              Mühəndis Dəqiqliyi və İdman Əzmi
             </h2>
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Founded at Baku Higher Oil School (Bakı Ali Neft Məktəbi), the BHOS Table Tennis Club unites future engineers across Information Security, Petroleum, Chemical, and Process Automation disciplines through competitive table tennis. Guided by Head Coach <strong className="text-white">Iftixar Meherremov</strong> and Club President <strong className="text-white">Ali Iskandarli</strong>, our members train on ITTF competition tables and compete in dynamic ELO ranked circuits aligned with tabletennis.az standards.
+              Bakı Ali Neft Məktəbində (BANM) yaradılmış Stolüstü Tennis Klubu İnformasiya Təhlükəsizliyi, Kompüter Mühəndisliyi, Kimya Mühəndisliyi, Neft-Qaz Mühəndisliyi və Proseslərin Avtomatlaşdırılması ixtisaslarının tələbələrini rəqabətli stolüstü tennis ətrafında birləşdirir. Baş Məşqçi <strong className="text-white">İftixar Məhərrəmov</strong> və Klub Prezidenti <strong className="text-white">Əli İsgəndərli</strong> rəhbərliyi ilə üzvlərimiz ITTF standartlı masalarda məşq edir və rəsmi ELO reytinq sistemində mübarizə aparırlar.
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
               <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                 <Target className="w-5 h-5 text-cyan-400" />
-                <h4 className="font-bold text-white text-xs">ITTF Certified Arena</h4>
-                <p className="text-[11px] text-slate-400">4 Donic Waldner 25mm competition tables with calibrated lighting.</p>
+                <h4 className="font-bold text-white text-xs">ITTF Standartlı Arena</h4>
+                <p className="text-[11px] text-slate-400">4 ədəd Donic Waldner 25mm peşəkar yarış masası (1 Xanımlar / 3 Bəylər).</p>
               </div>
               <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                 <Flame className="w-5 h-5 text-amber-400" />
-                <h4 className="font-bold text-white text-xs">Official ELO System</h4>
-                <p className="text-[11px] text-slate-400">Dynamic K=32 and K=48 rating algorithms tracking every set.</p>
+                <h4 className="font-bold text-white text-xs">Rəsmi ELO Sistemi</h4>
+                <p className="text-[11px] text-slate-400">Hər qarşılaşmanı izləyən dinamik K=32 iki-faktorlu təsdiq alqoritmi.</p>
               </div>
               <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
                 <Users className="w-5 h-5 text-emerald-400" />
-                <h4 className="font-bold text-white text-xs">Active Community</h4>
-                <p className="text-[11px] text-slate-400">Over 100 students sparring daily via WhatsApp matchmaking.</p>
+                <h4 className="font-bold text-white text-xs">Fəal İcma</h4>
+                <p className="text-[11px] text-slate-400">WhatsApp icması vasitəsilə gündəlik yoldaşlıq və reytinq oyunları.</p>
               </div>
             </div>
           </div>

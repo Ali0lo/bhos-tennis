@@ -6,10 +6,8 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation, Locale } from '../lib/i18n';
 import { BHOSDataStore } from '../lib/data/store';
 import { PlayerProfile, UserRole } from '../lib/data/types';
+import { usePendingMatchesCount } from '../lib/hooks/usePendingMatchesCount';
 import { 
-  Trophy, 
-  Table as TableIcon, 
-  Calendar, 
   History, 
   ShieldCheck, 
   UserCheck, 
@@ -34,6 +32,8 @@ export default function Navbar() {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
 
+  const pendingMatchesCount = usePendingMatchesCount(currentUser?.id);
+
   useEffect(() => {
     setCurrentUser(store.getCurrentUser());
     const unsub = store.subscribe(() => {
@@ -42,10 +42,11 @@ export default function Navbar() {
     return unsub;
   }, [store]);
 
-  const navLinks = [
+  const navLinks: { href: string; label: string; showBadge?: boolean }[] = [
     { href: '/leaderboard', label: t('nav.leaderboard') || 'Reytinq Cədvəli' },
+    { href: '/matches', label: t('nav.my_matches') || 'Oyunlarım', showBadge: true },
     { href: '/tournaments', label: t('nav.tournaments') || 'Turnirlər' },
-    { href: '/tables', label: t('nav.tables') || 'Zal & Masalar' },
+    { href: '/tables', label: t('nav.tables') || 'Zal Qaydaları' },
     { href: '/#about', label: t('nav.about') || 'Haqqında' },
   ];
 
@@ -80,25 +81,42 @@ export default function Navbar() {
           <div className="flex items-center justify-start gap-2">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white"
+              className="relative lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              {pendingMatchesCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 min-w-[1rem] items-center justify-center">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                  <span className="relative inline-flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white h-4 min-w-[1rem]">
+                    {pendingMatchesCount}
+                  </span>
+                </span>
+              )}
             </button>
 
             <nav className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/5 rounded-full p-1">
               {navLinks.map((link) => {
                 const isActive = pathname === link.href;
+                const hasBadge = link.showBadge && pendingMatchesCount > 0;
                 return (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                    className={`relative px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
                       isActive
                         ? 'bg-cyan-400 text-slate-950 font-bold shadow-md shadow-cyan-500/20'
                         : 'text-slate-300 hover:text-white hover:bg-white/10'
                     }`}
                   >
-                    {link.label}
+                    <span>{link.label}</span>
+                    {hasBadge && (
+                      <span className="relative flex h-4 min-w-[1rem] items-center justify-center">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                        <span className="relative inline-flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white h-4 min-w-[1rem]">
+                          {pendingMatchesCount}
+                        </span>
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -166,7 +184,7 @@ export default function Navbar() {
               <div className="relative">
                 <button
                   onClick={() => setUserDropdownOpen(!userDropdownOpen)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition ${getRoleBadgeColor(
+                  className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition ${getRoleBadgeColor(
                     currentUser.role
                   )}`}
                 >
@@ -183,6 +201,15 @@ export default function Navbar() {
                     {currentUser.full_name.split(' ')[0]}
                   </span>
                   <ChevronDown className="w-2.5 h-2.5 opacity-60" />
+
+                  {pendingMatchesCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 flex h-4 min-w-[1rem] items-center justify-center">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                      <span className="relative inline-flex items-center justify-center rounded-full bg-rose-500 px-1 text-[9px] font-black text-white h-4 min-w-[1rem] shadow-md">
+                        {pendingMatchesCount}
+                      </span>
+                    </span>
+                  )}
                 </button>
 
                 {userDropdownOpen && (
@@ -205,6 +232,22 @@ export default function Navbar() {
                     </div>
 
                     <div className="space-y-1">
+                      <Link
+                        href="/matches"
+                        onClick={() => setUserDropdownOpen(false)}
+                        className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center justify-between text-slate-300 hover:text-white hover:bg-white/5 transition"
+                      >
+                        <span className="flex items-center gap-2">
+                          <History className="w-3.5 h-3.5 text-rose-400" />
+                          <span>{t('nav.my_matches') || 'Oyunlarım'}</span>
+                        </span>
+                        {pendingMatchesCount > 0 && (
+                          <span className="inline-flex items-center justify-center rounded-full bg-rose-500 px-1.5 py-0.5 text-[10px] font-black text-white">
+                            {pendingMatchesCount} gözləyir
+                          </span>
+                        )}
+                      </Link>
+
                       <Link
                         href={`/players/${currentUser.id}`}
                         onClick={() => setUserDropdownOpen(false)}
@@ -267,20 +310,31 @@ export default function Navbar() {
             </div>
 
             <div className="space-y-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-3 py-2 rounded-xl text-xs font-semibold ${
-                    pathname === link.href
-                      ? 'bg-cyan-500/20 text-cyan-300'
-                      : 'text-slate-300 hover:bg-white/5'
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                const hasBadge = link.showBadge && pendingMatchesCount > 0;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold ${
+                      pathname === link.href
+                        ? 'bg-cyan-500/20 text-cyan-300'
+                        : 'text-slate-300 hover:bg-white/5'
+                    }`}
+                  >
+                    <span>{link.label}</span>
+                    {hasBadge && (
+                      <span className="relative flex h-5 min-w-[1.25rem] items-center justify-center">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                        <span className="relative inline-flex items-center justify-center rounded-full bg-rose-500 px-1.5 text-[10px] font-black text-white h-5 min-w-[1.25rem]">
+                          {pendingMatchesCount}
+                        </span>
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
             </div>
 
             <div className="pt-3 border-t border-white/10">

@@ -9,10 +9,10 @@
     "leaderboard": "Leaderboard",
     "matches": "Matches & Results",
     "tournaments": "Tournaments",
-    "tables": "Hall & Tables",
+    "tables": "Hall Rules",
     "admin": "President Panel",
     "log_match": "Log Match",
-    "book_table": "Book Table",
+    "my_matches": "My Matches",
     "switch_role": "Switch Active User",
     "join_whatsapp": "WhatsApp",
     "about": "About"
@@ -167,20 +167,9 @@
     "enter_score": "Enter Score"
   },
   "tables": {
-    "title": "BHOS Sports Hall — Table Booking",
-    "subtitle": "Interactive reservation system for Tables 1 through 6",
-    "table": "Table",
-    "book_slot": "Book Table Slot",
-    "select_date": "Select Date",
-    "purpose": "Purpose",
-    "purpose_free": "Free Play / Practice",
-    "purpose_coaching": "Official Coaching Session",
-    "purpose_tournament": "Tournament Match",
-    "available": "Available",
-    "booked": "Booked",
-    "my_bookings": "My Reservations",
-    "cancel_booking": "Cancel",
-    "conflict_error": "This slot is already reserved!"
+    "title": "BHOS Sports Hall — Rules & Table Allocation",
+    "subtitle": "4 official table allocations and Sports Complex guidelines",
+    "table": "Table"
   },
   "admin": {
     "title": "Club Management Panel (Superadmin / President)",

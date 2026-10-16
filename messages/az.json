@@ -9,10 +9,10 @@
     "leaderboard": "Reytinq Cədvəli",
     "matches": "Oyunlar & Nəticələr",
     "tournaments": "Turnirlər",
-    "tables": "Zal & Masalar",
+    "tables": "Zal Qaydaları",
     "admin": "Prezident Paneli",
     "log_match": "Oyun Qeydiyyatı",
-    "book_table": "Masa Sifarişi",
+    "my_matches": "Oyunlarım",
     "switch_role": "İstifadəçini Dəyiş",
     "join_whatsapp": "WhatsApp",
     "about": "Haqqında"
@@ -167,20 +167,9 @@
     "enter_score": "Hesabı Daxil Et"
   },
   "tables": {
-    "title": "BANM İdman Zalı — Masa Rezervasiyası",
-    "subtitle": "1-dən 6-ya qədər masalar üçün interaktiv sifariş sistemi",
-    "table": "Masa",
-    "book_slot": "Masa Vaxtı Sifariş Et",
-    "select_date": "Tarixi Seçin",
-    "purpose": "Məqsəd",
-    "purpose_free": "Sərbəst Oyun / Məşq",
-    "purpose_coaching": "Rəsmi Məşqçi Dərsi",
-    "purpose_tournament": "Turnir Oyunu",
-    "available": "Boşdur",
-    "booked": "Doldurulub",
-    "my_bookings": "Mənim Rezervasiyalarım",
-    "cancel_booking": "Ləğv Et",
-    "conflict_error": "Bu vaxt artıq rezerv olunub!"
+    "title": "BANM İdman Zalı — Qaydalar və Masa Bölgüsü",
+    "subtitle": "4 rəsmi masa bölgüsü və İdman Kompleksinin daxili intizam qaydaları",
+    "table": "Masa"
   },
   "admin": {
     "title": "Klub İdarəetmə Paneli (Superadmin / Prezident)",

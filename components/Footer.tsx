@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { useTranslation } from '../lib/i18n';
-import { Trophy, ExternalLink, MapPin, Mail, ShieldCheck } from 'lucide-react';
+import { ExternalLink, MapPin, ShieldCheck } from 'lucide-react';
 
 export default function Footer() {
   const { t } = useTranslation();
@@ -12,7 +12,6 @@ export default function Footer() {
     <footer className="border-t border-bhos-border bg-bhos-navy/80 mt-20 text-slate-400 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-          {/* Brand & Description */}
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-full bg-cyan-500/10 border border-cyan-500/30 p-1 flex items-center justify-center shadow-lg">
@@ -38,7 +37,6 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
           <div className="space-y-3">
             <h4 className="text-white font-semibold text-xs uppercase tracking-wider">
               {t('nav.home')}
@@ -78,7 +76,6 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Affiliation & Federation Links */}
           <div className="space-y-3">
             <h4 className="text-white font-semibold text-xs uppercase tracking-wider">
               {t('footer.affiliations')}

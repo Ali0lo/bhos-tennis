@@ -208,7 +208,7 @@ function LoginForm() {
             <img
               src="/images/bhos-crest.png"
               alt="BHOS Crest"
-              className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(0,229,255,0.7)] mix-blend-screen"
+              className="w-full h-full object-contain filter drop-shadow-[0_0_8px_rgba(0,229,255,0.7)]"
             />
           </div>
           <div>
