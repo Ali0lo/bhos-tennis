@@ -250,8 +250,8 @@ VALUES
   ('00000000-0000-0000-0000-000000000005', 'Huseyn Muradzada', 'huseyn.muradzade@bhos.edu.az', 'Computer Engineering', 2023, 'student', 'male', 'player', 'Shakehand All-round', 'Yasaka Sweden Extra', 'Yasaka Rakza 7', 'Yasaka Rakza 7 Soft', 0, 0, 0, 0, true, true),
   ('00000000-0000-0000-0000-000000000006', 'Fateh Mammadli', 'fateh.mammadli@bhos.edu.az', 'Process Automation Engineering', 2022, 'student', 'male', 'player', 'Shakehand Offensive', 'Butterfly Primorac Carbon', 'Rozena', 'Rozena', 0, 0, 0, 0, true, true),
   ('00000000-0000-0000-0000-000000000007', 'Rinad Evezzade', 'rinad.evezzade@bhos.edu.az', 'Computer Engineering', 2023, 'student', 'male', 'player', 'Shakehand Offensive', 'Timo Boll ALC', 'Butterfly Tenergy 05', 'Donic Baracuda', 0, 0, 0, 0, true, true),
-  ('00000000-0000-0000-0000-000000000008', 'Anar Alakbarli', 'anar.alakbarli@bhos.edu.az', 'Computer Engineering', 2024, 'student', 'male', 'player', 'Shakehand All-round', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true, true),
-  ('00000000-0000-0000-0000-000000000009', 'Nihat Ismayilzade', 'nihat.ismayilzade@bhos.edu.az', 'Petroleum Engineering', 2024, 'student', 'male', 'player', 'Shakehand Offensive', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true, true)
+  ('00000000-0000-0000-0000-000000000008', 'Anar Alakbarli', 'anar.alakbarli@bhos.edu.az', 'Process Automation Engineering', 2023, 'student', 'male', 'player', 'Shakehand All-round', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true, true),
+  ('00000000-0000-0000-0000-000000000009', 'Nihat Ismayilzade', 'nihat.ismayilzade@bhos.edu.az', 'Process Automation Engineering', 2023, 'student', 'male', 'player', 'Shakehand Offensive', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true, true)
 ON CONFLICT (id) DO UPDATE SET
   full_name = EXCLUDED.full_name,
   role = EXCLUDED.role,

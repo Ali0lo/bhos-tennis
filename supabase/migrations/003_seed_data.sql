@@ -256,6 +256,40 @@ VALUES
     0,
     0, 0, 0,
     true, true
+  ),
+  (
+    '00000000-0000-0000-0000-000000000008',
+    'Anar Alakbarli',
+    'anar.alakbarli@bhos.edu.az',
+    'Process Automation Engineering',
+    2023,
+    'student',
+    'male',
+    'player',
+    'Shakehand All-round',
+    'Not listed',
+    'Not listed',
+    'Not listed',
+    0,
+    0, 0, 0,
+    true, true
+  ),
+  (
+    '00000000-0000-0000-0000-000000000009',
+    'Nihat Ismayilzade',
+    'nihat.ismayilzade@bhos.edu.az',
+    'Process Automation Engineering',
+    2023,
+    'student',
+    'male',
+    'player',
+    'Shakehand Offensive',
+    'Not listed',
+    'Not listed',
+    'Not listed',
+    0,
+    0, 0, 0,
+    true, true
   )
 ON CONFLICT (id) DO UPDATE SET
   full_name = EXCLUDED.full_name,

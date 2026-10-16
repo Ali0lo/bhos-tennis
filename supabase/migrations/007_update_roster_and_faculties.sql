@@ -110,3 +110,22 @@ SET
   major_faculty = 'Process Automation Engineering',
   admission_year = 2022
 WHERE id::text IN ('p-6', '00000000-0000-0000-0000-000000000006') OR email ILIKE '%fateh%' OR full_name ILIKE '%Fateh%';
+
+-- Anar Alakbarli: 4th year student (Admission 2023)
+UPDATE public.profiles
+SET 
+  full_name = 'Anar Alakbarli',
+  email = 'anar.alakbarli@bhos.edu.az',
+  major_faculty = 'Process Automation Engineering',
+  admission_year = 2023
+WHERE id::text IN ('p-8', '00000000-0000-0000-0000-000000000008') OR email ILIKE '%anar%' OR full_name ILIKE '%Anar%';
+
+-- Nihat Ismayilzade: 4th year student (Admission 2023)
+UPDATE public.profiles
+SET 
+  full_name = 'Nihat Ismayilzade',
+  email = 'nihat.ismayilzade@bhos.edu.az',
+  major_faculty = 'Process Automation Engineering',
+  admission_year = 2023
+WHERE id::text IN ('p-9', '00000000-0000-0000-0000-000000000009') OR email ILIKE '%nihat%' OR full_name ILIKE '%Nihat%';
+

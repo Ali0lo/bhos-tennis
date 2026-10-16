@@ -96,6 +96,30 @@ VALUES
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Rinad Evezzade","user_type":"student","role":"player"}',
     false
+  ),
+  (
+    '00000000-0000-0000-0000-000000000008',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'anar.alakbarli@bhos.edu.az',
+    crypt('bhos2026', gen_salt('bf')),
+    now(), now(), now(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Anar Alakbarli","user_type":"student","role":"player"}',
+    false
+  ),
+  (
+    '00000000-0000-0000-0000-000000000009',
+    '00000000-0000-0000-0000-000000000000',
+    'authenticated',
+    'authenticated',
+    'nihat.ismayilzade@bhos.edu.az',
+    crypt('bhos2026', gen_salt('bf')),
+    now(), now(), now(),
+    '{"provider":"email","providers":["email"]}',
+    '{"full_name":"Nihat Ismayilzade","user_type":"student","role":"player"}',
+    false
   )
 ON CONFLICT (id) DO NOTHING;
 
@@ -222,6 +246,40 @@ VALUES
     'Timo Boll ALC',
     'Butterfly Tenergy 05',
     'Donic Baracuda',
+    0,
+    0, 0, 0,
+    true, true
+  ),
+  (
+    '00000000-0000-0000-0000-000000000008',
+    'Anar Alakbarli',
+    'anar.alakbarli@bhos.edu.az',
+    'Process Automation Engineering',
+    2023,
+    'student',
+    'male',
+    'player',
+    'Shakehand All-round',
+    'Not listed',
+    'Not listed',
+    'Not listed',
+    0,
+    0, 0, 0,
+    true, true
+  ),
+  (
+    '00000000-0000-0000-0000-000000000009',
+    'Nihat Ismayilzade',
+    'nihat.ismayilzade@bhos.edu.az',
+    'Process Automation Engineering',
+    2023,
+    'student',
+    'male',
+    'player',
+    'Shakehand Offensive',
+    'Not listed',
+    'Not listed',
+    'Not listed',
     0,
     0, 0, 0,
     true, true
