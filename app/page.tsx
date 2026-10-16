@@ -493,7 +493,7 @@ export default function HomePage() {
                 Mühəndis Dəqiqliyi və İdman Əzmi
               </h2>
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Bakı Ali Neft Məktəbində (BANM) yaradılmış Stolüstü Tennis Klubu İnformasiya Təhlükəsizliyi, Kompüter Mühəndisliyi, Kimya Mühəndisliyi, Neft-Qaz Mühəndisliyi və Proseslərin Avtomatlaşdırılması ixtisaslarının tələbələrini rəqabətli stolüstü tennis ətrafında birləşdirir. Baş Məşqçi <strong className="text-white">İftixar Məhərrəmov</strong> və Klub Prezidenti <strong className="text-white">Əli İsgəndərli</strong> rəhbərliyi ilə üzvlərimiz ITTF standartlı masalarda məşq edir və rəsmi ELO reytinq sistemində mübarizə aparırlar.
+                Bakı Ali Neft Məktəbinin (BANM) Stolüstü Tennis Klubu idmana və rəqabətə marağı olan bütün tələbə və əməkdaşları vahid masa ətrafında birləşdirir. Peşəkar məşq mühiti, ITTF standartlarına uyğun masalar və daxili ELO reytinq sistemi ilə klubumuz üzvlərinə həm bacarıqlarını inkişaf etdirmək, həm də universitet daxili turnirlərdə mübarizə aparmaq üçün aktiv idman platforması təqdim edir.
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
                 <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-1">
