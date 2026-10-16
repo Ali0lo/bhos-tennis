@@ -10,3 +10,4 @@ CHECK (user_type IN ('student', 'teacher', 'staff', 'alumni'));
 UPDATE public.profiles
 SET user_type = 'teacher', admission_year = NULL
 WHERE role = 'coach';
+

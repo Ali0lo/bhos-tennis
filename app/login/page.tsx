@@ -211,38 +211,15 @@ export default function LoginPage() {
             created_at: new Date().toISOString(),
           };
 
-          const { error: insertError } = await supabase.from('profiles').insert([
-            {
-              id: newProfile.id,
-              full_name: newProfile.full_name,
-              email: newProfile.email,
-              major_faculty: newProfile.major_faculty,
-              admission_year: newProfile.admission_year,
-              user_type: newProfile.user_type,
-              gender: newProfile.gender,
-              role: newProfile.role,
-              playing_level: newProfile.playing_level,
-              playing_style: newProfile.playing_style,
-              blade_equipment: newProfile.blade_equipment,
-              forehand_rubber: newProfile.forehand_rubber,
-              backhand_rubber: newProfile.backhand_rubber,
-              current_elo: 0,
-              matches_played: 0,
-              wins: 0,
-              losses: 0,
-              is_verified: false,
-              is_active: true,
-            },
-          ]);
-
-          if (insertError) {
-            await supabase.from('profiles').insert([
+          const { error: insertError } = await supabase.from('profiles').upsert(
+            [
               {
                 id: newProfile.id,
                 full_name: newProfile.full_name,
                 email: newProfile.email,
                 major_faculty: newProfile.major_faculty,
                 admission_year: newProfile.admission_year,
+                user_type: newProfile.user_type,
                 gender: newProfile.gender,
                 role: newProfile.role,
                 playing_level: newProfile.playing_level,
@@ -257,7 +234,36 @@ export default function LoginPage() {
                 is_verified: false,
                 is_active: true,
               },
-            ]);
+            ],
+            { onConflict: 'id' }
+          );
+
+          if (insertError) {
+            await supabase.from('profiles').upsert(
+              [
+                {
+                  id: newProfile.id,
+                  full_name: newProfile.full_name,
+                  email: newProfile.email,
+                  major_faculty: newProfile.major_faculty,
+                  admission_year: newProfile.admission_year,
+                  gender: newProfile.gender,
+                  role: newProfile.role,
+                  playing_level: newProfile.playing_level,
+                  playing_style: newProfile.playing_style,
+                  blade_equipment: newProfile.blade_equipment,
+                  forehand_rubber: newProfile.forehand_rubber,
+                  backhand_rubber: newProfile.backhand_rubber,
+                  current_elo: 0,
+                  matches_played: 0,
+                  wins: 0,
+                  losses: 0,
+                  is_verified: false,
+                  is_active: true,
+                },
+              ],
+              { onConflict: 'id' }
+            );
           }
 
           store.addProfile(newProfile);
