@@ -164,6 +164,17 @@ export default function LoginPage() {
         }
 
         const isTeacher = userType === 'teacher';
+        if (!isTeacher) {
+          const studentEmailRegex = /^[a-zA-Z0-9._%+-]+\.std@bhos\.edu\.az$/;
+          if (!studentEmailRegex.test(cleanEmail)) {
+            throw new Error('Tələbələr üçün e-poçt formatı: ad.soyad.std@bhos.edu.az olmalıdır');
+          }
+        } else {
+          const generalEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!generalEmailRegex.test(cleanEmail)) {
+            throw new Error('Zəhmət olmasa düzgün e-poçt ünvanı daxil edin.');
+          }
+        }
         const resolvedAdmissionYear = isTeacher ? null : Number(admissionYear);
         const resolvedUserType = isTeacher ? 'teacher' : 'student';
 
@@ -600,7 +611,11 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="ad.soyad@bhos.edu.az"
+                placeholder={
+                  mode === 'signup' && userType === 'teacher'
+                    ? 'nümunə@email.com'
+                    : 'ad.soyad.std@bhos.edu.az'
+                }
                 className="w-full px-4 py-3 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-white focus:outline-none focus:border-cyan-400 transition"
               />
             </div>

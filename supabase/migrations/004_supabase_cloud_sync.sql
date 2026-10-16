@@ -131,7 +131,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'iftixar@bhos.edu.az',
+    'iftixar.coach@gmail.com',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -143,7 +143,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'ali.iskandarli@bhos.edu.az',
+    'ali.iskandarli.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -155,7 +155,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'ali.abdulov@bhos.edu.az',
+    'ali.abdulov.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -167,7 +167,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'ali.aghayev@bhos.edu.az',
+    'ali.aghayev.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -179,7 +179,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'huseyn.muradzade@bhos.edu.az',
+    'huseyn.muradzade.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -191,7 +191,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'fateh.mammadli@bhos.edu.az',
+    'fateh.mammadli.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -203,7 +203,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'rinad.evezzade@bhos.edu.az',
+    'rinad.evezzade.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -215,7 +215,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'anar.alakbarli@bhos.edu.az',
+    'anar.alakbarli.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -227,14 +227,15 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'nihat.ismayilzade@bhos.edu.az',
+    'nihat.ismayilzade.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Nihat Ismayilzade","user_type":"student","role":"player"}',
     false
   )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+  email = EXCLUDED.email;
 
 -- 8. Step B: Seed Official Roster into public.profiles
 INSERT INTO public.profiles (
@@ -243,22 +244,31 @@ INSERT INTO public.profiles (
   current_elo, matches_played, wins, losses, is_verified, is_active
 )
 VALUES
-  ('00000000-0000-0000-0000-000000000002', 'İftixar Məhərrəmov', 'iftixar@bhos.edu.az', 'İdman Klubu', NULL, 'teacher', 'male', 'coach', 'Shakehand All-round', 'Stiga Clipper Wood', 'Tibhar Evolution MX-P', 'Yasaka Rakza 7', 1400, 0, 0, 0, true, true),
-  ('00000000-0000-0000-0000-000000000001', 'Ali Iskandarli', 'ali.iskandarli@bhos.edu.az', 'Computer Engineering', 2023, 'student', 'male', 'president', 'Shakehand Offensive', 'Butterfly Viscaria ALC', 'Dignics 09C', 'Tenergy 05', 0, 0, 0, 0, true, true),
-  ('00000000-0000-0000-0000-000000000003', 'Ali Abdulov', 'ali.abdulov@bhos.edu.az', 'Computer Engineering', 2023, 'student', 'male', 'player', 'Shakehand Offensive', 'Timo Boll ALC', 'Butterfly Tenergy 05', 'Donic Baracuda', 0, 0, 0, 0, true, true),
-  ('00000000-0000-0000-0000-000000000004', 'Ali Aghayev', 'ali.aghayev@bhos.edu.az', 'Process Automation Engineering', 2024, 'student', 'male', 'player', 'Penhold Offensive', 'Yasaka Ma Lin Extra Offensive', 'DHS Hurricane 3 Neo', 'Xiom Vega Pro', 0, 0, 0, 0, true, true),
-  ('00000000-0000-0000-0000-000000000005', 'Huseyn Muradzada', 'huseyn.muradzade@bhos.edu.az', 'Computer Engineering', 2023, 'student', 'male', 'player', 'Shakehand All-round', 'Yasaka Sweden Extra', 'Yasaka Rakza 7', 'Yasaka Rakza 7 Soft', 0, 0, 0, 0, true, true),
-  ('00000000-0000-0000-0000-000000000006', 'Fateh Mammadli', 'fateh.mammadli@bhos.edu.az', 'Process Automation Engineering', 2022, 'student', 'male', 'player', 'Shakehand Offensive', 'Butterfly Primorac Carbon', 'Rozena', 'Rozena', 0, 0, 0, 0, true, true),
-  ('00000000-0000-0000-0000-000000000007', 'Rinad Evezzade', 'rinad.evezzade@bhos.edu.az', 'Computer Engineering', 2023, 'student', 'male', 'player', 'Shakehand Offensive', 'Timo Boll ALC', 'Butterfly Tenergy 05', 'Donic Baracuda', 0, 0, 0, 0, true, true),
-  ('00000000-0000-0000-0000-000000000008', 'Anar Alakbarli', 'anar.alakbarli@bhos.edu.az', 'Process Automation Engineering', 2023, 'student', 'male', 'player', 'Shakehand All-round', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true, true),
-  ('00000000-0000-0000-0000-000000000009', 'Nihat Ismayilzade', 'nihat.ismayilzade@bhos.edu.az', 'Process Automation Engineering', 2023, 'student', 'male', 'player', 'Shakehand Offensive', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true, true)
+  ('00000000-0000-0000-0000-000000000002', 'İftixar Məhərrəmov', 'iftixar.coach@gmail.com', 'İdman Klubu', NULL, 'teacher', 'male', 'coach', 'Shakehand All-round', 'Stiga Clipper Wood', 'Tibhar Evolution MX-P', 'Yasaka Rakza 7', 1400, 0, 0, 0, true, true),
+  ('00000000-0000-0000-0000-000000000001', 'Ali Iskandarli', 'ali.iskandarli.std@bhos.edu.az', 'Computer Engineering', 2023, 'student', 'male', 'president', 'Shakehand Offensive', 'Butterfly Viscaria ALC', 'Dignics 09C', 'Tenergy 05', 0, 0, 0, 0, true, true),
+  ('00000000-0000-0000-0000-000000000003', 'Ali Abdulov', 'ali.abdulov.std@bhos.edu.az', 'Computer Engineering', 2023, 'student', 'male', 'player', 'Shakehand Offensive', 'Timo Boll ALC', 'Butterfly Tenergy 05', 'Donic Baracuda', 0, 0, 0, 0, true, true),
+  ('00000000-0000-0000-0000-000000000004', 'Ali Aghayev', 'ali.aghayev.std@bhos.edu.az', 'Process Automation Engineering', 2024, 'student', 'male', 'player', 'Penhold Offensive', 'Yasaka Ma Lin Extra Offensive', 'DHS Hurricane 3 Neo', 'Xiom Vega Pro', 0, 0, 0, 0, true, true),
+  ('00000000-0000-0000-0000-000000000005', 'Huseyn Muradzada', 'huseyn.muradzade.std@bhos.edu.az', 'Computer Engineering', 2023, 'student', 'male', 'player', 'Shakehand All-round', 'Yasaka Sweden Extra', 'Yasaka Rakza 7', 'Yasaka Rakza 7 Soft', 0, 0, 0, 0, true, true),
+  ('00000000-0000-0000-0000-000000000006', 'Fateh Mammadli', 'fateh.mammadli.std@bhos.edu.az', 'Process Automation Engineering', 2022, 'student', 'male', 'player', 'Shakehand Offensive', 'Butterfly Primorac Carbon', 'Rozena', 'Rozena', 0, 0, 0, 0, true, true),
+  ('00000000-0000-0000-0000-000000000007', 'Rinad Evezzade', 'rinad.evezzade.std@bhos.edu.az', 'Computer Engineering', 2023, 'student', 'male', 'player', 'Shakehand Offensive', 'Timo Boll ALC', 'Butterfly Tenergy 05', 'Donic Baracuda', 0, 0, 0, 0, true, true),
+  ('00000000-0000-0000-0000-000000000008', 'Anar Alakbarli', 'anar.alakbarli.std@bhos.edu.az', 'Process Automation Engineering', 2023, 'student', 'male', 'player', 'Shakehand All-round', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true, true),
+  ('00000000-0000-0000-0000-000000000009', 'Nihat Ismayilzade', 'nihat.ismayilzade.std@bhos.edu.az', 'Process Automation Engineering', 2023, 'student', 'male', 'player', 'Shakehand Offensive', 'Not listed', 'Not listed', 'Not listed', 0, 0, 0, 0, true, true)
 ON CONFLICT (id) DO UPDATE SET
   full_name = EXCLUDED.full_name,
+  email = EXCLUDED.email,
   role = EXCLUDED.role,
   user_type = EXCLUDED.user_type,
   major_faculty = EXCLUDED.major_faculty,
   admission_year = EXCLUDED.admission_year,
   blade_equipment = EXCLUDED.blade_equipment;
+
+-- Step C: Add Student Email Constraint
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS check_student_email;
+ALTER TABLE public.profiles ADD CONSTRAINT check_student_email 
+CHECK (
+  (user_type = 'student' AND email LIKE '%.std@bhos.edu.az') OR 
+  (user_type != 'student')
+);
 
 -- 9. Enable Row Level Security (RLS)
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;

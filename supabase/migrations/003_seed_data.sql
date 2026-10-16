@@ -25,7 +25,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'iftixar@bhos.edu.az',
+    'iftixar.coach@gmail.com',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -37,7 +37,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'ali.iskandarli@bhos.edu.az',
+    'ali.iskandarli.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -49,7 +49,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'ali.abdulov@bhos.edu.az',
+    'ali.abdulov.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -61,7 +61,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'ali.aghayev@bhos.edu.az',
+    'ali.aghayev.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -73,7 +73,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'huseyn.muradzade@bhos.edu.az',
+    'huseyn.muradzade.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -85,7 +85,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'fateh.mammadli@bhos.edu.az',
+    'fateh.mammadli.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -97,7 +97,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'rinad.evezzade@bhos.edu.az',
+    'rinad.evezzade.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -109,7 +109,7 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'anar.alakbarli@bhos.edu.az',
+    'anar.alakbarli.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
@@ -121,14 +121,15 @@ VALUES
     '00000000-0000-0000-0000-000000000000',
     'authenticated',
     'authenticated',
-    'nihat.ismayilzade@bhos.edu.az',
+    'nihat.ismayilzade.std@bhos.edu.az',
     crypt('bhos2026', gen_salt('bf')),
     now(), now(), now(),
     '{"provider":"email","providers":["email"]}',
     '{"full_name":"Nihat Ismayilzade","user_type":"student","role":"player"}',
     false
   )
-ON CONFLICT (id) DO NOTHING;
+ON CONFLICT (id) DO UPDATE SET
+  email = EXCLUDED.email;
 
 -- Step B: Insert into public.profiles
 INSERT INTO public.profiles (
@@ -141,7 +142,7 @@ VALUES
   (
     '00000000-0000-0000-0000-000000000002',
     'İftixar Məhərrəmov',
-    'iftixar@bhos.edu.az',
+    'iftixar.coach@gmail.com',
     'İdman Klubu',
     NULL,
     'teacher',
@@ -158,7 +159,7 @@ VALUES
   (
     '00000000-0000-0000-0000-000000000001',
     'Ali Iskandarli',
-    'ali.iskandarli@bhos.edu.az',
+    'ali.iskandarli.std@bhos.edu.az',
     'Computer Engineering',
     2023,
     'student',
@@ -175,7 +176,7 @@ VALUES
   (
     '00000000-0000-0000-0000-000000000003',
     'Ali Abdulov',
-    'ali.abdulov@bhos.edu.az',
+    'ali.abdulov.std@bhos.edu.az',
     'Computer Engineering',
     2023,
     'student',
@@ -192,7 +193,7 @@ VALUES
   (
     '00000000-0000-0000-0000-000000000004',
     'Ali Aghayev',
-    'ali.aghayev@bhos.edu.az',
+    'ali.aghayev.std@bhos.edu.az',
     'Process Automation Engineering',
     2024,
     'student',
@@ -209,7 +210,7 @@ VALUES
   (
     '00000000-0000-0000-0000-000000000005',
     'Huseyn Muradzada',
-    'huseyn.muradzade@bhos.edu.az',
+    'huseyn.muradzade.std@bhos.edu.az',
     'Computer Engineering',
     2023,
     'student',
@@ -226,7 +227,7 @@ VALUES
   (
     '00000000-0000-0000-0000-000000000006',
     'Fateh Mammadli',
-    'fateh.mammadli@bhos.edu.az',
+    'fateh.mammadli.std@bhos.edu.az',
     'Process Automation Engineering',
     2022,
     'student',
@@ -243,7 +244,7 @@ VALUES
   (
     '00000000-0000-0000-0000-000000000007',
     'Rinad Evezzade',
-    'rinad.evezzade@bhos.edu.az',
+    'rinad.evezzade.std@bhos.edu.az',
     'Computer Engineering',
     2023,
     'student',
@@ -260,7 +261,7 @@ VALUES
   (
     '00000000-0000-0000-0000-000000000008',
     'Anar Alakbarli',
-    'anar.alakbarli@bhos.edu.az',
+    'anar.alakbarli.std@bhos.edu.az',
     'Process Automation Engineering',
     2023,
     'student',
@@ -277,7 +278,7 @@ VALUES
   (
     '00000000-0000-0000-0000-000000000009',
     'Nihat Ismayilzade',
-    'nihat.ismayilzade@bhos.edu.az',
+    'nihat.ismayilzade.std@bhos.edu.az',
     'Process Automation Engineering',
     2023,
     'student',
@@ -299,6 +300,14 @@ ON CONFLICT (id) DO UPDATE SET
   user_type = EXCLUDED.user_type,
   role = EXCLUDED.role,
   is_verified = EXCLUDED.is_verified;
+
+-- Step C: Add Student Email Constraint
+ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS check_student_email;
+ALTER TABLE public.profiles ADD CONSTRAINT check_student_email 
+CHECK (
+  (user_type = 'student' AND email LIKE '%.std@bhos.edu.az') OR 
+  (user_type != 'student')
+);
 
 -- Step C: Seed Sample Tournament
 INSERT INTO public.tournaments (

@@ -337,14 +337,18 @@ export default function AdminDashboardPage() {
 
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                      BANM E-poçt
+                      {newUserType === 'student' ? 'BANM Tələbə E-poçtu' : 'E-poçt Ünvanı'}
                     </label>
                     <input
                       type="email"
                       required
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
-                      placeholder="ad.soyad@bhos.edu.az"
+                      placeholder={
+                        newUserType === 'teacher'
+                          ? 'nümunə@email.com'
+                          : 'ad.soyad.std@bhos.edu.az'
+                      }
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400"
                     />
                   </div>

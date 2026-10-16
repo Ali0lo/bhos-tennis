@@ -7,11 +7,11 @@ import { advanceBracketWinner, generateSingleEliminationBracket } from '../tourn
 import { getSupabaseClient } from '../supabase/client';
 
 const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v5',
-  MATCHES: 'bhos_tt_matches_v5',
-  TOURNAMENTS: 'bhos_tt_tournaments_v5',
-  RESERVATIONS: 'bhos_tt_reservations_v5',
-  CURRENT_USER_ID: 'bhos_tt_active_user_id_v5',
+  PROFILES: 'bhos_tt_profiles_v6',
+  MATCHES: 'bhos_tt_matches_v6',
+  TOURNAMENTS: 'bhos_tt_tournaments_v6',
+  RESERVATIONS: 'bhos_tt_reservations_v6',
+  CURRENT_USER_ID: 'bhos_tt_active_user_id_v6',
 };
 
 // Safe browser local storage access
