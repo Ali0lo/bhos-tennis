@@ -127,7 +127,7 @@ export default function HallRulesSection() {
               <div className="flex flex-wrap items-center gap-4 pt-1 text-xs font-mono text-slate-300">
                 <div className="flex items-center gap-1.5 bg-[#131C2B] px-3 py-1.5 rounded-xl border border-white/5">
                   <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>09:00 – 22:00</span>
+                  <span>08:00 – 16:40</span>
                 </div>
                 <div className="flex items-center gap-1.5 bg-[#131C2B] px-3 py-1.5 rounded-xl border border-white/5">
                   <MapPin className="w-3.5 h-3.5 text-cyan-400" />

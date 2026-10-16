@@ -470,7 +470,7 @@ export default function HomePage() {
                     href="/tournaments"
                     className="text-xs text-cyan-400 font-semibold hover:underline flex items-center gap-1"
                   >
-                    <span>Turnirə Qeydiyyatdan Keç</span>
+                    <span>Tezliklə • Hazır Olun</span>
                     <ArrowRight className="w-3 h-3" />
                   </Link>
                 </div>
