@@ -7,7 +7,6 @@ import { PlayerProfile, MatchRecord, Tournament } from '../lib/data/types';
 import { useTranslation } from '../lib/i18n';
 import HallRulesSection from '../components/HallRulesSection';
 import MatchLoggerModal from '../components/MatchLoggerModal';
-import HeroHotspotPin from '../components/HeroHotspotPin';
 import NumberTicker from '../components/NumberTicker';
 import TiltCard from '../components/TiltCard';
 import EloToastBadge from '../components/EloToastBadge';
@@ -52,9 +51,41 @@ export default function HomePage() {
   const recentMatches = matches.slice(0, 5);
 
   return (
-    <div className="space-y-16">
-      <SmoothReveal delay={0.02}>
-        <section className="relative -mt-6 rounded-3xl overflow-hidden border border-white/10 shadow-2xl min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
+    <div className="space-y-12">
+      <SmoothReveal delay={0.01}>
+        <div className="flex justify-center -mt-3">
+          <div className="inline-flex flex-wrap sm:flex-nowrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 rounded-2xl sm:rounded-full bg-[#080D16]/85 backdrop-blur-md border border-white/10 shadow-[0_0_28px_rgba(59,130,246,0.12)]">
+            <Link
+              href="/leaderboard"
+              className="group inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-slate-200 hover:text-white bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/25 hover:border-cyan-400/50 transition-all shadow-sm"
+            >
+              <Trophy className="w-3.5 h-3.5 text-cyan-400 shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="whitespace-nowrap">{t('hero.stats_leader')}</span>
+            </Link>
+
+            <Link
+              href="/tables"
+              className="group inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-slate-200 hover:text-white bg-pink-500/10 hover:bg-pink-500/20 border border-pink-500/25 hover:border-pink-400/50 transition-all shadow-sm"
+            >
+              <TableIcon className="w-3.5 h-3.5 text-pink-400 shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="whitespace-nowrap">{t('hero.hall_tables_btn')}</span>
+            </Link>
+
+            <a
+              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-slate-200 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/25 hover:border-emerald-400/50 transition-all shadow-sm"
+            >
+              <MessageCircle className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400/20 shrink-0 group-hover:scale-110 transition-transform" />
+              <span className="whitespace-nowrap">WhatsApp Chat</span>
+            </a>
+          </div>
+        </div>
+      </SmoothReveal>
+
+      <SmoothReveal delay={0.03}>
+        <section className="relative rounded-3xl overflow-hidden border border-white/10 shadow-2xl min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
           <div 
             className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-100"
             style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}
@@ -86,16 +117,6 @@ export default function HomePage() {
               <span>{t('hero.community_tag')}</span>
               <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
             </a>
-          </div>
-
-          <div className="absolute top-[22%] right-[6%] sm:right-[10%] z-30">
-            <HeroHotspotPin type="league" badgeLabel={t('hero.stats_leader')} />
-          </div>
-          <div className="absolute top-[62%] right-[4%] sm:right-[8%] z-30">
-            <HeroHotspotPin type="hall" badgeLabel={t('hero.hall_tables_btn')} />
-          </div>
-          <div className="absolute top-[80%] right-[10%] sm:right-[15%] z-30">
-            <HeroHotspotPin type="community" badgeLabel="WhatsApp Chat" />
           </div>
 
           <SmoothReveal staggerChildren={0.1} className="relative z-20 max-w-2xl space-y-6 pt-28 pb-2">
