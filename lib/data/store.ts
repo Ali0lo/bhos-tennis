@@ -636,8 +636,17 @@ export class BHOSDataStore {
   }
 
   public getPlayerMatches(playerId: string): MatchRecord[] {
+    const profile = this.getProfile(playerId);
+    const targetName = profile?.full_name?.trim().toLowerCase();
     return this.getMatches().filter(
-      (m) => m.player1_id === playerId || m.player2_id === playerId
+      (m) =>
+        m.player1_id === playerId ||
+        m.player2_id === playerId ||
+        (profile && (m.player1_id === profile.id || m.player2_id === profile.id)) ||
+        (targetName && (
+          m.player1_name?.trim().toLowerCase() === targetName ||
+          m.player2_name?.trim().toLowerCase() === targetName
+        ))
     );
   }
 
@@ -696,6 +705,35 @@ export class BHOSDataStore {
 
   public getResolvedMatchIds(): Record<string, 'confirmed' | 'rejected'> {
     return getStored<Record<string, 'confirmed' | 'rejected'>>('bhos_resolved_matches', {});
+  }
+
+  public async deleteMatch(matchId: string): Promise<boolean> {
+    const idx = this.matches.findIndex((m) => m.id === matchId);
+    if (idx !== -1) {
+      this.matches.splice(idx, 1);
+      setStored(STORAGE_KEYS.MATCHES, this.matches);
+      this.notify();
+    }
+
+    const resolved = this.getResolvedMatchIds();
+    if (resolved[matchId]) {
+      delete resolved[matchId];
+      setStored('bhos_resolved_matches', resolved);
+    }
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase.from('matches').delete().eq('id', matchId);
+        if (error) {
+          console.warn('[BHOS Store] Could not delete match from Supabase:', error.message);
+        }
+      } catch (err) {
+        console.warn('[BHOS Store] Error deleting match:', err);
+      }
+    }
+
+    return true;
   }
 
   public logMatch(input: {

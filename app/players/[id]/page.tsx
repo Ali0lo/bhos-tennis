@@ -126,13 +126,22 @@ export default function PlayerProfilePage() {
 
       setProfile(fetchedProfile);
 
+      const targetIds = Array.from(new Set([playerId, fetchedProfile.id].filter(Boolean)));
       let fetchedMatches: MatchRecord[] = [];
 
       if (supabase) {
+        let orQuery = targetIds
+          .flatMap((id) => [`player1_id.eq.${id}`, `player2_id.eq.${id}`])
+          .join(',');
+
+        if (fetchedProfile.full_name) {
+          orQuery += `,player1_name.eq."${fetchedProfile.full_name}",player2_name.eq."${fetchedProfile.full_name}"`;
+        }
+
         const { data: matchData, error: matchError } = await supabase
           .from('matches')
           .select('*')
-          .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
+          .or(orQuery)
           .order('match_date', { ascending: true });
 
         if (!matchError && matchData) {
@@ -140,16 +149,20 @@ export default function PlayerProfilePage() {
         }
       }
 
-      if (fetchedMatches.length === 0) {
-        const localMatches = store.getPlayerMatches(playerId).sort(
-          (a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
-        );
-        if (localMatches.length > 0) {
-          fetchedMatches = localMatches;
+      const localMatches = store.getPlayerMatches(fetchedProfile.id || playerId);
+      const matchMap = new Map<string, MatchRecord>();
+      fetchedMatches.forEach((m) => matchMap.set(m.id, m));
+      localMatches.forEach((m) => {
+        if (!matchMap.has(m.id)) {
+          matchMap.set(m.id, m);
         }
-      }
+      });
 
-      setMatches(fetchedMatches);
+      const combinedMatches = Array.from(matchMap.values()).sort(
+        (a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
+      );
+
+      setMatches(combinedMatches);
     } catch (err) {
       setProfile(null);
     } finally {
@@ -285,10 +298,21 @@ export default function PlayerProfilePage() {
     return Math.max(profile.current_elo, ...elos, 1000);
   }, [profile, validMatches, playerId]);
 
-  const totalMatchesCount = profile?.matches_played || 0;
+  const actualWins = useMemo(() => {
+    return matches.filter((m) => {
+      const isP1 =
+        m.player1_id === playerId ||
+        m.player1_id === profile?.id ||
+        (profile?.full_name && m.player1_name === profile.full_name);
+      return isP1 ? m.player1_score > m.player2_score : m.player2_score > m.player1_score;
+    }).length;
+  }, [matches, playerId, profile]);
+
+  const totalMatchesCount = Math.max(profile?.matches_played || 0, matches.length);
+  const effectiveWins = Math.max(profile?.wins || 0, actualWins);
   const winRatePercent =
     totalMatchesCount > 0
-      ? Math.round(((profile?.wins || 0) / totalMatchesCount) * 100)
+      ? Math.round((effectiveWins / totalMatchesCount) * 100)
       : 0;
 
   const rivalries = useMemo(() => {
@@ -362,8 +386,8 @@ export default function PlayerProfilePage() {
   }, [validMatches, playerId]);
 
   const recentMatchesFeed = useMemo(() => {
-    return [...validMatches].reverse();
-  }, [validMatches]);
+    return [...matches].reverse();
+  }, [matches]);
 
   if (loading) {
     return (
@@ -797,7 +821,10 @@ export default function PlayerProfilePage() {
               </div>
             ) : (
               recentMatchesFeed.map((m) => {
-                const isPlayer1 = m.player1_id === playerId;
+                const isPlayer1 =
+                  m.player1_id === playerId ||
+                  m.player1_id === profile?.id ||
+                  (profile?.full_name ? m.player1_name === profile.full_name : false);
                 const opponentName = isPlayer1
                   ? (m.player2_name || 'Rəqib')
                   : (m.player1_name || 'Rəqib');
@@ -805,6 +832,7 @@ export default function PlayerProfilePage() {
                 const myScore = isPlayer1 ? m.player1_score : m.player2_score;
                 const opScore = isPlayer1 ? m.player2_score : m.player1_score;
                 const won = myScore > opScore;
+                const isPending = m.status === 'pending';
                 const delta = isPlayer1 ? m.elo_delta : -m.elo_delta;
                 const absDelta = Math.abs(delta);
 
@@ -815,13 +843,15 @@ export default function PlayerProfilePage() {
                   >
                     <div className="flex items-center gap-3.5">
                       <span
-                        className={`inline-flex items-center justify-center w-14 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
-                          won
+                        className={`inline-flex items-center justify-center min-w-[70px] px-2 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider border ${
+                          isPending
+                            ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
+                            : won
                             ? 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30'
                             : 'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30'
                         }`}
                       >
-                        {won ? 'QƏLƏBƏ' : 'MƏĞLUBİYYƏT'}
+                        {isPending ? 'TƏSDİQ GÖZLƏYİR' : won ? 'QƏLƏBƏ' : 'MƏĞLUBİYYƏT'}
                       </span>
 
                       <div>
@@ -857,16 +887,24 @@ export default function PlayerProfilePage() {
                       </div>
 
                       <div className="text-right min-w-[60px]">
-                        <span
-                          className={`font-mono text-sm font-black ${
-                            won ? 'text-[#22C55E]' : 'text-[#EF4444]'
-                          }`}
-                        >
-                          {won ? `+${absDelta}` : `-${absDelta}`}
-                        </span>
-                        <span className="block text-[9px] uppercase font-bold text-slate-500">
-                          XAL
-                        </span>
+                        {isPending ? (
+                          <span className="font-mono text-xs font-semibold text-amber-400">
+                            Gözləmədə
+                          </span>
+                        ) : (
+                          <>
+                            <span
+                              className={`font-mono text-sm font-black ${
+                                won ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                              }`}
+                            >
+                              {won ? `+${absDelta}` : `-${absDelta}`}
+                            </span>
+                            <span className="block text-[9px] uppercase font-bold text-slate-500">
+                              XAL
+                            </span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>

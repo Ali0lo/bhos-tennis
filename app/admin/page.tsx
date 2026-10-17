@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { BHOSDataStore } from '../../lib/data/store';
-import { PlayerProfile, UserRole, BHOSFaculty } from '../../lib/data/types';
+import { PlayerProfile, UserRole, BHOSFaculty, MatchRecord } from '../../lib/data/types';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
@@ -22,6 +22,8 @@ import {
   GraduationCap,
   Briefcase,
   Trash2,
+  Search,
+  History,
 } from 'lucide-react';
 
 const FACULTIES: BHOSFaculty[] = [
@@ -49,6 +51,9 @@ export default function AdminDashboardPage() {
   const store = BHOSDataStore.getInstance();
 
   const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
+  const [matchesList, setMatchesList] = useState<MatchRecord[]>([]);
+  const [matchSearch, setMatchSearch] = useState('');
+  const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(null);
   const [eloEdits, setEloEdits] = useState<Record<string, number>>({});
   const [showMatchModal, setShowMatchModal] = useState(false);
@@ -75,9 +80,11 @@ export default function AdminDashboardPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
+    store.fetchMatchesFromCloud();
     const update = () => {
       const pList = store.getProfiles();
       setProfiles(pList);
+      setMatchesList(store.getMatches());
       setCurrentUser(store.getCurrentUser());
 
       const initElo: Record<string, number> = {};
@@ -98,6 +105,39 @@ export default function AdminDashboardPage() {
     setToastMsg(msg);
     setTimeout(() => setToastMsg(null), 3500);
   };
+
+  const handleDeleteMatch = async (match: MatchRecord) => {
+    const matchLabel = `${match.player1_name} (${match.player1_score}) vs ${match.player2_name} (${match.player2_score})`;
+    const confirmed = window.confirm(
+      `"${matchLabel}" oyun qeydini sistemdən və bazadan tamamilə silmək istədiyinizdən əminsiniz? Bu əməliyyat geri qaytarılmır.`
+    );
+    if (!confirmed) return;
+
+    setDeletingMatchId(match.id);
+    try {
+      const ok = await store.deleteMatch(match.id);
+      if (ok) {
+        showToast('Oyun qeydi uğurla silindi.');
+      } else {
+        showToast('Oyun tapılmadı.');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Oyun silinərkən xəta baş verdi.');
+    } finally {
+      setDeletingMatchId(null);
+    }
+  };
+
+  const filteredMatches = matchesList.filter((m) => {
+    if (!matchSearch.trim()) return true;
+    const q = matchSearch.toLowerCase();
+    return (
+      m.player1_name?.toLowerCase().includes(q) ||
+      m.player2_name?.toLowerCase().includes(q) ||
+      m.tournament_title?.toLowerCase().includes(q) ||
+      m.logged_by_name?.toLowerCase().includes(q)
+    );
+  });
 
   const handleOverrideElo = (playerId: string) => {
     const val = eloEdits[playerId];
@@ -717,6 +757,127 @@ export default function AdminDashboardPage() {
                     Turnir və Səbət Yarat
                   </button>
                 </form>
+              </div>
+            </div>
+
+            <div className="p-6 rounded-3xl border border-white/10 bg-slate-900/80 shadow-xl space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                    <History className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h2 className="text-lg font-display font-bold text-white">
+                      Qeydə Alınmış Oyunlar & Nəticələrin Silinməsi
+                    </h2>
+                    <p className="text-xs text-slate-400">
+                      Səhv daxil edilmiş, test və ya ləğv olunmuş oyun qeydlərini bazadan silin
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-white/5 border border-white/10 text-slate-300">
+                    {filteredMatches.length} oyun
+                  </span>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      placeholder="Oyunçu və ya turnir axtar..."
+                      value={matchSearch}
+                      onChange={(e) => setMatchSearch(e.target.value)}
+                      className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 w-52 sm:w-64"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto rounded-2xl border border-white/5">
+                <table className="w-full text-left">
+                  <thead>
+                    <tr className="border-b border-white/10 text-[11px] uppercase text-slate-400 bg-white/[0.02]">
+                      <th className="py-2.5 px-3">Tarix</th>
+                      <th className="py-2.5 px-3">Qarşılaşma</th>
+                      <th className="py-2.5 px-3 text-center">Hesab</th>
+                      <th className="py-2.5 px-3">Setlər</th>
+                      <th className="py-2.5 px-3 text-center">Status</th>
+                      <th className="py-2.5 px-3 text-right">Sil</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5 text-xs">
+                    {filteredMatches.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-xs text-slate-500">
+                          Heç bir oyun qeydi tapılmadı.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredMatches.map((m) => {
+                        const isPending = m.status === 'pending';
+                        const isDeleting = deletingMatchId === m.id;
+
+                        return (
+                          <tr key={m.id} className="hover:bg-white/[0.02] transition">
+                            <td className="py-3 px-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                              {new Date(m.match_date).toLocaleDateString('az-AZ', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric',
+                              })}
+                            </td>
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-2">
+                                <span className={`font-semibold ${m.player1_score > m.player2_score ? 'text-emerald-400 font-bold' : 'text-white'}`}>
+                                  {m.player1_name}
+                                </span>
+                                <span className="text-slate-500 text-[10px]">vs</span>
+                                <span className={`font-semibold ${m.player2_score > m.player1_score ? 'text-emerald-400 font-bold' : 'text-white'}`}>
+                                  {m.player2_name}
+                                </span>
+                              </div>
+                              {m.tournament_title && (
+                                <div className="text-[10px] text-slate-500 truncate max-w-xs">
+                                  {m.tournament_title}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <span className="font-mono font-bold text-white px-2 py-0.5 rounded bg-white/5">
+                                {m.player1_score} - {m.player2_score}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                              {m.set_scores || '—'}
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <span
+                                className={`inline-flex px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                                  isPending
+                                    ? 'bg-amber-500/15 text-amber-300 border border-amber-500/30'
+                                    : 'bg-emerald-500/15 text-emerald-300 border border-emerald-500/30'
+                                }`}
+                              >
+                                {isPending ? 'Gözləmədə' : 'Təsdiqlənib'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteMatch(m)}
+                                disabled={isDeleting}
+                                title="Bu oyunu sil"
+                                className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition disabled:opacity-50"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
               </div>
             </div>
           </div>

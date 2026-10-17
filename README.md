@@ -43,6 +43,9 @@ A modern, responsive full-stack sports platform designed specifically for the **
   - Dynamic user promotion (Player $\leftrightarrow$ Coach $\leftrightarrow$ President).
   - Student vs Teacher/Staff category toggling.
   - Permanent athlete deletion (`Trash2`) with cascade cleanup across tournaments, matches, and table reservations.
+- **Logged Match Management & Removal:**
+  - Full searchable history of all logged matches across the club.
+  - Instant removal/deletion (`Trash2`) of invalid, accidental, or contested match records with cloud synchronization.
 - **Olympic Tournament Generator:**
   - Automated single-elimination tournament generation (4, 8, 16 athletes) with seeding and rule specifications.
 
@@ -64,6 +67,7 @@ A modern, responsive full-stack sports platform designed specifically for the **
 
 ### 7. Athlete Analytics & Equipment Registry (`app/players/[id]/page.tsx`)
 - Interactive ELO rating history trajectory charts via Recharts.
+- Complete match history feed ("Oyun Tarixçəsi və Nəticələr") displaying both verified victories/losses and pending matches with set scores and dynamic win percentage calculation.
 - Equipment breakdown: Blade wood, Forehand rubber, Backhand rubber, Grip style.
 - Head-to-head match predictor with probability calculation between any two athletes.
 
@@ -139,6 +143,7 @@ The database is built on PostgreSQL via Supabase with row-level security (RLS) a
 | `013_set_president_credentials.sql` | Confirmed credentials and pre-verified President account setup. |
 | `014_minimum_elo_1000.sql` | Minimum 1000 starting ELO, auth trigger default, and rating floor constraint. |
 | `015_matches_update_rls.sql` | Enables UPDATE & DELETE policies on matches table for game confirmations. |
+| `016_seed_initial_matches.sql` | Seeds initial competitive match history for club roster athletes dynamically referencing their profile UUIDs. |
 
 ---
 

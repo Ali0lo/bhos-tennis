@@ -28,3 +28,4 @@ DROP POLICY IF EXISTS "Public read matches" ON public.matches;
 CREATE POLICY "Public read matches" ON public.matches
   FOR SELECT TO anon, authenticated
   USING (true);
+

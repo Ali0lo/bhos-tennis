@@ -47,7 +47,7 @@ export interface PlayerProfile {
 export interface MatchRecord {
   id: string;
   tournament_id?: string | null;
-  tournament_title?: string;
+  tournament_title?: string | null;
   player1_id: string;
   player1_name?: string;
   player2_id: string;
