@@ -23,6 +23,8 @@ import {
   Clock,
   Sparkles,
   Briefcase,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 const FACULTIES: BHOSFaculty[] = [
@@ -61,6 +63,7 @@ export default function LoginPage() {
   const [admissionYear, setAdmissionYear] = useState<number>(2024);
   const [gender, setGender] = useState<'female' | 'male'>('male');
   const [playingLevel, setPlayingLevel] = useState<PlayingLevel>('Intermediate');
+  const [showPassword, setShowPassword] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(null);
   const [loading, setLoading] = useState(false);
@@ -84,6 +87,24 @@ export default function LoginPage() {
     }
   };
 
+  const handleSwitchToSignup = () => {
+    setMode('signup');
+    setErrorMsg(null);
+    setSuccessMsg(null);
+
+    const clean = email.trim().toLowerCase();
+    if (clean === 'ali.iskandarli.std@bhos.edu.az' || clean === 'ali.iskandarli@bhos.edu.az') {
+      if (!fullName) setFullName('Ali Iskandarli');
+      setUserType('student');
+      setMajor('Computer Engineering');
+      setAdmissionYear(2023);
+    } else if (clean === 'iftixar.coach@gmail.com' || clean === 'iftixar@bhos.edu.az') {
+      if (!fullName) setFullName('İftixar Məhərrəmov');
+      setUserType('teacher');
+      setMajor('İdman Klubu');
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
@@ -100,17 +121,31 @@ export default function LoginPage() {
         }
 
         if (supabase) {
-          const { data, error } = await supabase.auth.signInWithPassword({
+          let authResult = await supabase.auth.signInWithPassword({
             email: cleanEmail,
             password,
           });
 
-          if (error) {
-            if (error.message.toLowerCase().includes('invalid login credentials')) {
+          if (authResult.error && cleanEmail.includes('.std@bhos.edu.az')) {
+            const legacyEmail = cleanEmail.replace('.std@bhos.edu.az', '@bhos.edu.az');
+            const fallbackResult = await supabase.auth.signInWithPassword({
+              email: legacyEmail,
+              password,
+            });
+            if (!fallbackResult.error && fallbackResult.data.user) {
+              authResult = fallbackResult;
+              await supabase.auth.updateUser({ email: cleanEmail }).catch(() => {});
+            }
+          }
+
+          if (authResult.error) {
+            if (authResult.error.message.toLowerCase().includes('invalid login credentials')) {
               throw new Error('E-poçt və ya şifrə yanlışdır. Əgər bu e-poçtla ilk dəfə daxil olursunuzsa, zəhmət olmasa "Qeydiyyatdan Keç" bölməsinə keçib qeydiyyatdan keçin.');
             }
-            throw new Error(error.message);
+            throw new Error(authResult.error.message);
           }
+
+          const data = authResult.data;
 
           if (data.user?.email) {
             const isPresident = cleanEmail === 'ali.iskandarli.std@bhos.edu.az' || cleanEmail === 'ali.iskandarli@bhos.edu.az';
@@ -451,9 +486,20 @@ export default function LoginPage() {
           </div>
 
           {errorMsg && (
-            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-2.5 text-xs text-rose-300">
-              <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
-              <span>{errorMsg}</span>
+            <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-300">
+              <div className="flex items-center gap-2.5">
+                <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                <span>{errorMsg}</span>
+              </div>
+              {mode === 'signin' && (
+                <button
+                  type="button"
+                  onClick={handleSwitchToSignup}
+                  className="px-3.5 py-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-display font-bold text-xs shrink-0 shadow transition"
+                >
+                  Qeydiyyata Keç
+                </button>
+              )}
             </div>
           )}
 
@@ -643,15 +689,29 @@ export default function LoginPage() {
                 <Lock className="w-3.5 h-3.5 text-cyan-400" />
                 <span>{t('auth.password')}</span>
               </label>
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-white focus:outline-none focus:border-cyan-400 transition"
-              />
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  required
+                  minLength={6}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full pl-4 pr-11 py-3 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-white focus:outline-none focus:border-cyan-400 transition"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-300 transition p-1"
+                  aria-label={showPassword ? 'Şifrəni gizlə' : 'Şifrəni göstər'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
             </div>
 
             {mode === 'signup' && (
