@@ -324,6 +324,9 @@ export default function LoginPage() {
           store.addProfile(newProfile);
           if (data.session) {
             store.setCurrentUser(newProfile.id);
+            setSuccessMsg(t('auth.login_success'));
+            setTimeout(() => router.push('/'), 800);
+            return;
           }
 
           setSuccessMsg(t('auth.signup_success'));
