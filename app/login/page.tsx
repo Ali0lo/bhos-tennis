@@ -121,31 +121,20 @@ export default function LoginPage() {
         }
 
         if (supabase) {
-          let authResult = await supabase.auth.signInWithPassword({
+          const { data, error } = await supabase.auth.signInWithPassword({
             email: cleanEmail,
             password,
           });
 
-          if (authResult.error && cleanEmail.includes('.std@bhos.edu.az')) {
-            const legacyEmail = cleanEmail.replace('.std@bhos.edu.az', '@bhos.edu.az');
-            const fallbackResult = await supabase.auth.signInWithPassword({
-              email: legacyEmail,
-              password,
-            });
-            if (!fallbackResult.error && fallbackResult.data.user) {
-              authResult = fallbackResult;
-              await supabase.auth.updateUser({ email: cleanEmail }).catch(() => {});
-            }
-          }
-
-          if (authResult.error) {
-            if (authResult.error.message.toLowerCase().includes('invalid login credentials')) {
+          if (error) {
+            if (
+              error.message.toLowerCase().includes('invalid login credentials') ||
+              error.message.toLowerCase().includes('database error querying schema')
+            ) {
               throw new Error('E-poçt və ya şifrə yanlışdır. Əgər bu e-poçtla ilk dəfə daxil olursunuzsa, zəhmət olmasa "Qeydiyyatdan Keç" bölməsinə keçib qeydiyyatdan keçin.');
             }
-            throw new Error(authResult.error.message);
+            throw new Error(error.message);
           }
-
-          const data = authResult.data;
 
           if (data.user?.email) {
             const isPresident = cleanEmail === 'ali.iskandarli.std@bhos.edu.az' || cleanEmail === 'ali.iskandarli@bhos.edu.az';
@@ -274,6 +263,8 @@ export default function LoginPage() {
             is_active: true,
             created_at: new Date().toISOString(),
           };
+
+          await supabase.from('profiles').delete().eq('email', cleanEmail).neq('id', userId);
 
           const { error: insertError } = await supabase.from('profiles').upsert(
             [
