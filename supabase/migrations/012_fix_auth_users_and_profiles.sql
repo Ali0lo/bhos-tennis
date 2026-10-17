@@ -20,17 +20,48 @@ WHERE
   email_change_token_new IS NULL OR
   email_change IS NULL;
 
--- 2. Delete the artificial mock auth.users record for Ali Iskandarli so real registration succeeds cleanly
-DELETE FROM auth.users 
-WHERE id = '00000000-0000-0000-0000-000000000001' 
-   OR email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az');
+-- 2. Nullify and update foreign key references to the mock user ID in all dependent tables
+
+-- Nullify created_by in tournaments
+UPDATE public.tournaments 
+SET created_by = NULL 
+WHERE created_by = '00000000-0000-0000-0000-000000000001'
+   OR created_by IN (SELECT id FROM public.profiles WHERE email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az'));
+
+-- Fix tournaments_created_by_fkey to ON DELETE SET NULL
+ALTER TABLE public.tournaments 
+  DROP CONSTRAINT IF EXISTS tournaments_created_by_fkey;
+
+ALTER TABLE public.tournaments 
+  ADD CONSTRAINT tournaments_created_by_fkey 
+  FOREIGN KEY (created_by) REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+-- Clean up any table reservations for this mock ID
+DELETE FROM public.table_reservations 
+WHERE reserved_by = '00000000-0000-0000-0000-000000000001'
+   OR reserved_by IN (SELECT id FROM public.profiles WHERE email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az'));
+
+-- Clean up any tournament registrations for this mock ID
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'tournament_registrations') THEN
+    DELETE FROM public.tournament_registrations 
+    WHERE player_id = '00000000-0000-0000-0000-000000000001'
+       OR player_id IN (SELECT id::text FROM public.profiles WHERE email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az'));
+  END IF;
+END $$;
 
 -- 3. Delete any stale profile placeholder that would conflict with the new authenticated user ID
 DELETE FROM public.profiles 
 WHERE id = '00000000-0000-0000-0000-000000000001' 
    OR email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az');
 
--- 4. Safeguard the handle_new_user trigger so it never aborts auth signup transactions
+-- 4. Delete the artificial mock auth.users record for Ali Iskandarli so real registration succeeds cleanly
+DELETE FROM auth.users 
+WHERE id = '00000000-0000-0000-0000-000000000001' 
+   OR email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az');
+
+-- 5. Safeguard the handle_new_user trigger so it never aborts auth signup transactions
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
