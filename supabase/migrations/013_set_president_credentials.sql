@@ -22,12 +22,12 @@ WHERE
   email_change_token_new IS NULL OR
   email_change IS NULL;
 
--- 2. Update existing user if present
+-- 2. Confirm email and set password to bhos2026 for Ali Iskandarli
 UPDATE auth.users
 SET 
   email = 'ali.iskandarli.std@bhos.edu.az',
-  encrypted_password = crypt('bhos2006', gen_salt('bf')),
-  email_confirmed_at = COALESCE(email_confirmed_at, now()),
+  encrypted_password = crypt('bhos2026', gen_salt('bf')),
+  email_confirmed_at = now(),
   confirmation_token = '',
   recovery_token = '',
   email_change_token_new = '',
@@ -70,7 +70,7 @@ SELECT
   'authenticated',
   'authenticated',
   'ali.iskandarli.std@bhos.edu.az',
-  crypt('bhos2006', gen_salt('bf')),
+  crypt('bhos2026', gen_salt('bf')),
   now(),
   now(),
   now(),
