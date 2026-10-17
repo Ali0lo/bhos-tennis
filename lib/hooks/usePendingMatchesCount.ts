@@ -16,15 +16,26 @@ export function usePendingMatchesCount(userId?: string | null): number {
       return;
     }
 
+    const activeProfile = store.getProfile(activeUserId) || store.getCurrentUser();
+    const isAdminOrCoach = activeProfile?.role === 'president' || activeProfile?.role === 'coach';
+
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
-        const { count: exactCount, error } = await supabase
+        let query = supabase
           .from('matches')
           .select('id', { count: 'exact', head: true })
-          .eq('status', 'pending')
-          .neq('logged_by', activeUserId)
-          .or(`player2_id.eq.${activeUserId},player1_id.eq.${activeUserId}`);
+          .eq('status', 'pending');
+
+        if (!isAdminOrCoach) {
+          query = query
+            .neq('logged_by', activeUserId)
+            .or(`player2_id.eq.${activeUserId},player1_id.eq.${activeUserId}`);
+        } else {
+          query = query.neq('logged_by', activeUserId);
+        }
+
+        const { count: exactCount, error } = await query;
 
         if (!error && typeof exactCount === 'number') {
           setCount(exactCount);
@@ -36,12 +47,16 @@ export function usePendingMatchesCount(userId?: string | null): number {
 
     const localPending = store
       .getMatches()
-      .filter(
-        (m) =>
-          m.status === 'pending' &&
+      .filter((m) => {
+        if (m.status !== 'pending') return false;
+        if (isAdminOrCoach) {
+          return m.logged_by !== activeUserId;
+        }
+        return (
           m.logged_by !== activeUserId &&
           (m.player2_id === activeUserId || m.player1_id === activeUserId)
-      ).length;
+        );
+      }).length;
 
     setCount(localPending);
   }, [userId]);

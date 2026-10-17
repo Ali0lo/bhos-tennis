@@ -52,15 +52,24 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
 
     setLoading(true);
     const supabase = getSupabaseClient();
+    const isAdminOrCoach = user.role === 'president' || user.role === 'coach';
+
     if (supabase) {
       try {
-        const { data, error } = await supabase
+        let query = supabase
           .from('matches')
           .select('*')
-          .eq('status', 'pending')
-          .neq('logged_by', user.id)
-          .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`)
-          .order('match_date', { ascending: false });
+          .eq('status', 'pending');
+
+        if (!isAdminOrCoach) {
+          query = query
+            .neq('logged_by', user.id)
+            .or(`player1_id.eq.${user.id},player2_id.eq.${user.id}`);
+        } else {
+          query = query.neq('logged_by', user.id);
+        }
+
+        const { data, error } = await query.order('match_date', { ascending: false });
 
         if (!error && data) {
           setPendingMatches(data as MatchRecord[]);
@@ -72,12 +81,16 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       }
     }
 
-    const localMatches = store.getMatches().filter(
-      (m) =>
-        m.status === 'pending' &&
+    const localMatches = store.getMatches().filter((m) => {
+      if (m.status !== 'pending') return false;
+      if (isAdminOrCoach) {
+        return m.logged_by !== user.id;
+      }
+      return (
         m.logged_by !== user.id &&
         (m.player1_id === user.id || m.player2_id === user.id)
-    );
+      );
+    });
     setPendingMatches(localMatches);
     setLoading(false);
   }, [store]);
@@ -257,7 +270,9 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
               </span>
             </h3>
             <p className="text-[11px] text-slate-400">
-              Rəqibiniz sizinlə olan oyun nəticəsini təqdim edib. Zəhmət olmasa hesabı yoxlayın və təsdiq və ya rədd edin.
+              {currentUser.role === 'president' || currentUser.role === 'coach'
+                ? 'Klub üzvləri tərəfindən qeyd olunmuş və təsdiq gözləyən oyunlar. Nəticəni yoxlayıb rəsmi təsdiq verə və ya rədd edə bilərsiniz.'
+                : 'Rəqibiniz sizinlə olan oyun nəticəsini təqdim edib. Zəhmət olmasa hesabı yoxlayın və təsdiq və ya rədd edin.'}
             </p>
           </div>
         </div>
@@ -285,12 +300,19 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
           const submitterName =
             m.logged_by_name ||
             (m.logged_by === m.player1_id ? m.player1_name : m.player2_name) ||
-            'Rəqib';
+            'Klub Üzvü';
 
+          const isPlayerInMatch = m.player1_id === currentUser.id || m.player2_id === currentUser.id;
           const isWinner = m.player1_id === currentUser.id;
           const userScore = isWinner ? m.player1_score : m.player2_score;
           const oppScore = isWinner ? m.player2_score : m.player1_score;
-          const outcomeText = isWinner ? 'Qələbəniz qeyd olunub' : 'Məğlubiyyətiniz qeyd olunub';
+
+          let outcomeText = '';
+          if (isPlayerInMatch) {
+            outcomeText = isWinner ? 'Qələbəniz qeyd olunub' : 'Məğlubiyyətiniz qeyd olunub';
+          } else {
+            outcomeText = `${m.player1_name} qələbəsi (${m.player1_score} - ${m.player2_score})`;
+          }
 
           return (
             <div
@@ -300,9 +322,11 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
               <div className="flex items-center gap-3">
                 <span
                   className={`px-2 py-1 rounded text-[10px] font-black uppercase tracking-wider border ${
-                    isWinner
-                      ? 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30'
-                      : 'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30'
+                    isPlayerInMatch
+                      ? isWinner
+                        ? 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30'
+                        : 'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30'
+                      : 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                   }`}
                 >
                   {outcomeText}
@@ -310,10 +334,18 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
 
                 <div>
                   <div className="text-xs font-bold text-white">
-                    Qeyd edən: <span className="text-[#3B82F6]">{submitterName}</span>
+                    {isPlayerInMatch ? (
+                      <>Qeyd edən: <span className="text-[#3B82F6]">{submitterName}</span></>
+                    ) : (
+                      <>Oyunçular: <span className="text-emerald-400 font-bold">{m.player1_name}</span> vs <span className="text-rose-400 font-bold">{m.player2_name}</span> (Qeyd edən: {submitterName})</>
+                    )}
                   </div>
                   <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2 mt-0.5">
-                    <span>Hesab: <strong className="text-white">{userScore} - {oppScore}</strong></span>
+                    {isPlayerInMatch ? (
+                      <span>Hesab: <strong className="text-white">{userScore} - {oppScore}</strong></span>
+                    ) : (
+                      <span>Hesab: <strong className="text-white">{m.player1_score} - {m.player2_score}</strong></span>
+                    )}
                     {m.set_scores && <span>({m.set_scores})</span>}
                     <span>•</span>
                     <span>{new Date(m.match_date).toLocaleDateString()}</span>

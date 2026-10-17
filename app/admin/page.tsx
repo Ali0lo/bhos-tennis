@@ -7,6 +7,7 @@ import { getSupabaseClient } from '../../lib/supabase/client';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
 import PendingVerificationQueue from '../../components/PendingVerificationQueue';
+import PendingApprovals from '../../components/PendingApprovals';
 import SmoothReveal from '../../components/SmoothReveal';
 import {
   ShieldAlert,
@@ -301,6 +302,7 @@ export default function AdminDashboardPage() {
         ) : (
           <div className="space-y-8">
             <PendingVerificationQueue />
+            <PendingApprovals />
 
             {showAddMember && (
               <form
