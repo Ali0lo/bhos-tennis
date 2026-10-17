@@ -1,0 +1,26 @@
+name: Production Deployment
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  deployments: write
+
+jobs:
+  deploy:
+    name: Production
+    runs-on: ubuntu-latest
+    environment:
+      name: Production
+      url: https://www.tabletennisbhos.me
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Verify Deployment Link
+        run: |
+          echo "Production environment active at https://www.tabletennisbhos.me"

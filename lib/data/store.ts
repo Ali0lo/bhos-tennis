@@ -172,7 +172,13 @@ export class BHOSDataStore {
       }
 
       if (data) {
-        this.matches = data as MatchRecord[];
+        const resolved = this.getResolvedMatchIds();
+        this.matches = (data as MatchRecord[]).map((m) => {
+          if (resolved[m.id]) {
+            return { ...m, status: resolved[m.id] };
+          }
+          return m;
+        });
         setStored(STORAGE_KEYS.MATCHES, this.matches);
         this.notify();
       }
@@ -290,15 +296,31 @@ export class BHOSDataStore {
   }
 
   private handleRealtimeMatch(payload: any) {
-    const { eventType, new: newRecord } = payload;
+    const { eventType, new: newRecord, old: oldRecord } = payload;
 
     if (eventType === 'INSERT') {
       const exists = this.matches.some((m) => m.id === newRecord.id);
       if (!exists) {
         this.matches.unshift(newRecord);
         setStored(STORAGE_KEYS.MATCHES, this.matches);
-        // Refresh profiles to ensure ELO changes are synced
         this.fetchProfilesFromCloud();
+        this.notify();
+      }
+    } else if (eventType === 'UPDATE') {
+      const idx = this.matches.findIndex((m) => m.id === newRecord.id);
+      if (idx !== -1) {
+        this.matches[idx] = { ...this.matches[idx], ...newRecord };
+      } else {
+        this.matches.unshift(newRecord);
+      }
+      setStored(STORAGE_KEYS.MATCHES, this.matches);
+      this.fetchProfilesFromCloud();
+      this.notify();
+    } else if (eventType === 'DELETE') {
+      const idToDelete = oldRecord?.id || newRecord?.id;
+      if (idToDelete) {
+        this.matches = this.matches.filter((m) => m.id !== idToDelete);
+        setStored(STORAGE_KEYS.MATCHES, this.matches);
         this.notify();
       }
     }
@@ -617,6 +639,63 @@ export class BHOSDataStore {
     return this.getMatches().filter(
       (m) => m.player1_id === playerId || m.player2_id === playerId
     );
+  }
+
+  public confirmMatch(matchId: string, updates?: Partial<MatchRecord>): MatchRecord | undefined {
+    let match = this.matches.find((m) => m.id === matchId);
+    if (match) {
+      match.status = 'confirmed';
+      if (updates) {
+        Object.assign(match, updates);
+      }
+    } else if (updates) {
+      match = {
+        id: matchId,
+        tournament_id: null,
+        player1_id: '',
+        player1_name: '',
+        player2_id: '',
+        player2_name: '',
+        logged_by: '',
+        logged_by_name: '',
+        player1_score: 0,
+        player2_score: 0,
+        set_scores: '',
+        player1_elo_before: 1000,
+        player2_elo_before: 1000,
+        player1_elo_after: 1000,
+        player2_elo_after: 1000,
+        elo_delta: 0,
+        status: 'confirmed',
+        match_date: new Date().toISOString(),
+        ...updates,
+      };
+      this.matches.unshift(match);
+    }
+    this.markMatchResolvedLocally(matchId, 'confirmed');
+    setStored(STORAGE_KEYS.MATCHES, this.matches);
+    this.notify();
+    return match;
+  }
+
+  public rejectMatch(matchId: string): void {
+    const match = this.matches.find((m) => m.id === matchId);
+    if (match) {
+      match.status = 'rejected';
+    }
+    this.markMatchResolvedLocally(matchId, 'rejected');
+    setStored(STORAGE_KEYS.MATCHES, this.matches);
+    this.notify();
+  }
+
+  public markMatchResolvedLocally(matchId: string, status: 'confirmed' | 'rejected'): void {
+    const resolved = this.getResolvedMatchIds();
+    resolved[matchId] = status;
+    setStored('bhos_resolved_matches', resolved);
+  }
+
+  public getResolvedMatchIds(): Record<string, 'confirmed' | 'rejected'> {
+    return getStored<Record<string, 'confirmed' | 'rejected'>>('bhos_resolved_matches', {});
   }
 
   public logMatch(input: {

@@ -24,7 +24,7 @@ export function usePendingMatchesCount(userId?: string | null): number {
       try {
         let query = supabase
           .from('matches')
-          .select('id', { count: 'exact', head: true })
+          .select('id')
           .eq('status', 'pending');
 
         if (!isAdminOrCoach) {
@@ -35,20 +35,24 @@ export function usePendingMatchesCount(userId?: string | null): number {
           query = query.neq('logged_by', activeUserId);
         }
 
-        const { count: exactCount, error } = await query;
+        const { data: rawPending, error } = await query;
 
-        if (!error && typeof exactCount === 'number') {
-          setCount(exactCount);
+        if (!error && rawPending) {
+          const resolved = store.getResolvedMatchIds();
+          const validPending = rawPending.filter((m: { id: string }) => !resolved[m.id]);
+          setCount(validPending.length);
           return;
         }
       } catch {
       }
     }
 
+    const resolved = store.getResolvedMatchIds();
     const localPending = store
       .getMatches()
       .filter((m) => {
         if (m.status !== 'pending') return false;
+        if (resolved[m.id]) return false;
         if (isAdminOrCoach) {
           return m.logged_by !== activeUserId;
         }

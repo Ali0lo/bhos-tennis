@@ -2,6 +2,7 @@
   "name": "bhos-tennis",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://www.tabletennisbhos.me",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

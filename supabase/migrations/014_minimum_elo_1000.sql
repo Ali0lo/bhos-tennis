@@ -37,3 +37,4 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 4. Enforce minimum rating constraint
 ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS chk_profiles_min_elo;
 ALTER TABLE public.profiles ADD CONSTRAINT chk_profiles_min_elo CHECK (current_elo >= 1000);
+

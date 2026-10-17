@@ -72,7 +72,11 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
         const { data, error } = await query.order('match_date', { ascending: false });
 
         if (!error && data) {
-          setPendingMatches(data as MatchRecord[]);
+          const resolved = store.getResolvedMatchIds();
+          const filtered = (data as MatchRecord[]).filter(
+            (m) => !resolved[m.id]
+          );
+          setPendingMatches(filtered);
           setLoading(false);
           return;
         }
@@ -81,8 +85,10 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       }
     }
 
+    const resolved = store.getResolvedMatchIds();
     const localMatches = store.getMatches().filter((m) => {
       if (m.status !== 'pending') return false;
+      if (resolved[m.id]) return false;
       if (isAdminOrCoach) {
         return m.logged_by !== user.id;
       }
@@ -132,26 +138,31 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
     const supabase = getSupabaseClient();
 
     try {
-      if (!supabase) throw new Error('Supabase client connection unavailable.');
+      let p1 = null;
+      let p2 = null;
 
-      const { data: p1, error: p1Error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', match.player1_id)
-        .single();
+      if (supabase) {
+        const { data: p1Data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', match.player1_id)
+          .maybeSingle();
 
-      const { data: p2, error: p2Error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', match.player2_id)
-        .single();
+        const { data: p2Data } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', match.player2_id)
+          .maybeSingle();
 
-      if (p1Error || !p1 || p2Error || !p2) {
-        throw new Error('Oyunçu reytinq məlumatlarını əldə etmək mümkün olmadı.');
+        p1 = p1Data;
+        p2 = p2Data;
       }
 
-      const p1Elo = p1.current_elo;
-      const p2Elo = p2.current_elo;
+      const p1Profile = p1 || store.getProfile(match.player1_id);
+      const p2Profile = p2 || store.getProfile(match.player2_id);
+
+      const p1Elo = p1Profile?.current_elo ?? 1000;
+      const p2Elo = p2Profile?.current_elo ?? 1000;
       const exponent = (p2Elo - p1Elo) / 400;
       const expectedP1 = 1 / (1 + Math.pow(10, exponent));
       let delta = Math.round(32 * (1 - expectedP1));
@@ -160,51 +171,79 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       const p1After = Math.max(1000, p1Elo + delta);
       const p2After = Math.max(1000, p2Elo - delta);
 
-      const { error: matchUpdateError } = await supabase
-        .from('matches')
-        .update({
-          player1_elo_before: p1Elo,
-          player2_elo_before: p2Elo,
-          player1_elo_after: p1After,
-          player2_elo_after: p2After,
-          elo_delta: delta,
-          status: 'confirmed',
-        })
-        .eq('id', match.id);
+      store.confirmMatch(match.id, {
+        player1_id: match.player1_id,
+        player1_name: match.player1_name || p1Profile?.full_name || 'Player 1',
+        player2_id: match.player2_id,
+        player2_name: match.player2_name || p2Profile?.full_name || 'Player 2',
+        player1_elo_before: p1Elo,
+        player2_elo_before: p2Elo,
+        player1_elo_after: p1After,
+        player2_elo_after: p2After,
+        elo_delta: delta,
+        status: 'confirmed',
+      });
 
-      if (matchUpdateError) throw matchUpdateError;
-
-      const { error: p1UpdateError } = await supabase
-        .from('profiles')
-        .update({
+      if (match.player1_id) {
+        store.updateProfile(match.player1_id, {
           current_elo: p1After,
-          matches_played: (p1.matches_played || 0) + 1,
-          wins: (p1.wins || 0) + 1,
-        })
-        .eq('id', p1.id);
-
-      if (p1UpdateError) throw p1UpdateError;
-
-      const { error: p2UpdateError } = await supabase
-        .from('profiles')
-        .update({
+          matches_played: ((p1Profile?.matches_played || 0) + 1),
+          wins: ((p1Profile?.wins || 0) + 1),
+        });
+      }
+      if (match.player2_id) {
+        store.updateProfile(match.player2_id, {
           current_elo: p2After,
-          matches_played: (p2.matches_played || 0) + 1,
-          losses: (p2.losses || 0) + 1,
-        })
-        .eq('id', p2.id);
+          matches_played: ((p2Profile?.matches_played || 0) + 1),
+          losses: ((p2Profile?.losses || 0) + 1),
+        });
+      }
 
-      if (p2UpdateError) throw p2UpdateError;
+      if (supabase) {
+        await supabase
+          .from('matches')
+          .update({
+            player1_elo_before: p1Elo,
+            player2_elo_before: p2Elo,
+            player1_elo_after: p1After,
+            player2_elo_after: p2After,
+            elo_delta: delta,
+            status: 'confirmed',
+          })
+          .eq('id', match.id);
 
-      await Promise.allSettled([
-        store.fetchProfilesFromCloud(),
-        store.fetchMatchesFromCloud(),
-      ]);
+        if (match.player1_id) {
+          await supabase
+            .from('profiles')
+            .update({
+              current_elo: p1After,
+              matches_played: ((p1Profile?.matches_played || 0) + 1),
+              wins: ((p1Profile?.wins || 0) + 1),
+            })
+            .eq('id', match.player1_id);
+        }
+
+        if (match.player2_id) {
+          await supabase
+            .from('profiles')
+            .update({
+              current_elo: p2After,
+              matches_played: ((p2Profile?.matches_played || 0) + 1),
+              losses: ((p2Profile?.losses || 0) + 1),
+            })
+            .eq('id', match.player2_id);
+        }
+
+        await Promise.allSettled([
+          store.fetchProfilesFromCloud(),
+          store.fetchMatchesFromCloud(),
+        ]);
+      }
 
       setPendingMatches((prev) => prev.filter((m) => m.id !== match.id));
       setFeedback({
         type: 'success',
-        message: `Oyun təsdiqləndi! Reytinqlər yeniləndi (${p1.full_name} +${delta} XAL, ${p2.full_name} -${delta} XAL).`,
+        message: `Oyun təsdiqləndi! Reytinqlər yeniləndi (${p1Profile?.full_name || match.player1_name || 'Qalib'} +${delta} XAL, ${p2Profile?.full_name || match.player2_name || 'Məğlub'} -${delta} XAL).`,
       });
 
       onMatchUpdated?.();
@@ -224,16 +263,17 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
     const supabase = getSupabaseClient();
 
     try {
-      if (!supabase) throw new Error('Supabase client connection unavailable.');
+      store.rejectMatch(match.id);
 
-      const { error } = await supabase
-        .from('matches')
-        .update({ status: 'rejected' })
-        .eq('id', match.id);
+      if (supabase) {
+        await supabase
+          .from('matches')
+          .update({ status: 'rejected' })
+          .eq('id', match.id);
 
-      if (error) throw error;
+        await store.fetchMatchesFromCloud();
+      }
 
-      await store.fetchMatchesFromCloud();
       setPendingMatches((prev) => prev.filter((m) => m.id !== match.id));
       setFeedback({
         type: 'success',

@@ -25,6 +25,11 @@ export const metadata: Metadata = {
     'Tournament Bracket',
     'Table Reservation',
   ],
+  icons: {
+    icon: '/icon.svg',
+    shortcut: '/icon.svg',
+    apple: '/icon.svg',
+  },
 };
 
 export default function RootLayout({

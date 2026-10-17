@@ -1,9 +1,12 @@
-# BHOS Table Tennis Club Management & Ranking Portal
+# 🏓 BHOS Table Tennis Club Management & Ranking Portal
 
+[![Live Production](https://img.shields.io/badge/Production-tabletennisbhos.me-00f2fe?style=flat)](https://www.tabletennisbhos.me)
 [![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=flat&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
 [![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-3ECF8E?style=flat&logo=supabase)](https://supabase.com/)
+
+🌐 **Live Production Website:** [https://www.tabletennisbhos.me](https://www.tabletennisbhos.me)
 
 A modern, responsive full-stack sports platform designed specifically for the **Baku Higher Oil School (BHOS / Bakı Ali Neft Məktəbi) Table Tennis Club**, inspired by international ITTF rating standards and modern competitive esports portals.
 
@@ -135,6 +138,7 @@ The database is built on PostgreSQL via Supabase with row-level security (RLS) a
 | `012_fix_auth_users_and_profiles.sql` | Foreign key detachment and token normalization. |
 | `013_set_president_credentials.sql` | Confirmed credentials and pre-verified President account setup. |
 | `014_minimum_elo_1000.sql` | Minimum 1000 starting ELO, auth trigger default, and rating floor constraint. |
+| `015_matches_update_rls.sql` | Enables UPDATE & DELETE policies on matches table for game confirmations. |
 
 ---
 
