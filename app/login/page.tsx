@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BHOSDataStore } from '../../lib/data/store';
-import { PlayerProfile, BHOSFaculty, PlayingLevel } from '../../lib/data/types';
+import { PlayerProfile, UserRole, BHOSFaculty, PlayingLevel } from '../../lib/data/types';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { useTranslation } from '../../lib/i18n';
 import SmoothReveal from '../../components/SmoothReveal';
@@ -106,36 +106,45 @@ export default function LoginPage() {
           });
 
           if (error) {
+            if (error.message.toLowerCase().includes('invalid login credentials')) {
+              throw new Error('E-poçt və ya şifrə yanlışdır. Əgər bu e-poçtla ilk dəfə daxil olursunuzsa, zəhmət olmasa "Qeydiyyatdan Keç" bölməsinə keçib qeydiyyatdan keçin.');
+            }
             throw new Error(error.message);
           }
 
           if (data.user?.email) {
+            const isPresident = cleanEmail === 'ali.iskandarli.std@bhos.edu.az' || cleanEmail === 'ali.iskandarli@bhos.edu.az';
+            const isCoach = cleanEmail === 'iftixar.coach@gmail.com' || cleanEmail === 'iftixar@bhos.edu.az';
+            const meta = data.user.user_metadata || {};
+            const metaUserType = isCoach ? 'teacher' : (meta.user_type || 'student');
+            const resolvedRole: UserRole = isPresident ? 'president' : isCoach ? 'coach' : (meta.role || 'player');
+            const resolvedVerified = isPresident || isCoach ? true : (meta.is_verified ?? false);
+            const resolvedElo = isCoach ? 9999 : (meta.current_elo ?? 0);
+
             const linked = await store.linkProfileByEmail(data.user.email);
             if (!linked) {
-              const meta = data.user.user_metadata || {};
-              const metaUserType = meta.user_type || 'student';
               const newProfile: PlayerProfile = {
                 id: data.user.id,
                 full_name: meta.full_name || cleanEmail.split('@')[0],
                 email: cleanEmail,
-                major_faculty: meta.major_faculty || 'Computer Engineering',
+                major_faculty: meta.major_faculty || (isCoach ? 'İdman Klubu' : 'Computer Engineering'),
                 admission_year:
                   metaUserType === 'teacher' || metaUserType === 'staff'
                     ? null
-                    : Number(meta.admission_year) || 2024,
+                    : Number(meta.admission_year) || 2023,
                 user_type: metaUserType,
                 gender: meta.gender || 'male',
-                role: 'player',
+                role: resolvedRole,
                 playing_level: meta.playing_level || 'Intermediate',
                 playing_style: 'Shakehand All-round',
                 blade_equipment: 'Standard Club Racket',
                 forehand_rubber: 'Standard Red',
                 backhand_rubber: 'Standard Black',
-                current_elo: 0,
+                current_elo: resolvedElo,
                 matches_played: 0,
                 wins: 0,
                 losses: 0,
-                is_verified: false,
+                is_verified: resolvedVerified,
                 is_active: true,
                 created_at: new Date().toISOString(),
               };
@@ -178,6 +187,12 @@ export default function LoginPage() {
         const resolvedAdmissionYear = isTeacher ? null : Number(admissionYear);
         const resolvedUserType = isTeacher ? 'teacher' : 'student';
 
+        const isPresident = cleanEmail === 'ali.iskandarli.std@bhos.edu.az' || cleanEmail === 'ali.iskandarli@bhos.edu.az';
+        const isCoach = cleanEmail === 'iftixar.coach@gmail.com' || cleanEmail === 'iftixar@bhos.edu.az';
+        const resolvedRole: UserRole = isPresident ? 'president' : isCoach ? 'coach' : 'player';
+        const resolvedVerified = isPresident || isCoach ? true : false;
+        const resolvedElo = isCoach ? 9999 : 0;
+
         if (supabase) {
           const { data, error } = await supabase.auth.signUp({
             email: cleanEmail,
@@ -188,6 +203,9 @@ export default function LoginPage() {
                 major_faculty: major,
                 admission_year: resolvedAdmissionYear,
                 user_type: resolvedUserType,
+                role: resolvedRole,
+                is_verified: resolvedVerified,
+                current_elo: resolvedElo,
                 gender,
                 playing_level: playingLevel,
               },
@@ -207,17 +225,17 @@ export default function LoginPage() {
             admission_year: resolvedAdmissionYear,
             user_type: resolvedUserType,
             gender,
-            role: 'player',
+            role: resolvedRole,
             playing_level: playingLevel,
             playing_style: 'Shakehand All-round',
             blade_equipment: 'Standard Club Racket',
             forehand_rubber: 'Standard Red',
             backhand_rubber: 'Standard Black',
-            current_elo: 0,
+            current_elo: resolvedElo,
             matches_played: 0,
             wins: 0,
             losses: 0,
-            is_verified: false,
+            is_verified: resolvedVerified,
             is_active: true,
             created_at: new Date().toISOString(),
           };
@@ -238,11 +256,11 @@ export default function LoginPage() {
                 blade_equipment: newProfile.blade_equipment,
                 forehand_rubber: newProfile.forehand_rubber,
                 backhand_rubber: newProfile.backhand_rubber,
-                current_elo: 0,
+                current_elo: newProfile.current_elo,
                 matches_played: 0,
                 wins: 0,
                 losses: 0,
-                is_verified: false,
+                is_verified: newProfile.is_verified,
                 is_active: true,
               },
             ],
@@ -265,11 +283,11 @@ export default function LoginPage() {
                   blade_equipment: newProfile.blade_equipment,
                   forehand_rubber: newProfile.forehand_rubber,
                   backhand_rubber: newProfile.backhand_rubber,
-                  current_elo: 0,
+                  current_elo: newProfile.current_elo,
                   matches_played: 0,
                   wins: 0,
                   losses: 0,
-                  is_verified: false,
+                  is_verified: newProfile.is_verified,
                   is_active: true,
                 },
               ],
@@ -293,17 +311,17 @@ export default function LoginPage() {
             admission_year: resolvedAdmissionYear,
             user_type: resolvedUserType,
             gender,
-            role: 'player',
+            role: resolvedRole,
             playing_level: playingLevel,
             playing_style: 'Shakehand All-round',
             blade_equipment: 'Standard Club Racket',
             forehand_rubber: 'Standard Red',
             backhand_rubber: 'Standard Black',
-            current_elo: 0,
+            current_elo: resolvedElo,
             matches_played: 0,
             wins: 0,
             losses: 0,
-            is_verified: false,
+            is_verified: resolvedVerified,
             is_active: true,
             created_at: new Date().toISOString(),
           };
