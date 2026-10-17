@@ -20,3 +20,4 @@ CHECK (
   (user_type = 'student' AND email LIKE '%.std@bhos.edu.az') OR 
   (user_type != 'student')
 );
+
