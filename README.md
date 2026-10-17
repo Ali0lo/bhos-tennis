@@ -1,72 +1,113 @@
 # BHOS Table Tennis Club Management & Ranking Portal
 
-A modern, responsive full-stack web application designed for the **Baku Higher Oil School (BHOS / Bakı Ali Neft Məktəbi) Table Tennis Club**, inspired by [tabletennis.az](https://tabletennis.az) and official ITTF rating standards.
+[![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=flat&logo=next.js)](https://nextjs.org/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=flat&logo=typescript)](https://www.typescriptlang.org/)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC?style=flat&logo=tailwind-css)](https://tailwindcss.com/)
+[![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Auth-3ECF8E?style=flat&logo=supabase)](https://supabase.com/)
+
+A modern, responsive full-stack sports platform designed specifically for the **Baku Higher Oil School (BHOS / Bakı Ali Neft Məktəbi) Table Tennis Club**, inspired by international ITTF rating standards and modern competitive esports portals.
 
 ---
 
 ## 🌟 Key Features
 
-1. **Official Table Tennis ELO Rating Engine (`lib/elo.ts`)**:
-   - Standard ITTF-calibrated ELO formula:
-     $$E_A = \frac{1}{1 + 10^{(R_B - R_A)/400}}$$
-     $$\Delta = \text{round}(K \times (S_A - E_A))$$
-   - Dynamic $K$-factors: $K=32$ for regular ranked matches, $K=48$ for tournament matches, $K=40$ for provisional players (<10 matches).
-   - Real-time ELO prediction preview during score input before logging.
-   - Comprehensive set score parser with ITTF deuce / minimum 11-point lead validation.
+### 1. Official ITTF ELO Rating Engine (`lib/elo.ts`)
+- Standard calibrated ITTF ELO engine with dynamic $K$-factors:
+  - $K=32$ for regular ranked match logs.
+  - $K=48$ for official tournament bracket matches.
+  - $K=40$ for provisional athletes (<10 matches logged).
+- Real-time ELO preview calculation during match score input.
+- Strict set score validation with ITTF deuce rule (minimum 2-point lead beyond 10–10).
 
-2. **Interactive Knockout Tournament Brackets (`components/BracketTree.tsx`)**:
-   - Single Elimination brackets (8, 16, 32 players) with automatic seeding (1 vs 8, 4 vs 5, 2 vs 7, 3 vs 6).
-   - Score entry directly inside the bracket for Club Officials.
-   - Automatic winner propagation to Semifinals and Finals.
-   - Formatted Markdown Tournament Regulations and custom rules.
+### 2. Multi-Role Authentication & Access Control (RBAC)
+- **Role Hierarchy:**
+  - **Club President (`president`)**: Full club administrative rights, member verification, manual ELO overrides, player deletion with cascading cleanup, role assignments, tournament creation, and table management.
+  - **Coach (`coach`)**: Benchmark rating (`9,999 ELO`), training session management, official match logging.
+  - **Player (`player`)**: Profile customization (equipment, style), match scheduling, match logging with opponent confirmation workflow, tournament participation.
+- **Dynamic BHOS Domain Validation (`app/login/page.tsx`):**
+  - **Students:** Enforces official BHOS student email format (`ad.soyad.std@bhos.edu.az`).
+  - **Teachers / Staff / Coaches:** Supports standard external email providers (`@gmail.com`, `@bhos.edu.az`, etc.) to accommodate external coaches and faculty members.
+  - Interactive password visibility toggle (`Eye` / `EyeOff`) and automatic session redirection.
 
-3. **BHOS Sports Hall Table Booking (`components/TableScheduler.tsx`)**:
-   - Visual representation of **Tables 1 through 6** at the BHOS Bibiheybat Campus sports hall.
-   - Real-time time slot scheduler (09:00 to 22:00) with conflict detection.
-   - Purpose categorization: *Free Play*, *Official Coaching*, and *Tournament Block*.
+### 3. President Administration Panel (`app/admin/page.tsx`)
+- **Pending Member Verification Queue (`components/PendingVerificationQueue.tsx`):**
+  - Live queue of newly registered athletes awaiting club approval.
+  - Initial ELO assignment during approval (default `1000` or custom seed rating).
+  - One-click application approval or rejection/deletion.
+- **Roster Management & ELO Overrides:**
+  - Full athlete roster view with real-time ELO adjustment.
+  - Dynamic user promotion (Player $\leftrightarrow$ Coach $\leftrightarrow$ President).
+  - Student vs Teacher/Staff category toggling.
+  - Permanent athlete deletion (`Trash2`) with cascade cleanup across tournaments, matches, and table reservations.
+- **Olympic Tournament Generator:**
+  - Automated single-elimination tournament generation (4, 8, 16 athletes) with seeding and rule specifications.
 
-4. **tabletennis.az-Inspired Leaderboard (`app/leaderboard/page.tsx`)**:
-   - Top 3 Gold/Silver/Bronze Podium display.
-   - Comprehensive ranking table with faculty filtering (Information Security, Computer Engineering, Chemical Engineering, Petroleum Engineering, Process Automation).
-   - Search by player name, faculty, or equipment.
-   - ELO, win rate %, and match record counters with trend indicators (up/down/same).
+### 4. Interactive Knockout Tournament Brackets (`components/BracketTree.tsx`)
+- Dynamic Olympic single-elimination bracket renderer with real-time progression.
+- In-bracket match score entry for club organizers.
+- Automatic winner advancement from Quarterfinals $\rightarrow$ Semifinals $\rightarrow$ Finals.
+- Markdown-formatted tournament regulations and rules view.
 
-5. **Player Profiles & Analytics (`app/players/[id]/page.tsx`)**:
-   - Recharts ELO rating progression over time.
-   - Equipment breakdown: Blade, Forehand rubber, Backhand rubber, Grip & playing style.
-   - Head-to-head comparison tool between any two club athletes with projected win probability.
-   - Full historical match logs with detailed set scores.
+### 5. Two-Player Match Confirmation Workflow (`app/matches/page.tsx`)
+- Athletes log match set scores against fellow club members.
+- Opponent receives instant notification badges in the navigation bar.
+- Opponent can confirm or dispute pending match logs before ratings update.
 
-6. **Role-Based Access Control (RBAC)**:
-   - **President (Superadmin)**: Full CRUD, manual ELO override, user promotion (Player -> Coach / President), tournament creation, table blocking.
-   - **Coach**: Official match score logging, roster viewing, training session scheduling.
-   - **Player**: Profile equipment editing, match history, leaderboard view, practice slot booking.
-   - Built-in Demo Role Switcher in the top navigation bar for testing each role instantly.
+### 6. Sports Hall Table Reservation (`app/tables/page.tsx`)
+- Digital schedule for **Tables 1 through 4** at the BHOS Bibiheybat Campus sports hall.
+- Real-time booking slots (09:00 to 22:00) with conflict prevention.
+- Slot categorization: *Free Play*, *Official Coaching*, and *Tournament Block*.
 
-7. **Multi-Language Support (`lib/i18n.tsx`)**:
-   - Azerbaijani (`az` - default)
-   - English (`en`)
-   - Russian (`ru`)
+### 7. Athlete Analytics & Equipment Registry (`app/players/[id]/page.tsx`)
+- Interactive ELO rating history trajectory charts via Recharts.
+- Equipment breakdown: Blade wood, Forehand rubber, Backhand rubber, Grip style.
+- Head-to-head match predictor with probability calculation between any two athletes.
+
+### 8. Internationalization (`lib/i18n.tsx`)
+- Full trilingual support:
+  - 🇦🇿 **Azerbaijani** (`az` — default)
+  - 🇬🇧 **English** (`en`)
+  - 🇷🇺 **Russian** (`ru`)
 
 ---
 
-## 🚀 Quick Start
+## 🎨 UI & Layout Architecture
 
-### 1. Install Dependencies
+- **Navbar (`components/Navbar.tsx`):**
+  - **Brand Anchor:** BHOS crest emblem on the far left.
+  - **Navigation Links:** Centered pill menu (`Reytinq Cədvəli`, `Oyunlarım`, `Turnirlər`, `Zal Qaydaları`, `Haqqında`).
+  - **Action Hub:** Distinct right-aligned President Panel with amber shield badge, official WhatsApp community link, one-click match logger, trilingual selector, and profile menu.
+- **Theme:** Obsidian dark sports aesthetic (`#080D16`) with electric cyan (`#00E5FF`), amber gold (`#F59E0B`), and emerald green (`#10B981`) accents.
+- **Responsive:** Fluid layout optimized across mobile phones, tablets, laptops, and ultra-wide displays.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js `20.x` or higher
+- npm `10.x` or higher
+
+### 1. Clone & Install
 ```bash
+git clone https://github.com/Ali0lo/bhos-tennis.git
+cd bhos-tennis
 npm install
 ```
 
-### 2. Run Locally in Development Mode
+### 2. Environment Setup
+Create a `.env.local` file in the root directory:
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
+```
+*(If Supabase credentials are not provided, the application runs on its embedded reactive persistent store with initial mock data).*
+
+### 3. Run Development Server
 ```bash
 npm run dev
 ```
 Open [http://localhost:3000](http://localhost:3000) to view the portal.
-
-### 3. Run ELO & Bracket Test Suite
-```bash
-npm run test:elo
-```
 
 ### 4. Build for Production
 ```bash
@@ -76,19 +117,33 @@ npm start
 
 ---
 
-## 🗄️ Database Architecture & Supabase Integration
+## 🗄️ Database Architecture & Migrations
 
-The project includes production-ready SQL migrations in the `supabase/migrations/` directory:
+The database is built on PostgreSQL via Supabase with row-level security (RLS) and real-time event streaming:
 
-- `001_initial_schema.sql`: Profiles, Matches, Tournaments, and Table Reservations tables.
-- `002_rls_and_triggers.sql`: Row-Level Security (RLS) policies and automated triggers for rating updates.
-- `003_seed_data.sql`: Seed data for BHOS students, faculty rosters, matches, and tournaments.
+| Migration File | Description |
+| :--- | :--- |
+| `001_initial_schema.sql` | Core tables: `profiles`, `matches`, `tournaments`, and `table_reservations`. |
+| `002_rls_and_triggers.sql` | Row-Level Security policies and automated rating calculation triggers. |
+| `003_seed_data.sql` | Initial club roster, faculty seeds, and practice tournament data. |
+| `004_supabase_cloud_sync.sql` | Cloud synchronization and schema alignment. |
+| `007_update_roster_and_faculties.sql` | Updated athlete roster, faculties, and staff departments. |
+| `008_tournament_registrations.sql` | Tournament athlete registration queue and constraints. |
+| `010_auth_profiles_trigger.sql` | Automatic `auth.users` to `public.profiles` insertion trigger. |
+| `011_student_email_constraint.sql` | Enforces `*.std@bhos.edu.az` for students while allowing external emails for staff. |
+| `012_fix_auth_users_and_profiles.sql` | Foreign key detachment and token normalization. |
+| `013_set_president_credentials.sql` | Confirmed credentials and pre-verified President account setup. |
 
-### Connecting to Supabase:
-Create a `.env.local` file with your credentials:
-```env
-NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
-```
-If these variables are omitted, the application runs on its embedded reactive persistent store pre-seeded with BHOS athletes.
+---
 
+## 👥 Club Leadership & Support
+
+- **Club President:** Ali Iskandarli (`ali.iskandarli.std@bhos.edu.az`)
+- **Official Coach:** İftixar Məhərrəmov (`iftixar.coach@gmail.com`)
+- **Official WhatsApp Community:** [Join Community](https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN)
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License for Baku Higher Oil School Table Tennis Club.
