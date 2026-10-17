@@ -25,8 +25,8 @@ WHERE
 -- Nullify created_by in tournaments
 UPDATE public.tournaments 
 SET created_by = NULL 
-WHERE created_by = '00000000-0000-0000-0000-000000000001'
-   OR created_by IN (SELECT id FROM public.profiles WHERE email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az'));
+WHERE created_by::text = '00000000-0000-0000-0000-000000000001'
+   OR created_by::text IN (SELECT id::text FROM public.profiles WHERE email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az'));
 
 -- Fix tournaments_created_by_fkey to ON DELETE SET NULL
 ALTER TABLE public.tournaments 
@@ -38,27 +38,27 @@ ALTER TABLE public.tournaments
 
 -- Clean up any table reservations for this mock ID
 DELETE FROM public.table_reservations 
-WHERE reserved_by = '00000000-0000-0000-0000-000000000001'
-   OR reserved_by IN (SELECT id FROM public.profiles WHERE email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az'));
+WHERE reserved_by::text = '00000000-0000-0000-0000-000000000001'
+   OR reserved_by::text IN (SELECT id::text FROM public.profiles WHERE email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az'));
 
 -- Clean up any tournament registrations for this mock ID
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'tournament_registrations') THEN
     DELETE FROM public.tournament_registrations 
-    WHERE player_id = '00000000-0000-0000-0000-000000000001'
-       OR player_id IN (SELECT id::text FROM public.profiles WHERE email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az'));
+    WHERE player_id::text = '00000000-0000-0000-0000-000000000001'
+       OR player_id::text IN (SELECT id::text FROM public.profiles WHERE email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az'));
   END IF;
 END $$;
 
 -- 3. Delete any stale profile placeholder that would conflict with the new authenticated user ID
 DELETE FROM public.profiles 
-WHERE id = '00000000-0000-0000-0000-000000000001' 
+WHERE id::text = '00000000-0000-0000-0000-000000000001' 
    OR email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az');
 
 -- 4. Delete the artificial mock auth.users record for Ali Iskandarli so real registration succeeds cleanly
 DELETE FROM auth.users 
-WHERE id = '00000000-0000-0000-0000-000000000001' 
+WHERE id::text = '00000000-0000-0000-0000-000000000001' 
    OR email IN ('ali.iskandarli@bhos.edu.az', 'ali.iskandarli.std@bhos.edu.az');
 
 -- 5. Safeguard the handle_new_user trigger so it never aborts auth signup transactions
