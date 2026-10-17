@@ -42,7 +42,7 @@ export default function Navbar() {
     return unsub;
   }, [store]);
 
-  const navLinks: { href: string; label: string; showBadge?: boolean }[] = [
+  const publicNavLinks: { href: string; label: string; showBadge?: boolean }[] = [
     { href: '/leaderboard', label: t('nav.leaderboard') || 'Reytinq Cədvəli' },
     { href: '/matches', label: t('nav.my_matches') || 'Oyunlarım', showBadge: true },
     { href: '/tournaments', label: t('nav.tournaments') || 'Turnirlər' },
@@ -50,6 +50,7 @@ export default function Navbar() {
     { href: '/#about', label: t('nav.about') || 'Haqqında' },
   ];
 
+  const navLinks = [...publicNavLinks];
   if (currentUser && (currentUser.role === 'president' || currentUser.role === 'coach')) {
     navLinks.push({ href: '/admin', label: t('nav.admin') || 'Prezident Paneli' });
   }
@@ -77,8 +78,20 @@ export default function Navbar() {
   return (
     <>
       <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div className="w-full max-w-6xl rounded-full border border-white/10 bg-black/40 backdrop-blur-md px-6 py-3 shadow-2xl shadow-black/80 pointer-events-auto relative flex items-center justify-between transition-all">
-          <div className="flex items-center justify-start gap-2">
+        <div className="w-full max-w-6xl rounded-full border border-white/10 bg-black/40 backdrop-blur-md px-4 sm:px-6 py-2.5 sm:py-3 shadow-2xl shadow-black/80 pointer-events-auto relative flex items-center justify-between transition-all">
+          <div className="flex items-center justify-start gap-3">
+            <Link
+              href="/"
+              aria-label="BHOS Table Tennis"
+              className="group flex items-center justify-center w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 hover:scale-105 transition-transform shrink-0"
+            >
+              <img
+                src="/images/bhos-crest.png"
+                alt="BHOS Crest"
+                className="block h-6 w-auto max-w-[1.75rem] drop-shadow-[0_0_6px_rgba(0,229,255,0.6)]"
+              />
+            </Link>
+
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="relative lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white"
@@ -95,7 +108,7 @@ export default function Navbar() {
             </button>
 
             <nav className="hidden lg:flex items-center gap-1 bg-white/5 border border-white/5 rounded-full p-1">
-              {navLinks.map((link) => {
+              {publicNavLinks.map((link) => {
                 const isActive = pathname === link.href;
                 const hasBadge = link.showBadge && pendingMatchesCount > 0;
                 return (
@@ -123,23 +136,20 @@ export default function Navbar() {
             </nav>
           </div>
 
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center pointer-events-auto z-20">
-            <Link
-              href="/"
-              aria-label="BHOS Table Tennis"
-              className="group flex items-center justify-center w-12 h-12 rounded-full bg-cyan-500/10 border border-cyan-500/30 hover:scale-105 transition-transform"
-            >
-              <span className="flex items-center justify-center w-full h-full">
-                <img
-                  src="/images/bhos-crest.png"
-                  alt="BHOS Crest"
-                  className="block h-8 w-auto max-w-[2rem] drop-shadow-[0_0_6px_rgba(0,229,255,0.6)]"
-                />
-              </span>
-            </Link>
-          </div>
-
           <div className="flex items-center justify-end gap-2.5 ml-auto">
+            {currentUser && (currentUser.role === 'president' || currentUser.role === 'coach') && (
+              <Link
+                href="/admin"
+                className={`hidden lg:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shadow-sm ${
+                  pathname === '/admin'
+                    ? 'bg-amber-400 text-slate-950 shadow-md shadow-amber-500/20'
+                    : 'bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300'
+                }`}
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
+                <span>{t('nav.admin') || 'Prezident Paneli'}</span>
+              </Link>
+            )}
             <a
               href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
               target="_blank"

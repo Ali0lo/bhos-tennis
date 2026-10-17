@@ -20,6 +20,7 @@ import {
   UserPlus,
   GraduationCap,
   Briefcase,
+  Trash2,
 } from 'lucide-react';
 
 const FACULTIES: BHOSFaculty[] = [
@@ -51,6 +52,7 @@ export default function AdminDashboardPage() {
   const [eloEdits, setEloEdits] = useState<Record<string, number>>({});
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const [showAddMember, setShowAddMember] = useState(false);
   const [newUserType, setNewUserType] = useState<'student' | 'teacher'>('student');
@@ -124,6 +126,32 @@ export default function AdminDashboardPage() {
         updates.user_type === 'teacher' ? 'Müəllim / Əməkdaş' : 'Tələbə (2024)'
       } olaraq yeniləndi`
     );
+  };
+
+  const handleDeletePlayer = async (player: PlayerProfile) => {
+    if (player.id === currentUser?.id) {
+      showToast('Öz profilinizi silə bilməzsiniz.');
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `"${player.full_name}" adlı üzvü bazadan birdəfəlik silmək istədiyinizdən əminsiniz? Bu əməliyyat geri qaytarıla bilməz.`
+    );
+    if (!confirmed) return;
+
+    setDeletingId(player.id);
+    try {
+      const ok = await store.deleteProfile(player.id);
+      if (ok) {
+        showToast(`"${player.full_name}" uğurla silindi.`);
+      } else {
+        showToast('Profil tapılmadı.');
+      }
+    } catch (err: any) {
+      showToast(err.message || 'Üzvü silərkən xəta baş verdi.');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleAddMemberSubmit = async (e: React.FormEvent) => {
@@ -542,12 +570,25 @@ export default function AdminDashboardPage() {
                                 />
                               </td>
                               <td className="py-3 px-3 text-right">
-                                <button
-                                  onClick={() => handleOverrideElo(p.id)}
-                                  className="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-semibold text-xs transition"
-                                >
-                                  {t('admin.save_elo')}
-                                </button>
+                                <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    onClick={() => handleOverrideElo(p.id)}
+                                    className="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-semibold text-xs transition"
+                                  >
+                                    {t('admin.save_elo')}
+                                  </button>
+                                  {p.id !== currentUser?.id && (
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeletePlayer(p)}
+                                      disabled={deletingId === p.id}
+                                      title="Oyunçunu Sil"
+                                      className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition disabled:opacity-50"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                    </button>
+                                  )}
+                                </div>
                               </td>
                             </tr>
                           );

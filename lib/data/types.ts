@@ -95,7 +95,7 @@ export interface Tournament {
   status: TournamentStatus;
   start_date: string;
   end_date?: string;
-  created_by: string;
+  created_by: string | null;
   bracket_data?: {
     rounds: {
       name: string;

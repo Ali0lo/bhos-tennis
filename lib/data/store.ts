@@ -536,6 +536,37 @@ export class BHOSDataStore {
     return profile;
   }
 
+  public async deleteProfile(id: string): Promise<boolean> {
+    const index = this.profiles.findIndex((p) => p.id === id);
+    if (index === -1) return false;
+
+    this.profiles.splice(index, 1);
+    this.matches = this.matches.filter(
+      (m) => m.player1_id !== id && m.player2_id !== id
+    );
+    this.reservations = this.reservations.filter((r) => r.reserved_by !== id);
+    this.tournaments = this.tournaments.map((t) =>
+      t.created_by === id ? { ...t, created_by: null } : t
+    );
+
+    this.recalculateRanks();
+    this.saveLocal();
+    this.notify();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        await supabase.from('tournament_registrations').delete().eq('player_id', id);
+        await supabase.from('table_reservations').delete().eq('reserved_by', id);
+        await supabase.from('tournaments').update({ created_by: null }).eq('created_by', id);
+        await supabase.from('profiles').delete().eq('id', id);
+      } catch (err) {
+        console.warn('[BHOS Store] Supabase deleteProfile failed:', err);
+      }
+    }
+    return true;
+  }
+
   // --- Matches ---
   public getMatches(): MatchRecord[] {
     return [...this.matches].sort(

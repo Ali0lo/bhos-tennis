@@ -13,6 +13,7 @@ import {
   GraduationCap,
   Award,
   Briefcase,
+  Trash2,
 } from 'lucide-react';
 
 export default function PendingVerificationQueue() {
@@ -22,6 +23,7 @@ export default function PendingVerificationQueue() {
   const [pendingPlayers, setPendingPlayers] = useState<PlayerProfile[]>([]);
   const [eloInputs, setEloInputs] = useState<Record<string, string>>({});
   const [approvingId, setApprovingId] = useState<string | null>(null);
+  const [rejectingId, setRejectingId] = useState<string | null>(null);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
@@ -111,6 +113,25 @@ export default function PendingVerificationQueue() {
       setErrorMsg(err.message || 'Oyunçunu təsdiqləmək mümkün olmadı.');
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  const handleReject = async (player: PlayerProfile) => {
+    const confirmed = window.confirm(
+      `"${player.full_name}" adlı istifadəçinin qeydiyyat müraciətini ləğv edib silmək istədiyinizdən əminsiniz?`
+    );
+    if (!confirmed) return;
+
+    setRejectingId(player.id);
+    try {
+      await store.deleteProfile(player.id);
+      setPendingPlayers((prev) => prev.filter((p) => p.id !== player.id));
+      setToastMsg(`"${player.full_name}" müraciəti ləğv edildi və silindi.`);
+      setTimeout(() => setToastMsg(null), 4000);
+    } catch (err: any) {
+      setErrorMsg(err.message || 'Müraciəti silərkən xəta baş verdi.');
+    } finally {
+      setRejectingId(null);
     }
   };
 
@@ -247,16 +268,29 @@ export default function PendingVerificationQueue() {
                     />
                   </div>
 
-                  <button
-                    onClick={() => handleApprove(player)}
-                    disabled={approvingId === player.id}
-                    className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-display font-bold text-xs shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5 shrink-0"
-                  >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>
-                      {approvingId === player.id ? '...' : t('admin.approve_assign_btn')}
-                    </span>
-                  </button>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => handleReject(player)}
+                      disabled={rejectingId === player.id || approvingId === player.id}
+                      title="Müraciəti İmtina Et və Sil"
+                      className="px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>{rejectingId === player.id ? '...' : 'İmtina et'}</span>
+                    </button>
+
+                    <button
+                      onClick={() => handleApprove(player)}
+                      disabled={approvingId === player.id || rejectingId === player.id}
+                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-display font-bold text-xs shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>
+                        {approvingId === player.id ? '...' : t('admin.approve_assign_btn')}
+                      </span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );
