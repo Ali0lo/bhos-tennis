@@ -80,8 +80,8 @@ export default function PendingVerificationQueue() {
     setToastMsg(null);
 
     const parsedElo = parseInt(eloInputs[player.id] || '1000', 10);
-    if (isNaN(parsedElo) || parsedElo < 0 || parsedElo > 9999) {
-      setErrorMsg('Zəhmət olmasa 0 ilə 9999 arasında düzgün başlanğıc ELO daxil edin.');
+    if (isNaN(parsedElo) || parsedElo < 1000 || parsedElo > 9999) {
+      setErrorMsg('Zəhmət olmasa minimum 1000 ELO daxil edin.');
       return;
     }
 
@@ -255,7 +255,7 @@ export default function PendingVerificationQueue() {
                     </label>
                     <input
                       type="number"
-                      min={0}
+                      min={1000}
                       max={9999}
                       value={eloInputs[player.id] ?? '1000'}
                       onChange={(e) =>

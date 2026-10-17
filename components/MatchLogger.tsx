@@ -38,8 +38,8 @@ export function calculateStandardElo(
   const expectedP1 = 1 / (1 + Math.pow(10, exponent));
   let delta = Math.round(kFactor * (1 - expectedP1));
   if (delta < 1) delta = 1;
-  const p1After = p1Elo + delta;
-  const p2After = Math.max(0, p2Elo - delta);
+  const p1After = Math.max(1000, p1Elo + delta);
+  const p2After = Math.max(1000, p2Elo - delta);
   return {
     delta,
     p1After,

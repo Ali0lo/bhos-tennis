@@ -157,8 +157,8 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       let delta = Math.round(32 * (1 - expectedP1));
       if (delta < 1) delta = 1;
 
-      const p1After = p1Elo + delta;
-      const p2After = Math.max(0, p2Elo - delta);
+      const p1After = Math.max(1000, p1Elo + delta);
+      const p2After = Math.max(1000, p2Elo - delta);
 
       const { error: matchUpdateError } = await supabase
         .from('matches')

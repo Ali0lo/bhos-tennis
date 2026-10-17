@@ -41,7 +41,7 @@
     "switch_to_signin": "Artıq hesabınız var? Daxil olun",
     "login_success": "Uğurla daxil oldunuz! Yönləndirilirsiniz...",
     "signup_success": "Qeydiyyat uğurla tamamlandı! Profiliniz Klub Prezidenti və ya Məşqçi tərəfindən təsdiqləndikdən sonra reytinq cədvəlində görünəcək.",
-    "pending_badge": "Təsdiq Gözləyir (0 ELO)",
+    "pending_badge": "Təsdiq Gözləyir (1000 ELO)",
     "error": "Xəta baş verdi. Zəhmət olmasa məlumatları yoxlayın."
   },
   "faculties": {

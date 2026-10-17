@@ -79,8 +79,8 @@ export function calculateMatchElo(input: EloCalculationInput): EloCalculationRes
   if (!player1Won && rawDelta > -1) rawDelta = -1;
 
   const winnerGained = Math.abs(rawDelta);
-  const p1After = Math.max(100, player1Elo + rawDelta);
-  const p2After = Math.max(100, player2Elo - rawDelta);
+  const p1After = Math.max(1000, player1Elo + rawDelta);
+  const p2After = Math.max(1000, player2Elo - rawDelta);
 
   return {
     player1EloBefore: player1Elo,

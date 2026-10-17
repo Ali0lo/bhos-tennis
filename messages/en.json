@@ -41,7 +41,7 @@
     "switch_to_signin": "Already have an account? Sign in",
     "login_success": "Signed in successfully! Redirecting...",
     "signup_success": "Registration complete! Your profile will appear on the leaderboard once verified by the Club President or Coach.",
-    "pending_badge": "Pending Verification (0 ELO)",
+    "pending_badge": "Pending Verification (1000 ELO)",
     "error": "An error occurred. Please check your credentials."
   },
   "faculties": {

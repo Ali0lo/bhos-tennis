@@ -18,6 +18,7 @@ A modern, responsive full-stack sports platform designed specifically for the **
   - $K=40$ for provisional athletes (<10 matches logged).
 - Real-time ELO preview calculation during match score input.
 - Strict set score validation with ITTF deuce rule (minimum 2-point lead beyond 10–10).
+- Minimum rating floor: Athlete ratings never drop below `1000 ELO`, with 1000 as the official starting baseline for new athletes.
 
 ### 2. Multi-Role Authentication & Access Control (RBAC)
 - **Role Hierarchy:**
@@ -133,6 +134,7 @@ The database is built on PostgreSQL via Supabase with row-level security (RLS) a
 | `011_student_email_constraint.sql` | Enforces `*.std@bhos.edu.az` for students while allowing external emails for staff. |
 | `012_fix_auth_users_and_profiles.sql` | Foreign key detachment and token normalization. |
 | `013_set_president_credentials.sql` | Confirmed credentials and pre-verified President account setup. |
+| `014_minimum_elo_1000.sql` | Minimum 1000 starting ELO, auth trigger default, and rating floor constraint. |
 
 ---
 

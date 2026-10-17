@@ -263,9 +263,9 @@ export default function PlayerProfilePage() {
   }, [profile, validMatches, playerId]);
 
   const minElo = useMemo(() => {
-    if (!chartData.length) return 0;
+    if (!chartData.length) return 1000;
     const values = chartData.map((d) => d.elo);
-    const min = Math.max(0, Math.min(...values) - 40);
+    const min = Math.max(1000, Math.min(...values) - 40);
     return Math.floor(min / 50) * 50;
   }, [chartData]);
 
@@ -277,12 +277,12 @@ export default function PlayerProfilePage() {
   }, [chartData]);
 
   const peakElo = useMemo(() => {
-    if (!profile) return 0;
+    if (!profile) return 1000;
     if (!validMatches.length) return profile.current_elo;
     const elos = validMatches.map((m) =>
       m.player1_id === playerId ? m.player1_elo_after : m.player2_elo_after
     );
-    return Math.max(profile.current_elo, ...elos, 0);
+    return Math.max(profile.current_elo, ...elos, 1000);
   }, [profile, validMatches, playerId]);
 
   const totalMatchesCount = profile?.matches_played || 0;

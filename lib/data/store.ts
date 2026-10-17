@@ -463,7 +463,7 @@ export class BHOSDataStore {
 
     const updated = this.updateProfile(id, {
       is_verified: true,
-      current_elo: initialElo,
+      current_elo: Math.max(1000, initialElo),
     });
     this.recalculateRanks();
     this.notify();
@@ -534,7 +534,7 @@ export class BHOSDataStore {
     const profile = this.getProfile(id);
     if (!profile) throw new Error(`Profile ${id} not found`);
 
-    profile.current_elo = Math.round(newElo);
+    profile.current_elo = Math.max(1000, Math.round(newElo));
     this.recalculateRanks();
     this.saveLocal();
 

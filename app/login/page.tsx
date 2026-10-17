@@ -143,7 +143,7 @@ export default function LoginPage() {
             const metaUserType = isCoach ? 'teacher' : (meta.user_type || 'student');
             const resolvedRole: UserRole = isPresident ? 'president' : isCoach ? 'coach' : (meta.role || 'player');
             const resolvedVerified = isPresident || isCoach ? true : (meta.is_verified ?? false);
-            const resolvedElo = isCoach ? 9999 : (meta.current_elo ?? 0);
+            const resolvedElo = isCoach ? 9999 : (meta.current_elo ? Math.max(1000, Number(meta.current_elo)) : 1000);
 
             const linked = await store.linkProfileByEmail(data.user.email);
             if (!linked) {
@@ -215,7 +215,7 @@ export default function LoginPage() {
         const isCoach = cleanEmail === 'iftixar.coach@gmail.com' || cleanEmail === 'iftixar@bhos.edu.az';
         const resolvedRole: UserRole = isPresident ? 'president' : isCoach ? 'coach' : 'player';
         const resolvedVerified = isPresident || isCoach ? true : false;
-        const resolvedElo = isCoach ? 9999 : 0;
+        const resolvedElo = isCoach ? 9999 : 1000;
 
         if (supabase) {
           const { data, error } = await supabase.auth.signUp({
@@ -712,7 +712,7 @@ export default function LoginPage() {
               <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 flex items-center gap-2 text-[11px] text-slate-300">
                 <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
                 <span>
-                  Yeni üzvlər <strong className="text-cyan-300">0 ELO</strong> ilə başlayır və Klub Prezidenti / Məşqçi tərəfindən təsdiqləndikdən sonra rəsmi reytinq xalı təyin edilir.
+                  Yeni üzvlər baza olaraq <strong className="text-cyan-300">1000 ELO</strong> ilə başlayır və Klub Prezidenti / Məşqçi tərəfindən təsdiqləndikdən sonra reytinq cədvəlində aktivləşir.
                 </span>
               </div>
             )}
