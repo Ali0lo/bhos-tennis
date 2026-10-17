@@ -103,7 +103,7 @@ export default function PendingVerificationQueue() {
         }
       }
 
-      await store.verifyPlayer(player.id, parsedElo);
+      await store.verifyPlayer(player.id, parsedElo, player);
       await store.fetchProfilesFromCloud();
 
       setPendingPlayers((prev) => prev.filter((p) => p.id !== player.id));

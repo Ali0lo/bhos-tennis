@@ -446,7 +446,21 @@ export class BHOSDataStore {
     return this.profiles.filter((p) => p.is_verified === false);
   }
 
-  public async verifyPlayer(id: string, initialElo: number): Promise<PlayerProfile> {
+  public async verifyPlayer(id: string, initialElo: number, fallbackProfile?: PlayerProfile): Promise<PlayerProfile> {
+    if (fallbackProfile) {
+      this.addProfile(fallbackProfile);
+    }
+    let profile = this.getProfile(id);
+    if (!profile) {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        const { data } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
+        if (data) {
+          this.addProfile(data as PlayerProfile);
+        }
+      }
+    }
+
     const updated = this.updateProfile(id, {
       is_verified: true,
       current_elo: initialElo,
@@ -470,13 +484,38 @@ export class BHOSDataStore {
   }
 
   public updateProfile(id: string, updates: Partial<PlayerProfile>): PlayerProfile {
-    const index = this.profiles.findIndex((p) => p.id === id);
-    if (index === -1) throw new Error(`Profile ${id} not found`);
+    let index = this.profiles.findIndex((p) => p.id === id);
+    if (index === -1) {
+      const fallback: PlayerProfile = {
+        id,
+        full_name: 'Unknown',
+        email: '',
+        major_faculty: 'Computer Engineering',
+        admission_year: 2024,
+        user_type: 'student',
+        gender: 'male',
+        role: 'player',
+        playing_level: 'Intermediate',
+        playing_style: 'Shakehand All-round',
+        blade_equipment: 'Standard Club Racket',
+        forehand_rubber: 'Standard Red',
+        backhand_rubber: 'Standard Black',
+        current_elo: 1000,
+        matches_played: 0,
+        wins: 0,
+        losses: 0,
+        is_verified: true,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        ...updates,
+      };
+      this.profiles.push(fallback);
+      index = this.profiles.length - 1;
+    }
 
     this.profiles[index] = { ...this.profiles[index], ...updates };
     this.saveLocal();
 
-    // Async Supabase Sync
     const supabase = getSupabaseClient();
     if (supabase) {
       supabase
@@ -538,20 +577,20 @@ export class BHOSDataStore {
 
   public async deleteProfile(id: string): Promise<boolean> {
     const index = this.profiles.findIndex((p) => p.id === id);
-    if (index === -1) return false;
+    if (index !== -1) {
+      this.profiles.splice(index, 1);
+      this.matches = this.matches.filter(
+        (m) => m.player1_id !== id && m.player2_id !== id
+      );
+      this.reservations = this.reservations.filter((r) => r.reserved_by !== id);
+      this.tournaments = this.tournaments.map((t) =>
+        t.created_by === id ? { ...t, created_by: null } : t
+      );
 
-    this.profiles.splice(index, 1);
-    this.matches = this.matches.filter(
-      (m) => m.player1_id !== id && m.player2_id !== id
-    );
-    this.reservations = this.reservations.filter((r) => r.reserved_by !== id);
-    this.tournaments = this.tournaments.map((t) =>
-      t.created_by === id ? { ...t, created_by: null } : t
-    );
-
-    this.recalculateRanks();
-    this.saveLocal();
-    this.notify();
+      this.recalculateRanks();
+      this.saveLocal();
+      this.notify();
+    }
 
     const supabase = getSupabaseClient();
     if (supabase) {
