@@ -99,8 +99,10 @@ export default function PlayerProfilePage() {
     try {
       let fetchedProfile: PlayerProfile | null = null;
       const supabase = getSupabaseClient();
+      const isUuid = (val: string) =>
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
 
-      if (supabase) {
+      if (supabase && isUuid(playerId)) {
         const { data, error } = await supabase
           .from('profiles')
           .select('*')
@@ -117,6 +119,15 @@ export default function PlayerProfilePage() {
         if (local) fetchedProfile = local;
       }
 
+      if (!fetchedProfile && supabase) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('*')
+          .ilike('full_name', playerId.replace(/-/g, ' '))
+          .maybeSingle();
+        if (data) fetchedProfile = data as PlayerProfile;
+      }
+
       if (!fetchedProfile || fetchedProfile.is_verified === false) {
         setProfile(null);
         setMatches([]);
@@ -130,22 +141,45 @@ export default function PlayerProfilePage() {
       let fetchedMatches: MatchRecord[] = [];
 
       if (supabase) {
-        let orQuery = targetIds
-          .flatMap((id) => [`player1_id.eq.${id}`, `player2_id.eq.${id}`])
-          .join(',');
+        const validUuids = targetIds.filter(isUuid);
+        const orConditions: string[] = [];
+        validUuids.forEach((uid) => {
+          orConditions.push(`player1_id.eq.${uid}`, `player2_id.eq.${uid}`);
+        });
 
-        if (fetchedProfile.full_name) {
-          orQuery += `,player1_name.eq."${fetchedProfile.full_name}",player2_name.eq."${fetchedProfile.full_name}"`;
+        if (orConditions.length > 0) {
+          const { data: matchData, error: matchError } = await supabase
+            .from('matches')
+            .select('*')
+            .or(orConditions.join(','))
+            .order('match_date', { ascending: true });
+
+          if (!matchError && matchData) {
+            fetchedMatches = matchData as MatchRecord[];
+          }
         }
 
-        const { data: matchData, error: matchError } = await supabase
+        const { data: allMatchData } = await supabase
           .from('matches')
           .select('*')
-          .or(orQuery)
           .order('match_date', { ascending: true });
 
-        if (!matchError && matchData) {
-          fetchedMatches = matchData as MatchRecord[];
+        if (allMatchData) {
+          const targetName = fetchedProfile.full_name?.trim().toLowerCase();
+          const filteredCloud = (allMatchData as MatchRecord[]).filter((m) => {
+            const p1Match =
+              targetIds.includes(m.player1_id) ||
+              (targetName && m.player1_name?.trim().toLowerCase() === targetName);
+            const p2Match =
+              targetIds.includes(m.player2_id) ||
+              (targetName && m.player2_name?.trim().toLowerCase() === targetName);
+            return p1Match || p2Match;
+          });
+          filteredCloud.forEach((m) => {
+            if (!fetchedMatches.some((x) => x.id === m.id)) {
+              fetchedMatches.push(m);
+            }
+          });
         }
       }
 
@@ -228,10 +262,15 @@ export default function PlayerProfilePage() {
     }
 
     const firstMatch = validMatches[0];
-    const firstEloBefore =
-      firstMatch.player1_id === playerId
-        ? firstMatch.player1_elo_before
-        : firstMatch.player2_elo_before;
+    const isFirstP1 =
+      firstMatch.player1_id === playerId ||
+      firstMatch.player1_id === profile.id ||
+      (profile.full_name
+        ? firstMatch.player1_name?.trim().toLowerCase() === profile.full_name.trim().toLowerCase()
+        : false);
+    const firstEloBefore = isFirstP1
+      ? firstMatch.player1_elo_before
+      : firstMatch.player2_elo_before;
 
     const initialElo =
       typeof firstEloBefore === 'number' && !isNaN(firstEloBefore)
@@ -248,7 +287,12 @@ export default function PlayerProfilePage() {
     ];
 
     validMatches.forEach((m, idx) => {
-      const isPlayer1 = m.player1_id === playerId;
+      const isPlayer1 =
+        m.player1_id === playerId ||
+        m.player1_id === profile.id ||
+        (profile.full_name
+          ? m.player1_name?.trim().toLowerCase() === profile.full_name.trim().toLowerCase()
+          : false);
       const eloAfter = isPlayer1 ? m.player1_elo_after : m.player2_elo_after;
       const opponentName = isPlayer1 ? (m.player2_name || 'Rəqib') : (m.player1_name || 'Rəqib');
       const won = isPlayer1
@@ -292,9 +336,15 @@ export default function PlayerProfilePage() {
   const peakElo = useMemo(() => {
     if (!profile) return 1000;
     if (!validMatches.length) return profile.current_elo;
-    const elos = validMatches.map((m) =>
-      m.player1_id === playerId ? m.player1_elo_after : m.player2_elo_after
-    );
+    const elos = validMatches.map((m) => {
+      const isPlayer1 =
+        m.player1_id === playerId ||
+        m.player1_id === profile.id ||
+        (profile.full_name
+          ? m.player1_name?.trim().toLowerCase() === profile.full_name.trim().toLowerCase()
+          : false);
+      return isPlayer1 ? m.player1_elo_after : m.player2_elo_after;
+    });
     return Math.max(profile.current_elo, ...elos, 1000);
   }, [profile, validMatches, playerId]);
 
@@ -303,7 +353,9 @@ export default function PlayerProfilePage() {
       const isP1 =
         m.player1_id === playerId ||
         m.player1_id === profile?.id ||
-        (profile?.full_name && m.player1_name === profile.full_name);
+        (profile?.full_name
+          ? m.player1_name?.trim().toLowerCase() === profile.full_name.trim().toLowerCase()
+          : false);
       return isP1 ? m.player1_score > m.player2_score : m.player2_score > m.player1_score;
     }).length;
   }, [matches, playerId, profile]);
@@ -330,7 +382,12 @@ export default function PlayerProfilePage() {
     > = {};
 
     validMatches.forEach((m) => {
-      const isP1 = m.player1_id === playerId;
+      const isP1 =
+        m.player1_id === playerId ||
+        m.player1_id === profile?.id ||
+        (profile?.full_name
+          ? m.player1_name?.trim().toLowerCase() === profile.full_name.trim().toLowerCase()
+          : false);
       const oppId = isP1 ? m.player2_id : m.player1_id;
       const oppName = isP1
         ? m.player2_name || 'Rəqib'
@@ -383,10 +440,12 @@ export default function PlayerProfilePage() {
       isTopTarget: r.wins > 0 && r.opponentId === topTargetId && r.opponentId !== nemesisId,
       isFavorable: r.winRate >= 60 && r.totalEncounters >= 2,
     }));
-  }, [validMatches, playerId]);
+  }, [validMatches, playerId, profile]);
 
   const recentMatchesFeed = useMemo(() => {
-    return [...matches].reverse();
+    return [...matches].sort(
+      (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
+    );
   }, [matches]);
 
   if (loading) {
@@ -824,7 +883,9 @@ export default function PlayerProfilePage() {
                 const isPlayer1 =
                   m.player1_id === playerId ||
                   m.player1_id === profile?.id ||
-                  (profile?.full_name ? m.player1_name === profile.full_name : false);
+                  (profile?.full_name
+                    ? m.player1_name?.trim().toLowerCase() === profile.full_name.trim().toLowerCase()
+                    : false);
                 const opponentName = isPlayer1
                   ? (m.player2_name || 'Rəqib')
                   : (m.player1_name || 'Rəqib');

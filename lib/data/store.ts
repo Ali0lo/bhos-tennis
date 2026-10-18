@@ -7,11 +7,11 @@ import { advanceBracketWinner, generateSingleEliminationBracket } from '../tourn
 import { getSupabaseClient } from '../supabase/client';
 
 const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v6',
-  MATCHES: 'bhos_tt_matches_v6',
-  TOURNAMENTS: 'bhos_tt_tournaments_v6',
-  RESERVATIONS: 'bhos_tt_reservations_v6',
-  CURRENT_USER_ID: 'bhos_tt_active_user_id_v6',
+  PROFILES: 'bhos_tt_profiles_v7',
+  MATCHES: 'bhos_tt_matches_v7',
+  TOURNAMENTS: 'bhos_tt_tournaments_v7',
+  RESERVATIONS: 'bhos_tt_reservations_v7',
+  CURRENT_USER_ID: 'bhos_tt_active_user_id_v7',
 };
 
 // Safe browser local storage access
@@ -50,19 +50,27 @@ export class BHOSDataStore {
 
   private constructor() {
     if (typeof window !== 'undefined') {
+      const oldKeys = [
+        'bhos_tt_profiles_v6',
+        'bhos_tt_matches_v6',
+        'bhos_tt_profiles_v5',
+        'bhos_tt_matches_v5',
+        'bhos_matches',
+        'bhos_profiles',
+      ];
+      oldKeys.forEach((k) => {
+        try {
+          localStorage.removeItem(k);
+        } catch {}
+      });
+
       this.profiles = getStored(STORAGE_KEYS.PROFILES, INITIAL_PROFILES);
-      const storedMatches = getStored<MatchRecord[]>(STORAGE_KEYS.MATCHES, []);
+      const storedMatches = getStored<MatchRecord[]>(STORAGE_KEYS.MATCHES, INITIAL_MATCHES);
       const deletedMatches = getStored<string[]>('bhos_deleted_matches', []);
       const matchMap = new Map<string, MatchRecord>();
 
-      INITIAL_MATCHES.forEach((m) => {
-        if (!deletedMatches.includes(m.id)) {
-          matchMap.set(m.id, m);
-        }
-      });
-
       storedMatches.forEach((m) => {
-        if (!deletedMatches.includes(m.id)) {
+        if (!deletedMatches.includes(m.id) && !m.id.startsWith('m-seed-')) {
           matchMap.set(m.id, m);
         }
       });
@@ -188,19 +196,13 @@ export class BHOSDataStore {
         return;
       }
 
-      if (data && data.length > 0) {
+      if (data) {
         const deleted = getStored<string[]>('bhos_deleted_matches', []);
         const resolved = this.getResolvedMatchIds();
         const matchMap = new Map<string, MatchRecord>();
 
-        this.matches.forEach((m) => {
-          if (!deleted.includes(m.id)) {
-            matchMap.set(m.id, m);
-          }
-        });
-
         (data as MatchRecord[]).forEach((m) => {
-          if (!deleted.includes(m.id)) {
+          if (!deleted.includes(m.id) && !m.id.startsWith('m-seed-')) {
             const status = resolved[m.id] || m.status || 'confirmed';
             matchMap.set(m.id, { ...m, status });
           }
@@ -666,13 +668,15 @@ export class BHOSDataStore {
   }
 
   public getPlayerMatches(playerId: string): MatchRecord[] {
-    const profile = this.getProfile(playerId);
+    const profile =
+      this.getProfile(playerId) ||
+      this.profiles.find((p) => p.full_name?.toLowerCase() === playerId.toLowerCase());
     const targetName = profile?.full_name?.trim().toLowerCase();
+    const targetIds = Array.from(new Set([playerId, profile?.id].filter(Boolean))) as string[];
     return this.getMatches().filter(
       (m) =>
-        m.player1_id === playerId ||
-        m.player2_id === playerId ||
-        (profile && (m.player1_id === profile.id || m.player2_id === profile.id)) ||
+        targetIds.includes(m.player1_id) ||
+        targetIds.includes(m.player2_id) ||
         (targetName && (
           m.player1_name?.trim().toLowerCase() === targetName ||
           m.player2_name?.trim().toLowerCase() === targetName
@@ -760,9 +764,12 @@ export class BHOSDataStore {
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
-        const { error } = await supabase.from('matches').delete().eq('id', matchId);
-        if (error) {
-          console.warn('[BHOS Store] Could not delete match from Supabase:', error.message);
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(matchId);
+        if (isUuid) {
+          const { error } = await supabase.from('matches').delete().eq('id', matchId);
+          if (error) {
+            console.warn('[BHOS Store] Could not delete match from Supabase:', error.message);
+          }
         }
       } catch (err) {
         console.warn('[BHOS Store] Error deleting match:', err);
@@ -798,9 +805,14 @@ export class BHOSDataStore {
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
-        const { error } = await supabase.from('matches').delete().in('id', matchIds);
-        if (error) {
-          console.warn('[BHOS Store] Could not delete matches batch from Supabase:', error.message);
+        const validUuids = matchIds.filter((id) =>
+          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
+        );
+        if (validUuids.length > 0) {
+          const { error } = await supabase.from('matches').delete().in('id', validUuids);
+          if (error) {
+            console.warn('[BHOS Store] Could not delete matches batch from Supabase:', error.message);
+          }
         }
       } catch (err) {
         console.warn('[BHOS Store] Error deleting matches batch:', err);
