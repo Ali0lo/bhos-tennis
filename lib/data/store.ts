@@ -772,6 +772,44 @@ export class BHOSDataStore {
     return true;
   }
 
+  public async deleteMatches(matchIds: string[]): Promise<boolean> {
+    if (!matchIds || matchIds.length === 0) return true;
+    const idSet = new Set(matchIds);
+
+    this.matches = this.matches.filter((m) => !idSet.has(m.id));
+    setStored(STORAGE_KEYS.MATCHES, this.matches);
+
+    const resolved = this.getResolvedMatchIds();
+    matchIds.forEach((id) => {
+      delete resolved[id];
+    });
+    setStored('bhos_resolved_matches', resolved);
+
+    const deleted = getStored<string[]>('bhos_deleted_matches', []);
+    matchIds.forEach((id) => {
+      if (!deleted.includes(id)) {
+        deleted.push(id);
+      }
+    });
+    setStored('bhos_deleted_matches', deleted);
+
+    this.notify();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { error } = await supabase.from('matches').delete().in('id', matchIds);
+        if (error) {
+          console.warn('[BHOS Store] Could not delete matches batch from Supabase:', error.message);
+        }
+      } catch (err) {
+        console.warn('[BHOS Store] Error deleting matches batch:', err);
+      }
+    }
+
+    return true;
+  }
+
   public async updateMatch(
     matchId: string,
     updates: Partial<MatchRecord>

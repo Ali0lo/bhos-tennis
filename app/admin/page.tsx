@@ -65,6 +65,8 @@ export default function AdminDashboardPage() {
   const [editMatchDate, setEditMatchDate] = useState<string>('');
   const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
   const [displayLimit, setDisplayLimit] = useState<number>(25);
+  const [selectedMatchIds, setSelectedMatchIds] = useState<string[]>([]);
+  const [isBulkDeleting, setIsBulkDeleting] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(null);
   const [eloEdits, setEloEdits] = useState<Record<string, number>>({});
   const [showMatchModal, setShowMatchModal] = useState(false);
@@ -189,6 +191,50 @@ export default function AdminDashboardPage() {
   });
 
   const displayedMatches = filteredMatches.slice(0, displayLimit);
+
+  const toggleSelectMatch = (id: string) => {
+    setSelectedMatchIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const clearMatchSelection = () => {
+    setSelectedMatchIds([]);
+  };
+
+  const handleDeleteSelectedMatches = async () => {
+    if (selectedMatchIds.length === 0) return;
+    const count = selectedMatchIds.length;
+    const confirmed = window.confirm(
+      `Seçilmiş ${count} oyunu sistemdən və bazadan tamamilə silmək istədiyinizdən əminsiniz? Bu əməliyyat geri qaytarılmır.`
+    );
+    if (!confirmed) return;
+
+    setIsBulkDeleting(true);
+    try {
+      await store.deleteMatches(selectedMatchIds);
+      setSelectedMatchIds([]);
+      showToast(`${count} oyun uğurla silindi.`);
+    } catch (err: any) {
+      showToast(err.message || 'Oyunlar silinərkən xəta baş verdi.');
+    } finally {
+      setIsBulkDeleting(false);
+    }
+  };
+
+  const allDisplayedSelected =
+    displayedMatches.length > 0 &&
+    displayedMatches.every((m) => selectedMatchIds.includes(m.id));
+
+  const toggleSelectAllDisplayed = () => {
+    if (allDisplayedSelected) {
+      const displayedIdSet = new Set(displayedMatches.map((m) => m.id));
+      setSelectedMatchIds((prev) => prev.filter((id) => !displayedIdSet.has(id)));
+    } else {
+      const newIds = new Set([...selectedMatchIds, ...displayedMatches.map((m) => m.id)]);
+      setSelectedMatchIds(Array.from(newIds));
+    }
+  };
 
   const handleOverrideElo = (playerId: string) => {
     const val = eloEdits[playerId];
@@ -877,10 +923,52 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
 
+              {selectedMatchIds.length > 0 && (
+                <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs animate-fade-in">
+                  <div className="flex items-center gap-2.5 text-rose-300 font-semibold">
+                    <span className="w-2 h-2 rounded-full bg-rose-400 animate-pulse" />
+                    <span>{selectedMatchIds.length} oyun seçildi</span>
+                    <button
+                      type="button"
+                      onClick={clearMatchSelection}
+                      className="text-[11px] underline text-slate-400 hover:text-white transition"
+                    >
+                      Seçimi təmizlə
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleDeleteSelectedMatches}
+                    disabled={isBulkDeleting}
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-rose-500 hover:bg-rose-600 text-white font-bold text-xs shadow-lg shadow-rose-500/20 transition disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>
+                      {isBulkDeleting
+                        ? 'Silinir...'
+                        : `Seçilmişləri Sil (${selectedMatchIds.length})`}
+                    </span>
+                  </button>
+                </div>
+              )}
+
               <div className="overflow-x-auto rounded-2xl border border-white/5">
                 <table className="w-full text-left">
                   <thead>
                     <tr className="border-b border-white/10 text-[11px] uppercase text-slate-400 bg-white/[0.02]">
+                      <th className="py-2.5 px-3 w-10 text-center">
+                        <input
+                          type="checkbox"
+                          checked={allDisplayedSelected}
+                          onChange={toggleSelectAllDisplayed}
+                          title={
+                            allDisplayedSelected
+                              ? 'Bütün seçimləri ləğv et'
+                              : 'Hamısını seç'
+                          }
+                          className="rounded accent-cyan-400 cursor-pointer"
+                        />
+                      </th>
                       <th className="py-2.5 px-3">Tarix</th>
                       <th className="py-2.5 px-3">Qarşılaşma</th>
                       <th className="py-2.5 px-3 text-center">Hesab</th>
@@ -892,7 +980,7 @@ export default function AdminDashboardPage() {
                   <tbody className="divide-y divide-white/5 text-xs">
                     {displayedMatches.length === 0 ? (
                       <tr>
-                        <td colSpan={6} className="py-8 text-center text-xs text-slate-500">
+                        <td colSpan={7} className="py-8 text-center text-xs text-slate-500">
                           Heç bir oyun qeydi tapılmadı.
                         </td>
                       </tr>
@@ -900,9 +988,25 @@ export default function AdminDashboardPage() {
                       displayedMatches.map((m) => {
                         const isPending = m.status === 'pending';
                         const isDeleting = deletingMatchId === m.id;
+                        const isSelected = selectedMatchIds.includes(m.id);
 
                         return (
-                          <tr key={m.id} className="hover:bg-white/[0.02] transition">
+                          <tr
+                            key={m.id}
+                            className={`transition ${
+                              isSelected
+                                ? 'bg-cyan-500/10 hover:bg-cyan-500/15'
+                                : 'hover:bg-white/[0.02]'
+                            }`}
+                          >
+                            <td className="py-3 px-3 text-center">
+                              <input
+                                type="checkbox"
+                                checked={isSelected}
+                                onChange={() => toggleSelectMatch(m.id)}
+                                className="rounded accent-cyan-400 cursor-pointer"
+                              />
+                            </td>
                             <td className="py-3 px-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
                               {new Date(m.match_date).toLocaleDateString('az-AZ', {
                                 month: 'short',
