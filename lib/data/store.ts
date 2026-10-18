@@ -50,9 +50,27 @@ export class BHOSDataStore {
 
   private constructor() {
     if (typeof window !== 'undefined') {
-      // 1. Load local fallback / cached data first for instant first-paint
       this.profiles = getStored(STORAGE_KEYS.PROFILES, INITIAL_PROFILES);
-      this.matches = getStored(STORAGE_KEYS.MATCHES, INITIAL_MATCHES);
+      const storedMatches = getStored<MatchRecord[]>(STORAGE_KEYS.MATCHES, []);
+      const deletedMatches = getStored<string[]>('bhos_deleted_matches', []);
+      const matchMap = new Map<string, MatchRecord>();
+
+      INITIAL_MATCHES.forEach((m) => {
+        if (!deletedMatches.includes(m.id)) {
+          matchMap.set(m.id, m);
+        }
+      });
+
+      storedMatches.forEach((m) => {
+        if (!deletedMatches.includes(m.id)) {
+          matchMap.set(m.id, m);
+        }
+      });
+
+      this.matches = Array.from(matchMap.values()).sort(
+        (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
+      );
+      setStored(STORAGE_KEYS.MATCHES, this.matches);
       this.tournaments = getStored(STORAGE_KEYS.TOURNAMENTS, INITIAL_TOURNAMENTS);
       this.reservations = getStored(STORAGE_KEYS.RESERVATIONS, INITIAL_RESERVATIONS);
       this.currentUserId = getStored<string | null>(STORAGE_KEYS.CURRENT_USER_ID, null);
@@ -61,7 +79,6 @@ export class BHOSDataStore {
       }
       this.recalculateRanks();
 
-      // 2. Initialize Supabase cloud sync & realtime subscription
       this.initializeCloudSync();
     }
   }
@@ -171,14 +188,27 @@ export class BHOSDataStore {
         return;
       }
 
-      if (data) {
+      if (data && data.length > 0) {
+        const deleted = getStored<string[]>('bhos_deleted_matches', []);
         const resolved = this.getResolvedMatchIds();
-        this.matches = (data as MatchRecord[]).map((m) => {
-          if (resolved[m.id]) {
-            return { ...m, status: resolved[m.id] };
+        const matchMap = new Map<string, MatchRecord>();
+
+        this.matches.forEach((m) => {
+          if (!deleted.includes(m.id)) {
+            matchMap.set(m.id, m);
           }
-          return m;
         });
+
+        (data as MatchRecord[]).forEach((m) => {
+          if (!deleted.includes(m.id)) {
+            const status = resolved[m.id] || m.status || 'confirmed';
+            matchMap.set(m.id, { ...m, status });
+          }
+        });
+
+        this.matches = Array.from(matchMap.values()).sort(
+          (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
+        );
         setStored(STORAGE_KEYS.MATCHES, this.matches);
         this.notify();
       }
@@ -721,6 +751,12 @@ export class BHOSDataStore {
       setStored('bhos_resolved_matches', resolved);
     }
 
+    const deleted = getStored<string[]>('bhos_deleted_matches', []);
+    if (!deleted.includes(matchId)) {
+      deleted.push(matchId);
+      setStored('bhos_deleted_matches', deleted);
+    }
+
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
@@ -734,6 +770,55 @@ export class BHOSDataStore {
     }
 
     return true;
+  }
+
+  public async updateMatch(
+    matchId: string,
+    updates: Partial<MatchRecord>
+  ): Promise<MatchRecord | null> {
+    const idx = this.matches.findIndex((m) => m.id === matchId);
+    if (idx === -1) return null;
+
+    const current = this.matches[idx];
+    const updated: MatchRecord = {
+      ...current,
+      ...updates,
+      id: matchId,
+    };
+
+    this.matches[idx] = updated;
+    if (updated.status === 'confirmed' || updated.status === 'rejected') {
+      this.markMatchResolvedLocally(matchId, updated.status);
+    }
+    setStored(STORAGE_KEYS.MATCHES, this.matches);
+    this.notify();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const payload: Record<string, any> = {};
+        if (updates.player1_score !== undefined) payload.player1_score = updates.player1_score;
+        if (updates.player2_score !== undefined) payload.player2_score = updates.player2_score;
+        if (updates.set_scores !== undefined) payload.set_scores = updates.set_scores;
+        if (updates.status !== undefined) payload.status = updates.status;
+        if (updates.match_date !== undefined) payload.match_date = updates.match_date;
+        if (updates.tournament_title !== undefined) payload.tournament_title = updates.tournament_title;
+        if (updates.elo_delta !== undefined) payload.elo_delta = updates.elo_delta;
+
+        const { error } = await supabase
+          .from('matches')
+          .update(payload)
+          .eq('id', matchId);
+
+        if (error) {
+          console.warn('[BHOS Store] Could not update match in Supabase:', error.message);
+        }
+      } catch (err) {
+        console.warn('[BHOS Store] Error updating match in Supabase:', err);
+      }
+    }
+
+    return updated;
   }
 
   public logMatch(input: {

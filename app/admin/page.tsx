@@ -24,6 +24,8 @@ import {
   Trash2,
   Search,
   History,
+  Pencil,
+  X,
 } from 'lucide-react';
 
 const FACULTIES: BHOSFaculty[] = [
@@ -54,6 +56,15 @@ export default function AdminDashboardPage() {
   const [matchesList, setMatchesList] = useState<MatchRecord[]>([]);
   const [matchSearch, setMatchSearch] = useState('');
   const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
+  const [editingMatch, setEditingMatch] = useState<MatchRecord | null>(null);
+  const [editP1Score, setEditP1Score] = useState<number>(0);
+  const [editP2Score, setEditP2Score] = useState<number>(0);
+  const [editSetScores, setEditSetScores] = useState<string>('');
+  const [editStatus, setEditStatus] = useState<string>('confirmed');
+  const [editTournament, setEditTournament] = useState<string>('');
+  const [editMatchDate, setEditMatchDate] = useState<string>('');
+  const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
+  const [displayLimit, setDisplayLimit] = useState<number>(25);
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(null);
   const [eloEdits, setEloEdits] = useState<Record<string, number>>({});
   const [showMatchModal, setShowMatchModal] = useState(false);
@@ -128,6 +139,43 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleOpenEditModal = (m: MatchRecord) => {
+    setEditingMatch(m);
+    setEditP1Score(m.player1_score);
+    setEditP2Score(m.player2_score);
+    setEditSetScores(m.set_scores || '');
+    setEditStatus(m.status || 'confirmed');
+    setEditTournament(m.tournament_title || '');
+    setEditMatchDate(
+      m.match_date ? m.match_date.slice(0, 10) : new Date().toISOString().slice(0, 10)
+    );
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMatch) return;
+    setIsSavingEdit(true);
+    try {
+      const updates: Partial<MatchRecord> = {
+        player1_score: Number(editP1Score),
+        player2_score: Number(editP2Score),
+        set_scores: editSetScores.trim(),
+        status: editStatus,
+        tournament_title: editTournament.trim() || undefined,
+        match_date: editMatchDate
+          ? new Date(editMatchDate).toISOString()
+          : editingMatch.match_date,
+      };
+      await store.updateMatch(editingMatch.id, updates);
+      showToast('Oyun məlumatları uğurla yeniləndi.');
+      setEditingMatch(null);
+    } catch (err: any) {
+      showToast(err.message || 'Oyun yenilənərkən xəta baş verdi.');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   const filteredMatches = matchesList.filter((m) => {
     if (!matchSearch.trim()) return true;
     const q = matchSearch.toLowerCase();
@@ -135,9 +183,12 @@ export default function AdminDashboardPage() {
       m.player1_name?.toLowerCase().includes(q) ||
       m.player2_name?.toLowerCase().includes(q) ||
       m.tournament_title?.toLowerCase().includes(q) ||
-      m.logged_by_name?.toLowerCase().includes(q)
+      m.logged_by_name?.toLowerCase().includes(q) ||
+      m.set_scores?.toLowerCase().includes(q)
     );
   });
+
+  const displayedMatches = filteredMatches.slice(0, displayLimit);
 
   const handleOverrideElo = (playerId: string) => {
     const val = eloEdits[playerId];
@@ -761,25 +812,58 @@ export default function AdminDashboardPage() {
             </div>
 
             <div className="p-6 rounded-3xl border border-white/10 bg-slate-900/80 shadow-xl space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
                     <History className="w-5 h-5" />
                   </div>
                   <div>
                     <h2 className="text-lg font-display font-bold text-white">
-                      Qeydə Alınmış Oyunlar & Nəticələrin Silinməsi
+                      Qeydə Alınmış Oyunlar & Nəticələrin İdarə Edilməsi
                     </h2>
                     <p className="text-xs text-slate-400">
-                      Səhv daxil edilmiş, test və ya ləğv olunmuş oyun qeydlərini bazadan silin
+                      Sistemdə qeydə alınmış oyunların siyahısı, düzəliş edilməsi və silinməsi
                     </p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3">
-                  <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-white/5 border border-white/10 text-slate-300">
-                    {filteredMatches.length} oyun
-                  </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-950 border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setDisplayLimit(25)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+                        displayLimit === 25
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Son 25 oyun
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDisplayLimit(50)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+                        displayLimit === 50
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Son 50 oyun
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDisplayLimit(10000)}
+                      className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold transition ${
+                        displayLimit >= 10000
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                          : 'text-slate-400 hover:text-white'
+                      }`}
+                    >
+                      Bütün oyunlar ({filteredMatches.length})
+                    </button>
+                  </div>
+
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
                     <input
@@ -787,7 +871,7 @@ export default function AdminDashboardPage() {
                       placeholder="Oyunçu və ya turnir axtar..."
                       value={matchSearch}
                       onChange={(e) => setMatchSearch(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 w-52 sm:w-64"
+                      className="pl-8 pr-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 w-52 sm:w-60"
                     />
                   </div>
                 </div>
@@ -802,18 +886,18 @@ export default function AdminDashboardPage() {
                       <th className="py-2.5 px-3 text-center">Hesab</th>
                       <th className="py-2.5 px-3">Setlər</th>
                       <th className="py-2.5 px-3 text-center">Status</th>
-                      <th className="py-2.5 px-3 text-right">Sil</th>
+                      <th className="py-2.5 px-3 text-right">Əməliyyatlar</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 text-xs">
-                    {filteredMatches.length === 0 ? (
+                    {displayedMatches.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="py-8 text-center text-xs text-slate-500">
                           Heç bir oyun qeydi tapılmadı.
                         </td>
                       </tr>
                     ) : (
-                      filteredMatches.map((m) => {
+                      displayedMatches.map((m) => {
                         const isPending = m.status === 'pending';
                         const isDeleting = deletingMatchId === m.id;
 
@@ -862,15 +946,25 @@ export default function AdminDashboardPage() {
                               </span>
                             </td>
                             <td className="py-3 px-3 text-right">
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteMatch(m)}
-                                disabled={isDeleting}
-                                title="Bu oyunu sil"
-                                className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition disabled:opacity-50"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditModal(m)}
+                                  title="Oyunu redaktə et"
+                                  className="p-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 transition"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteMatch(m)}
+                                  disabled={isDeleting}
+                                  title="Bu oyunu sil"
+                                  className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition disabled:opacity-50"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </td>
                           </tr>
                         );
@@ -879,6 +973,161 @@ export default function AdminDashboardPage() {
                   </tbody>
                 </table>
               </div>
+
+              {filteredMatches.length > displayLimit && (
+                <div className="pt-2 flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setDisplayLimit((prev) => prev + 25)}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs text-cyan-400 font-semibold border border-white/10 transition"
+                  >
+                    Daha 25 oyun göstər (qalan: {filteredMatches.length - displayLimit})
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {editingMatch && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+            <div className="relative w-full max-w-lg p-6 rounded-3xl bg-slate-900 border border-white/10 shadow-2xl space-y-5">
+              <div className="flex items-center justify-between border-b border-white/10 pb-4">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400">
+                    <Pencil className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-display font-bold text-white">
+                      Oyunu Redaktə Et
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Oyun nəticəsini, set xallarını və statusunu dəyişin
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingMatch(null)}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/5 transition"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveEdit} className="space-y-4">
+                <div className="p-3.5 rounded-2xl bg-white/[0.02] border border-white/5 text-center">
+                  <span className="text-[11px] uppercase font-bold text-slate-400">Qarşılaşma</span>
+                  <div className="flex items-center justify-center gap-3 mt-1">
+                    <span className="font-bold text-sm text-cyan-300">{editingMatch.player1_name}</span>
+                    <span className="text-xs text-slate-500 font-bold">VS</span>
+                    <span className="font-bold text-sm text-amber-300">{editingMatch.player2_name}</span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      {editingMatch.player1_name} Hesabı
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={7}
+                      value={editP1Score}
+                      onChange={(e) => setEditP1Score(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm font-mono font-bold text-cyan-400 focus:outline-none focus:border-cyan-400"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      {editingMatch.player2_name} Hesabı
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={7}
+                      value={editP2Score}
+                      onChange={(e) => setEditP2Score(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-sm font-mono font-bold text-amber-400 focus:outline-none focus:border-cyan-400"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Set Hesabları
+                  </label>
+                  <input
+                    type="text"
+                    value={editSetScores}
+                    onChange={(e) => setEditSetScores(e.target.value)}
+                    placeholder="Məs: 11-8, 9-11, 11-7, 11-9"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs font-mono text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Status
+                    </label>
+                    <select
+                      value={editStatus}
+                      onChange={(e) => setEditStatus(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400"
+                    >
+                      <option value="confirmed">Təsdiqlənib</option>
+                      <option value="pending">Təsdiq Gözləyir</option>
+                      <option value="rejected">Ləğv Edilib</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-300 mb-1">
+                      Oyun Tarixi
+                    </label>
+                    <input
+                      type="date"
+                      value={editMatchDate}
+                      onChange={(e) => setEditMatchDate(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1">
+                    Turnir / Tədbir
+                  </label>
+                  <input
+                    type="text"
+                    value={editTournament}
+                    onChange={(e) => setEditTournament(e.target.value)}
+                    placeholder="Turnir adı və ya boş buraxın"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-cyan-400"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+                  <button
+                    type="button"
+                    onClick={() => setEditingMatch(null)}
+                    className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 transition"
+                  >
+                    Ləğv Et
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingEdit}
+                    className="px-5 py-2 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-display font-bold text-xs shadow-lg shadow-cyan-400/20 transition disabled:opacity-50"
+                  >
+                    {isSavingEdit ? 'Saxlanılır...' : 'Yadda Saxla'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

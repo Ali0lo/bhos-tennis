@@ -43,9 +43,10 @@ A modern, responsive full-stack sports platform designed specifically for the **
   - Dynamic user promotion (Player $\leftrightarrow$ Coach $\leftrightarrow$ President).
   - Student vs Teacher/Staff category toggling.
   - Permanent athlete deletion (`Trash2`) with cascade cleanup across tournaments, matches, and table reservations.
-- **Logged Match Management & Removal:**
-  - Full searchable history of all logged matches across the club.
-  - Instant removal/deletion (`Trash2`) of invalid, accidental, or contested match records with cloud synchronization.
+- **Logged Match Management, Editing & Removal:**
+  - Full searchable history of all recorded matches across the club with customizable view limits (last 25, last 50, or all matches).
+  - Modal-based editing (`Pencil`) allowing club organizers to adjust match scores, set scores, dates, and verification status.
+  - Permanent removal/deletion (`Trash2`) with cloud and local synchronization.
 - **Olympic Tournament Generator:**
   - Automated single-elimination tournament generation (4, 8, 16 athletes) with seeding and rule specifications.
 
