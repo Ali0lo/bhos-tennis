@@ -241,6 +241,9 @@ export default function LoginPage() {
           });
 
           if (error) {
+            if (error.message.toLowerCase().includes('rate limit')) {
+              throw new Error('E-poçt göndərmə limiti aşıldı. Supabase Dashboard-da "Confirm email" parametrini söndürmək tövsiyə olunur.');
+            }
             throw new Error(error.message);
           }
 
