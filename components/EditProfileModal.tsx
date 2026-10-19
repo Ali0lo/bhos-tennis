@@ -30,27 +30,27 @@ interface EditProfileModalProps {
 const PRESET_AVATARS = [
   {
     name: 'Topspin Pro',
-    url: 'https://images.unsplash.com/photo-1609710228159-0fa9bd7c0827?w=256&auto=format&fit=crop&q=80',
+    url: '/images/avatars/topspin-pro.jpg',
+  },
+  {
+    name: 'Carbon Blade',
+    url: '/images/avatars/carbon-blade.jpg',
+  },
+  {
+    name: 'BHOS Varsity',
+    url: '/images/avatars/bhos-varsity.jpg',
+  },
+  {
+    name: 'Smash Master',
+    url: '/images/avatars/smash-master.jpg',
   },
   {
     name: 'Match Point',
-    url: 'https://images.unsplash.com/photo-1534158914592-062992fbe900?w=256&auto=format&fit=crop&q=80',
+    url: '/images/avatars/match-point.jpg',
   },
   {
-    name: 'Racket Spin',
-    url: 'https://images.unsplash.com/photo-1511067007398-7e4b90cfa4bc?w=256&auto=format&fit=crop&q=80',
-  },
-  {
-    name: 'Champion Spirit',
-    url: 'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?w=256&auto=format&fit=crop&q=80',
-  },
-  {
-    name: 'Dynamic Speed',
-    url: 'https://images.unsplash.com/photo-1517649763962-0c623266ddc0?w=256&auto=format&fit=crop&q=80',
-  },
-  {
-    name: 'Focused Athlete',
-    url: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?w=256&auto=format&fit=crop&q=80',
+    name: 'Varsity Champion',
+    url: '/images/avatars/varsity-champion.jpg',
   },
 ];
 

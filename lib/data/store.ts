@@ -170,7 +170,17 @@ export class BHOSDataStore {
       }
 
       if (data && data.length > 0) {
-        this.profiles = data as PlayerProfile[];
+        this.profiles = (data as PlayerProfile[]).map((p) => {
+          if (p.avatar_url && p.avatar_url.includes('unsplash.com')) {
+            if (p.avatar_url.includes('1609710228159')) return { ...p, avatar_url: '/images/avatars/topspin-pro.jpg' };
+            if (p.avatar_url.includes('1517649763962')) return { ...p, avatar_url: '/images/avatars/carbon-blade.jpg' };
+            if (p.avatar_url.includes('1579952363873')) return { ...p, avatar_url: '/images/avatars/varsity-champion.jpg' };
+            if (p.avatar_url.includes('1546519638')) return { ...p, avatar_url: '/images/avatars/smash-master.jpg' };
+            if (p.avatar_url.includes('1534158914592')) return { ...p, avatar_url: '/images/avatars/match-point.jpg' };
+            return { ...p, avatar_url: '/images/avatars/bhos-varsity.jpg' };
+          }
+          return p;
+        });
         this.recalculateRanks();
         setStored(STORAGE_KEYS.PROFILES, this.profiles);
         this.notify();

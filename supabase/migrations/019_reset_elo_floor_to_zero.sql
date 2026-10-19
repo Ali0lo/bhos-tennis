@@ -43,3 +43,4 @@ WHERE role != 'coach' AND email NOT ILIKE '%iftixar%';
 UPDATE public.profiles
 SET current_elo = 9999
 WHERE role = 'coach' OR email ILIKE '%iftixar%';
+
