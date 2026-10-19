@@ -25,3 +25,4 @@ WHERE avatar_url LIKE '%photo-1534158914592%';
 UPDATE public.profiles
 SET avatar_url = '/images/avatars/bhos-varsity.jpg'
 WHERE avatar_url LIKE '%images.unsplash.com%';
+
