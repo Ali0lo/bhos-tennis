@@ -571,7 +571,16 @@ export class BHOSDataStore {
     if (this.currentUser && (this.currentUser.id === id || this.currentUser.email === this.profiles[index].email)) {
       this.currentUser = this.profiles[index];
     }
+    if (updates.full_name) {
+      const newName = updates.full_name;
+      this.matches.forEach((m) => {
+        if (m.player1_id === id) m.player1_name = newName;
+        if (m.player2_id === id) m.player2_name = newName;
+        if (m.logged_by === id) m.logged_by_name = newName;
+      });
+    }
     this.saveLocal();
+    this.notify();
 
     const supabase = getSupabaseClient();
     if (supabase) {
@@ -592,6 +601,11 @@ export class BHOSDataStore {
           .then(({ error }) => {
             if (error) console.warn('[BHOS Store] Supabase updateProfile by email failed:', error.message);
           });
+      }
+      if (updates.full_name) {
+        supabase.from('matches').update({ player1_name: updates.full_name }).eq('player1_id', id).then();
+        supabase.from('matches').update({ player2_name: updates.full_name }).eq('player2_id', id).then();
+        supabase.from('matches').update({ logged_by_name: updates.full_name }).eq('logged_by', id).then();
       }
     }
 
@@ -627,6 +641,7 @@ export class BHOSDataStore {
 
     profile.role = role;
     this.saveLocal();
+    this.notify();
 
     // Async Supabase Sync
     const supabase = getSupabaseClient();

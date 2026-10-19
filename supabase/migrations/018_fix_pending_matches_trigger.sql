@@ -27,3 +27,4 @@ WHERE status = 'pending' AND (player1_elo_after < 1000 OR player2_elo_after < 10
 UPDATE public.profiles
 SET current_elo = 1000
 WHERE current_elo < 1000;
+

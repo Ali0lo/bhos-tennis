@@ -76,6 +76,8 @@ export default function AdminDashboardPage() {
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
+  const [editPlayerName, setEditPlayerName] = useState<string>('');
 
   const [showAddMember, setShowAddMember] = useState(false);
   const [newUserType, setNewUserType] = useState<'student' | 'teacher'>('student');
@@ -269,6 +271,32 @@ export default function AdminDashboardPage() {
         updates.user_type === 'teacher' ? 'Müəllim / Əməkdaş' : 'Tələbə (2024)'
       } olaraq yeniləndi`
     );
+  };
+
+  const handleStartEditName = (player: PlayerProfile) => {
+    setEditingPlayerId(player.id);
+    setEditPlayerName(player.full_name);
+  };
+
+  const handleCancelEditName = () => {
+    setEditingPlayerId(null);
+    setEditPlayerName('');
+  };
+
+  const handleSavePlayerName = async (playerId: string) => {
+    const trimmed = editPlayerName.trim();
+    if (!trimmed) {
+      showToast('Zəhmət olmasa adı daxil edin.');
+      return;
+    }
+    try {
+      const updated = store.updateProfile(playerId, { full_name: trimmed });
+      showToast(`${updated.full_name} adı uğurla yeniləndi.`);
+      setEditingPlayerId(null);
+      setEditPlayerName('');
+    } catch (err: any) {
+      showToast(err.message || 'Ad yenilənərkən xəta baş verdi.');
+    }
   };
 
   const handleDeletePlayer = async (player: PlayerProfile) => {
@@ -658,7 +686,55 @@ export default function AdminDashboardPage() {
                           return (
                             <tr key={p.id} className="hover:bg-white/[0.02]">
                               <td className="py-3 px-3">
-                                <div className="font-semibold text-white">{p.full_name}</div>
+                                {editingPlayerId === p.id ? (
+                                  <div className="flex items-center gap-1.5 py-0.5">
+                                    <input
+                                      type="text"
+                                      value={editPlayerName}
+                                      onChange={(e) => setEditPlayerName(e.target.value)}
+                                      onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleSavePlayerName(p.id);
+                                        if (e.key === 'Escape') handleCancelEditName();
+                                      }}
+                                      autoFocus
+                                      className="px-2.5 py-1 rounded-lg bg-slate-950 border border-cyan-500/60 text-white font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400 w-full max-w-[200px]"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSavePlayerName(p.id)}
+                                      title="Yadda Saxla"
+                                      className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelEditName}
+                                      title="İmtina"
+                                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="flex items-center gap-1.5">
+                                    <span
+                                      className="font-semibold text-white hover:text-cyan-300 transition cursor-pointer"
+                                      onDoubleClick={() => handleStartEditName(p)}
+                                      title="Adı dəyişmək üçün klikləyin"
+                                    >
+                                      {p.full_name}
+                                    </span>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEditName(p)}
+                                      title="Adı Redaktə Et"
+                                      className="p-1 rounded text-slate-500 hover:text-cyan-300 hover:bg-white/5 transition"
+                                    >
+                                      <Pencil className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                )}
                                 <div className="text-[11px] text-slate-500">
                                   {p.major_faculty}
                                   {isStaff ? ' • Müəllim' : ` • ${p.admission_year}`}
@@ -717,6 +793,14 @@ export default function AdminDashboardPage() {
                               </td>
                               <td className="py-3 px-3 text-right">
                                 <div className="flex items-center justify-end gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleStartEditName(p)}
+                                    title="Adı Redaktə Et"
+                                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-cyan-300 border border-white/10 transition"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
                                   <button
                                     onClick={() => handleOverrideElo(p.id)}
                                     className="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-semibold text-xs transition"
