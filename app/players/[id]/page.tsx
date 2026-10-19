@@ -261,8 +261,6 @@ export default function PlayerProfilePage() {
     if (!profile) return [];
 
     let baselineElo = 0;
-    if (profile.playing_level === 'Advanced') baselineElo = 1000;
-    else if (profile.playing_level === 'Intermediate') baselineElo = 500;
 
     if (validMatches.length === 0) {
       return [
@@ -340,21 +338,21 @@ export default function PlayerProfilePage() {
   }, [profile, validMatches, playerId]);
 
   const minElo = useMemo(() => {
-    if (!chartData.length) return 1000;
+    if (!chartData.length) return 0;
     const values = chartData.map((d) => d.elo);
-    const min = Math.max(1000, Math.min(...values) - 40);
+    const min = Math.max(0, Math.min(...values) - 40);
     return Math.floor(min / 50) * 50;
   }, [chartData]);
 
   const maxElo = useMemo(() => {
-    if (!chartData.length) return 1500;
+    if (!chartData.length) return 100;
     const values = chartData.map((d) => d.elo);
     const max = Math.max(...values) + 40;
     return Math.ceil(max / 50) * 50;
   }, [chartData]);
 
   const peakElo = useMemo(() => {
-    if (!profile) return 1000;
+    if (!profile) return 0;
     if (!validMatches.length) return profile.current_elo;
     const elos = validMatches.map((m) => {
       const isPlayer1 =
@@ -365,7 +363,7 @@ export default function PlayerProfilePage() {
           : false);
       return isPlayer1 ? m.player1_elo_after : m.player2_elo_after;
     });
-    return Math.max(profile.current_elo, ...elos, 1000);
+    return Math.max(profile.current_elo, ...elos, 0);
   }, [profile, validMatches, playerId]);
 
   const actualWins = useMemo(() => {

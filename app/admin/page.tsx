@@ -87,7 +87,7 @@ export default function AdminDashboardPage() {
   const [newAdmissionYear, setNewAdmissionYear] = useState<number>(2024);
   const [newGender, setNewGender] = useState<'male' | 'female'>('male');
   const [newRole, setNewRole] = useState<UserRole>('player');
-  const [newInitialElo, setNewInitialElo] = useState<number>(1000);
+  const [newInitialElo, setNewInitialElo] = useState<number>(0);
 
   const [tTitle, setTTitle] = useState('');
   const [tDesc, setTDesc] = useState('');
@@ -245,7 +245,7 @@ export default function AdminDashboardPage() {
   const handleOverrideElo = (playerId: string) => {
     const val = eloEdits[playerId];
     if (typeof val !== 'number' || isNaN(val)) return;
-    const safeElo = Math.max(1000, val);
+    const safeElo = Math.max(0, val);
     const updated = store.overrideElo(playerId, safeElo);
     showToast(`${updated.full_name} üçün ELO ${updated.current_elo} olaraq yeniləndi`);
   };
@@ -344,7 +344,7 @@ export default function AdminDashboardPage() {
       blade_equipment: 'Standard Club Racket',
       forehand_rubber: 'Standard Red',
       backhand_rubber: 'Standard Black',
-      current_elo: Math.max(1000, Number(newInitialElo) || 1000),
+      current_elo: Math.max(0, Number(newInitialElo) || 0),
       matches_played: 0,
       wins: 0,
       losses: 0,
@@ -636,7 +636,7 @@ export default function AdminDashboardPage() {
                       <span className="text-[11px] text-slate-400">Başlanğıc ELO:</span>
                       <input
                         type="number"
-                        min={1000}
+                        min={0}
                         value={newInitialElo}
                         onChange={(e) => setNewInitialElo(Number(e.target.value))}
                         className="w-24 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs font-mono font-bold text-cyan-400"
@@ -780,12 +780,12 @@ export default function AdminDashboardPage() {
                               <td className="py-3 px-3">
                                 <input
                                   type="number"
-                                  min={1000}
+                                  min={0}
                                   value={eloEdits[p.id] ?? p.current_elo}
                                   onChange={(e) =>
                                     setEloEdits((prev) => ({
                                       ...prev,
-                                      [p.id]: parseInt(e.target.value, 10) || 1000,
+                                      [p.id]: parseInt(e.target.value, 10) || 0,
                                     }))
                                   }
                                   className="w-24 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 font-mono font-bold text-cyan-400 text-xs focus:outline-none focus:border-cyan-400"

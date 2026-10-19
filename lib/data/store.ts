@@ -7,11 +7,11 @@ import { advanceBracketWinner, generateSingleEliminationBracket } from '../tourn
 import { getSupabaseClient } from '../supabase/client';
 
 const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v7',
-  MATCHES: 'bhos_tt_matches_v7',
-  TOURNAMENTS: 'bhos_tt_tournaments_v7',
-  RESERVATIONS: 'bhos_tt_reservations_v7',
-  CURRENT_USER_ID: 'bhos_tt_active_user_id_v7',
+  PROFILES: 'bhos_tt_profiles_v8',
+  MATCHES: 'bhos_tt_matches_v8',
+  TOURNAMENTS: 'bhos_tt_tournaments_v8',
+  RESERVATIONS: 'bhos_tt_reservations_v8',
+  CURRENT_USER_ID: 'bhos_tt_active_user_id_v8',
 };
 
 // Safe browser local storage access
@@ -51,6 +51,8 @@ export class BHOSDataStore {
   private constructor() {
     if (typeof window !== 'undefined') {
       const oldKeys = [
+        'bhos_tt_profiles_v7',
+        'bhos_tt_matches_v7',
         'bhos_tt_profiles_v6',
         'bhos_tt_matches_v6',
         'bhos_tt_profiles_v5',
@@ -517,7 +519,7 @@ export class BHOSDataStore {
 
     const updated = this.updateProfile(id, {
       is_verified: true,
-      current_elo: Math.max(1000, initialElo),
+      current_elo: Math.max(0, initialElo),
     });
     this.recalculateRanks();
     this.notify();
@@ -554,7 +556,7 @@ export class BHOSDataStore {
         blade_equipment: 'Standard Club Racket',
         forehand_rubber: 'Standard Red',
         backhand_rubber: 'Standard Black',
-        current_elo: 1000,
+        current_elo: 0,
         matches_played: 0,
         wins: 0,
         losses: 0,
@@ -616,7 +618,7 @@ export class BHOSDataStore {
     const profile = this.getProfile(id);
     if (!profile) throw new Error(`Profile ${id} not found`);
 
-    profile.current_elo = Math.max(1000, Math.round(newElo));
+    profile.current_elo = Math.max(0, Math.round(newElo));
     this.recalculateRanks();
     this.saveLocal();
 
@@ -733,10 +735,10 @@ export class BHOSDataStore {
         player1_score: 0,
         player2_score: 0,
         set_scores: '',
-        player1_elo_before: 1000,
-        player2_elo_before: 1000,
-        player1_elo_after: 1000,
-        player2_elo_after: 1000,
+        player1_elo_before: 0,
+        player2_elo_before: 0,
+        player1_elo_after: 0,
+        player2_elo_after: 0,
         elo_delta: 0,
         status: 'confirmed',
         match_date: new Date().toISOString(),

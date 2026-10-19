@@ -21,7 +21,7 @@ A modern, responsive full-stack sports platform designed specifically for the **
   - $K=40$ for provisional athletes (<10 matches logged).
 - Real-time ELO preview calculation during match score input.
 - Strict set score validation with ITTF deuce rule (minimum 2-point lead beyond 10–10).
-- Minimum rating floor: Athlete ratings never drop below `1000 ELO`, with 1000 as the official starting baseline for new athletes.
+- Minimum rating floor: Athlete ratings never drop below `0 ELO`, with 0 as the official starting baseline for new athletes.
 
 ### 2. Multi-Role Authentication & Access Control (RBAC)
 - **Role Hierarchy:**
@@ -36,7 +36,7 @@ A modern, responsive full-stack sports platform designed specifically for the **
 ### 3. President Administration Panel (`app/admin/page.tsx`)
 - **Pending Member Verification Queue (`components/PendingVerificationQueue.tsx`):**
   - Live queue of newly registered athletes awaiting club approval.
-  - Initial ELO assignment during approval (default `1000` or custom seed rating).
+  - Initial ELO assignment during approval (default `0` or custom seed rating).
   - One-click application approval or rejection/deletion.
 - **Roster Management & ELO Overrides:**
   - Full athlete roster view with real-time ELO adjustment.

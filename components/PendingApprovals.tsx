@@ -161,15 +161,15 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       const p1Profile = p1 || store.getProfile(match.player1_id);
       const p2Profile = p2 || store.getProfile(match.player2_id);
 
-      const p1Elo = p1Profile?.current_elo ?? 1000;
-      const p2Elo = p2Profile?.current_elo ?? 1000;
+      const p1Elo = p1Profile?.current_elo ?? 0;
+      const p2Elo = p2Profile?.current_elo ?? 0;
       const exponent = (p2Elo - p1Elo) / 400;
       const expectedP1 = 1 / (1 + Math.pow(10, exponent));
       let delta = Math.round(32 * (1 - expectedP1));
       if (delta < 1) delta = 1;
 
-      const p1After = Math.max(1000, p1Elo + delta);
-      const p2After = Math.max(1000, p2Elo - delta);
+      const p1After = Math.max(0, p1Elo + delta);
+      const p2After = Math.max(0, p2Elo - delta);
 
       store.confirmMatch(match.id, {
         player1_id: match.player1_id,

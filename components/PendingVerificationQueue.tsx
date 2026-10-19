@@ -43,7 +43,7 @@ export default function PendingVerificationQueue() {
             const next = { ...prev };
             (data as PlayerProfile[]).forEach((p) => {
               if (next[p.id] === undefined) {
-                next[p.id] = '1000';
+                next[p.id] = '0';
               }
             });
             return next;
@@ -60,7 +60,7 @@ export default function PendingVerificationQueue() {
       const next = { ...prev };
       localUnverified.forEach((p) => {
         if (next[p.id] === undefined) {
-          next[p.id] = '1000';
+          next[p.id] = '0';
         }
       });
       return next;
@@ -79,9 +79,9 @@ export default function PendingVerificationQueue() {
     setErrorMsg(null);
     setToastMsg(null);
 
-    const parsedElo = parseInt(eloInputs[player.id] || '1000', 10);
-    if (isNaN(parsedElo) || parsedElo < 1000 || parsedElo > 9999) {
-      setErrorMsg('Zəhmət olmasa minimum 1000 ELO daxil edin.');
+    const parsedElo = parseInt(eloInputs[player.id] || '0', 10);
+    if (isNaN(parsedElo) || parsedElo < 0 || parsedElo > 9999) {
+      setErrorMsg('Zəhmət olmasa düzgün ELO daxil edin.');
       return;
     }
 
@@ -255,9 +255,9 @@ export default function PendingVerificationQueue() {
                     </label>
                     <input
                       type="number"
-                      min={1000}
+                      min={0}
                       max={9999}
-                      value={eloInputs[player.id] ?? '1000'}
+                      value={eloInputs[player.id] ?? '0'}
                       onChange={(e) =>
                         setEloInputs((prev) => ({
                           ...prev,
