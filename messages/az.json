@@ -47,10 +47,14 @@
   "faculties": {
     "Information Security": "İnformasiya Təhlükəsizliyi",
     "Computer Engineering": "Kompüter Mühəndisliyi",
+    "Computer Science": "Kompüter Elmləri",
+    "Data Analytics": "Data Analitikası",
     "Chemical Engineering": "Kimya Mühəndisliyi",
     "Petroleum Engineering": "Neft-Qaz Mühəndisliyi",
     "Process Automation": "Proseslərin Avtomatlaşdırılması",
-    "Process Automation Engineering": "Proseslərin Avtomatlaşdırılması Mühəndisliyi"
+    "Process Automation Engineering": "Proseslərin Avtomatlaşdırılması Mühəndisliyi",
+    "Business Administration": "Biznesin İdarə Edilməsi",
+    "Finance": "Maliyyə"
   },
   "levels": {
     "Beginner": "Başlanğıc (Beginner)",

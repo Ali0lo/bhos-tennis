@@ -47,10 +47,14 @@
   "faculties": {
     "Information Security": "Information Security",
     "Computer Engineering": "Computer Engineering",
+    "Computer Science": "Computer Science",
+    "Data Analytics": "Data Analytics",
     "Chemical Engineering": "Chemical Engineering",
     "Petroleum Engineering": "Petroleum Engineering",
     "Process Automation": "Process Automation",
-    "Process Automation Engineering": "Process Automation Engineering"
+    "Process Automation Engineering": "Process Automation Engineering",
+    "Business Administration": "Business Administration",
+    "Finance": "Finance"
   },
   "levels": {
     "Beginner": "Beginner",

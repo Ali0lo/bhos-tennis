@@ -30,9 +30,13 @@ import {
 const FACULTIES: BHOSFaculty[] = [
   'Information Security',
   'Computer Engineering',
+  'Computer Science',
+  'Data Analytics',
   'Chemical Engineering',
   'Petroleum Engineering',
   'Process Automation',
+  'Business Administration',
+  'Finance',
 ];
 
 const STAFF_DEPARTMENTS: string[] = [

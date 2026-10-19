@@ -12,9 +12,13 @@ export type PlayingStyle =
 export type BHOSFaculty =
   | 'Information Security'
   | 'Computer Engineering'
+  | 'Computer Science'
+  | 'Data Analytics'
   | 'Chemical Engineering'
   | 'Petroleum Engineering'
-  | 'Process Automation';
+  | 'Process Automation'
+  | 'Business Administration'
+  | 'Finance';
 
 export type PlayingLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 

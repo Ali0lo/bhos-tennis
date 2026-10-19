@@ -97,9 +97,13 @@ const PLAYING_LEVELS: PlayingLevel[] = ['Beginner', 'Intermediate', 'Advanced'];
 const FACULTIES: (BHOSFaculty | string)[] = [
   'Information Security',
   'Computer Engineering',
+  'Computer Science',
+  'Data Analytics',
   'Chemical Engineering',
   'Petroleum Engineering',
   'Process Automation',
+  'Business Administration',
+  'Finance',
   'İdman Klubu',
 ];
 

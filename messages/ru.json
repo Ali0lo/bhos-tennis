@@ -47,10 +47,14 @@
   "faculties": {
     "Information Security": "Информационная безопасность",
     "Computer Engineering": "Компьютерная инженерия",
+    "Computer Science": "Компьютерные науки",
+    "Data Analytics": "Аналитика данных",
     "Chemical Engineering": "Химическая инженерия",
     "Petroleum Engineering": "Нефтегазовая инженерия",
     "Process Automation": "Автоматизация процессов",
-    "Process Automation Engineering": "Инженерия автоматизации процессов"
+    "Process Automation Engineering": "Инженерия автоматизации процессов",
+    "Business Administration": "Управление бизнесом",
+    "Finance": "Финансы"
   },
   "levels": {
     "Beginner": "Начальный (Beginner)",
