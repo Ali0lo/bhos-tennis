@@ -8,6 +8,7 @@ import { BHOSDataStore } from '../../../lib/data/store';
 import { PlayerProfile, MatchRecord } from '../../../lib/data/types';
 import SmoothReveal from '../../../components/SmoothReveal';
 import NumberTicker from '../../../components/NumberTicker';
+import EditProfileModal from '../../../components/EditProfileModal';
 import {
   Trophy,
   ArrowLeft,
@@ -21,6 +22,8 @@ import {
   Skull,
   Briefcase,
   GraduationCap,
+  Edit3,
+  Camera,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -88,10 +91,27 @@ export default function PlayerProfilePage() {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(() => store.getCurrentUser());
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-  }, []);
+    const unsub = store.subscribe(() => {
+      setCurrentUser(store.getCurrentUser());
+    });
+    return unsub;
+  }, [store]);
+
+  const isOwnProfile = useMemo(() => {
+    if (!currentUser || !profile) return false;
+    return (
+      currentUser.id === profile.id ||
+      (Boolean(currentUser.email) &&
+        Boolean(profile.email) &&
+        currentUser.email.toLowerCase() === profile.email.toLowerCase()) ||
+      currentUser.role === 'president'
+    );
+  }, [currentUser, profile]);
 
   const fetchPlayerData = async () => {
     if (!playerId) return;
@@ -502,7 +522,7 @@ export default function PlayerProfilePage() {
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
             <div className="flex items-center gap-5">
-              <div className="relative">
+              <div className="relative group shrink-0">
                 {profile.avatar_url ? (
                   <img
                     src={profile.avatar_url}
@@ -514,8 +534,18 @@ export default function PlayerProfilePage() {
                     {profile.full_name.charAt(0).toUpperCase()}
                   </div>
                 )}
+                {isOwnProfile && (
+                  <button
+                    onClick={() => setIsEditModalOpen(true)}
+                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition rounded-2xl flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 cursor-pointer"
+                    title="Şəkli dəyiş"
+                  >
+                    <Camera className="w-4 h-4 text-cyan-400" />
+                    <span>Dəyiş</span>
+                  </button>
+                )}
                 {profile.role === 'coach' && (
-                  <div className="absolute -bottom-1 -right-1 bg-amber-500 text-slate-950 p-1 rounded-lg border-2 border-[#0F1623] shadow-md">
+                  <div className="absolute -bottom-1 -right-1 bg-amber-500 text-slate-950 p-1 rounded-lg border-2 border-[#0F1623] shadow-md pointer-events-none">
                     <Award className="w-3.5 h-3.5" />
                   </div>
                 )}
@@ -526,6 +556,16 @@ export default function PlayerProfilePage() {
                   <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">
                     {profile.full_name}
                   </h1>
+
+                  {isOwnProfile && (
+                    <button
+                      onClick={() => setIsEditModalOpen(true)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-[#3B82F6]/15 hover:bg-[#3B82F6]/25 text-[#3B82F6] hover:text-blue-300 border border-[#3B82F6]/30 transition shadow-sm"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Profili Redaktə Et</span>
+                    </button>
+                  )}
 
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
@@ -975,6 +1015,17 @@ export default function PlayerProfilePage() {
           </div>
         </div>
       </SmoothReveal>
+
+      {profile && (
+        <EditProfileModal
+          isOpen={isEditModalOpen}
+          onClose={() => setIsEditModalOpen(false)}
+          profile={profile}
+          onProfileUpdated={(updated) => {
+            setProfile(updated);
+          }}
+        />
+      )}
     </div>
   );
 }

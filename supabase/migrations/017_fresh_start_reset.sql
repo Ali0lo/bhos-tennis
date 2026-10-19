@@ -18,3 +18,4 @@ SET
   wins = 0,
   losses = 0
 WHERE email ILIKE '%iftixar%' OR full_name ILIKE '%Iftixar%';
+

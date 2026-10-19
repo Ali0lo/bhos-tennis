@@ -568,17 +568,31 @@ export class BHOSDataStore {
     }
 
     this.profiles[index] = { ...this.profiles[index], ...updates };
+    if (this.currentUser && (this.currentUser.id === id || this.currentUser.email === this.profiles[index].email)) {
+      this.currentUser = this.profiles[index];
+    }
     this.saveLocal();
 
     const supabase = getSupabaseClient();
     if (supabase) {
-      supabase
-        .from('profiles')
-        .update(updates)
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.warn('[BHOS Store] Supabase updateProfile failed:', error.message);
-        });
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      if (isUuid) {
+        supabase
+          .from('profiles')
+          .update(updates)
+          .eq('id', id)
+          .then(({ error }) => {
+            if (error) console.warn('[BHOS Store] Supabase updateProfile failed:', error.message);
+          });
+      } else if (this.profiles[index].email) {
+        supabase
+          .from('profiles')
+          .update(updates)
+          .eq('email', this.profiles[index].email)
+          .then(({ error }) => {
+            if (error) console.warn('[BHOS Store] Supabase updateProfile by email failed:', error.message);
+          });
+      }
     }
 
     return this.profiles[index];

@@ -17,9 +17,11 @@ import {
   MessageCircle, 
   ChevronDown,
   LogIn,
-  LogOut
+  LogOut,
+  Settings
 } from 'lucide-react';
 import MatchLoggerModal from './MatchLoggerModal';
+import EditProfileModal from './EditProfileModal';
 
 export default function Navbar() {
   const { t, locale, setLocale } = useTranslation();
@@ -31,6 +33,7 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
 
   const pendingMatchesCount = usePendingMatchesCount(currentUser?.id);
 
@@ -267,6 +270,17 @@ export default function Navbar() {
                         <span>{t('profile.details') || 'Profilim'}</span>
                       </Link>
 
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          setShowEditProfileModal(true);
+                        }}
+                        className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center gap-2 text-slate-300 hover:text-white hover:bg-white/5 transition"
+                      >
+                        <Settings className="w-3.5 h-3.5 text-blue-400" />
+                        <span>Profili Fərdiləşdir</span>
+                      </button>
+
                       {(currentUser.role === 'president' || currentUser.role === 'coach') && (
                         <Link
                           href="/admin"
@@ -371,6 +385,15 @@ export default function Navbar() {
                     {t('profile.details') || 'Profilim'}
                   </Link>
                   <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      setShowEditProfileModal(true);
+                    }}
+                    className="w-full text-center py-2 rounded-xl bg-white/5 text-slate-300 hover:text-white text-xs font-semibold"
+                  >
+                    Profili Fərdiləşdir
+                  </button>
+                  <button
                     onClick={handleSignOut}
                     className="w-full py-2 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs font-bold flex items-center justify-center gap-1.5"
                   >
@@ -407,6 +430,17 @@ export default function Navbar() {
 
       {showMatchModal && (
         <MatchLoggerModal onClose={() => setShowMatchModal(false)} />
+      )}
+
+      {currentUser && (
+        <EditProfileModal
+          isOpen={showEditProfileModal}
+          onClose={() => setShowEditProfileModal(false)}
+          profile={currentUser}
+          onProfileUpdated={(updated) => {
+            setCurrentUser(updated);
+          }}
+        />
       )}
     </>
   );
