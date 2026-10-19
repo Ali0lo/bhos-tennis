@@ -553,7 +553,7 @@ export default function LoginPage() {
                     required
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
-                    placeholder="Məs: Əli İsgəndərli"
+                    placeholder={t('auth.full_name')}
                     className="w-full px-4 py-3 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-white focus:outline-none focus:border-cyan-400 transition"
                   />
                 </div>
