@@ -14,6 +14,7 @@ import {
   Award,
   Briefcase,
   Trash2,
+  Calendar,
 } from 'lucide-react';
 
 export default function PendingVerificationQueue() {
@@ -207,6 +208,18 @@ export default function PendingVerificationQueue() {
                         )}
                       </div>
                       <p className="text-[11px] text-slate-400 font-mono mt-0.5">{player.email}</p>
+                      {player.created_at && (
+                        <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono mt-0.5">
+                          <Calendar className="w-3 h-3 text-cyan-400" />
+                          <span>
+                            Müraciət: {new Date(player.created_at).toLocaleDateString('az-AZ', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: 'numeric',
+                            })}
+                          </span>
+                        </div>
+                      )}
                     </div>
                     {player.gender && (
                       <span

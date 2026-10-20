@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '../../../lib/supabase/client';
 import { BHOSDataStore } from '../../../lib/data/store';
-import { PlayerProfile, MatchRecord } from '../../../lib/data/types';
+import { PlayerProfile, MatchRecord, isDefaultMember } from '../../../lib/data/types';
 import SmoothReveal from '../../../components/SmoothReveal';
 import NumberTicker from '../../../components/NumberTicker';
 import EditProfileModal from '../../../components/EditProfileModal';
@@ -601,7 +601,30 @@ export default function PlayerProfilePage() {
                     ? `${profile.major_faculty || 'İdman Klubu'} • ${profile.user_type === 'staff' ? 'Əməkdaş' : 'Müəllim'}`
                     : `${profile.major_faculty || 'Mühəndislik Fakültəsi'} • ${profile.admission_year} Qəbul ili`}
                 </p>
-                <p className="text-xs text-slate-500 font-mono">{profile.email}</p>
+                <div className="flex items-center gap-2.5 text-xs text-slate-400 font-medium flex-wrap pt-0.5">
+                  <span className="text-xs text-slate-500 font-mono">{profile.email}</span>
+                  {profile.created_at && (
+                    <span className="inline-flex items-center gap-1 text-slate-400">
+                      <Calendar className="w-3.5 h-3.5 text-cyan-400" />
+                      <span>
+                        Qoşulub: {new Date(profile.created_at).toLocaleDateString('az-AZ', {
+                          day: '2-digit',
+                          month: '2-digit',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </span>
+                  )}
+                  {isDefaultMember(profile.id, profile.email) ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25">
+                      İlkin Heyət
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
+                      Rəsmi Qeydiyyat
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 

@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BHOSDataStore } from '../../lib/data/store';
-import { PlayerProfile, UserRole, BHOSFaculty, MatchRecord } from '../../lib/data/types';
+import { PlayerProfile, UserRole, BHOSFaculty, MatchRecord, isDefaultMember } from '../../lib/data/types';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
@@ -26,6 +26,7 @@ import {
   History,
   Pencil,
   X,
+  Calendar,
 } from 'lucide-react';
 
 const FACULTIES: BHOSFaculty[] = [
@@ -78,6 +79,8 @@ export default function AdminDashboardPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editPlayerName, setEditPlayerName] = useState<string>('');
+  const [memberFilter, setMemberFilter] = useState<'all' | 'registered' | 'default'>('all');
+  const [memberSearchQuery, setMemberSearchQuery] = useState<string>('');
 
   const [showAddMember, setShowAddMember] = useState(false);
   const [newUserType, setNewUserType] = useState<'student' | 'teacher'>('student');
@@ -97,6 +100,32 @@ export default function AdminDashboardPage() {
   const [tStartDate, setTStartDate] = useState('2026-10-15');
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
+
+  const totalMembersCount = profiles.length;
+  const defaultMembersCount = useMemo(
+    () => profiles.filter((p) => isDefaultMember(p.id, p.email)).length,
+    [profiles]
+  );
+  const registeredMembersCount = useMemo(
+    () => profiles.filter((p) => !isDefaultMember(p.id, p.email)).length,
+    [profiles]
+  );
+
+  const filteredProfiles = useMemo(() => {
+    return profiles.filter((p) => {
+      const isDef = isDefaultMember(p.id, p.email);
+      if (memberFilter === 'registered' && isDef) return false;
+      if (memberFilter === 'default' && !isDef) return false;
+      if (memberSearchQuery.trim()) {
+        const q = memberSearchQuery.toLowerCase().trim();
+        const matchName = p.full_name?.toLowerCase().includes(q);
+        const matchEmail = p.email?.toLowerCase().includes(q);
+        const matchFaculty = p.major_faculty?.toLowerCase().includes(q);
+        if (!matchName && !matchEmail && !matchFaculty) return false;
+      }
+      return true;
+    });
+  }, [profiles, memberFilter, memberSearchQuery]);
 
   useEffect(() => {
     store.fetchMatchesFromCloud();
@@ -657,11 +686,69 @@ export default function AdminDashboardPage() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
               <div className="lg:col-span-7 space-y-4">
                 <div className="p-6 rounded-3xl border border-white/10 bg-slate-900/80 shadow-xl space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Sliders className="w-5 h-5 text-cyan-400" />
-                    <h2 className="text-lg font-display font-bold text-white">
-                      {t('admin.elo_override')}
-                    </h2>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-2">
+                      <Sliders className="w-5 h-5 text-cyan-400 shrink-0" />
+                      <div>
+                        <h2 className="text-lg font-display font-bold text-white">
+                          {t('admin.elo_override')}
+                        </h2>
+                        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                          <span>Ümumi: {totalMembersCount}</span>
+                          <span>•</span>
+                          <span className="text-emerald-400">Qeydiyyat: {registeredMembersCount}</span>
+                          <span>•</span>
+                          <span className="text-amber-400">İlkin Heyət: {defaultMembersCount}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-white/10 text-xs">
+                      <button
+                        type="button"
+                        onClick={() => setMemberFilter('all')}
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition text-xs ${
+                          memberFilter === 'all'
+                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Hamısı ({totalMembersCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMemberFilter('registered')}
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition text-xs ${
+                          memberFilter === 'registered'
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Qeydiyyat ({registeredMembersCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMemberFilter('default')}
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition text-xs ${
+                          memberFilter === 'default'
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        İlkin Heyət ({defaultMembersCount})
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <input
+                      type="text"
+                      value={memberSearchQuery}
+                      onChange={(e) => setMemberSearchQuery(e.target.value)}
+                      placeholder="Üzv adı, email və ya ixtisas üzrə axtarış..."
+                      className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
+                    />
                   </div>
 
                   <div className="overflow-x-auto">
@@ -669,6 +756,7 @@ export default function AdminDashboardPage() {
                       <thead>
                         <tr className="border-b border-white/10 text-[11px] uppercase text-slate-400">
                           <th className="py-2.5 px-3">Üzv</th>
+                          <th className="py-2.5 px-3 whitespace-nowrap">Qoşulub</th>
                           <th className="py-2.5 px-3">Status</th>
                           <th className="py-2.5 px-3">Rol</th>
                           <th className="py-2.5 px-3">ELO Xalı</th>
@@ -676,153 +764,198 @@ export default function AdminDashboardPage() {
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5 text-xs">
-                        {profiles.map((p) => {
-                          const isStaff =
-                            p.user_type === 'teacher' ||
-                            p.user_type === 'staff' ||
-                            p.role === 'coach' ||
-                            !p.admission_year;
+                        {filteredProfiles.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
+                              Seçilmiş filtrə və ya axtarışa uyğun heç bir üzv tapılmadı.
+                            </td>
+                          </tr>
+                        ) : (
+                          filteredProfiles.map((p) => {
+                            const isStaff =
+                              p.user_type === 'teacher' ||
+                              p.user_type === 'staff' ||
+                              p.role === 'coach' ||
+                              !p.admission_year;
+                            const isDefault = isDefaultMember(p.id, p.email);
 
-                          return (
-                            <tr key={p.id} className="hover:bg-white/[0.02]">
-                              <td className="py-3 px-3">
-                                {editingPlayerId === p.id ? (
-                                  <div className="flex items-center gap-1.5 py-0.5">
-                                    <input
-                                      type="text"
-                                      value={editPlayerName}
-                                      onChange={(e) => setEditPlayerName(e.target.value)}
-                                      onKeyDown={(e) => {
-                                        if (e.key === 'Enter') handleSavePlayerName(p.id);
-                                        if (e.key === 'Escape') handleCancelEditName();
-                                      }}
-                                      autoFocus
-                                      className="px-2.5 py-1 rounded-lg bg-slate-950 border border-cyan-500/60 text-white font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400 w-full max-w-[200px]"
-                                    />
-                                    <button
-                                      type="button"
-                                      onClick={() => handleSavePlayerName(p.id)}
-                                      title="Yadda Saxla"
-                                      className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition"
-                                    >
-                                      <CheckCircle2 className="w-3.5 h-3.5" />
-                                    </button>
-                                    <button
-                                      type="button"
-                                      onClick={handleCancelEditName}
-                                      title="İmtina"
-                                      className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition"
-                                    >
-                                      <X className="w-3.5 h-3.5" />
-                                    </button>
+                            return (
+                              <tr key={p.id} className="hover:bg-white/[0.02]">
+                                <td className="py-3 px-3">
+                                  {editingPlayerId === p.id ? (
+                                    <div className="flex items-center gap-1.5 py-0.5">
+                                      <input
+                                        type="text"
+                                        value={editPlayerName}
+                                        onChange={(e) => setEditPlayerName(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleSavePlayerName(p.id);
+                                          if (e.key === 'Escape') handleCancelEditName();
+                                        }}
+                                        autoFocus
+                                        className="px-2.5 py-1 rounded-lg bg-slate-950 border border-cyan-500/60 text-white font-semibold text-xs focus:outline-none focus:ring-1 focus:ring-cyan-400 w-full max-w-[200px]"
+                                      />
+                                      <button
+                                        type="button"
+                                        onClick={() => handleSavePlayerName(p.id)}
+                                        title="Yadda Saxla"
+                                        className="p-1.5 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-300 border border-emerald-500/30 transition"
+                                      >
+                                        <CheckCircle2 className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={handleCancelEditName}
+                                        title="İmtina"
+                                        className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white border border-slate-700 transition"
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-1.5">
+                                      <span
+                                        className="font-semibold text-white hover:text-cyan-300 transition cursor-pointer"
+                                        onDoubleClick={() => handleStartEditName(p)}
+                                        title="Adı dəyişmək üçün klikləyin"
+                                      >
+                                        {p.full_name}
+                                      </span>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleStartEditName(p)}
+                                        title="Adı Redaktə Et"
+                                        className="p-1 rounded text-slate-500 hover:text-cyan-300 hover:bg-white/5 transition"
+                                      >
+                                        <Pencil className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  )}
+                                  <div className="text-[11px] text-slate-400">
+                                    {p.major_faculty}
+                                    {isStaff ? ' • Müəllim' : ` • ${p.admission_year}`}
                                   </div>
-                                ) : (
-                                  <div className="flex items-center gap-1.5">
-                                    <span
-                                      className="font-semibold text-white hover:text-cyan-300 transition cursor-pointer"
-                                      onDoubleClick={() => handleStartEditName(p)}
-                                      title="Adı dəyişmək üçün klikləyin"
-                                    >
-                                      {p.full_name}
+                                  {p.email && (
+                                    <div className="text-[10px] text-slate-500 font-mono">
+                                      {p.email}
+                                    </div>
+                                  )}
+                                </td>
+                                <td className="py-3 px-3 whitespace-nowrap">
+                                  <div className="flex items-center gap-1 text-slate-300 font-mono text-[11px]">
+                                    <Calendar className="w-3 h-3 text-cyan-400 shrink-0" />
+                                    <span>
+                                      {p.created_at
+                                        ? new Date(p.created_at).toLocaleDateString('az-AZ', {
+                                            day: '2-digit',
+                                            month: '2-digit',
+                                            year: 'numeric',
+                                          })
+                                        : '—'}
                                     </span>
+                                  </div>
+                                  <div className="mt-1">
+                                    {isDefault ? (
+                                      <span
+                                        title="Sistem tərəfindən ilkin verilmiş heyət üzvü"
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25"
+                                      >
+                                        İlkin Heyət
+                                      </span>
+                                    ) : (
+                                      <span
+                                        title="Saytdan rəsmi qeydiyyatdan keçmiş istifadəçi"
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25"
+                                      >
+                                        Qeydiyyat
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+                                <td className="py-3 px-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleUserTypeToggle(p)}
+                                    title="Statusu dəyişmək üçün klikləyin"
+                                    className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition ${
+                                      isStaff
+                                        ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                        : 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
+                                    }`}
+                                  >
+                                    {isStaff ? (
+                                      <>
+                                        <Briefcase className="w-3 h-3" />
+                                        <span>Müəllim / Əməkdaş</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <GraduationCap className="w-3 h-3" />
+                                        <span>Tələbə • {p.admission_year}</span>
+                                      </>
+                                    )}
+                                  </button>
+                                </td>
+                                <td className="py-3 px-3">
+                                  <select
+                                    value={p.role}
+                                    onChange={(e) =>
+                                      handleRoleChange(p.id, e.target.value as UserRole)
+                                    }
+                                    className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
+                                  >
+                                    <option value="player">{t('roles.player')}</option>
+                                    <option value="coach">{t('roles.coach')}</option>
+                                    <option value="president">{t('roles.president')}</option>
+                                  </select>
+                                </td>
+                                <td className="py-3 px-3">
+                                  <input
+                                    type="number"
+                                    min={0}
+                                    value={eloEdits[p.id] ?? p.current_elo}
+                                    onChange={(e) =>
+                                      setEloEdits((prev) => ({
+                                        ...prev,
+                                        [p.id]: parseInt(e.target.value, 10) || 0,
+                                      }))
+                                    }
+                                    className="w-24 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 font-mono font-bold text-cyan-400 text-xs focus:outline-none focus:border-cyan-400"
+                                  />
+                                </td>
+                                <td className="py-3 px-3 text-right">
+                                  <div className="flex items-center justify-end gap-2">
                                     <button
                                       type="button"
                                       onClick={() => handleStartEditName(p)}
                                       title="Adı Redaktə Et"
-                                      className="p-1 rounded text-slate-500 hover:text-cyan-300 hover:bg-white/5 transition"
+                                      className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-cyan-300 border border-white/10 transition"
                                     >
-                                      <Pencil className="w-3 h-3" />
+                                      <Pencil className="w-3.5 h-3.5" />
                                     </button>
-                                  </div>
-                                )}
-                                <div className="text-[11px] text-slate-500">
-                                  {p.major_faculty}
-                                  {isStaff ? ' • Müəllim' : ` • ${p.admission_year}`}
-                                </div>
-                              </td>
-                              <td className="py-3 px-3">
-                                <button
-                                  type="button"
-                                  onClick={() => handleUserTypeToggle(p)}
-                                  title="Statusu dəyişmək üçün klikləyin"
-                                  className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold transition ${
-                                    isStaff
-                                      ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                                      : 'bg-cyan-500/15 text-cyan-300 border border-cyan-500/30'
-                                  }`}
-                                >
-                                  {isStaff ? (
-                                    <>
-                                      <Briefcase className="w-3 h-3" />
-                                      <span>Müəllim / Əməkdaş</span>
-                                    </>
-                                  ) : (
-                                    <>
-                                      <GraduationCap className="w-3 h-3" />
-                                      <span>Tələbə • {p.admission_year}</span>
-                                    </>
-                                  )}
-                                </button>
-                              </td>
-                              <td className="py-3 px-3">
-                                <select
-                                  value={p.role}
-                                  onChange={(e) =>
-                                    handleRoleChange(p.id, e.target.value as UserRole)
-                                  }
-                                  className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:border-cyan-400"
-                                >
-                                  <option value="player">{t('roles.player')}</option>
-                                  <option value="coach">{t('roles.coach')}</option>
-                                  <option value="president">{t('roles.president')}</option>
-                                </select>
-                              </td>
-                              <td className="py-3 px-3">
-                                <input
-                                  type="number"
-                                  min={0}
-                                  value={eloEdits[p.id] ?? p.current_elo}
-                                  onChange={(e) =>
-                                    setEloEdits((prev) => ({
-                                      ...prev,
-                                      [p.id]: parseInt(e.target.value, 10) || 0,
-                                    }))
-                                  }
-                                  className="w-24 px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 font-mono font-bold text-cyan-400 text-xs focus:outline-none focus:border-cyan-400"
-                                />
-                              </td>
-                              <td className="py-3 px-3 text-right">
-                                <div className="flex items-center justify-end gap-2">
-                                  <button
-                                    type="button"
-                                    onClick={() => handleStartEditName(p)}
-                                    title="Adı Redaktə Et"
-                                    className="p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-300 hover:text-cyan-300 border border-white/10 transition"
-                                  >
-                                    <Pencil className="w-3.5 h-3.5" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleOverrideElo(p.id)}
-                                    className="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-semibold text-xs transition"
-                                  >
-                                    {t('admin.save_elo')}
-                                  </button>
-                                  {p.id !== currentUser?.id && (
                                     <button
-                                      type="button"
-                                      onClick={() => handleDeletePlayer(p)}
-                                      disabled={deletingId === p.id}
-                                      title="Oyunçunu Sil"
-                                      className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition disabled:opacity-50"
+                                      onClick={() => handleOverrideElo(p.id)}
+                                      className="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/30 font-semibold text-xs transition"
                                     >
-                                      <Trash2 className="w-3.5 h-3.5" />
+                                      {t('admin.save_elo')}
                                     </button>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          );
-                        })}
+                                    {p.id !== currentUser?.id && (
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeletePlayer(p)}
+                                        disabled={deletingId === p.id}
+                                        title="Oyunçunu Sil"
+                                        className="p-1.5 rounded-lg bg-rose-500/15 hover:bg-rose-500/25 text-rose-300 border border-rose-500/30 transition disabled:opacity-50"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
                       </tbody>
                     </table>
                   </div>

@@ -136,3 +136,25 @@ export interface EloHistoryPoint {
   result?: 'W' | 'L';
   delta?: number;
 }
+
+export const DEFAULT_MEMBER_EMAILS = [
+  'ali.iskandarli.std@bhos.edu.az',
+  'iftixar.coach@gmail.com',
+  'ali.abdulov.std@bhos.edu.az',
+  'ali.aghayev.std@bhos.edu.az',
+  'huseyn.muradzade.std@bhos.edu.az',
+  'fateh.mammadli.std@bhos.edu.az',
+  'rinad.evezzade.std@bhos.edu.az',
+  'anar.alakbarli.std@bhos.edu.az',
+  'nihat.ismayilzade.std@bhos.edu.az',
+];
+
+export function isDefaultMember(id?: string | null, email?: string | null): boolean {
+  if (id && (id.startsWith('p-') || id.startsWith('00000000-0000-0000-0000-'))) {
+    return true;
+  }
+  if (email && DEFAULT_MEMBER_EMAILS.includes(email.toLowerCase().trim())) {
+    return true;
+  }
+  return false;
+}
