@@ -44,3 +44,4 @@ WHERE LOWER(COALESCE(email, '')) NOT IN (
 
 CREATE INDEX IF NOT EXISTS idx_profiles_status_origin
   ON public.profiles(status, origin);
+

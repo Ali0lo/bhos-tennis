@@ -42,13 +42,7 @@
     "login_success": "Uğurla daxil oldunuz! Yönləndirilirsiniz...",
     "signup_success": "Qeydiyyat uğurla tamamlandı! Profiliniz Klub Prezidenti və ya Məşqçi tərəfindən təsdiqləndikdən sonra reytinq cədvəlində görünəcək.",
     "pending_badge": "Təsdiq Gözləyir (0 ELO)",
-    "error": "Xəta baş verdi. Zəhmət olmasa məlumatları yoxlayın.",
-    "forgot_password": "Şifrənizi unutmusunuz?",
-    "reset_title": "Şifrənin Sıfırlanması",
-    "reset_btn": "Sıfırlama Linki Göndər",
-    "new_password": "Yeni şifrə",
-    "confirm_password": "Şifrəni təsdiqləyin",
-    "password_updated": "Şifrəniz uğurla yeniləndi!"
+    "error": "Xəta baş verdi. Zəhmət olmasa məlumatları yoxlayın."
   },
   "achievements": {
     "title": "Nailiyyətlər",

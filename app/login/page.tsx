@@ -8,7 +8,6 @@ import { PlayerProfile, UserRole, BHOSFaculty, PlayingLevel, isProfilePending, i
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { useTranslation } from '../../lib/i18n';
 import SmoothReveal from '../../components/SmoothReveal';
-import { motion, AnimatePresence } from 'framer-motion';
 import {
   Shield,
   Lock,
@@ -26,9 +25,6 @@ import {
   Briefcase,
   Eye,
   EyeOff,
-  Loader2,
-  KeyRound,
-  X,
 } from 'lucide-react';
 
 const FACULTIES: BHOSFaculty[] = [
@@ -78,12 +74,6 @@ export default function LoginPage() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const [showForgotModal, setShowForgotModal] = useState(false);
-  const [resetEmail, setResetEmail] = useState('');
-  const [resetLoading, setResetLoading] = useState(false);
-  const [resetError, setResetError] = useState<string | null>(null);
-  const [resetSent, setResetSent] = useState(false);
-
   useEffect(() => {
     const update = () => {
       setCurrentUser(store.getCurrentUser());
@@ -116,48 +106,6 @@ export default function LoginPage() {
       if (!fullName) setFullName('İftixar Məhərrəmov');
       setUserType('teacher');
       setMajor('İdman Klubu');
-    }
-  };
-
-  const handleOpenForgotModal = () => {
-    setResetEmail(email.trim());
-    setResetError(null);
-    setResetSent(false);
-    setShowForgotModal(true);
-  };
-
-  const handlePasswordResetSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setResetError(null);
-
-    const cleanResetEmail = resetEmail.trim().toLowerCase();
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!cleanResetEmail || !emailPattern.test(cleanResetEmail)) {
-      setResetError('Zəhmət olmasa düzgün e-poçt ünvanı daxil edin (məs: ad.soyad.std@bhos.edu.az).');
-      return;
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setResetError('Autentifikasiya xidməti hazırda əlçatan deyil.');
-      return;
-    }
-
-    setResetLoading(true);
-    try {
-      const { error } = await supabase.auth.resetPasswordForEmail(cleanResetEmail, {
-        redirectTo: `${window.location.origin}/reset-password`,
-      });
-      if (error) {
-        throw new Error(error.message);
-      }
-      setResetSent(true);
-    } catch (err: any) {
-      setResetError(
-        err?.message || 'Şifrə sıfırlama linki göndərilərkən xəta baş verdi.'
-      );
-    } finally {
-      setResetLoading(false);
     }
   };
 
@@ -785,17 +733,6 @@ export default function LoginPage() {
                   )}
                 </button>
               </div>
-              {mode === 'signin' && (
-                <div className="mt-2 flex justify-end">
-                  <button
-                    type="button"
-                    onClick={handleOpenForgotModal}
-                    className="text-xs text-slate-400 hover:text-[#3B82F6] transition-colors font-medium"
-                  >
-                    {t('auth.forgot_password', 'Şifrənizi unutmusunuz?')}
-                  </button>
-                </div>
-              )}
             </div>
 
             {mode === 'signup' && (
@@ -838,114 +775,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
-      <AnimatePresence>
-        {showForgotModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
-          >
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 12 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 12 }}
-              transition={{ type: 'spring', stiffness: 280, damping: 25 }}
-              className="w-full max-w-md rounded-2xl bg-[#0F1623] border border-white/10 p-6 shadow-2xl space-y-5 relative"
-            >
-              <button
-                type="button"
-                onClick={() => setShowForgotModal(false)}
-                className="absolute top-4 right-4 p-1.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white transition"
-                aria-label="Bağla"
-              >
-                <X className="w-4 h-4" />
-              </button>
-
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6] shrink-0">
-                  <KeyRound className="w-5 h-5" />
-                </div>
-                <div>
-                  <h2 className="text-lg font-display font-bold text-white">
-                    {t('auth.reset_title', 'Şifrənin Sıfırlanması')}
-                  </h2>
-                  <p className="text-xs text-slate-400 leading-relaxed">
-                    Qeydiyyatdan keçdiyiniz e-poçt ünvanınızı daxil edin. Sizə şifrə yeniləmə linki göndəriləcək.
-                  </p>
-                </div>
-              </div>
-
-              {resetSent ? (
-                <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 space-y-3">
-                  <div className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-5 h-5 text-[#22C55E] shrink-0 mt-0.5" />
-                    <div className="space-y-1 text-xs text-slate-200">
-                      <p className="font-bold text-emerald-300">
-                        Sıfırlama linki göndərildi!
-                      </p>
-                      <p className="text-slate-300 leading-relaxed">
-                        <strong className="text-white">{resetEmail}</strong> ünvanına şifrə yeniləmə keçidi göndərildi. Zəhmət olmasa gələnlər qutusunu (Inbox) və <strong className="text-amber-300">Spam / Junk</strong> qovluqlarını yoxlayın.
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowForgotModal(false)}
-                    className="w-full py-2.5 rounded-xl bg-[#131C2B] hover:bg-white/10 border border-white/10 text-xs font-bold text-white transition"
-                  >
-                    Giriş səhifəsinə qayıt
-                  </button>
-                </div>
-              ) : (
-                <form onSubmit={handlePasswordResetSubmit} className="space-y-4">
-                  {resetError && (
-                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-2 text-xs text-rose-300">
-                      <AlertCircle className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
-                      <span>{resetError}</span>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                      <Mail className="w-3.5 h-3.5 text-[#3B82F6]" />
-                      <span>{t('auth.email', 'E-poçt Ünvanı')}</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={resetEmail}
-                      onChange={(e) => setResetEmail(e.target.value)}
-                      placeholder="ad.soyad.std@bhos.edu.az və ya müəllim e-poçtu"
-                      className="w-full px-4 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] transition"
-                      autoFocus
-                    />
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={resetLoading}
-                    className="w-full py-3 rounded-xl bg-[#3B82F6] hover:bg-blue-500 disabled:opacity-50 text-white font-display font-bold text-xs shadow-lg shadow-[#3B82F6]/25 transition flex items-center justify-center gap-2"
-                  >
-                    {resetLoading ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        <span>Göndərilir...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Mail className="w-4 h-4" />
-                        <span>{t('auth.reset_btn', 'Sıfırlama Linki Göndər')}</span>
-                      </>
-                    )}
-                  </button>
-                </form>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </SmoothReveal>
   );
 }
