@@ -131,6 +131,14 @@ export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
   useEffect(() => {
     fetchCurrentUser();
     fetchActivePlayers();
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const preselectedOpponent = params.get('opponentId');
+      if (preselectedOpponent) {
+        setOpponentId(preselectedOpponent);
+        setAdminLoserId(preselectedOpponent);
+      }
+    }
   }, [fetchCurrentUser]);
 
   const isAdminOrCoach = useMemo(() => {

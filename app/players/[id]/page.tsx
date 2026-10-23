@@ -9,6 +9,7 @@ import { PlayerProfile, MatchRecord, isDefaultMember, isAutoApprovedMatch } from
 import SmoothReveal from '../../../components/SmoothReveal';
 import NumberTicker from '../../../components/NumberTicker';
 import EditProfileModal from '../../../components/EditProfileModal';
+import WhatIfSimulator from '../../../components/WhatIfSimulator';
 import {
   Trophy,
   ArrowLeft,
@@ -735,6 +736,10 @@ export default function PlayerProfilePage() {
             )}
           </div>
         </div>
+      </SmoothReveal>
+
+      <SmoothReveal delay={0.12}>
+        <WhatIfSimulator player={profile} />
       </SmoothReveal>
 
       <SmoothReveal delay={0.15}>
