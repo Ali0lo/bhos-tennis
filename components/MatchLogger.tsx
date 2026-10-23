@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { BHOSDataStore } from '../lib/data/store';
-import { PlayerProfile } from '../lib/data/types';
+import { PlayerProfile, isProfilePending } from '../lib/data/types';
 import { getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
 import { 
   Trophy, 
@@ -153,6 +153,10 @@ export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
     return currentUser?.role === 'coach' || currentUser?.role === 'president';
   }, [currentUser]);
 
+  const isPendingApproval = useMemo(() => {
+    return isProfilePending(currentUser);
+  }, [currentUser]);
+
   const effectiveWinner = useMemo(() => {
     if (isAdminOrCoach) {
       return players.find((p) => p.id === adminWinnerId);
@@ -189,8 +193,10 @@ export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
       return;
     }
 
-    if (currentUser.is_verified === false) {
-      setErrorMessage('Your profile is pending admin verification. Only verified members can log matches.');
+    if (isPendingApproval) {
+      setErrorMessage(
+        'Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra matç qeyd edə və masa rezerv edə bilərsiniz.'
+      );
       return;
     }
 
@@ -366,20 +372,21 @@ export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
     );
   }
 
-  if (currentUser.is_verified === false) {
-    return (
-      <div className="p-8 rounded-2xl border border-amber-500/30 bg-[#0F1623] text-center space-y-3">
-        <Clock className="w-8 h-8 text-amber-400 mx-auto" />
-        <h3 className="text-base font-display font-bold text-white">Verification Pending</h3>
-        <p className="text-xs text-slate-400 max-w-sm mx-auto">
-          Your account is awaiting approval by the President or Coach. Once verified, you can log matches.
-        </p>
-      </div>
-    );
-  }
-
   return (
     <div className="relative rounded-2xl border border-white/10 bg-[#0F1623] p-6 shadow-2xl backdrop-blur-xl">
+      {isPendingApproval && (
+        <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs text-amber-300">
+          <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div>
+            <span className="font-bold text-amber-200 block">
+              Hesabınız təsdiq gözləyir
+            </span>
+            <span>
+              Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra matç qeyd edə və masa rezerv edə bilərsiniz.
+            </span>
+          </div>
+        </div>
+      )}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#3B82F6]/10 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6]">
@@ -613,11 +620,24 @@ export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
           </div>
         )}
 
-        <div className="pt-2 flex items-center justify-end">
+        <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          {isPendingApproval ? (
+            <span className="text-xs text-amber-300 flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+              Matç göndərmək üçün hesabınız Klub Prezidenti tərəfindən təsdiqlənməlidir.
+            </span>
+          ) : (
+            <span />
+          )}
           <button
             type="submit"
-            disabled={isSubmitting || loadingPlayers}
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-display font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-blue-500/20 disabled:opacity-50 flex items-center justify-center gap-2"
+            disabled={isSubmitting || loadingPlayers || isPendingApproval}
+            title={
+              isPendingApproval
+                ? 'Hesabınız Klub Prezidenti tərəfindən təsdiqləndikdən sonra matç qeyd edə bilərsiniz.'
+                : undefined
+            }
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-display font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <>

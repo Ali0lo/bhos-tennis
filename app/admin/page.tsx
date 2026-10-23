@@ -2,7 +2,16 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { BHOSDataStore } from '../../lib/data/store';
-import { PlayerProfile, UserRole, BHOSFaculty, MatchRecord, isDefaultMember } from '../../lib/data/types';
+import {
+  PlayerProfile,
+  UserRole,
+  BHOSFaculty,
+  MatchRecord,
+  isDefaultMember,
+  getProfileOrigin,
+  isProfilePending,
+  formatDateTimeAz,
+} from '../../lib/data/types';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
@@ -79,7 +88,7 @@ export default function AdminDashboardPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editPlayerName, setEditPlayerName] = useState<string>('');
-  const [memberFilter, setMemberFilter] = useState<'all' | 'registered' | 'default'>('all');
+  const [memberFilter, setMemberFilter] = useState<'all' | 'registered' | 'default' | 'pending'>('all');
   const [memberSearchQuery, setMemberSearchQuery] = useState<string>('');
 
   const [showAddMember, setShowAddMember] = useState(false);
@@ -103,19 +112,25 @@ export default function AdminDashboardPage() {
 
   const totalMembersCount = profiles.length;
   const defaultMembersCount = useMemo(
-    () => profiles.filter((p) => isDefaultMember(p.id, p.email)).length,
+    () => profiles.filter((p) => getProfileOrigin(p) === 'İlkin Heyət').length,
     [profiles]
   );
   const registeredMembersCount = useMemo(
-    () => profiles.filter((p) => !isDefaultMember(p.id, p.email)).length,
+    () => profiles.filter((p) => getProfileOrigin(p) === 'Qeydiyyat').length,
+    [profiles]
+  );
+  const pendingMembersCount = useMemo(
+    () => profiles.filter((p) => isProfilePending(p)).length,
     [profiles]
   );
 
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {
-      const isDef = isDefaultMember(p.id, p.email);
-      if (memberFilter === 'registered' && isDef) return false;
-      if (memberFilter === 'default' && !isDef) return false;
+      const origin = getProfileOrigin(p);
+      const pending = isProfilePending(p);
+      if (memberFilter === 'registered' && origin !== 'Qeydiyyat') return false;
+      if (memberFilter === 'default' && origin !== 'İlkin Heyət') return false;
+      if (memberFilter === 'pending' && !pending) return false;
       if (memberSearchQuery.trim()) {
         const q = memberSearchQuery.toLowerCase().trim();
         const matchName = p.full_name?.toLowerCase().includes(q);
@@ -693,17 +708,19 @@ export default function AdminDashboardPage() {
                         <h2 className="text-lg font-display font-bold text-white">
                           {t('admin.elo_override')}
                         </h2>
-                        <div className="flex items-center gap-2 text-[11px] text-slate-400 font-medium">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 font-medium">
                           <span>Ümumi: {totalMembersCount}</span>
                           <span>•</span>
-                          <span className="text-emerald-400">Qeydiyyat: {registeredMembersCount}</span>
+                          <span className="text-blue-400">Qeydiyyat: {registeredMembersCount}</span>
                           <span>•</span>
                           <span className="text-amber-400">İlkin Heyət: {defaultMembersCount}</span>
+                          <span>•</span>
+                          <span className="text-orange-400">Gözləyən: {pendingMembersCount}</span>
                         </div>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-xl border border-white/10 text-xs">
+                    <div className="flex flex-wrap items-center gap-1 bg-slate-950 p-1 rounded-xl border border-white/10 text-xs">
                       <button
                         type="button"
                         onClick={() => setMemberFilter('all')}
@@ -720,7 +737,7 @@ export default function AdminDashboardPage() {
                         onClick={() => setMemberFilter('registered')}
                         className={`px-2.5 py-1 rounded-lg font-semibold transition text-xs ${
                           memberFilter === 'registered'
-                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            ? 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
@@ -736,6 +753,17 @@ export default function AdminDashboardPage() {
                         }`}
                       >
                         İlkin Heyət ({defaultMembersCount})
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMemberFilter('pending')}
+                        className={`px-2.5 py-1 rounded-lg font-semibold transition text-xs ${
+                          memberFilter === 'pending'
+                            ? 'bg-orange-500/20 text-orange-300 border border-orange-500/30'
+                            : 'text-slate-400 hover:text-white'
+                        }`}
+                      >
+                        Gözləyən ({pendingMembersCount})
                       </button>
                     </div>
                   </div>
@@ -844,18 +872,10 @@ export default function AdminDashboardPage() {
                                 <td className="py-3 px-3 whitespace-nowrap">
                                   <div className="flex items-center gap-1 text-slate-300 font-mono text-[11px]">
                                     <Calendar className="w-3 h-3 text-cyan-400 shrink-0" />
-                                    <span>
-                                      {p.created_at
-                                        ? new Date(p.created_at).toLocaleDateString('az-AZ', {
-                                            day: '2-digit',
-                                            month: '2-digit',
-                                            year: 'numeric',
-                                          })
-                                        : '—'}
-                                    </span>
+                                    <span>{formatDateTimeAz(p.created_at)}</span>
                                   </div>
-                                  <div className="mt-1">
-                                    {isDefault ? (
+                                  <div className="mt-1 flex flex-wrap items-center gap-1">
+                                    {getProfileOrigin(p) === 'İlkin Heyət' ? (
                                       <span
                                         title="Sistem tərəfindən ilkin verilmiş heyət üzvü"
                                         className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25"
@@ -865,9 +885,14 @@ export default function AdminDashboardPage() {
                                     ) : (
                                       <span
                                         title="Saytdan rəsmi qeydiyyatdan keçmiş istifadəçi"
-                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25"
+                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20"
                                       >
                                         Qeydiyyat
+                                      </span>
+                                    )}
+                                    {isProfilePending(p) && (
+                                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-500/15 text-orange-300 border border-orange-500/30">
+                                        Gözləyən
                                       </span>
                                     )}
                                   </div>

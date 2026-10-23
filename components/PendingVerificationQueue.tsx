@@ -3,7 +3,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { BHOSDataStore } from '../lib/data/store';
-import { PlayerProfile } from '../lib/data/types';
+import {
+  PlayerProfile,
+  isProfilePending,
+  formatDateTimeAz,
+} from '../lib/data/types';
 import { useTranslation } from '../lib/i18n';
 import {
   UserCheck,
@@ -32,27 +36,41 @@ export default function PendingVerificationQueue() {
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
-        const { data, error } = await supabase
+        let fetchedList: PlayerProfile[] | null = null;
+        const { data: statusData, error: statusErr } = await supabase
           .from('profiles')
           .select('*')
-          .eq('is_verified', false)
+          .eq('status', 'pending')
           .order('created_at', { ascending: false });
 
-        if (!error && data) {
-          setPendingPlayers(data as PlayerProfile[]);
+        if (!statusErr && statusData) {
+          fetchedList = statusData as PlayerProfile[];
+        } else {
+          const { data: fallbackData, error: fallbackErr } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('is_verified', false)
+            .order('created_at', { ascending: false });
+          if (!fallbackErr && fallbackData) {
+            fetchedList = fallbackData as PlayerProfile[];
+          }
+        }
+
+        if (fetchedList) {
+          const filtered = fetchedList.filter((p) => isProfilePending(p));
+          setPendingPlayers(filtered);
           setEloInputs((prev) => {
             const next = { ...prev };
-            (data as PlayerProfile[]).forEach((p) => {
+            filtered.forEach((p) => {
               if (next[p.id] === undefined) {
-                next[p.id] = '0';
+                next[p.id] = String(p.current_elo ?? 0);
               }
             });
             return next;
           });
           return;
         }
-      } catch {
-      }
+      } catch {}
     }
 
     const localUnverified = store.getUnverifiedProfiles();
@@ -61,7 +79,7 @@ export default function PendingVerificationQueue() {
       const next = { ...prev };
       localUnverified.forEach((p) => {
         if (next[p.id] === undefined) {
-          next[p.id] = '0';
+          next[p.id] = String(p.current_elo ?? 0);
         }
       });
       return next;
@@ -94,13 +112,25 @@ export default function PendingVerificationQueue() {
         const { error } = await supabase
           .from('profiles')
           .update({
+            status: 'approved',
             is_verified: true,
             current_elo: parsedElo,
+            updated_at: new Date().toISOString(),
           })
           .eq('id', player.id);
 
         if (error) {
-          throw new Error(error.message);
+          const { error: fallbackError } = await supabase
+            .from('profiles')
+            .update({
+              is_verified: true,
+              current_elo: parsedElo,
+            })
+            .eq('id', player.id);
+
+          if (fallbackError) {
+            throw new Error(fallbackError.message);
+          }
         }
       }
 
@@ -137,7 +167,7 @@ export default function PendingVerificationQueue() {
   };
 
   return (
-    <div className="p-6 rounded-3xl border border-amber-500/30 bg-slate-900/80 backdrop-blur-xl shadow-xl space-y-5">
+    <div className="p-6 rounded-3xl border border-amber-500/30 bg-[#0F1623] shadow-xl space-y-5">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2.5">
           <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-300">
@@ -145,12 +175,14 @@ export default function PendingVerificationQueue() {
           </div>
           <div>
             <h2 className="text-lg font-display font-bold text-white flex items-center gap-2">
-              <span>{t('admin.pending_title')}</span>
+              <span>{t('admin.pending_title', 'Təsdiq Gözləyən Üzvlər')}</span>
               <span className="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
                 {pendingPlayers.length}
               </span>
             </h2>
-            <p className="text-xs text-slate-400">{t('admin.pending_sub')}</p>
+            <p className="text-xs text-slate-400">
+              {t('admin.pending_sub', 'Yeni qeydiyyatdan keçmiş üzvləri təsdiqləyin və başlanğıc ELO xalı təyin edin')}
+            </p>
           </div>
         </div>
       </div>
@@ -170,9 +202,9 @@ export default function PendingVerificationQueue() {
       )}
 
       {pendingPlayers.length === 0 ? (
-        <div className="p-6 rounded-2xl border border-white/5 bg-slate-950/60 text-center text-xs text-slate-400 flex items-center justify-center gap-2">
-          <Sparkles className="w-4 h-4 text-cyan-400" />
-          <span>{t('admin.no_pending')}</span>
+        <div className="p-6 rounded-2xl border border-white/5 bg-[#131C2B] text-center text-xs text-slate-400 flex items-center justify-center gap-2">
+          <Sparkles className="w-4 h-4 text-[#3B82F6]" />
+          <span>{t('admin.no_pending', 'Hazırda təsdiq gözləyən yeni üzv yoxdur.')}</span>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -186,15 +218,18 @@ export default function PendingVerificationQueue() {
             return (
               <div
                 key={player.id}
-                className="p-4 rounded-2xl border border-white/10 bg-slate-950/80 flex flex-col justify-between gap-4 hover:border-amber-500/40 transition"
+                className="p-4 rounded-2xl border border-white/10 bg-[#131C2B] flex flex-col justify-between gap-4 hover:border-[#3B82F6]/40 transition"
               >
-                <div className="space-y-2">
+                <div className="space-y-2.5">
                   <div className="flex items-start justify-between gap-2">
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex flex-wrap items-center gap-2">
                         <h3 className="font-display font-bold text-white text-sm">
                           {player.full_name}
                         </h3>
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20">
+                          {player.origin || 'Qeydiyyat'}
+                        </span>
                         {isStaff ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                             <Briefcase className="w-3 h-3" />
@@ -207,20 +242,15 @@ export default function PendingVerificationQueue() {
                           </span>
                         )}
                       </div>
-                      <p className="text-[11px] text-slate-400 font-mono mt-0.5">{player.email}</p>
-                      {player.created_at && (
-                        <div className="flex items-center gap-1 text-[10px] text-slate-500 font-mono mt-0.5">
-                          <Calendar className="w-3 h-3 text-cyan-400" />
-                          <span>
-                            Müraciət: {new Date(player.created_at).toLocaleDateString('az-AZ', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: 'numeric',
-                            })}
-                          </span>
-                        </div>
-                      )}
+                      <p className="text-[11px] text-slate-300 font-mono mt-1 truncate">
+                        {player.email}
+                      </p>
+                      <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono mt-1">
+                        <Calendar className="w-3 h-3 text-[#3B82F6] shrink-0" />
+                        <span>Qoşulub: {formatDateTimeAz(player.created_at)}</span>
+                      </div>
                     </div>
+
                     {player.gender && (
                       <span
                         className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${
@@ -229,20 +259,23 @@ export default function PendingVerificationQueue() {
                             : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
                         }`}
                       >
-                        {player.gender === 'female' ? t('auth.gender_female') : t('auth.gender_male')}
+                        {player.gender === 'female'
+                          ? t('auth.gender_female')
+                          : t('auth.gender_male')}
                       </span>
                     )}
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px] text-slate-300">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 border border-white/10">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0F1623] border border-white/10">
                       {isStaff ? (
                         <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
                       ) : (
-                        <GraduationCap className="w-3.5 h-3.5 text-cyan-400" />
+                        <GraduationCap className="w-3.5 h-3.5 text-[#3B82F6]" />
                       )}
                       <span>
-                        {t(`faculties.${player.major_faculty}`) !== `faculties.${player.major_faculty}`
+                        {t(`faculties.${player.major_faculty}`) !==
+                        `faculties.${player.major_faculty}`
                           ? t(`faculties.${player.major_faculty}`)
                           : player.major_faculty}
                       </span>
@@ -252,7 +285,8 @@ export default function PendingVerificationQueue() {
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-300">
                         <Award className="w-3.5 h-3.5" />
                         <span>
-                          {t(`levels.${player.playing_level}`) !== `levels.${player.playing_level}`
+                          {t(`levels.${player.playing_level}`) !==
+                          `levels.${player.playing_level}`
                             ? t(`levels.${player.playing_level}`)
                             : player.playing_level}
                         </span>
@@ -264,7 +298,7 @@ export default function PendingVerificationQueue() {
                 <div className="pt-3 border-t border-white/10 flex items-center justify-between gap-3">
                   <div className="flex items-center gap-2 flex-1">
                     <label className="text-[11px] font-semibold text-slate-400 whitespace-nowrap">
-                      {t('admin.initial_elo')}:
+                      {t('admin.initial_elo', 'Başlanğıc ELO')}:
                     </label>
                     <input
                       type="number"
@@ -277,7 +311,7 @@ export default function PendingVerificationQueue() {
                           [player.id]: e.target.value,
                         }))
                       }
-                      className="w-24 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-mono font-bold text-cyan-400 focus:outline-none focus:border-cyan-400"
+                      className="w-24 px-3 py-1.5 rounded-xl bg-[#0F1623] border border-white/10 text-xs font-mono font-bold text-[#3B82F6] focus:outline-none focus:border-[#3B82F6]"
                     />
                   </div>
 
@@ -290,17 +324,18 @@ export default function PendingVerificationQueue() {
                       className="px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>{rejectingId === player.id ? '...' : 'İmtina et'}</span>
+                      <span>{rejectingId === player.id ? '...' : 'İmtina Et'}</span>
                     </button>
 
                     <button
+                      type="button"
                       onClick={() => handleApprove(player)}
                       disabled={approvingId === player.id || rejectingId === player.id}
-                      className="px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-display font-bold text-xs shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5"
+                      className="px-4 py-2 rounded-xl bg-[#22C55E] hover:bg-emerald-400 disabled:opacity-50 text-slate-950 font-display font-bold text-xs shadow-lg shadow-emerald-500/20 transition flex items-center gap-1.5"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>
-                        {approvingId === player.id ? '...' : t('admin.approve_assign_btn')}
+                        {approvingId === player.id ? '...' : 'Təsdiqlə'}
                       </span>
                     </button>
                   </div>

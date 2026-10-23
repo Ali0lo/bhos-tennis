@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BHOSDataStore } from '../../lib/data/store';
-import { PlayerProfile, UserRole, BHOSFaculty, PlayingLevel } from '../../lib/data/types';
+import { PlayerProfile, UserRole, BHOSFaculty, PlayingLevel, isProfilePending, isDefaultMember } from '../../lib/data/types';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { useTranslation } from '../../lib/i18n';
 import SmoothReveal from '../../components/SmoothReveal';
@@ -197,8 +197,11 @@ export default function LoginPage() {
             const isCoach = cleanEmail === 'iftixar.coach@gmail.com' || cleanEmail === 'iftixar@bhos.edu.az';
             const meta = data.user.user_metadata || {};
             const metaUserType = isCoach ? 'teacher' : (meta.user_type || 'student');
+            const isSeed = isDefaultMember(data.user.id, cleanEmail);
             const resolvedRole: UserRole = isPresident ? 'president' : isCoach ? 'coach' : (meta.role || 'player');
-            const resolvedVerified = isPresident || isCoach ? true : (meta.is_verified ?? false);
+            const resolvedVerified = isPresident || isCoach || isSeed ? true : (meta.is_verified ?? false);
+            const resolvedStatus = resolvedVerified ? 'approved' : 'pending';
+            const resolvedOrigin = isSeed ? 'İlkin Heyət' : 'Qeydiyyat';
             const resolvedElo = isCoach ? 999 : (meta.current_elo !== undefined ? Math.min(999, Math.max(0, Number(meta.current_elo))) : 0);
 
             const linked = await store.linkProfileByEmail(data.user.email);
@@ -224,6 +227,8 @@ export default function LoginPage() {
                 matches_played: 0,
                 wins: 0,
                 losses: 0,
+                status: resolvedStatus,
+                origin: resolvedOrigin,
                 is_verified: resolvedVerified,
                 is_active: true,
                 created_at: new Date().toISOString(),
@@ -269,8 +274,11 @@ export default function LoginPage() {
 
         const isPresident = cleanEmail === 'ali.iskandarli.std@bhos.edu.az' || cleanEmail === 'ali.iskandarli@bhos.edu.az';
         const isCoach = cleanEmail === 'iftixar.coach@gmail.com' || cleanEmail === 'iftixar@bhos.edu.az';
+        const isSeed = isDefaultMember(null, cleanEmail);
         const resolvedRole: UserRole = isPresident ? 'president' : isCoach ? 'coach' : 'player';
-        const resolvedVerified = isPresident || isCoach ? true : false;
+        const resolvedVerified = isPresident || isCoach || isSeed ? true : false;
+        const resolvedStatus = resolvedVerified ? 'approved' : 'pending';
+        const resolvedOrigin = isSeed ? 'İlkin Heyət' : 'Qeydiyyat';
         const resolvedElo = isCoach ? 999 : 0;
 
         if (supabase) {
@@ -284,6 +292,8 @@ export default function LoginPage() {
                 admission_year: resolvedAdmissionYear,
                 user_type: resolvedUserType,
                 role: resolvedRole,
+                status: resolvedStatus,
+                origin: resolvedOrigin,
                 is_verified: resolvedVerified,
                 current_elo: resolvedElo,
                 gender,
@@ -293,9 +303,6 @@ export default function LoginPage() {
           });
 
           if (error) {
-            if (error.message.toLowerCase().includes('rate limit')) {
-              throw new Error('E-poçt göndərmə limiti aşıldı. Supabase Dashboard-da "Confirm email" parametrini söndürmək tövsiyə olunur.');
-            }
             throw new Error(error.message);
           }
 
@@ -318,6 +325,8 @@ export default function LoginPage() {
             matches_played: 0,
             wins: 0,
             losses: 0,
+            status: resolvedStatus,
+            origin: resolvedOrigin,
             is_verified: resolvedVerified,
             is_active: true,
             created_at: new Date().toISOString(),
@@ -345,6 +354,8 @@ export default function LoginPage() {
                 matches_played: 0,
                 wins: 0,
                 losses: 0,
+                status: newProfile.status,
+                origin: newProfile.origin,
                 is_verified: newProfile.is_verified,
                 is_active: true,
               },
@@ -383,12 +394,13 @@ export default function LoginPage() {
           store.addProfile(newProfile);
           if (data.session) {
             store.setCurrentUser(newProfile.id);
-            setSuccessMsg(t('auth.login_success'));
-            setTimeout(() => router.push('/'), 800);
-            return;
           }
 
-          setSuccessMsg(t('auth.signup_success'));
+          setMode('signin');
+          setPassword('');
+          setSuccessMsg(
+            'Qeydiyyatınız qəbul edildi! Klub rəhbərliyi hesabınızı təsdiqlədikdən sonra platformaya tam giriş əldə edəcəksiniz.'
+          );
           return;
         } else {
           const newProfile: PlayerProfile = {
@@ -409,13 +421,19 @@ export default function LoginPage() {
             matches_played: 0,
             wins: 0,
             losses: 0,
+            status: resolvedStatus,
+            origin: resolvedOrigin,
             is_verified: resolvedVerified,
             is_active: true,
             created_at: new Date().toISOString(),
           };
           store.addProfile(newProfile);
           store.setCurrentUser(newProfile.id);
-          setSuccessMsg(t('auth.signup_success'));
+          setMode('signin');
+          setPassword('');
+          setSuccessMsg(
+            'Qeydiyyatınız qəbul edildi! Klub rəhbərliyi hesabınızı təsdiqlədikdən sonra platformaya tam giriş əldə edəcəksiniz.'
+          );
           return;
         }
       }
@@ -479,12 +497,14 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {currentUser.is_verified === false ? (
+            {isProfilePending(currentUser) ? (
               <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-2.5 text-amber-300 text-xs">
                 <Clock className="w-4 h-4 shrink-0 mt-0.5 text-amber-400" />
                 <div>
                   <span className="font-bold block">{t('auth.pending_badge')}</span>
-                  <span className="text-amber-200/80 text-[11px]">{t('auth.signup_success')}</span>
+                  <span className="text-amber-200/80 text-[11px]">
+                    Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra matç qeyd edə və masa rezerv edə bilərsiniz.
+                  </span>
                 </div>
               </div>
             ) : (

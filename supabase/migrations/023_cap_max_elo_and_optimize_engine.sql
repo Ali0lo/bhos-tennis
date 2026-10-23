@@ -333,3 +333,4 @@ CREATE TRIGGER trg_matches_evaluate_achievements
   AFTER INSERT OR UPDATE OF status ON public.matches
   FOR EACH ROW
   EXECUTE FUNCTION public.trg_fn_evaluate_match_achievements();
+

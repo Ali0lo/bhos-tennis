@@ -1,6 +1,6 @@
 'use client';
 
-import { PlayerProfile, MatchRecord, Tournament, TableReservation, UserRole } from './types';
+import { PlayerProfile, MatchRecord, Tournament, TableReservation, UserRole, isProfilePending } from './types';
 import { INITIAL_PROFILES, INITIAL_MATCHES, INITIAL_TOURNAMENTS, INITIAL_RESERVATIONS } from './mockData';
 import { calculateMatchElo, parseSetScores } from '../elo';
 import { advanceBracketWinner, findBracketNodeForMatch, generateSingleEliminationBracket } from '../tournament';
@@ -531,11 +531,11 @@ export class BHOSDataStore {
 
   public getVerifiedProfiles(): PlayerProfile[] {
     this.recalculateRanks();
-    return this.profiles.filter((p) => p.is_verified !== false);
+    return this.profiles.filter((p) => !isProfilePending(p));
   }
 
   public getUnverifiedProfiles(): PlayerProfile[] {
-    return this.profiles.filter((p) => p.is_verified === false);
+    return this.profiles.filter((p) => isProfilePending(p));
   }
 
   public async verifyPlayer(id: string, initialElo: number, fallbackProfile?: PlayerProfile): Promise<PlayerProfile> {
@@ -554,8 +554,10 @@ export class BHOSDataStore {
     }
 
     const updated = this.updateProfile(id, {
+      status: 'approved',
       is_verified: true,
       current_elo: Math.min(999, Math.max(0, initialElo)),
+      updated_at: new Date().toISOString(),
     });
     this.recalculateRanks();
     this.notify();
@@ -1302,6 +1304,11 @@ export class BHOSDataStore {
     }
 
     const user = this.getProfile(input.reserved_by);
+    if (isProfilePending(user)) {
+      throw new Error(
+        'Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra matç qeyd edə və masa rezerv edə bilərsiniz.'
+      );
+    }
 
     const newRes: TableReservation = {
       id: `res-${Date.now()}`,

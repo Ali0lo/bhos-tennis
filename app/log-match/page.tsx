@@ -1,12 +1,41 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import MatchLogger from '../../components/MatchLogger';
 import PendingApprovals from '../../components/PendingApprovals';
+import { BHOSDataStore } from '../../lib/data/store';
+import { PlayerProfile, isProfilePending } from '../../lib/data/types';
+import { Clock } from 'lucide-react';
 
 export default function LogMatchPage() {
+  const store = BHOSDataStore.getInstance();
+  const [currentProfile, setCurrentProfile] = useState<PlayerProfile | null>(null);
+
+  useEffect(() => {
+    const update = () => {
+      setCurrentProfile(store.getCurrentUser());
+    };
+    update();
+    return store.subscribe(update);
+  }, [store]);
+
+  const isPending = isProfilePending(currentProfile);
+
   return (
-    <div className="max-w-4xl mx-auto space-y-8 py-4">
+    <div className="max-w-4xl mx-auto space-y-6 py-4">
+      {isPending && (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-amber-300 text-xs shadow-lg">
+          <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+          <div className="space-y-0.5">
+            <span className="font-bold text-amber-200 block">
+              Təsdiq Gözləyir (Pending Approval)
+            </span>
+            <span>
+              Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra matç qeyd edə və masa rezerv edə bilərsiniz.
+            </span>
+          </div>
+        </div>
+      )}
       <PendingApprovals />
       <MatchLogger />
     </div>

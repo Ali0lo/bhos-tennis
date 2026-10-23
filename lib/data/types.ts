@@ -40,12 +40,15 @@ export interface PlayerProfile {
   matches_played: number;
   wins: number;
   losses: number;
+  status?: 'pending' | 'approved' | string;
+  origin?: 'İlkin Heyət' | 'Qeydiyyat' | string;
   is_verified?: boolean;
   is_active: boolean;
   avatar_url?: string;
   rank?: number;
   rank_change?: number;
   created_at: string;
+  updated_at?: string;
 }
 
 export interface MatchRecord {
@@ -180,4 +183,34 @@ export function isDefaultMember(id?: string | null, email?: string | null): bool
     return true;
   }
   return false;
+}
+
+export function getProfileOrigin(profile?: PlayerProfile | null): 'İlkin Heyət' | 'Qeydiyyat' {
+  if (!profile) return 'Qeydiyyat';
+  if (profile.origin === 'İlkin Heyət') return 'İlkin Heyət';
+  if (profile.origin === 'Qeydiyyat') return 'Qeydiyyat';
+  return isDefaultMember(profile.id, profile.email) ? 'İlkin Heyət' : 'Qeydiyyat';
+}
+
+export function isProfilePending(profile?: PlayerProfile | null): boolean {
+  if (!profile) return false;
+  if (profile.role === 'president' || profile.role === 'coach') return false;
+  if (isDefaultMember(profile.id, profile.email)) return false;
+  if (profile.status === 'pending') return true;
+  if (profile.status === 'approved') return false;
+  if (profile.is_verified === false) return true;
+  return false;
+}
+
+export function isProfileApproved(profile?: PlayerProfile | null): boolean {
+  if (!profile) return false;
+  return !isProfilePending(profile);
+}
+
+export function formatDateTimeAz(dateStr?: string | null): string {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return '—';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
