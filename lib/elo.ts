@@ -3,6 +3,10 @@
  * Baku Higher Oil School (BHOS) Table Tennis Club
  */
 
+import { getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from './elo/calculator';
+
+export { getSetDominanceMultiplier, MAX_ELO, MIN_ELO };
+
 export interface EloCalculationInput {
   player1Elo: number;
   player2Elo: number;
@@ -11,6 +15,8 @@ export interface EloCalculationInput {
   player1MatchesPlayed?: number;
   player2MatchesPlayed?: number;
   customKFactor?: number;
+  player1SetsWon?: number;
+  player2SetsWon?: number;
 }
 
 export interface EloCalculationResult {
@@ -22,6 +28,7 @@ export interface EloCalculationResult {
   winnerGained: number; // Positive absolute points gained by the winner
   p1WinProbability: number; // 0.0 to 1.0 (e.g. 0.65 = 65%)
   p2WinProbability: number; // 0.0 to 1.0 (e.g. 0.35 = 35%)
+  setMultiplier?: number;
 }
 
 /**
@@ -59,9 +66,14 @@ export function calculateMatchElo(input: EloCalculationInput): EloCalculationRes
     player1MatchesPlayed = 20,
     player2MatchesPlayed = 20,
     customKFactor,
+    player1SetsWon,
+    player2SetsWon,
   } = input;
 
-  const p1Expected = calculateWinProbability(player1Elo, player2Elo);
+  const safeP1Elo = Math.min(MAX_ELO, Math.max(MIN_ELO, player1Elo));
+  const safeP2Elo = Math.min(MAX_ELO, Math.max(MIN_ELO, player2Elo));
+
+  const p1Expected = calculateWinProbability(safeP1Elo, safeP2Elo);
   const p2Expected = 1 - p1Expected;
 
   // Average K-factor between the two players' profiles
@@ -69,28 +81,30 @@ export function calculateMatchElo(input: EloCalculationInput): EloCalculationRes
   const k2 = getKFactor(isTournament, player2MatchesPlayed, customKFactor);
   const k = Math.round((k1 + k2) / 2);
 
+  const setMultiplier = getSetDominanceMultiplier(player1SetsWon, player2SetsWon);
   const actualScore1 = player1Won ? 1 : 0;
   
   // Rating change: Delta = Round(K * (Actual - Expected))
-  let rawDelta = Math.round(k * (actualScore1 - p1Expected));
+  let rawDelta = Math.round(k * (actualScore1 - p1Expected) * setMultiplier);
 
   // Ensure winner gains at least 1 point even in extreme upsets/mismatches
   if (player1Won && rawDelta < 1) rawDelta = 1;
   if (!player1Won && rawDelta > -1) rawDelta = -1;
 
   const winnerGained = Math.abs(rawDelta);
-  const p1After = Math.max(0, player1Elo + rawDelta);
-  const p2After = Math.max(0, player2Elo - rawDelta);
+  const p1After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP1Elo + rawDelta));
+  const p2After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP2Elo - rawDelta));
 
   return {
-    player1EloBefore: player1Elo,
-    player2EloBefore: player2Elo,
+    player1EloBefore: safeP1Elo,
+    player2EloBefore: safeP2Elo,
     player1EloAfter: p1After,
     player2EloAfter: p2After,
     delta: rawDelta,
     winnerGained,
     p1WinProbability: Math.round(p1Expected * 100) / 100,
     p2WinProbability: Math.round(p2Expected * 100) / 100,
+    setMultiplier,
   };
 }
 

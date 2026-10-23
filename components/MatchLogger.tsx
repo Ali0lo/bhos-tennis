@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { BHOSDataStore } from '../lib/data/store';
 import { PlayerProfile } from '../lib/data/types';
+import { getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
 import { 
   Trophy, 
   Swords, 
@@ -27,24 +28,31 @@ interface MatchLoggerProps {
 export function calculateStandardElo(
   p1Elo: number,
   p2Elo: number,
-  kFactor: number = 32
+  kFactor: number = 32,
+  setsWon?: number,
+  setsLost?: number
 ): {
   delta: number;
   p1After: number;
   p2After: number;
   expectedP1: number;
+  setMultiplier: number;
 } {
-  const exponent = (p2Elo - p1Elo) / 400;
+  const safeP1 = Math.min(MAX_ELO, Math.max(MIN_ELO, p1Elo));
+  const safeP2 = Math.min(MAX_ELO, Math.max(MIN_ELO, p2Elo));
+  const exponent = (safeP2 - safeP1) / 400;
   const expectedP1 = 1 / (1 + Math.pow(10, exponent));
-  let delta = Math.round(kFactor * (1 - expectedP1));
+  const setMultiplier = getSetDominanceMultiplier(setsWon, setsLost);
+  let delta = Math.round(kFactor * (1 - expectedP1) * setMultiplier);
   if (delta < 1) delta = 1;
-  const p1After = Math.max(0, p1Elo + delta);
-  const p2After = Math.max(0, p2Elo - delta);
+  const p1After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP1 + delta));
+  const p2After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP2 - delta));
   return {
     delta,
     p1After,
     p2After,
     expectedP1,
+    setMultiplier,
   };
 }
 
@@ -163,8 +171,14 @@ export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
 
   const eloPreview = useMemo(() => {
     if (!effectiveWinner || !effectiveLoser || effectiveWinner.id === effectiveLoser.id) return null;
-    return calculateStandardElo(effectiveWinner.current_elo, effectiveLoser.current_elo, 32);
-  }, [effectiveWinner, effectiveLoser]);
+    return calculateStandardElo(
+      effectiveWinner.current_elo,
+      effectiveLoser.current_elo,
+      32,
+      p1SetsWon,
+      p2SetsWon
+    );
+  }, [effectiveWinner, effectiveLoser, p1SetsWon, p2SetsWon]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -220,7 +234,9 @@ export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
         const { delta, p1After, p2After } = calculateStandardElo(
           effectiveWinner.current_elo,
           effectiveLoser.current_elo,
-          32
+          32,
+          p1SetsWon,
+          p2SetsWon
         );
 
         const { error: matchInsertError } = await supabase.from('matches').insert([

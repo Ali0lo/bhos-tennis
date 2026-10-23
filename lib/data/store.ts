@@ -555,7 +555,7 @@ export class BHOSDataStore {
 
     const updated = this.updateProfile(id, {
       is_verified: true,
-      current_elo: Math.max(0, initialElo),
+      current_elo: Math.min(999, Math.max(0, initialElo)),
     });
     this.recalculateRanks();
     this.notify();
@@ -654,7 +654,7 @@ export class BHOSDataStore {
     const profile = this.getProfile(id);
     if (!profile) throw new Error(`Profile ${id} not found`);
 
-    profile.current_elo = Math.max(0, Math.round(newElo));
+    profile.current_elo = Math.min(999, Math.max(0, Math.round(newElo)));
     this.recalculateRanks();
     this.saveLocal();
 
@@ -1054,6 +1054,8 @@ export class BHOSDataStore {
       isTournament,
       player1MatchesPlayed: p1.matches_played,
       player2MatchesPlayed: p2.matches_played,
+      player1SetsWon: parsed.player1Games,
+      player2SetsWon: parsed.player2Games,
     });
 
     p1.current_elo = eloResult.player1EloAfter;

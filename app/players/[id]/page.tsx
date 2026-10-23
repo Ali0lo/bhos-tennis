@@ -10,6 +10,7 @@ import SmoothReveal from '../../../components/SmoothReveal';
 import NumberTicker from '../../../components/NumberTicker';
 import EditProfileModal from '../../../components/EditProfileModal';
 import WhatIfSimulator from '../../../components/WhatIfSimulator';
+import { evaluatePlayerAchievements } from '../../../lib/types/achievements';
 import {
   Trophy,
   ArrowLeft,
@@ -27,6 +28,8 @@ import {
   Camera,
   Clock,
   CheckCheck,
+  Lock,
+  CheckCircle2,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -92,6 +95,7 @@ export default function PlayerProfilePage() {
 
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
   const [matches, setMatches] = useState<MatchRecord[]>([]);
+  const [dbAchievements, setDbAchievements] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(() => store.getCurrentUser());
@@ -220,6 +224,49 @@ export default function PlayerProfilePage() {
       );
 
       setMatches(combinedMatches);
+
+      if (supabase && isUuid(fetchedProfile.id)) {
+        try {
+          const { data: achRows } = await supabase
+            .from('profile_achievements')
+            .select('badge_id, unlocked_at')
+            .eq('profile_id', fetchedProfile.id);
+
+          const map: Record<string, string> = {};
+          if (achRows) {
+            achRows.forEach((row: any) => {
+              if (row.badge_id) {
+                map[row.badge_id] = row.unlocked_at || new Date().toISOString();
+              }
+            });
+          }
+          setDbAchievements(map);
+
+          const evaluated = evaluatePlayerAchievements(
+            fetchedProfile,
+            combinedMatches,
+            map
+          );
+          const newlyUnlocked = evaluated.filter(
+            (b) => b.unlocked && !map[b.id]
+          );
+          if (newlyUnlocked.length > 0) {
+            supabase
+              .from('profile_achievements')
+              .upsert(
+                newlyUnlocked.map((b) => ({
+                  profile_id: fetchedProfile!.id,
+                  badge_id: b.id,
+                  unlocked_at: b.unlockedAt || new Date().toISOString(),
+                })),
+                { onConflict: 'profile_id,badge_id', ignoreDuplicates: true }
+              )
+              .then(() => {});
+          }
+        } catch {
+          setDbAchievements({});
+        }
+      }
     } catch (err) {
       setProfile(null);
     } finally {
@@ -259,6 +306,15 @@ export default function PlayerProfilePage() {
   const validMatches = useMemo(() => {
     return matches.filter((m) => m.status === 'confirmed' || !m.status);
   }, [matches]);
+
+  const achievements = useMemo(() => {
+    if (!profile) return [];
+    return evaluatePlayerAchievements(profile, validMatches, dbAchievements);
+  }, [profile, validMatches, dbAchievements]);
+
+  const unlockedCount = useMemo(() => {
+    return achievements.filter((a) => a.unlocked).length;
+  }, [achievements]);
 
   const chartData: ChartPoint[] = useMemo(() => {
     if (!profile) return [];
@@ -734,6 +790,102 @@ export default function PlayerProfilePage() {
                 </p>
               </>
             )}
+          </div>
+        </div>
+      </SmoothReveal>
+
+      <SmoothReveal delay={0.11}>
+        <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-6 shadow-xl space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-[#EAB308]/15 border border-[#EAB308]/30 flex items-center justify-center text-[#EAB308]">
+                <Award className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-base font-display font-bold text-white">
+                  Nailiyyətlər və Nişanlar
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  Rəsmi matç nəticələri ilə avtomatik qazanılan klub mükafatları
+                </p>
+              </div>
+            </div>
+            <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-[#131C2B] text-[#EAB308] border border-[#EAB308]/30">
+              {unlockedCount} / {achievements.length} Aktiv
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
+            {achievements.map((badge) => {
+              const isGold = badge.accentColor === 'gold';
+              const unlockedBorder = isGold
+                ? 'border-[#EAB308]/30 shadow-[0_0_22px_rgba(234,179,8,0.16)] bg-gradient-to-br from-[#131C2B] to-[#0F1623]'
+                : 'border-[#3B82F6]/30 shadow-[0_0_22px_rgba(59,130,246,0.16)] bg-gradient-to-br from-[#131C2B] to-[#0F1623]';
+
+              return (
+                <div
+                  key={badge.id}
+                  title={`Şərt: ${badge.descriptionAz}`}
+                  className={`group relative rounded-xl p-4 border transition-all duration-200 ${
+                    badge.unlocked
+                      ? unlockedBorder
+                      : 'border-white/[0.06] bg-[#080D16]/80 opacity-60 hover:opacity-85'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div
+                        className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 border ${
+                          badge.unlocked
+                            ? isGold
+                              ? 'bg-[#EAB308]/15 border-[#EAB308]/40 shadow-[0_0_14px_rgba(234,179,8,0.25)]'
+                              : 'bg-[#3B82F6]/15 border-[#3B82F6]/40 shadow-[0_0_14px_rgba(59,130,246,0.25)]'
+                            : 'bg-[#131C2B] border-white/10 grayscale'
+                        }`}
+                      >
+                        <span>{badge.emoji}</span>
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h4 className="text-sm font-display font-bold text-white truncate">
+                            {badge.titleAz}
+                          </h4>
+                        </div>
+                        <span className="text-[10px] uppercase tracking-wider font-mono text-slate-400 block">
+                          {badge.titleEn}
+                        </span>
+                      </div>
+                    </div>
+
+                    {badge.unlocked ? (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${
+                          isGold
+                            ? 'bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30'
+                            : 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3 h-3" />
+                        Qazanılıb
+                      </span>
+                    ) : (
+                      <span
+                        title={badge.descriptionAz}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/5 text-slate-400 border border-white/10 shrink-0"
+                      >
+                        <Lock className="w-3 h-3 text-slate-400" />
+                        Kilidli
+                      </span>
+                    )}
+                  </div>
+
+                  <p className="text-xs text-slate-300 mt-3 leading-relaxed">
+                    {badge.descriptionAz}
+                  </p>
+                </div>
+              );
+            })}
           </div>
         </div>
       </SmoothReveal>

@@ -14,15 +14,52 @@ import {
   Check,
   ShieldAlert,
   Sparkles,
+  Flame,
 } from 'lucide-react';
 import { PlayerProfile } from '../lib/data/types';
 import { BHOSDataStore } from '../lib/data/store';
 import { getSupabaseClient } from '../lib/supabase/client';
-import { calculateWhatIf } from '../lib/elo/calculator';
+import { calculateWhatIf, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
 
 interface WhatIfSimulatorProps {
   player: PlayerProfile;
 }
+
+interface SetPreset {
+  id: string;
+  label: string;
+  sublabel: string;
+  setsWon: number;
+  setsLost: number;
+  multiplierLabel: string;
+}
+
+const SET_PRESETS: SetPreset[] = [
+  {
+    id: 'sweep',
+    label: '3–0 / 2–0',
+    sublabel: 'Dominant Qələbə',
+    setsWon: 3,
+    setsLost: 0,
+    multiplierLabel: '1.15×',
+  },
+  {
+    id: 'standard',
+    label: '3–1 / 2–1',
+    sublabel: 'Standart Hesab',
+    setsWon: 3,
+    setsLost: 1,
+    multiplierLabel: '1.00×',
+  },
+  {
+    id: 'close',
+    label: '3–2',
+    sublabel: 'Gərgin Mübarizə',
+    setsWon: 3,
+    setsLost: 2,
+    multiplierLabel: '0.90×',
+  },
+];
 
 function AnimatedNumber({
   value,
@@ -55,9 +92,12 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
   const store = BHOSDataStore.getInstance();
   const [roster, setRoster] = useState<PlayerProfile[]>([]);
   const [selectedOpponentId, setSelectedOpponentId] = useState<string>('');
+  const [selectedSetPresetId, setSelectedSetPresetId] = useState<string>('standard');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const safePlayerElo = Math.min(MAX_ELO, Math.max(MIN_ELO, player.current_elo));
 
   useEffect(() => {
     let isActive = true;
@@ -73,9 +113,12 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
             .order('current_elo', { ascending: false });
 
           if (!error && data && isActive) {
-            const validOpponents = (data as PlayerProfile[]).filter(
-              (p) => p.id !== player.id
-            );
+            const validOpponents = (data as PlayerProfile[])
+              .filter((p) => p.id !== player.id)
+              .map((p) => ({
+                ...p,
+                current_elo: Math.min(MAX_ELO, Math.max(MIN_ELO, p.current_elo)),
+              }));
             setRoster(validOpponents);
             return;
           }
@@ -88,6 +131,10 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
         const fallback = store
           .getVerifiedProfiles()
           .filter((p) => p.id !== player.id)
+          .map((p) => ({
+            ...p,
+            current_elo: Math.min(MAX_ELO, Math.max(MIN_ELO, p.current_elo)),
+          }))
           .sort((a, b) => b.current_elo - a.current_elo);
         setRoster(fallback);
       }
@@ -104,14 +151,14 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
     if (roster.length > 0 && !selectedOpponentId) {
       const closest = [...roster].sort(
         (a, b) =>
-          Math.abs(a.current_elo - player.current_elo) -
-          Math.abs(b.current_elo - player.current_elo)
+          Math.abs(a.current_elo - safePlayerElo) -
+          Math.abs(b.current_elo - safePlayerElo)
       )[0];
       if (closest) {
         setSelectedOpponentId(closest.id);
       }
     }
-  }, [roster, selectedOpponentId, player.current_elo]);
+  }, [roster, selectedOpponentId, safePlayerElo]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -141,10 +188,23 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
     return roster.find((op) => op.id === selectedOpponentId) || null;
   }, [roster, selectedOpponentId]);
 
+  const activeSetPreset = useMemo(() => {
+    return (
+      SET_PRESETS.find((preset) => preset.id === selectedSetPresetId) ||
+      SET_PRESETS[1]
+    );
+  }, [selectedSetPresetId]);
+
   const prediction = useMemo(() => {
     if (!selectedOpponent) return null;
-    return calculateWhatIf(player.current_elo, selectedOpponent.current_elo, 32);
-  }, [player.current_elo, selectedOpponent]);
+    return calculateWhatIf(
+      safePlayerElo,
+      selectedOpponent.current_elo,
+      32,
+      activeSetPreset.setsWon,
+      activeSetPreset.setsLost
+    );
+  }, [safePlayerElo, selectedOpponent, activeSetPreset]);
 
   const playerWinPctRaw = prediction ? prediction.winProbability * 100 : 50;
   const opponentWinPctRaw = prediction ? (1 - prediction.winProbability) * 100 : 50;
@@ -159,18 +219,18 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
   };
 
   const projectedPlayerWinElo = prediction
-    ? player.current_elo + prediction.winEloGain
-    : player.current_elo;
+    ? Math.min(MAX_ELO, safePlayerElo + prediction.winEloGain)
+    : safePlayerElo;
   const projectedPlayerLossElo = prediction
-    ? Math.max(0, player.current_elo + prediction.lossEloDrop)
-    : player.current_elo;
+    ? Math.max(MIN_ELO, safePlayerElo + prediction.lossEloDrop)
+    : safePlayerElo;
   const projectedOpponentWinElo =
     prediction && selectedOpponent
-      ? selectedOpponent.current_elo + prediction.opponentWinEloGain
+      ? Math.min(MAX_ELO, selectedOpponent.current_elo + prediction.opponentWinEloGain)
       : 0;
   const projectedOpponentLossElo =
     prediction && selectedOpponent
-      ? Math.max(0, selectedOpponent.current_elo + prediction.opponentLossEloDrop)
+      ? Math.max(MIN_ELO, selectedOpponent.current_elo + prediction.opponentLossEloDrop)
       : 0;
 
   return (
@@ -184,17 +244,17 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
             <Calculator className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base sm:text-lg font-display font-bold text-white">
                 Rəqib Seç &amp; ELO Proqnozu
               </h3>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30">
                 <Zap className="w-2.5 h-2.5" />
-                K=32
+                K=32 • Max {MAX_ELO}
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              İstənilən klub üzvünə qarşı ehtimal olunan qələbə şansı və ELO dəyişikliyini hesablayın
+              İstənilən klub üzvünə qarşı ehtimal olunan qələbə şansı və set dominantlığına görə ELO dəyişikliyini hesablayın
             </p>
           </div>
         </div>
@@ -318,10 +378,58 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
         </div>
       </div>
 
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 rounded-xl bg-[#131C2B] border border-white/[0.06]">
+        <div className="flex items-center gap-2">
+          <Flame className="w-4 h-4 text-[#EAB308]" />
+          <div>
+            <span className="text-xs font-bold text-white block">
+              Set Dominantlığı Əmsalı (M)
+            </span>
+            <span className="text-[10px] text-slate-400">
+              Quru hesabla qələbə (3–0 / 2–0) daha yüksək reytinq artımı verir
+            </span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#080D16] border border-white/10">
+          {SET_PRESETS.map((preset) => {
+            const active = preset.id === selectedSetPresetId;
+            return (
+              <button
+                key={preset.id}
+                type="button"
+                onClick={() => setSelectedSetPresetId(preset.id)}
+                className={`px-3 py-1.5 rounded-lg text-center transition-all ${
+                  active
+                    ? 'bg-[#3B82F6]/20 text-white border border-[#3B82F6]/40 shadow-[0_0_12px_rgba(59,130,246,0.25)]'
+                    : 'text-slate-400 hover:text-white border border-transparent'
+                }`}
+              >
+                <div className="text-xs font-mono font-black flex items-center justify-center gap-1">
+                  <span>{preset.label}</span>
+                  <span
+                    className={`text-[10px] px-1 rounded ${
+                      active
+                        ? 'bg-[#EAB308]/20 text-[#EAB308]'
+                        : 'bg-white/5 text-slate-500'
+                    }`}
+                  >
+                    {preset.multiplierLabel}
+                  </span>
+                </div>
+                <div className="text-[9px] text-slate-400 truncate">
+                  {preset.sublabel}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
       {selectedOpponent && prediction ? (
         <AnimatePresence mode="wait">
           <motion.div
-            key={selectedOpponent.id}
+            key={`${selectedOpponent.id}-${selectedSetPresetId}`}
             initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
@@ -336,7 +444,7 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
                     {player.full_name}
                   </span>
                   <span className="text-[11px] font-mono text-slate-400">
-                    ({player.current_elo} ELO)
+                    ({safePlayerElo} ELO)
                   </span>
                 </div>
                 <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
@@ -382,14 +490,14 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
                   ELO Fərqi:{' '}
                   <span
                     className={`font-bold ${
-                      player.current_elo - selectedOpponent.current_elo >= 0
+                      safePlayerElo - selectedOpponent.current_elo >= 0
                         ? 'text-[#3B82F6]'
                         : 'text-pink-400'
                     }`}
                   >
-                    {player.current_elo - selectedOpponent.current_elo >= 0
-                      ? `+${player.current_elo - selectedOpponent.current_elo}`
-                      : player.current_elo - selectedOpponent.current_elo}
+                    {safePlayerElo - selectedOpponent.current_elo >= 0
+                      ? `+${safePlayerElo - selectedOpponent.current_elo}`
+                      : safePlayerElo - selectedOpponent.current_elo}
                   </span>
                 </div>
 
@@ -411,9 +519,15 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
                     <TrendingUp className="w-4 h-4 text-emerald-400" />
                     Qələbə Qazansanız
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
-                    {player.full_name.split(' ')[0]} Qalib
-                  </span>
+                  {projectedPlayerWinElo >= MAX_ELO ? (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                      {MAX_ELO} Maksimum Həddi
+                    </span>
+                  ) : (
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                      {activeSetPreset.label} ({activeSetPreset.multiplierLabel})
+                    </span>
+                  )}
                 </div>
                 <div className="flex items-baseline justify-between">
                   <div className="text-2xl sm:text-3xl font-mono font-black text-[#22C55E]">
@@ -428,7 +542,7 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
                       Yeni ELO Reytinqi
                     </span>
                     <span className="text-sm font-mono font-bold text-white">
-                      {player.current_elo} →{' '}
+                      {safePlayerElo} →{' '}
                       <span className="text-[#22C55E]">
                         <AnimatedNumber value={projectedPlayerWinElo} />
                       </span>
@@ -443,7 +557,7 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
                     <TrendingDown className="w-4 h-4 text-rose-400" />
                     Məğlub Olsanız
                   </span>
-                  {player.current_elo === 0 || projectedPlayerLossElo === 0 ? (
+                  {safePlayerElo === 0 || projectedPlayerLossElo === 0 ? (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
                       <ShieldAlert className="w-3 h-3" />0 Minimum Həddi
                     </span>
@@ -457,7 +571,7 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
                   <div className="text-2xl sm:text-3xl font-mono font-black text-rose-400">
                     <AnimatedNumber
                       value={Math.abs(prediction.lossEloDrop)}
-                      prefix={prediction.lossEloDrop === 0 ? '-' : '-'}
+                      prefix="-"
                       suffix=" PTS"
                     />
                   </div>
@@ -466,7 +580,7 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
                       Yeni ELO Reytinqi
                     </span>
                     <span className="text-sm font-mono font-bold text-white">
-                      {player.current_elo} →{' '}
+                      {safePlayerElo} →{' '}
                       <span className="text-rose-400">
                         <AnimatedNumber value={projectedPlayerLossElo} />
                       </span>
@@ -522,7 +636,7 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
               <div className="flex items-center gap-2 text-[11px] text-slate-400">
                 <Sparkles className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
                 <span>
-                  Rəsmi ITTF loqistik ELO düsturu (K=32, 0 minimum reytinq qorunması)
+                  Rəsmi ITTF loqistik ELO düsturu (K=32, M={prediction.setMultiplier.toFixed(2)}, 0–{MAX_ELO} ELO aralığı)
                 </span>
               </div>
 

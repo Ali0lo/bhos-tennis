@@ -42,7 +42,18 @@
     "login_success": "Signed in successfully! Redirecting...",
     "signup_success": "Registration complete! Your profile will appear on the leaderboard once verified by the Club President or Coach.",
     "pending_badge": "Pending Verification (0 ELO)",
-    "error": "An error occurred. Please check your credentials."
+    "error": "An error occurred. Please check your credentials.",
+    "forgot_password": "Forgot password?",
+    "reset_title": "Reset Password",
+    "reset_btn": "Send Reset Link",
+    "new_password": "New password",
+    "confirm_password": "Confirm password",
+    "password_updated": "Password successfully updated!"
+  },
+  "achievements": {
+    "title": "Achievements",
+    "giant_slayer": "Giant Slayer",
+    "deuce_demon": "Deuce Demon"
   },
   "faculties": {
     "Information Security": "Information Security",

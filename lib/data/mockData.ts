@@ -15,7 +15,7 @@ export const INITIAL_PROFILES: PlayerProfile[] = [
     blade_equipment: 'Stiga Clipper Wood',
     forehand_rubber: 'Tibhar Evolution MX-P',
     backhand_rubber: 'Yasaka Rakza 7',
-    current_elo: 9999,
+    current_elo: 999,
     matches_played: 0,
     wins: 0,
     losses: 0,

@@ -200,7 +200,7 @@ export default function HomePage() {
                 {t('hero.stats_leader')}
               </span>
               <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 flex items-baseline gap-1">
-                <NumberTicker value={top3[0]?.current_elo ?? 9999} />
+                <NumberTicker value={top3[0]?.current_elo ?? 999} />
                 <span className="text-xs font-sans text-slate-400">ELO</span>
               </div>
             </div>

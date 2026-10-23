@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { BHOSDataStore } from '../lib/data/store';
 import { MatchRecord, PlayerProfile } from '../lib/data/types';
+import { getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
 import { Check, X, ShieldAlert, Clock, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface PendingApprovalsProps {
@@ -161,15 +162,16 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       const p1Profile = p1 || store.getProfile(match.player1_id);
       const p2Profile = p2 || store.getProfile(match.player2_id);
 
-      const p1Elo = p1Profile?.current_elo ?? 0;
-      const p2Elo = p2Profile?.current_elo ?? 0;
+      const p1Elo = Math.min(MAX_ELO, Math.max(MIN_ELO, p1Profile?.current_elo ?? 0));
+      const p2Elo = Math.min(MAX_ELO, Math.max(MIN_ELO, p2Profile?.current_elo ?? 0));
       const exponent = (p2Elo - p1Elo) / 400;
       const expectedP1 = 1 / (1 + Math.pow(10, exponent));
-      let delta = Math.round(32 * (1 - expectedP1));
+      const setMultiplier = getSetDominanceMultiplier(match.player1_score, match.player2_score);
+      let delta = Math.round(32 * (1 - expectedP1) * setMultiplier);
       if (delta < 1) delta = 1;
 
-      const p1After = Math.max(0, p1Elo + delta);
-      const p2After = Math.max(0, p2Elo - delta);
+      const p1After = Math.min(MAX_ELO, Math.max(MIN_ELO, p1Elo + delta));
+      const p2After = Math.min(MAX_ELO, Math.max(MIN_ELO, p2Elo - delta));
       const winnerId = match.player1_score >= match.player2_score ? match.player1_id : match.player2_id;
 
       store.confirmMatch(match.id, {
