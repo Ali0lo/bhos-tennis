@@ -170,12 +170,20 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
 
       const p1After = Math.max(0, p1Elo + delta);
       const p2After = Math.max(0, p2Elo - delta);
+      const winnerId = match.player1_score >= match.player2_score ? match.player1_id : match.player2_id;
 
       store.confirmMatch(match.id, {
+        tournament_id: match.tournament_id,
+        round_number: match.round_number,
+        bracket_node_index: match.bracket_node_index,
+        winner_id: winnerId,
         player1_id: match.player1_id,
         player1_name: match.player1_name || p1Profile?.full_name || 'Player 1',
         player2_id: match.player2_id,
         player2_name: match.player2_name || p2Profile?.full_name || 'Player 2',
+        player1_score: match.player1_score,
+        player2_score: match.player2_score,
+        set_scores: match.set_scores,
         player1_elo_before: p1Elo,
         player2_elo_before: p2Elo,
         player1_elo_after: p1After,
@@ -203,6 +211,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
         await supabase
           .from('matches')
           .update({
+            winner_id: winnerId,
             player1_elo_before: p1Elo,
             player2_elo_before: p2Elo,
             player1_elo_after: p1After,
@@ -237,6 +246,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
         await Promise.allSettled([
           store.fetchProfilesFromCloud(),
           store.fetchMatchesFromCloud(),
+          store.fetchTournamentsFromCloud(),
         ]);
       }
 

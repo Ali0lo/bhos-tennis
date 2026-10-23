@@ -3,7 +3,7 @@
 import { PlayerProfile, MatchRecord, Tournament, TableReservation, UserRole } from './types';
 import { INITIAL_PROFILES, INITIAL_MATCHES, INITIAL_TOURNAMENTS, INITIAL_RESERVATIONS } from './mockData';
 import { calculateMatchElo, parseSetScores } from '../elo';
-import { advanceBracketWinner, generateSingleEliminationBracket } from '../tournament';
+import { advanceBracketWinner, findBracketNodeForMatch, generateSingleEliminationBracket } from '../tournament';
 import { getSupabaseClient } from '../supabase/client';
 
 const STORAGE_KEYS = {
@@ -347,7 +347,11 @@ export class BHOSDataStore {
       if (!exists) {
         this.matches.unshift(newRecord);
         setStored(STORAGE_KEYS.MATCHES, this.matches);
+        if (newRecord.status === 'confirmed' || newRecord.status === 'approved') {
+          this.propagateVerifiedMatchToBracket(newRecord, false);
+        }
         this.fetchProfilesFromCloud();
+        this.fetchTournamentsFromCloud();
         this.notify();
       }
     } else if (eventType === 'UPDATE') {
@@ -358,13 +362,18 @@ export class BHOSDataStore {
         this.matches.unshift(newRecord);
       }
       setStored(STORAGE_KEYS.MATCHES, this.matches);
+      if (newRecord.status === 'confirmed' || newRecord.status === 'approved') {
+        this.propagateVerifiedMatchToBracket(newRecord, false);
+      }
       this.fetchProfilesFromCloud();
+      this.fetchTournamentsFromCloud();
       this.notify();
     } else if (eventType === 'DELETE') {
       const idToDelete = oldRecord?.id || newRecord?.id;
       if (idToDelete) {
         this.matches = this.matches.filter((m) => m.id !== idToDelete);
         setStored(STORAGE_KEYS.MATCHES, this.matches);
+        this.fetchTournamentsFromCloud();
         this.notify();
       }
     }
@@ -757,9 +766,94 @@ export class BHOSDataStore {
       this.matches.unshift(match);
     }
     this.markMatchResolvedLocally(matchId, 'confirmed');
+    if (match) {
+      this.propagateVerifiedMatchToBracket(match, true);
+    }
     setStored(STORAGE_KEYS.MATCHES, this.matches);
     this.notify();
     return match;
+  }
+
+  public propagateVerifiedMatchToBracket(match: MatchRecord, syncToCloud: boolean = true): void {
+    const winnerId =
+      match.winner_id ||
+      (match.player1_score >= match.player2_score ? match.player1_id : match.player2_id);
+
+    if (!winnerId) return;
+
+    let tournament = match.tournament_id
+      ? this.tournaments.find((t) => t.id === match.tournament_id)
+      : undefined;
+
+    if (!tournament) {
+      tournament = this.tournaments.find((t) => {
+        if (!t.bracket_data || t.status === 'completed') return false;
+        return findBracketNodeForMatch(t.bracket_data, match) !== null;
+      });
+    }
+
+    if (!tournament || !tournament.bracket_data) return;
+
+    const node = findBracketNodeForMatch(tournament.bracket_data, match);
+    if (!node) return;
+
+    const bracketMatch = tournament.bracket_data.rounds[node.roundIndex]?.matches[node.matchIndex];
+    if (!bracketMatch || bracketMatch.status === 'completed') return;
+
+    const isNormalOrder = bracketMatch.player1?.id === match.player1_id;
+    const p1Score = isNormalOrder ? match.player1_score : match.player2_score;
+    const p2Score = isNormalOrder ? match.player2_score : match.player1_score;
+
+    const winnerProfile = this.getProfile(winnerId);
+
+    tournament.bracket_data = advanceBracketWinner(
+      tournament.bracket_data,
+      node.roundIndex,
+      node.matchIndex,
+      winnerId,
+      {
+        p1Score,
+        p2Score,
+        setScores: match.set_scores || '',
+      },
+      winnerProfile
+    );
+
+    const isFinalRound = node.roundIndex === tournament.bracket_data.rounds.length - 1;
+    if (isFinalRound) {
+      tournament.winner_id = winnerId;
+      tournament.status = 'completed';
+    } else if (tournament.status === 'upcoming') {
+      tournament.status = 'ongoing';
+    }
+
+    setStored(STORAGE_KEYS.TOURNAMENTS, this.tournaments);
+
+    if (syncToCloud) {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        supabase
+          .from('tournaments')
+          .update({
+            bracket_data: tournament.bracket_data,
+            status: tournament.status,
+            winner_id: tournament.winner_id || null,
+          })
+          .eq('id', tournament.id)
+          .then(({ error }) => {
+            if (error) {
+              console.warn('[BHOS Store] Bracket progression sync warning:', error.message);
+            }
+          });
+
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          match.id
+        );
+        if (isUuid) {
+          supabase.rpc('advance_tournament_bracket', { p_match_id: match.id }).then(() => {});
+        }
+      }
+    }
   }
 
   public rejectMatch(matchId: string): void {
@@ -918,6 +1012,8 @@ export class BHOSDataStore {
     loggedById: string;
     setScores: string;
     tournamentId?: string;
+    roundNumber?: number;
+    bracketNodeIndex?: number;
   }): MatchRecord {
     const p1 = this.getProfile(input.player1Id);
     const p2 = this.getProfile(input.player2Id);
@@ -943,13 +1039,11 @@ export class BHOSDataStore {
       player2MatchesPlayed: p2.matches_played,
     });
 
-    // Update Player 1 Stats
     p1.current_elo = eloResult.player1EloAfter;
     p1.matches_played += 1;
     if (p1Won) p1.wins += 1;
     else p1.losses += 1;
 
-    // Update Player 2 Stats
     p2.current_elo = eloResult.player2EloAfter;
     p2.matches_played += 1;
     if (!p1Won) p2.wins += 1;
@@ -957,9 +1051,14 @@ export class BHOSDataStore {
 
     this.recalculateRanks();
 
+    const winnerId = p1Won ? p1.id : p2.id;
+
     const matchRecord: MatchRecord = {
       id: `m-${Date.now()}`,
       tournament_id: input.tournamentId || null,
+      round_number: input.roundNumber ?? null,
+      bracket_node_index: input.bracketNodeIndex ?? null,
+      winner_id: winnerId,
       player1_id: p1.id,
       player1_name: p1.full_name,
       player2_id: p2.id,
@@ -974,13 +1073,16 @@ export class BHOSDataStore {
       player1_elo_after: eloResult.player1EloAfter,
       player2_elo_after: eloResult.player2EloAfter,
       elo_delta: eloResult.winnerGained,
+      status: 'confirmed',
       match_date: new Date().toISOString(),
     };
 
     this.matches.unshift(matchRecord);
+    if (input.tournamentId) {
+      this.propagateVerifiedMatchToBracket(matchRecord, true);
+    }
     this.saveLocal();
 
-    // Async Supabase Sync: Insert match and update both player profiles
     const supabase = getSupabaseClient();
     if (supabase) {
       Promise.all([
@@ -1095,15 +1197,25 @@ export class BHOSDataStore {
       throw new Error('Tournament or bracket not found');
     }
 
+    const winnerProfile = this.getProfile(winnerId);
+
     tournament.bracket_data = advanceBracketWinner(
       tournament.bracket_data,
       roundIndex,
       matchIndex,
       winnerId,
-      scores
+      scores,
+      winnerProfile
     );
 
-    // Also log this as an official ranked match if both players exist
+    const isFinalRound = roundIndex === tournament.bracket_data.rounds.length - 1;
+    if (isFinalRound) {
+      tournament.winner_id = winnerId;
+      tournament.status = 'completed';
+    } else if (tournament.status === 'upcoming') {
+      tournament.status = 'ongoing';
+    }
+
     const match = tournament.bracket_data.rounds[roundIndex]?.matches[matchIndex];
     if (match && match.player1 && match.player2) {
       this.logMatch({
@@ -1112,6 +1224,8 @@ export class BHOSDataStore {
         loggedById: this.currentUserId || 'system',
         setScores: scores.setScores,
         tournamentId: tournament.id,
+        roundNumber: roundIndex + 1,
+        bracketNodeIndex: matchIndex,
       });
     }
 
@@ -1121,7 +1235,11 @@ export class BHOSDataStore {
     if (supabase) {
       supabase
         .from('tournaments')
-        .update({ bracket_data: tournament.bracket_data })
+        .update({
+          bracket_data: tournament.bracket_data,
+          status: tournament.status,
+          winner_id: tournament.winner_id || null,
+        })
         .eq('id', tournamentId)
         .then(({ error }) => {
           if (error) console.warn('[BHOS Store] Supabase updateTournamentBracketMatch failed:', error.message);

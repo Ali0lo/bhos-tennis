@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { Tournament, BracketMatch } from '../lib/data/types';
 import { BHOSDataStore } from '../lib/data/store';
 import { getSupabaseClient } from '../lib/supabase/client';
-import { Trophy, Award, Check, X, Loader2, Sparkles } from 'lucide-react';
+import { Trophy, Award, Check, X, Loader2, Sparkles, Radio } from 'lucide-react';
 
 interface BracketTreeProps {
   tournament: Tournament;
@@ -26,6 +27,58 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
   const [setScores, setSetScores] = useState<string>('11-8, 11-9, 11-7');
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [pulsingSlots, setPulsingSlots] = useState<Record<string, boolean>>({});
+  const prevSlotsRef = useRef<Record<string, { p1?: string; p2?: string }>>({});
+  const initializedRef = useRef(false);
+
+  useEffect(() => {
+    const rounds = tournament.bracket_data?.rounds;
+    if (!rounds) return;
+
+    const nextSnapshot: Record<string, { p1?: string; p2?: string }> = {};
+    const newlyPulsing: Record<string, boolean> = {};
+    const now = Date.now();
+
+    rounds.forEach((round, rIdx) => {
+      round.matches.forEach((m, mIdx) => {
+        const key = `${rIdx}-${mIdx}`;
+        const p1Id = m.player1?.id;
+        const p2Id = m.player2?.id;
+        nextSnapshot[key] = { p1: p1Id, p2: p2Id };
+
+        if (initializedRef.current) {
+          const prev = prevSlotsRef.current[key];
+          if (prev && !prev.p1 && p1Id) {
+            newlyPulsing[`${key}-1`] = true;
+          }
+          if (prev && !prev.p2 && p2Id) {
+            newlyPulsing[`${key}-2`] = true;
+          }
+        }
+
+        if (m.advancedAt && now - m.advancedAt < 6000 && m.advancedSlot) {
+          newlyPulsing[`${key}-${m.advancedSlot}`] = true;
+        }
+      });
+    });
+
+    prevSlotsRef.current = nextSnapshot;
+    initializedRef.current = true;
+
+    if (Object.keys(newlyPulsing).length > 0) {
+      setPulsingSlots((prev) => ({ ...prev, ...newlyPulsing }));
+      const timer = setTimeout(() => {
+        setPulsingSlots((prev) => {
+          const copy = { ...prev };
+          Object.keys(newlyPulsing).forEach((k) => {
+            delete copy[k];
+          });
+          return copy;
+        });
+      }, 3800);
+      return () => clearTimeout(timer);
+    }
+  }, [tournament.bracket_data]);
 
   if (!tournament.bracket_data || !tournament.bracket_data.rounds || tournament.bracket_data.rounds.length === 0) {
     return (
@@ -36,6 +89,14 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
   }
 
   const rounds = tournament.bracket_data.rounds;
+  const finalRound = rounds[rounds.length - 1];
+  const finalMatch = finalRound?.matches?.[0];
+  const championProfile =
+    finalMatch?.status === 'completed' && finalMatch.winner_id
+      ? finalMatch.player1?.id === finalMatch.winner_id
+        ? finalMatch.player1
+        : finalMatch.player2
+      : null;
 
   const handleOpenScoreModal = (roundIndex: number, matchIndex: number, match: BracketMatch) => {
     if (!isAdmin || !match.player1 || !match.player2) return;
@@ -93,11 +154,29 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
         }
       );
 
+      if (roundIndex + 1 < rounds.length) {
+        const nextMatchIdx = Math.floor(matchIndex / 2);
+        const targetSlot = matchIndex % 2 === 0 ? 1 : 2;
+        const pulseKey = `${roundIndex + 1}-${nextMatchIdx}-${targetSlot}`;
+        setPulsingSlots((prev) => ({ ...prev, [pulseKey]: true }));
+        setTimeout(() => {
+          setPulsingSlots((prev) => {
+            const next = { ...prev };
+            delete next[pulseKey];
+            return next;
+          });
+        }, 3800);
+      }
+
       const supabase = getSupabaseClient();
       if (supabase && updatedTourn.bracket_data) {
         await supabase
           .from('tournaments')
-          .update({ bracket_data: updatedTourn.bracket_data })
+          .update({
+            bracket_data: updatedTourn.bracket_data,
+            status: updatedTourn.status,
+            winner_id: updatedTourn.winner_id || null,
+          })
           .eq('id', tournament.id);
       }
 
@@ -111,7 +190,32 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {championProfile && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="p-4 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-[#131C2B] to-amber-500/10 flex items-center justify-between gap-4 shadow-[0_0_25px_rgba(234,179,8,0.15)]"
+        >
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 shrink-0">
+              <Trophy className="w-5 h-5" />
+            </div>
+            <div>
+              <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
+                Tournament Champion
+              </span>
+              <span className="text-base sm:text-lg font-display font-black text-white">
+                {championProfile.full_name}
+              </span>
+            </div>
+          </div>
+          <span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold">
+            {championProfile.current_elo} ELO
+          </span>
+        </motion.div>
+      )}
+
       <div className="overflow-x-auto pb-8 pt-4 flex items-stretch gap-10 sm:gap-14 min-w-[720px]">
         {rounds.map((round, rIndex) => {
           const isFinal = rIndex === rounds.length - 1;
@@ -130,90 +234,176 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
 
               <div className="flex flex-col justify-around gap-8 h-full">
                 {round.matches.map((match, mIndex) => {
-                  const isCompleted = match.status === 'completed';
-                  const isReady = match.status === 'ready' && match.player1 && match.player2;
-                  const p1Won = isCompleted && match.winner_id === match.player1?.id;
-                  const p2Won = isCompleted && match.winner_id === match.player2?.id;
+                  const isCompleted = match.status === 'completed' || match.status === 'approved';
+                  const isReady =
+                    !isCompleted &&
+                    (match.status === 'ready' || match.status === 'scheduled') &&
+                    Boolean(match.player1 && match.player2);
+                  const p1Won = isCompleted && Boolean(match.winner_id && match.winner_id === match.player1?.id);
+                  const p2Won = isCompleted && Boolean(match.winner_id && match.winner_id === match.player2?.id);
                   const isClickable = Boolean(isAdmin && match.player1 && match.player2);
 
                   const isEven = mIndex % 2 === 0;
                   const pairHasWinner = isCompleted;
+                  const slot1Pulsing = Boolean(pulsingSlots[`${rIndex}-${mIndex}-1`]);
+                  const slot2Pulsing = Boolean(pulsingSlots[`${rIndex}-${mIndex}-2`]);
 
                   return (
                     <div key={match.id} className="relative group">
                       <div
                         onClick={() => isClickable && handleOpenScoreModal(rIndex, mIndex, match)}
-                        className={`rounded-2xl p-3.5 bg-[#131C2B] border transition-all duration-300 relative z-10 shadow-xl ${
+                        className={`rounded-2xl p-3.5 bg-[#131C2B] border transition-all duration-300 relative z-10 ${
                           isCompleted
-                            ? 'border-[#3B82F6]/50 shadow-[0_0_15px_rgba(59,130,246,0.15)]'
+                            ? 'border-white/10 bg-[#131C2B]/90 shadow-lg'
                             : isReady
-                            ? 'border-white/20 hover:border-[#3B82F6]/60'
-                            : 'border-white/5 opacity-60'
+                            ? 'border-[#3B82F6]/70 shadow-[0_0_22px_rgba(59,130,246,0.22)] ring-1 ring-[#3B82F6]/30 hover:border-[#3B82F6]'
+                            : 'border-white/5 bg-[#131C2B]/55 opacity-70'
                         } ${isClickable ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.99]' : ''}`}
                       >
                         <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-2 pb-1.5 border-b border-white/5">
                           <span>Match #{mIndex + 1}</span>
                           {isCompleted ? (
-                            <span className="text-[#3B82F6] font-bold uppercase tracking-wider flex items-center gap-1">
-                              <Check className="w-3 h-3 stroke-[3]" /> Completed
+                            <span className="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                              <Check className="w-3 h-3 text-[#22C55E] stroke-[3]" /> Completed
                             </span>
                           ) : isReady ? (
-                            <span className="text-amber-400 font-semibold uppercase tracking-wider">
-                              Ready
+                            <span className="text-[#3B82F6] font-bold uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-ping" />
+                              <Radio className="w-3 h-3" />
+                              <span>Live / Ready</span>
                             </span>
                           ) : (
-                            <span className="text-slate-600 uppercase tracking-wider">
-                              Pending
+                            <span className="text-slate-500 uppercase tracking-wider">
+                              Awaiting
                             </span>
                           )}
                         </div>
 
                         <div className="space-y-1.5">
-                          <div
-                            className={`flex items-center justify-between p-2 rounded-xl text-xs transition ${
-                              p1Won
-                                ? 'bg-[#3B82F6]/20 text-white font-bold border border-[#3B82F6]/50 shadow-[0_0_10px_rgba(59,130,246,0.25)]'
-                                : isCompleted
-                                ? 'text-slate-500 opacity-70'
-                                : 'text-slate-200'
-                            }`}
-                          >
-                            <div className="flex items-center gap-1.5 min-w-0 pr-2">
-                              {p1Won && <Award className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
-                              <span className="truncate font-semibold">
-                                {match.player1?.full_name || 'TBD'}
+                          {match.player1 ? (
+                            <motion.div
+                              animate={
+                                slot1Pulsing
+                                  ? {
+                                      scale: [1, 1.03, 1],
+                                      boxShadow: [
+                                        '0 0 0px rgba(59,130,246,0)',
+                                        '0 0 20px rgba(59,130,246,0.55)',
+                                        '0 0 0px rgba(59,130,246,0)',
+                                      ],
+                                    }
+                                  : undefined
+                              }
+                              transition={{ duration: 1.1, repeat: slot1Pulsing ? 2 : 0 }}
+                              className={`flex items-center justify-between p-2 rounded-xl text-xs transition ${
+                                p1Won
+                                  ? 'bg-[#3B82F6]/20 text-white font-bold border border-[#3B82F6]/50 shadow-[0_0_12px_rgba(59,130,246,0.28)]'
+                                  : isCompleted
+                                  ? 'text-slate-500 opacity-60 bg-white/[0.01]'
+                                  : slot1Pulsing
+                                  ? 'bg-[#3B82F6]/15 text-white border border-[#3B82F6]/60 animate-pulse'
+                                  : 'text-slate-200 bg-white/[0.02] border border-transparent'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                                {p1Won && <Award className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
+                                {slot1Pulsing && !p1Won && (
+                                  <Sparkles className="w-3.5 h-3.5 text-[#3B82F6] shrink-0 animate-bounce" />
+                                )}
+                                <span className="truncate font-semibold">
+                                  {match.player1.full_name}
+                                </span>
+                              </div>
+                              <span
+                                className={`font-mono font-black text-sm shrink-0 ${
+                                  p1Won ? 'text-[#3B82F6]' : ''
+                                }`}
+                              >
+                                {match.player1_score !== undefined ? match.player1_score : '-'}
                               </span>
+                            </motion.div>
+                          ) : (
+                            <div className="flex items-center justify-between p-2 rounded-xl text-xs border border-dashed border-white/10 bg-white/[0.01] opacity-55">
+                              <div className="flex items-center gap-2 min-w-0 pr-2">
+                                <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-mono uppercase tracking-wider text-slate-500">
+                                  TBD
+                                </span>
+                                <span className="text-slate-600 font-mono tracking-widest text-[11px]">
+                                  — — — —
+                                </span>
+                              </div>
+                              <span className="font-mono text-slate-600 text-xs">--</span>
                             </div>
-                            <span className="font-mono font-black text-sm shrink-0">
-                              {match.player1_score !== undefined ? match.player1_score : '-'}
-                            </span>
-                          </div>
+                          )}
 
-                          <div
-                            className={`flex items-center justify-between p-2 rounded-xl text-xs transition ${
-                              p2Won
-                                ? 'bg-[#3B82F6]/20 text-white font-bold border border-[#3B82F6]/50 shadow-[0_0_10px_rgba(59,130,246,0.25)]'
-                                : isCompleted
-                                ? 'text-slate-500 opacity-70'
-                                : 'text-slate-200'
-                            }`}
-                          >
-                            <div className="flex items-center gap-1.5 min-w-0 pr-2">
-                              {p2Won && <Award className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
-                              <span className="truncate font-semibold">
-                                {match.player2?.full_name || 'TBD'}
+                          {match.player2 ? (
+                            <motion.div
+                              animate={
+                                slot2Pulsing
+                                  ? {
+                                      scale: [1, 1.03, 1],
+                                      boxShadow: [
+                                        '0 0 0px rgba(59,130,246,0)',
+                                        '0 0 20px rgba(59,130,246,0.55)',
+                                        '0 0 0px rgba(59,130,246,0)',
+                                      ],
+                                    }
+                                  : undefined
+                              }
+                              transition={{ duration: 1.1, repeat: slot2Pulsing ? 2 : 0 }}
+                              className={`flex items-center justify-between p-2 rounded-xl text-xs transition ${
+                                p2Won
+                                  ? 'bg-[#3B82F6]/20 text-white font-bold border border-[#3B82F6]/50 shadow-[0_0_12px_rgba(59,130,246,0.28)]'
+                                  : isCompleted
+                                  ? 'text-slate-500 opacity-60 bg-white/[0.01]'
+                                  : slot2Pulsing
+                                  ? 'bg-[#3B82F6]/15 text-white border border-[#3B82F6]/60 animate-pulse'
+                                  : 'text-slate-200 bg-white/[0.02] border border-transparent'
+                              }`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                                {p2Won && <Award className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
+                                {slot2Pulsing && !p2Won && (
+                                  <Sparkles className="w-3.5 h-3.5 text-[#3B82F6] shrink-0 animate-bounce" />
+                                )}
+                                <span className="truncate font-semibold">
+                                  {match.player2.full_name}
+                                </span>
+                              </div>
+                              <span
+                                className={`font-mono font-black text-sm shrink-0 ${
+                                  p2Won ? 'text-[#3B82F6]' : ''
+                                }`}
+                              >
+                                {match.player2_score !== undefined ? match.player2_score : '-'}
                               </span>
+                            </motion.div>
+                          ) : (
+                            <div className="flex items-center justify-between p-2 rounded-xl text-xs border border-dashed border-white/10 bg-white/[0.01] opacity-55">
+                              <div className="flex items-center gap-2 min-w-0 pr-2">
+                                <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-mono uppercase tracking-wider text-slate-500">
+                                  TBD
+                                </span>
+                                <span className="text-slate-600 font-mono tracking-widest text-[11px]">
+                                  — — — —
+                                </span>
+                              </div>
+                              <span className="font-mono text-slate-600 text-xs">--</span>
                             </div>
-                            <span className="font-mono font-black text-sm shrink-0">
-                              {match.player2_score !== undefined ? match.player2_score : '-'}
-                            </span>
-                          </div>
+                          )}
                         </div>
+
+                        {isCompleted && match.set_scores && (
+                          <div className="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-500">
+                            <span>Sets</span>
+                            <span className="text-slate-400">{match.set_scores}</span>
+                          </div>
+                        )}
 
                         {isAdmin && isReady && (
                           <div className="mt-2.5 pt-2 border-t border-white/5 flex items-center justify-end">
                             <span className="text-[10px] text-[#3B82F6] font-semibold flex items-center gap-1">
-                              Click to log score
+                              Click to verify & advance
                             </span>
                           </div>
                         )}

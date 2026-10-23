@@ -52,6 +52,11 @@ export interface MatchRecord {
   id: string;
   tournament_id?: string | null;
   tournament_title?: string | null;
+  round_number?: number | null;
+  bracket_node_index?: number | null;
+  next_match_id?: string | null;
+  is_bye?: boolean;
+  winner_id?: string | null;
   player1_id: string;
   player1_name?: string;
   player2_id: string;
@@ -66,7 +71,7 @@ export interface MatchRecord {
   player1_elo_after: number;
   player2_elo_after: number;
   elo_delta: number;
-  status?: 'confirmed' | 'pending' | 'rejected' | string;
+  status?: 'confirmed' | 'approved' | 'pending' | 'rejected' | 'waiting' | 'scheduled' | string;
   match_date: string;
 }
 
@@ -77,6 +82,8 @@ export interface BracketMatch {
   id: string;
   roundIndex: number;
   matchIndex: number;
+  round_number?: number;
+  bracket_node_index?: number;
   player1?: PlayerProfile | null;
   player2?: PlayerProfile | null;
   player1_score?: number;
@@ -84,8 +91,12 @@ export interface BracketMatch {
   set_scores?: string;
   winner_id?: string;
   nextMatchId?: string;
+  next_match_id?: string;
   nextMatchSlot?: 1 | 2;
-  status: 'pending' | 'ready' | 'completed';
+  is_bye?: boolean;
+  advancedSlot?: 1 | 2;
+  advancedAt?: number;
+  status: 'pending' | 'waiting' | 'ready' | 'scheduled' | 'completed' | 'approved';
 }
 
 export interface Tournament {
@@ -100,6 +111,7 @@ export interface Tournament {
   start_date: string;
   end_date?: string;
   created_by: string | null;
+  winner_id?: string | null;
   bracket_data?: {
     rounds: {
       name: string;

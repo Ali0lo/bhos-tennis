@@ -31,9 +31,11 @@ export default function TournamentDetailPage() {
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [loading, setLoading] = useState(true);
 
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (silent: boolean = false) => {
     if (!slug) return;
-    setLoading(true);
+    if (!silent) {
+      setLoading(true);
+    }
 
     const supabase = getSupabaseClient();
     if (supabase) {
@@ -71,7 +73,7 @@ export default function TournamentDetailPage() {
 
     const local = store.getTournament(slug);
     if (local) {
-      setTournament(local);
+      setTournament({ ...local });
       if (local.participants) {
         const parts = local.participants
           .map((pid) => store.getProfile(pid))
@@ -86,11 +88,11 @@ export default function TournamentDetailPage() {
   }, [slug, store]);
 
   useEffect(() => {
-    loadData();
+    loadData(false);
     const unsub = store.subscribe(() => {
       const local = store.getTournament(slug);
       if (local) {
-        setTournament(local);
+        setTournament({ ...local });
         if (local.participants) {
           const parts = local.participants
             .map((pid) => store.getProfile(pid))
@@ -100,7 +102,31 @@ export default function TournamentDetailPage() {
       }
       setCurrentUser(store.getCurrentUser());
     });
-    return unsub;
+
+    const supabase = getSupabaseClient();
+    let channel: any = null;
+    if (supabase) {
+      channel = supabase
+        .channel(`tournament-live-${slug}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'tournaments' },
+          () => loadData(true)
+        )
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'matches' },
+          () => loadData(true)
+        )
+        .subscribe();
+    }
+
+    return () => {
+      unsub();
+      if (channel && supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
   }, [loadData, slug, store]);
 
   const isAdmin = currentUser?.role === 'president' || currentUser?.role === 'coach';
@@ -230,7 +256,7 @@ export default function TournamentDetailPage() {
             )}
           </div>
 
-          <BracketTree tournament={tournament} onUpdate={loadData} isAdmin={isAdmin} />
+          <BracketTree tournament={tournament} onUpdate={() => loadData(true)} isAdmin={isAdmin} />
         </div>
       </SmoothReveal>
 
