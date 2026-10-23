@@ -198,6 +198,8 @@ export class BHOSDataStore {
     if (!supabase) return;
 
     try {
+      await supabase.rpc('auto_resolve_stale_matches', { hours_threshold: 48 }).then(() => {}, () => {});
+
       const { data, error } = await supabase
         .from('matches')
         .select('*')
@@ -212,11 +214,26 @@ export class BHOSDataStore {
         const deleted = getStored<string[]>('bhos_deleted_matches', []);
         const resolved = this.getResolvedMatchIds();
         const matchMap = new Map<string, MatchRecord>();
+        const thresholdMs = 48 * 60 * 60 * 1000;
+        const nowMs = Date.now();
 
         (data as MatchRecord[]).forEach((m) => {
           if (!deleted.includes(m.id) && !m.id.startsWith('m-seed-')) {
-            const status = resolved[m.id] || m.status || 'confirmed';
-            matchMap.set(m.id, { ...m, status });
+            let status: string = resolved[m.id] || m.status || 'confirmed';
+            let autoApproved = Boolean(m.auto_approved);
+            const createdMs = new Date(m.created_at || m.match_date).getTime();
+
+            if (
+              status === 'pending' &&
+              !m.is_disputed &&
+              !isNaN(createdMs) &&
+              nowMs - createdMs >= thresholdMs
+            ) {
+              status = 'confirmed';
+              autoApproved = true;
+            }
+
+            matchMap.set(m.id, { ...m, status, auto_approved: autoApproved });
           }
         });
 

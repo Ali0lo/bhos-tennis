@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '../../../lib/supabase/client';
 import { BHOSDataStore } from '../../../lib/data/store';
-import { PlayerProfile, MatchRecord, isDefaultMember } from '../../../lib/data/types';
+import { PlayerProfile, MatchRecord, isDefaultMember, isAutoApprovedMatch } from '../../../lib/data/types';
 import SmoothReveal from '../../../components/SmoothReveal';
 import NumberTicker from '../../../components/NumberTicker';
 import EditProfileModal from '../../../components/EditProfileModal';
@@ -24,6 +24,8 @@ import {
   GraduationCap,
   Edit3,
   Camera,
+  Clock,
+  CheckCheck,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -977,7 +979,7 @@ export default function PlayerProfilePage() {
                       </span>
 
                       <div>
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs text-slate-400">qarşı</span>
                           <Link
                             href={`/players/${opponentId}`}
@@ -985,6 +987,25 @@ export default function PlayerProfilePage() {
                           >
                             {opponentName}
                           </Link>
+                          {!isPending && (
+                            isAutoApprovedMatch(m) ? (
+                              <span
+                                title="Rəqib 48 saat ərzində təsdiqləmədiyi üçün avtomatik təsdiqlənib"
+                                className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                              >
+                                <Clock className="w-3 h-3" />
+                                <span>Avto-təsdiq (48 saat)</span>
+                              </span>
+                            ) : (
+                              <span
+                                title="Oyunçu tərəfindən rəsmi təsdiqlənib"
+                                className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/25"
+                              >
+                                <CheckCheck className="w-3 h-3" />
+                                <span>Təsdiqlənib</span>
+                              </span>
+                            )
+                          )}
                         </div>
                         <span className="text-[11px] text-slate-500 font-mono">
                           {new Date(m.match_date).toLocaleDateString('az-AZ', {

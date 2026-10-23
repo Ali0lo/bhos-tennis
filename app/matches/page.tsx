@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { BHOSDataStore } from '../../lib/data/store';
-import { MatchRecord, PlayerProfile } from '../../lib/data/types';
+import { MatchRecord, PlayerProfile, isAutoApprovedMatch } from '../../lib/data/types';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
 import PendingApprovals from '../../components/PendingApprovals';
@@ -14,7 +14,9 @@ import {
   Award, 
   Calendar,
   User,
-  Globe
+  Globe,
+  Clock,
+  CheckCheck
 } from 'lucide-react';
 
 export default function MatchesPage() {
@@ -386,17 +388,37 @@ export default function MatchesPage() {
                   </div>
 
                   <div className="flex md:flex-col items-center md:items-end justify-between border-t md:border-t-0 pt-3 md:pt-0 border-white/5 text-right gap-1.5 shrink-0">
-                    {isUserMatch && (
-                      <span
-                        className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border ${
-                          userWon
-                            ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
-                            : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                        }`}
-                      >
-                        {userWon ? 'Qələbə' : 'Məğlubiyyət'}
-                      </span>
-                    )}
+                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                      {isUserMatch && (
+                        <span
+                          className={`text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase tracking-wider border ${
+                            userWon
+                              ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30'
+                              : 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                          }`}
+                        >
+                          {userWon ? 'Qələbə' : 'Məğlubiyyət'}
+                        </span>
+                      )}
+
+                      {isAutoApprovedMatch(m) ? (
+                        <span
+                          title="Rəqib 48 saat ərzində təsdiqləmədiyi üçün avtomatik təsdiqlənib"
+                          className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30"
+                        >
+                          <Clock className="w-3 h-3" />
+                          <span>Avto-təsdiq (48 saat)</span>
+                        </span>
+                      ) : (
+                        <span
+                          title="Oyunçu tərəfindən rəsmi təsdiqlənib"
+                          className="inline-flex items-center gap-1 text-[10px] px-2.5 py-0.5 rounded-full font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/25"
+                        >
+                          <CheckCheck className="w-3 h-3" />
+                          <span>Təsdiqlənib</span>
+                        </span>
+                      )}
+                    </div>
 
                     <div className="text-xs text-slate-400 flex items-center gap-1 font-mono">
                       <Calendar className="w-3.5 h-3.5 text-slate-500" />

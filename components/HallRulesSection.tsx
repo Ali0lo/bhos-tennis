@@ -72,7 +72,7 @@ const FOUR_TABLES = [
     label: 'Masa 1',
     group: 'Xanımlar / Women',
     isWomen: true,
-    usage: 'Xanım tələbələrin məşqləri, yoldaşlıq görüşləri və oyunları üçün eksklüziv masa',
+    usage: 'Xanım tələbələrin məşqləri, yoldaşlıq görüşləri və oyunları üçün masa',
     surface: 'Donic Waldner Classic 25mm ITTF',
   },
   {
@@ -171,7 +171,7 @@ export default function HallRulesSection() {
 
             <div>
               <h3 className="text-xl font-display font-black text-white">
-                Table 1 — Xanımlar üçün Eksklüziv Masa
+                Table 1 — Xanımlar üçün Masa
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
                 Yalnız xanım oyunçular, məşqlər və yoldaşlıq/rəsmi oyunlar üçün ayrılmışdır.

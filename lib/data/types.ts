@@ -72,7 +72,18 @@ export interface MatchRecord {
   player2_elo_after: number;
   elo_delta: number;
   status?: 'confirmed' | 'approved' | 'pending' | 'rejected' | 'waiting' | 'scheduled' | string;
+  is_disputed?: boolean;
+  auto_approved?: boolean;
+  approved_by?: string | null;
+  approved_at?: string | null;
+  created_at?: string;
   match_date: string;
+}
+
+export function isAutoApprovedMatch(match: MatchRecord): boolean {
+  if (match.auto_approved === true) return true;
+  if (match.approved_by === '00000000-0000-0000-0000-000000000000') return true;
+  return false;
 }
 
 export type TournamentFormat = 'single_elimination' | 'round_robin' | 'groups_and_knockout';

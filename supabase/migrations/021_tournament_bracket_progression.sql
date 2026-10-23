@@ -289,3 +289,4 @@ AFTER INSERT OR UPDATE OF status, winner_id, player1_score, player2_score
 ON public.matches
 FOR EACH ROW
 EXECUTE FUNCTION public.trg_fn_advance_tournament_bracket();
+
