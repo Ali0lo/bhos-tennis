@@ -10,7 +10,7 @@ export interface TableCardData {
   isWomen: boolean;
   usage: string;
   surface: string;
-  statusLabel?: string;
+  specs?: string[];
 }
 
 interface TableCardProps {
@@ -19,7 +19,6 @@ interface TableCardProps {
 
 export default function TableCard({ table }: TableCardProps) {
   const isMasa1 = table.number === 1 || table.isWomen;
-  const statusText = table.statusLabel || 'Mövcuddur';
 
   return (
     <motion.div
@@ -52,34 +51,24 @@ export default function TableCard({ table }: TableCardProps) {
 
       <div className="relative z-10">
         <div className="flex items-center justify-between mb-3 gap-2">
-          <div className="flex items-center gap-2">
-            <span
-              className={`w-8 h-8 rounded-xl font-display font-black text-xs flex items-center justify-center ${
-                isMasa1
-                  ? 'bg-gradient-to-br from-amber-500/25 to-rose-500/25 text-amber-200 border border-amber-400/40'
-                  : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-              }`}
-            >
-              #{table.number}
-            </span>
-            <span
-              className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
-                isMasa1
-                  ? 'bg-rose-500/15 text-rose-200 border-rose-500/30'
-                  : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
-              }`}
-            >
-              {table.group}
-            </span>
-          </div>
-
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[10px] font-bold text-emerald-300">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span>{statusText}</span>
-          </div>
+          <span
+            className={`w-8 h-8 rounded-xl font-display font-black text-xs flex items-center justify-center ${
+              isMasa1
+                ? 'bg-gradient-to-br from-amber-500/25 to-rose-500/25 text-amber-200 border border-amber-400/40'
+                : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+            }`}
+          >
+            #{table.number}
+          </span>
+          <span
+            className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
+              isMasa1
+                ? 'bg-rose-500/15 text-rose-200 border-rose-500/30'
+                : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
+            }`}
+          >
+            {table.group}
+          </span>
         </div>
 
         <div className="my-3 py-3.5 px-3 rounded-xl bg-[#131C2B] border border-white/5 relative flex items-center justify-center">
@@ -100,6 +89,19 @@ export default function TableCard({ table }: TableCardProps) {
 
         <h4 className="font-display font-bold text-white text-sm">{table.label}</h4>
         <p className="text-xs text-slate-400 mt-1 leading-relaxed">{table.usage}</p>
+
+        {table.specs && table.specs.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            {table.specs.map((spec, idx) => (
+              <span
+                key={idx}
+                className="px-2 py-0.5 rounded-md bg-[#131C2B] border border-white/10 text-[10px] font-mono text-slate-300"
+              >
+                {spec}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="mt-4 pt-3 border-t border-white/5 text-[11px] font-mono text-slate-400 relative z-10">

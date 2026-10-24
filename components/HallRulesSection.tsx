@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import SmoothReveal, { SmoothRevealItem } from './SmoothReveal';
 import TableCard, { TableCardData } from './TableCard';
 import MagneticButton from './MagneticButton';
@@ -19,9 +20,16 @@ import {
   MessageCircle,
   ExternalLink,
   CheckCircle2,
+  ArrowRight,
+  RefreshCw,
+  Info,
 } from 'lucide-react';
 
-export default function HallRulesSection() {
+interface HallRulesSectionProps {
+  showGuideLink?: boolean;
+}
+
+export default function HallRulesSection({ showGuideLink = false }: HallRulesSectionProps) {
   const t = useTranslations('home');
 
   const officialHallRules = [
@@ -67,7 +75,11 @@ export default function HallRulesSection() {
     },
   ];
 
-  const availableStatusLabel = t('sections.table_status_available');
+  const tableSpecs = [
+    t('hall_rules.spec_standard'),
+    t('hall_rules.spec_surface'),
+    t('hall_rules.spec_net'),
+  ];
 
   const fourTables: TableCardData[] = [
     {
@@ -77,7 +89,7 @@ export default function HallRulesSection() {
       isWomen: true,
       usage: t('hall_rules.t1_usage'),
       surface: 'Donic Waldner Classic 25mm ITTF',
-      statusLabel: availableStatusLabel,
+      specs: tableSpecs,
     },
     {
       number: 2,
@@ -86,7 +98,7 @@ export default function HallRulesSection() {
       isWomen: false,
       usage: t('hall_rules.t2_usage'),
       surface: 'Donic Waldner Classic 25mm ITTF',
-      statusLabel: availableStatusLabel,
+      specs: tableSpecs,
     },
     {
       number: 3,
@@ -95,7 +107,7 @@ export default function HallRulesSection() {
       isWomen: false,
       usage: t('hall_rules.t3_usage'),
       surface: 'Donic Waldner Classic 25mm ITTF',
-      statusLabel: availableStatusLabel,
+      specs: tableSpecs,
     },
     {
       number: 4,
@@ -104,14 +116,17 @@ export default function HallRulesSection() {
       isWomen: false,
       usage: t('hall_rules.t4_usage'),
       surface: 'Donic Waldner Classic 25mm ITTF',
-      statusLabel: availableStatusLabel,
+      specs: tableSpecs,
     },
   ];
 
   return (
     <div className="space-y-8">
       <SmoothReveal delay={0.05} scale>
-        <div className="relative rounded-3xl border border-white/10 bg-[#0F1623] p-6 sm:p-8 shadow-2xl overflow-hidden">
+        <div
+          className="relative rounded-3xl bg-[#0F1623]/90 backdrop-blur-md p-6 sm:p-8 shadow-2xl overflow-hidden"
+          style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
+        >
           <div className="pointer-events-none absolute -top-24 -right-24 w-80 h-80 rounded-full bg-cyan-500/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 rounded-full bg-[#3B82F6]/10 blur-3xl" />
 
@@ -132,7 +147,7 @@ export default function HallRulesSection() {
               </h2>
 
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {t('hall_rules.subtitle')}
+                {t('sections.tables_subtitle')}
               </p>
 
               <div className="flex flex-wrap items-center gap-4 pt-1 text-xs font-mono text-slate-300">
@@ -152,6 +167,17 @@ export default function HallRulesSection() {
             </div>
 
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
+              {showGuideLink && (
+                <MagneticButton>
+                  <Link
+                    href="/tables"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#3B82F6] hover:bg-blue-500 text-white font-display font-bold text-xs shadow-lg shadow-blue-500/25 transition-all active:scale-95"
+                  >
+                    <span>{t('sections.view_tables_guide')}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </Link>
+                </MagneticButton>
+              )}
               <MagneticButton>
                 <a
                   href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
@@ -164,6 +190,50 @@ export default function HallRulesSection() {
                   <ExternalLink className="w-3.5 h-3.5" />
                 </a>
               </MagneticButton>
+            </div>
+          </div>
+
+          <div className="relative z-10 mt-6 pt-6 border-t border-white/10 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="rounded-2xl bg-[#131C2B] border border-white/5 p-4 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6] shrink-0">
+                <Info className="w-4 h-4" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-xs font-display font-bold text-white">
+                  {t('sections.hall_info_title')}
+                </h4>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  {t('sections.hall_info_desc')}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-[#131C2B] border border-white/5 p-4 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <RefreshCw className="w-4 h-4" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-xs font-display font-bold text-white">
+                  {t('hall_rules.rotation_title')}
+                </h4>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  {t('hall_rules.rotation_desc')}
+                </p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-[#131C2B] border border-white/5 p-4 flex items-start gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+                <Wrench className="w-4 h-4" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-xs font-display font-bold text-white">
+                  {t('hall_rules.equipment_title')}
+                </h4>
+                <p className="text-[11px] text-slate-300 leading-relaxed">
+                  {t('hall_rules.equipment_desc')}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -189,18 +259,9 @@ export default function HallRulesSection() {
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
                 {t('hall_rules.table1_badge')}
               </span>
-              <div className="flex items-center gap-2">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[10px] font-bold text-emerald-300">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-                  </span>
-                  <span>{availableStatusLabel}</span>
-                </div>
-                <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-pink-400 text-white font-display font-black text-sm flex items-center justify-center shadow-lg shadow-rose-500/20">
-                  #1
-                </span>
-              </div>
+              <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-pink-400 text-white font-display font-black text-sm flex items-center justify-center shadow-lg shadow-rose-500/20">
+                #1
+              </span>
             </div>
 
             <div>
@@ -235,24 +296,15 @@ export default function HallRulesSection() {
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs font-bold uppercase tracking-wider">
                 {t('hall_rules.tables24_badge')}
               </span>
-              <div className="flex items-center gap-2">
-                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[10px] font-bold text-emerald-300">
-                  <span className="relative flex h-2.5 w-2.5">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+              <div className="flex items-center gap-1.5">
+                {[2, 3, 4].map((num) => (
+                  <span
+                    key={num}
+                    className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-[#3B82F6] text-slate-950 font-display font-black text-xs flex items-center justify-center shadow-md shadow-cyan-500/20"
+                  >
+                    #{num}
                   </span>
-                  <span>{availableStatusLabel}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  {[2, 3, 4].map((num) => (
-                    <span
-                      key={num}
-                      className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-[#3B82F6] text-slate-950 font-display font-black text-xs flex items-center justify-center shadow-md shadow-cyan-500/20"
-                    >
-                      #{num}
-                    </span>
-                  ))}
-                </div>
+                ))}
               </div>
             </div>
 
@@ -288,7 +340,10 @@ export default function HallRulesSection() {
       </SmoothReveal>
 
       <SmoothReveal delay={0.12}>
-        <div className="rounded-3xl bg-[#0F1623] border border-white/10 p-6 sm:p-8 shadow-2xl space-y-6">
+        <div
+          className="rounded-3xl bg-[#0F1623]/90 backdrop-blur-md p-6 sm:p-8 shadow-2xl space-y-6"
+          style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
+        >
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-5">
             <div className="flex items-center gap-3">
               <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">

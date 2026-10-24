@@ -416,7 +416,7 @@ export default function HomePage() {
       </SmoothReveal>
 
       <section className="space-y-6">
-        <HallRulesSection />
+        <HallRulesSection showGuideLink />
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

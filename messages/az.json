@@ -83,7 +83,7 @@
     "hero_stats": {
       "players": "Aktiv Oyunçu",
       "matches": "Oynanılmış Matç",
-      "tables": "Kampus Masaları"
+      "tables": "İdman Zalı Masaları"
     },
     "sections": {
       "leaderboard_num": "01",
@@ -92,10 +92,12 @@
       "view_all_leaderboard": "Bütün Reytinqə Bax",
       "tables_num": "02",
       "tables_title": "İdman Zalının Masaları",
-      "tables_subtitle": "4 rəsmi masa bölgüsü və idman zalının daxili intizam qaydaları",
-      "table_1_label": "Masa 1 — Xanımlar üçün Masa",
-      "table_standard_label": "Masalar 2–4 — Ümumi Masalar",
-      "book_table_btn": "Zal & Masalar",
+      "tables_subtitle": "Bakı Ali Neft Məktəbi idman zalında yerləşən stolüstü tennis masaları və qaydalar",
+      "table_1_label": "Masa 1 — Xanımlar üçün Ayrılmış Masa",
+      "table_standard_label": "Masalar 2–4 — Ümumi Məşq və Yarış Masaları",
+      "hall_info_title": "İdman Zalı Qaydaları",
+      "hall_info_desc": "Masalardan sərbəst şəkildə növbə əsasında istifadə olunur. İdman ayaqqabısı mütləqdir.",
+      "view_tables_guide": "Zal Haqqında Ətraflı",
       "tournament_num": "03",
       "tournament_title": "Turnirlər və Çempionatlar",
       "tournament_subtitle": "Canlı Play-off cədvəli və qarşıdakı turnirlər",
@@ -175,7 +177,14 @@
       "rule4_desc": "Bütün idman avadanlıqları təyinatı üzrə işlədilməlidir (futbol, voleybol, basketbol və stolüstü tennis inventarları).",
       "rule5_title": "Qaydaların Mənimsənilməsi",
       "rule5_tag": "Oyun Qaydaları",
-      "rule5_desc": "İdman yarışlarına və oyunlarına qoşularkən qayda və təlimatları tam mənimsəyib qaydalar çərçivəsində oynayın."
+      "rule5_desc": "İdman yarışlarına və oyunlarına qoşularkən qayda və təlimatları tam mənimsəyib qaydalar çərçivəsində oynayın.",
+      "spec_standard": "ITTF Standart Ölçü (274×152.5 sm)",
+      "spec_surface": "25mm Peşəkar Səth",
+      "spec_net": "Peşəkar Tor Sistemi",
+      "rotation_title": "Növbə və Rotasiya Qaydası",
+      "rotation_desc": "Gözləyən oyunçular olduqda masalar 11 və ya 21 xallıq set rotasiyası (növbə sistemi) ilə paylaşılır.",
+      "equipment_title": "Klub İnventarı və Raketkalar",
+      "equipment_desc": "Donic 3-Ulduz ITTF topları və məşq raketkaları İdman Kompleksinin qeydiyyat masasından götürülə və istifadədən sonra təhvil verilə bilər."
     }
   },
   "hero": {

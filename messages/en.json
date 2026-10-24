@@ -83,7 +83,7 @@
     "hero_stats": {
       "players": "Active Players",
       "matches": "Matches Played",
-      "tables": "Campus Tables"
+      "tables": "Sports Hall Tables"
     },
     "sections": {
       "leaderboard_num": "01",
@@ -92,10 +92,12 @@
       "view_all_leaderboard": "View Full Standings",
       "tables_num": "02",
       "tables_title": "Sports Hall Tables",
-      "tables_subtitle": "4 official table allocations and sports hall conduct rules",
+      "tables_subtitle": "Table specifications and sports hall guidelines at Baku Higher Oil School",
       "table_1_label": "Table 1 — Dedicated for Ladies",
-      "table_standard_label": "Tables 2–4 — General Practice",
-      "book_table_btn": "Hall & Tables",
+      "table_standard_label": "Tables 2–4 — General Practice & Match Tables",
+      "hall_info_title": "Hall Regulations",
+      "hall_info_desc": "Tables operate on an open first-come, first-served rotation. Clean indoor athletic footwear is mandatory.",
+      "view_tables_guide": "View Facility Guide",
       "tournament_num": "03",
       "tournament_title": "Tournaments & Championships",
       "tournament_subtitle": "Live knockout bracket progression and upcoming competitions",
@@ -175,7 +177,14 @@
       "rule4_desc": "All sports equipment must be used strictly for its intended purpose (table tennis paddles, balls, nets, and tables).",
       "rule5_title": "Adherence to Game Rules",
       "rule5_tag": "Game Rules",
-      "rule5_desc": "Familiarize yourself with official ITTF and club regulations and compete fairly within the rules."
+      "rule5_desc": "Familiarize yourself with official ITTF and club regulations and compete fairly within the rules.",
+      "spec_standard": "ITTF Standard Size (274×152.5 cm)",
+      "spec_surface": "25mm Pro Surface",
+      "spec_net": "Pro Net System",
+      "rotation_title": "Open Queue & Rotation Rule",
+      "rotation_desc": "When players are waiting, tables rotate on a fair first-come, first-served 11-point or 21-point set rotation.",
+      "equipment_title": "Club Equipment & Paddles",
+      "equipment_desc": "Donic 3-Star ITTF balls and club paddles can be checked out at the Sports Complex desk and must be returned after play."
     }
   },
   "hero": {
