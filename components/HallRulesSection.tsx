@@ -1,7 +1,9 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import SmoothReveal, { SmoothRevealItem } from './SmoothReveal';
+import { useTranslations } from '../lib/i18n';
 import {
   ShieldAlert,
   Footprints,
@@ -16,92 +18,90 @@ import {
   MessageCircle,
   ExternalLink,
   CheckCircle2,
+  CalendarCheck,
 } from 'lucide-react';
 
-const OFFICIAL_HALL_RULES = [
-  {
-    id: 1,
-    title: 'Ayaqqabı Tələbi',
-    subtitle: 'Footwear',
-    description:
-      'Zala çöl ayaqqabısı, bot, çəkmə və ya sərt dabanlı ayaqqabı ilə girmək qəti qadağandır. Zala yalnız təmiz dəyişək idman ayaqqabısı (indoor clean court sneakers) ilə daxil olunmalıdır.',
-    icon: Footprints,
-    accent: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
-  },
-  {
-    id: 2,
-    title: 'Üst Geyimləri',
-    subtitle: 'Outerwear',
-    description:
-      'İdman zalına üst geyimləri ilə daxil olmaq olmaz. Geyimlər soyunub-geyinmə otaqlarına və ya tribunalara qoyulmalıdır (oyun zalının kənarına yox).',
-    icon: Shirt,
-    accent: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
-  },
-  {
-    id: 3,
-    title: 'Zal Mədəniyyəti və Etika',
-    subtitle: 'Etiquette',
-    description:
-      'Zalda qətiyyən nalayiq ifadələrdən və küçə sözlərindən istifadə etmək olmaz. Zaldan xanım tələbələr və müəllimlər də istifadə edir.',
-    icon: HeartHandshake,
-    accent: 'text-rose-400 bg-rose-500/10 border-rose-500/30',
-  },
-  {
-    id: 4,
-    title: 'İnventarlardan Düzgün İstifadə',
-    subtitle: 'Equipment Care',
-    description:
-      'Bütün idman avadanlıqları təyinatı üzrə işlədilməlidir (futbol, voleybol, basketbol və stolüstü tennis inventarları).',
-    icon: Wrench,
-    accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-  },
-  {
-    id: 5,
-    title: 'Qaydaların Mənimsənilməsi',
-    subtitle: 'Game Rules',
-    description:
-      'İdman yarışlarına və oyunlarına qoşularkən qayda və təlimatları tam mənimsəyib qaydalar çərçivəsində oynayın.',
-    icon: BookOpenCheck,
-    accent: 'text-[#3B82F6] bg-[#3B82F6]/10 border-[#3B82F6]/30',
-  },
-];
-
-const FOUR_TABLES = [
-  {
-    number: 1,
-    label: 'Masa 1',
-    group: 'Xanımlar / Women',
-    isWomen: true,
-    usage: 'Xanım tələbələrin məşqləri, yoldaşlıq görüşləri və oyunları üçün masa',
-    surface: 'Donic Waldner Classic 25mm ITTF',
-  },
-  {
-    number: 2,
-    label: 'Masa 2',
-    group: 'Bəylər / Men',
-    isWomen: false,
-    usage: 'Bəy tələbələrin ELO reytinq oyunları, pilləli yarışlar və məşqləri üçün masa',
-    surface: 'Donic Waldner Classic 25mm ITTF',
-  },
-  {
-    number: 3,
-    label: 'Masa 3',
-    group: 'Bəylər / Men',
-    isWomen: false,
-    usage: 'Bəy tələbələrin texniki məşqləri, reytinq qarşılaşmaları və yoldaşlıq oyunları',
-    surface: 'Donic Waldner Classic 25mm ITTF',
-  },
-  {
-    number: 4,
-    label: 'Masa 4',
-    group: 'Bəylər / Men',
-    isWomen: false,
-    usage: 'Bəy tələbələrin sərbəst məşqləri, çağırış oyunları və gündəlik görüşləri',
-    surface: 'Donic Waldner Classic 25mm ITTF',
-  },
-];
-
 export default function HallRulesSection() {
+  const t = useTranslations('home');
+
+  const officialHallRules = [
+    {
+      id: 1,
+      title: t('hall_rules.rule1_title'),
+      subtitle: t('hall_rules.rule1_tag'),
+      description: t('hall_rules.rule1_desc'),
+      icon: Footprints,
+      accent: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
+    },
+    {
+      id: 2,
+      title: t('hall_rules.rule2_title'),
+      subtitle: t('hall_rules.rule2_tag'),
+      description: t('hall_rules.rule2_desc'),
+      icon: Shirt,
+      accent: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30',
+    },
+    {
+      id: 3,
+      title: t('hall_rules.rule3_title'),
+      subtitle: t('hall_rules.rule3_tag'),
+      description: t('hall_rules.rule3_desc'),
+      icon: HeartHandshake,
+      accent: 'text-rose-400 bg-rose-500/10 border-rose-500/30',
+    },
+    {
+      id: 4,
+      title: t('hall_rules.rule4_title'),
+      subtitle: t('hall_rules.rule4_tag'),
+      description: t('hall_rules.rule4_desc'),
+      icon: Wrench,
+      accent: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+    },
+    {
+      id: 5,
+      title: t('hall_rules.rule5_title'),
+      subtitle: t('hall_rules.rule5_tag'),
+      description: t('hall_rules.rule5_desc'),
+      icon: BookOpenCheck,
+      accent: 'text-[#3B82F6] bg-[#3B82F6]/10 border-[#3B82F6]/30',
+    },
+  ];
+
+  const fourTables = [
+    {
+      number: 1,
+      label: t('hall_rules.t1_label'),
+      group: t('hall_rules.t1_group'),
+      isWomen: true,
+      usage: t('hall_rules.t1_usage'),
+      surface: 'Donic Waldner Classic 25mm ITTF',
+    },
+    {
+      number: 2,
+      label: t('hall_rules.t2_label'),
+      group: t('hall_rules.t2_group'),
+      isWomen: false,
+      usage: t('hall_rules.t2_usage'),
+      surface: 'Donic Waldner Classic 25mm ITTF',
+    },
+    {
+      number: 3,
+      label: t('hall_rules.t3_label'),
+      group: t('hall_rules.t3_group'),
+      isWomen: false,
+      usage: t('hall_rules.t3_usage'),
+      surface: 'Donic Waldner Classic 25mm ITTF',
+    },
+    {
+      number: 4,
+      label: t('hall_rules.t4_label'),
+      group: t('hall_rules.t4_group'),
+      isWomen: false,
+      usage: t('hall_rules.t4_usage'),
+      surface: 'Donic Waldner Classic 25mm ITTF',
+    },
+  ];
+
   return (
     <div className="space-y-8">
       <SmoothReveal delay={0.05} scale>
@@ -111,17 +111,22 @@ export default function HallRulesSection() {
 
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-3 max-w-2xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-bold uppercase tracking-wider">
-                <Sparkles className="w-3.5 h-3.5" />
-                <span>BANM İdman Kompleksi • Rəsmi Təlimat</span>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="px-2.5 py-0.5 rounded-lg bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#3B82F6] font-mono text-xs font-black">
+                  {t('sections.tables_num')}
+                </span>
+                <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-cyan-500/30 bg-cyan-500/10 text-cyan-300 text-xs font-bold uppercase tracking-wider">
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>{t('hall_rules.badge')}</span>
+                </div>
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">
-                İdman Zalı Qaydaları və Masa Bölgüsü
+                {t('sections.tables_title')}
               </h2>
 
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                Bakı Ali Neft Məktəbinin İdman Kompleksində yerləşən 4 peşəkar stolüstü tennis masasının təyinatı və İdman Klubu rəhbərliyi tərəfindən təsdiqlənmiş rəsmi zal qaydaları.
+                {t('sections.tables_subtitle')} — {t('hall_rules.subtitle')}
               </p>
 
               <div className="flex flex-wrap items-center gap-4 pt-1 text-xs font-mono text-slate-300">
@@ -131,16 +136,23 @@ export default function HallRulesSection() {
                 </div>
                 <div className="flex items-center gap-1.5 bg-[#131C2B] px-3 py-1.5 rounded-xl border border-white/5">
                   <MapPin className="w-3.5 h-3.5 text-cyan-400" />
-                  <span>BANM Kampusu • İdman Zalı</span>
+                  <span>{t('hall_rules.location')}</span>
                 </div>
                 <div className="flex items-center gap-1.5 bg-[#131C2B] px-3 py-1.5 rounded-xl border border-white/5">
                   <Users className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>4 Rəsmi Masa (1 Xanımlar / 3 Bəylər)</span>
+                  <span>{t('hall_rules.tables_summary')}</span>
                 </div>
               </div>
             </div>
 
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
+              <Link
+                href="/tables"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#3B82F6] hover:bg-blue-600 text-white font-display font-bold text-xs shadow-lg shadow-blue-500/25 transition-all active:scale-95"
+              >
+                <CalendarCheck className="w-4 h-4" />
+                <span>{t('sections.book_table_btn')}</span>
+              </Link>
               <a
                 href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
                 target="_blank"
@@ -148,7 +160,7 @@ export default function HallRulesSection() {
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all active:scale-95"
               >
                 <MessageCircle className="w-4 h-4 fill-slate-950" />
-                <span>WhatsApp İcmasına Qoşul</span>
+                <span>{t('sections.join_whatsapp')}</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </a>
             </div>
@@ -162,7 +174,7 @@ export default function HallRulesSection() {
           <div className="space-y-4 relative z-10">
             <div className="flex items-center justify-between gap-3">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
-                Masa 1 • Xanımlar (Women)
+                {t('hall_rules.table1_badge')}
               </span>
               <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-400 text-white font-display font-black text-sm flex items-center justify-center shadow-lg shadow-rose-500/20">
                 #1
@@ -171,21 +183,21 @@ export default function HallRulesSection() {
 
             <div>
               <h3 className="text-xl font-display font-black text-white">
-                Table 1 — Xanımlar üçün Masa
+                {t('sections.table_1_label')}
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
-                Yalnız xanım oyunçular, məşqlər və yoldaşlıq/rəsmi oyunlar üçün ayrılmışdır.
+                {t('hall_rules.table1_desc')}
               </p>
             </div>
 
             <div className="rounded-2xl bg-[#131C2B] border border-rose-500/20 p-4 space-y-2 text-xs text-slate-300">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />
-                <span>Xanım tələbələr üçün daimi üstünlük və sərbəst məşq imkanı</span>
+                <span>{t('hall_rules.table1_bullet1')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-rose-400 shrink-0" />
-                <span>Donic Waldner Classic 25mm ITTF standartlı yarış masası</span>
+                <span>{t('hall_rules.table1_bullet2')}</span>
               </div>
             </div>
           </div>
@@ -196,7 +208,7 @@ export default function HallRulesSection() {
           <div className="space-y-4 relative z-10">
             <div className="flex items-center justify-between gap-3">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs font-bold uppercase tracking-wider">
-                Masalar 2, 3 və 4 • Bəylər (Men)
+                {t('hall_rules.tables24_badge')}
               </span>
               <div className="flex items-center gap-1.5">
                 {[2, 3, 4].map((num) => (
@@ -212,21 +224,21 @@ export default function HallRulesSection() {
 
             <div>
               <h3 className="text-xl font-display font-black text-white">
-                Tables 2, 3 & 4 — Bəylər üçün Məşq və Reytinq Masaları
+                {t('sections.table_standard_label')}
               </h3>
               <p className="text-xs sm:text-sm text-slate-300 mt-1.5 leading-relaxed">
-                Bəy tələbələrin gündəlik məşqləri, ELO reytinq (ladder) qarşılaşmaları və yoldaşlıq oyunları üçün təyin edilmişdir.
+                {t('hall_rules.tables24_desc')}
               </p>
             </div>
 
             <div className="rounded-2xl bg-[#131C2B] border border-cyan-500/20 p-4 space-y-2 text-xs text-slate-300">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>Rəsmi ELO reytinq oyunları, komanda məşqləri və sərbəst görüşlər</span>
+                <span>{t('hall_rules.tables24_bullet1')}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-cyan-400 shrink-0" />
-                <span>3 ədəd Donic Waldner Classic 25mm ITTF standartlı yarış masası</span>
+                <span>{t('hall_rules.tables24_bullet2')}</span>
               </div>
             </div>
           </div>
@@ -234,7 +246,7 @@ export default function HallRulesSection() {
       </SmoothReveal>
 
       <SmoothReveal staggerChildren={0.1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {FOUR_TABLES.map((tb) => (
+        {fourTables.map((tb) => (
           <SmoothRevealItem
             key={tb.number}
             direction="right"
@@ -302,22 +314,22 @@ export default function HallRulesSection() {
               </div>
               <div>
                 <h3 className="text-xl sm:text-2xl font-display font-black text-white">
-                  İdman Zalının Rəsmi Daxili İntizam Qaydaları
+                  {t('hall_rules.rules_header')}
                 </h3>
                 <p className="text-xs text-slate-400 mt-0.5">
-                  BANM İdman Klubu rəhbərliyi tərəfindən müəyyən edilmiş məcburi qaydalar
+                  {t('hall_rules.rules_subheader')}
                 </p>
               </div>
             </div>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold uppercase tracking-wider w-fit">
-              5 Rəsmi Qayda
+              {t('hall_rules.rules_count_badge')}
             </span>
           </div>
 
           <SmoothReveal staggerChildren={0.1} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {OFFICIAL_HALL_RULES.map((rule, index) => {
+            {officialHallRules.map((rule, index) => {
               const IconComponent = rule.icon;
-              const isLastOdd = index === OFFICIAL_HALL_RULES.length - 1 && OFFICIAL_HALL_RULES.length % 2 !== 0;
+              const isLastOdd = index === officialHallRules.length - 1 && officialHallRules.length % 2 !== 0;
 
               return (
                 <SmoothRevealItem

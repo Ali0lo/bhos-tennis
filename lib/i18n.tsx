@@ -19,6 +19,17 @@ const dictionaries: Record<Locale, Record<string, any>> = {
   ru: ruMessages,
 };
 
+function isValidLocale(val: string | null | undefined): val is Locale {
+  return val === 'az' || val === 'en' || val === 'ru';
+}
+
+function getCookieLocale(): Locale | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)NEXT_LOCALE=([^;]*)/);
+  const val = match ? decodeURIComponent(match[1]) : null;
+  return isValidLocale(val) ? val : null;
+}
+
 function lookupInDict(dict: Record<string, any>, path: string): string | undefined {
   const parts = path.split('.');
   let current: any = dict;
@@ -50,15 +61,25 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('az');
 
   useEffect(() => {
-    const saved = localStorage.getItem('bhos_tt_locale') as Locale;
-    if (saved && (saved === 'az' || saved === 'en' || saved === 'ru')) {
-      setLocaleState(saved);
+    const savedLocal = localStorage.getItem('bhos_tt_locale');
+    const cookieLoc = getCookieLocale();
+    const initial = isValidLocale(savedLocal)
+      ? savedLocal
+      : cookieLoc || 'az';
+    setLocaleState(initial);
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = initial;
+      document.cookie = `NEXT_LOCALE=${initial}; path=/; max-age=31536000; SameSite=Lax`;
     }
   }, []);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
-    localStorage.setItem('bhos_tt_locale', newLocale);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('bhos_tt_locale', newLocale);
+      document.documentElement.lang = newLocale;
+      document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
+    }
   }, []);
 
   const t = useCallback(
