@@ -80,24 +80,29 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="fixed top-6 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
-        <div className="w-full max-w-6xl rounded-full border border-white/10 bg-black/40 backdrop-blur-md px-4 sm:px-6 py-2.5 sm:py-3 shadow-2xl shadow-black/80 pointer-events-auto relative flex items-center justify-between transition-all">
-          <div className="flex items-center justify-start gap-3">
+      <header className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex flex-col items-center px-3 sm:px-4 pointer-events-none">
+        <div className="w-full max-w-6xl rounded-full border border-white/10 bg-[#080D16]/85 backdrop-blur-xl px-3.5 sm:px-6 py-2.5 sm:py-3 shadow-2xl shadow-black/80 pointer-events-auto relative flex items-center justify-between transition-all">
+          <div className="flex items-center justify-start gap-2.5 sm:gap-3">
             <Link
               href="/"
               aria-label="BHOS Table Tennis"
-              className="group flex items-center justify-center w-10 h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 hover:scale-105 transition-transform shrink-0"
+              className="group flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-cyan-500/10 border border-cyan-500/30 hover:scale-105 transition-transform shrink-0"
             >
               <img
                 src="/images/bhos-crest.png"
                 alt="BHOS Crest"
-                className="block h-6 w-auto max-w-[1.75rem] drop-shadow-[0_0_6px_rgba(0,229,255,0.6)]"
+                className="block h-5 sm:h-6 w-auto max-w-[1.75rem] drop-shadow-[0_0_6px_rgba(0,229,255,0.6)]"
               />
             </Link>
 
             <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="relative lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white"
+              type="button"
+              aria-label="Toggle navigation menu"
+              onClick={() => {
+                setMobileMenuOpen((prev) => !prev);
+                setUserDropdownOpen(false);
+              }}
+              className="relative lg:hidden p-2 rounded-full border border-white/10 bg-white/5 text-slate-300 hover:text-white transition"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               {pendingMatchesCount > 0 && (
@@ -196,7 +201,11 @@ export default function Navbar() {
             {currentUser ? (
               <div className="relative">
                 <button
-                  onClick={() => setUserDropdownOpen(!userDropdownOpen)}
+                  type="button"
+                  onClick={() => {
+                    setUserDropdownOpen((prev) => !prev);
+                    setMobileMenuOpen(false);
+                  }}
                   className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition ${getRoleBadgeColor(
                     currentUser.role
                   )}`}
@@ -316,7 +325,7 @@ export default function Navbar() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="w-full max-w-sm mx-auto mt-2 rounded-3xl border border-white/10 bg-slate-950/95 backdrop-blur-2xl p-4 shadow-2xl pointer-events-auto space-y-3">
+          <div className="lg:hidden w-full max-w-6xl mt-2.5 rounded-3xl border border-white/15 bg-[#0F1623]/95 backdrop-blur-2xl p-4 shadow-2xl shadow-black/90 pointer-events-auto space-y-3">
             <div className="grid grid-cols-3 gap-1">
               {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
                 <button
