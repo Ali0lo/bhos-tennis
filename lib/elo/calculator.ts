@@ -10,6 +10,69 @@ export interface MatchupPrediction {
   setMultiplier: number;
 }
 
+export interface DuelProjection {
+  userWinProbability: number;
+  targetWinProbability: number;
+  userWinPercent: number;
+  targetWinPercent: number;
+  winDelta: number;
+  lossDelta: number;
+  projectedWinElo: number;
+  projectedLossElo: number;
+}
+
+export function calculateDuelProjection(
+  userElo: number,
+  targetElo: number,
+  kFactor: number = 32
+): DuelProjection {
+  const safeUserElo = Math.min(
+    MAX_ELO,
+    Math.max(MIN_ELO, Number.isFinite(userElo) ? userElo : 0)
+  );
+  const safeTargetElo = Math.min(
+    MAX_ELO,
+    Math.max(MIN_ELO, Number.isFinite(targetElo) ? targetElo : 0)
+  );
+  const safeK = kFactor > 0 ? kFactor : 32;
+
+  const exponent = Math.max(
+    -25,
+    Math.min(25, (safeTargetElo - safeUserElo) / 400)
+  );
+  const userWinProbability = Math.max(
+    0,
+    Math.min(1, 1 / (1 + Math.pow(10, exponent)))
+  );
+  const targetWinProbability = 1 - userWinProbability;
+
+  const userWinPercent = Math.round(userWinProbability * 100);
+  const targetWinPercent = 100 - userWinPercent;
+
+  const winDelta = Math.min(
+    MAX_ELO - safeUserElo,
+    Math.round(safeK * (1 - userWinProbability))
+  );
+  const lossDelta = Math.max(
+    -safeUserElo,
+    Math.round(safeK * (0 - userWinProbability))
+  );
+
+  const projectedWinElo = Math.min(MAX_ELO, safeUserElo + winDelta);
+  const projectedLossElo = Math.max(MIN_ELO, safeUserElo + lossDelta);
+
+  return {
+    userWinProbability,
+    targetWinProbability,
+    userWinPercent,
+    targetWinPercent,
+    winDelta,
+    lossDelta,
+    projectedWinElo,
+    projectedLossElo,
+  };
+}
+
 export function getSetDominanceMultiplier(
   setsWon?: number,
   setsLost?: number

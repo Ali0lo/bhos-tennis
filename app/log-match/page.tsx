@@ -1,13 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import MatchLogger from '../../components/MatchLogger';
 import PendingApprovals from '../../components/PendingApprovals';
 import { BHOSDataStore } from '../../lib/data/store';
 import { PlayerProfile, isProfilePending } from '../../lib/data/types';
 import { Clock } from 'lucide-react';
 
-export default function LogMatchPage() {
+function LogMatchContent() {
+  const searchParams = useSearchParams();
+  const opponentId = searchParams.get('opponentId');
   const store = BHOSDataStore.getInstance();
   const [currentProfile, setCurrentProfile] = useState<PlayerProfile | null>(null);
 
@@ -37,7 +40,15 @@ export default function LogMatchPage() {
         </div>
       )}
       <PendingApprovals />
-      <MatchLogger />
+      <MatchLogger initialOpponentId={opponentId} />
     </div>
+  );
+}
+
+export default function LogMatchPage() {
+  return (
+    <Suspense fallback={<div className="max-w-4xl mx-auto py-8" />}>
+      <LogMatchContent />
+    </Suspense>
   );
 }

@@ -10,6 +10,7 @@ import SmoothReveal from '../../../components/SmoothReveal';
 import NumberTicker from '../../../components/NumberTicker';
 import EditProfileModal from '../../../components/EditProfileModal';
 import WhatIfSimulator from '../../../components/WhatIfSimulator';
+import HeadToHeadDuel from '../../../components/HeadToHeadDuel';
 import { evaluatePlayerAchievements } from '../../../lib/types/achievements';
 import {
   Trophy,
@@ -94,31 +95,62 @@ export default function PlayerProfilePage() {
   const playerId = rawId ? decodeURIComponent(rawId) : '';
 
   const [profile, setProfile] = useState<PlayerProfile | null>(null);
+  const [roster, setRoster] = useState<PlayerProfile[]>(() => store.getVerifiedProfiles());
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [dbAchievements, setDbAchievements] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [isMounted, setIsMounted] = useState(false);
-  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(() => store.getCurrentUser());
+  const [currentProfile, setCurrentProfile] = useState<PlayerProfile | null>(() => store.getCurrentUser());
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+    setCurrentProfile(store.getCurrentUser());
+    setRoster(store.getVerifiedProfiles());
     const unsub = store.subscribe(() => {
-      setCurrentUser(store.getCurrentUser());
+      setCurrentProfile(store.getCurrentUser());
+      setRoster(store.getVerifiedProfiles());
     });
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase.auth
+        .getUser()
+        .then(async ({ data }) => {
+          const email = data?.user?.email;
+          if (email) {
+            const { data: prof } = await supabase
+              .from('profiles')
+              .select('*')
+              .ilike('email', email)
+              .maybeSingle();
+            if (prof) {
+              setCurrentProfile(prof as PlayerProfile);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
     return unsub;
   }, [store]);
 
   const isOwnProfile = useMemo(() => {
-    if (!currentUser || !profile) return false;
+    if (!currentProfile || !profile) return false;
     return (
-      currentUser.id === profile.id ||
-      (Boolean(currentUser.email) &&
+      currentProfile.id === profile.id ||
+      (Boolean(currentProfile.email) &&
         Boolean(profile.email) &&
-        currentUser.email.toLowerCase() === profile.email.toLowerCase()) ||
-      currentUser.role === 'president'
+        currentProfile.email.toLowerCase() === profile.email.toLowerCase())
     );
-  }, [currentUser, profile]);
+  }, [currentProfile, profile]);
+
+  const isLoggedIn = Boolean(currentProfile?.id);
+
+  const canEditProfile = useMemo(() => {
+    if (!currentProfile || !profile) return false;
+    return isOwnProfile || currentProfile.role === 'president';
+  }, [currentProfile, profile, isOwnProfile]);
 
   const fetchPlayerData = async () => {
     if (!playerId) return;
@@ -591,7 +623,7 @@ export default function PlayerProfilePage() {
                     {profile.full_name.charAt(0).toUpperCase()}
                   </div>
                 )}
-                {isOwnProfile && (
+                {canEditProfile && (
                   <button
                     onClick={() => setIsEditModalOpen(true)}
                     className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition rounded-2xl flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 cursor-pointer"
@@ -614,7 +646,7 @@ export default function PlayerProfilePage() {
                     {profile.full_name}
                   </h1>
 
-                  {isOwnProfile && (
+                  {canEditProfile && (
                     <button
                       onClick={() => setIsEditModalOpen(true)}
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-[#3B82F6]/15 hover:bg-[#3B82F6]/25 text-[#3B82F6] hover:text-blue-300 border border-[#3B82F6]/30 transition shadow-sm"
@@ -891,7 +923,23 @@ export default function PlayerProfilePage() {
       </SmoothReveal>
 
       <SmoothReveal delay={0.12}>
-        <WhatIfSimulator player={profile} />
+        {isOwnProfile ? (
+          <WhatIfSimulator athlete={profile} roster={roster} />
+        ) : isLoggedIn && currentProfile ? (
+          <HeadToHeadDuel currentUser={currentProfile} targetPlayer={profile} />
+        ) : (
+          <div className="p-6 rounded-2xl bg-[#0F1623] border border-white/5 text-center">
+            <p className="text-sm text-slate-400 mb-3">
+              Bu oyunçu ilə potensial ELO dəyişikliklərini görmək və meydan oxumaq üçün daxil olun.
+            </p>
+            <Link
+              className="inline-flex items-center px-4 py-2 rounded-xl bg-[#131C2B] hover:bg-[#1A263B] text-blue-400 text-sm font-semibold border border-blue-500/20 transition-colors"
+              href="/login"
+            >
+              Giriş Edin &rarr;
+            </Link>
+          </div>
+        )}
       </SmoothReveal>
 
       <SmoothReveal delay={0.15}>

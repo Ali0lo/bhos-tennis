@@ -23,6 +23,7 @@ import {
 
 interface MatchLoggerProps {
   onMatchLogged?: () => void;
+  initialOpponentId?: string | null;
 }
 
 export function calculateStandardElo(
@@ -56,16 +57,19 @@ export function calculateStandardElo(
   };
 }
 
-export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
+export default function MatchLogger({
+  onMatchLogged,
+  initialOpponentId,
+}: MatchLoggerProps) {
   const store = BHOSDataStore.getInstance();
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
 
   const [playerOutcome, setPlayerOutcome] = useState<'won' | 'lost'>('won');
-  const [opponentId, setOpponentId] = useState<string>('');
+  const [opponentId, setOpponentId] = useState<string>(initialOpponentId || '');
   const [adminWinnerId, setAdminWinnerId] = useState<string>('');
-  const [adminLoserId, setAdminLoserId] = useState<string>('');
+  const [adminLoserId, setAdminLoserId] = useState<string>(initialOpponentId || '');
   const [p1SetsWon, setP1SetsWon] = useState<number>(3);
   const [p2SetsWon, setP2SetsWon] = useState<number>(1);
   const [detailedScores, setDetailedScores] = useState<string>('');
@@ -139,15 +143,27 @@ export default function MatchLogger({ onMatchLogged }: MatchLoggerProps) {
   useEffect(() => {
     fetchCurrentUser();
     fetchActivePlayers();
-    if (typeof window !== 'undefined') {
-      const params = new URLSearchParams(window.location.search);
-      const preselectedOpponent = params.get('opponentId');
-      if (preselectedOpponent) {
-        setOpponentId(preselectedOpponent);
-        setAdminLoserId(preselectedOpponent);
-      }
+    const resolvedOpponentId =
+      initialOpponentId ||
+      (typeof window !== 'undefined'
+        ? new URLSearchParams(window.location.search).get('opponentId')
+        : null);
+    if (resolvedOpponentId) {
+      setOpponentId(resolvedOpponentId);
+      setAdminLoserId(resolvedOpponentId);
     }
-  }, [fetchCurrentUser]);
+  }, [fetchCurrentUser, initialOpponentId]);
+
+  useEffect(() => {
+    if (
+      currentUser?.id &&
+      (initialOpponentId || adminLoserId) &&
+      !adminWinnerId &&
+      currentUser.id !== (initialOpponentId || adminLoserId)
+    ) {
+      setAdminWinnerId(currentUser.id);
+    }
+  }, [currentUser, initialOpponentId, adminLoserId, adminWinnerId]);
 
   const isAdminOrCoach = useMemo(() => {
     return currentUser?.role === 'coach' || currentUser?.role === 'president';

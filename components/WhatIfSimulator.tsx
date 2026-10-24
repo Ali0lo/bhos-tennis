@@ -22,7 +22,9 @@ import { getSupabaseClient } from '../lib/supabase/client';
 import { calculateWhatIf, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
 
 interface WhatIfSimulatorProps {
-  player: PlayerProfile;
+  player?: PlayerProfile;
+  athlete?: PlayerProfile;
+  roster?: PlayerProfile[];
 }
 
 interface SetPreset {
@@ -88,9 +90,23 @@ function AnimatedNumber({
   return <motion.span>{display}</motion.span>;
 }
 
-export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
+export default function WhatIfSimulator({
+  player: playerProp,
+  athlete,
+  roster: initialRoster,
+}: WhatIfSimulatorProps) {
+  const player = (athlete || playerProp)!;
   const store = BHOSDataStore.getInstance();
-  const [roster, setRoster] = useState<PlayerProfile[]>([]);
+  const [roster, setRoster] = useState<PlayerProfile[]>(() =>
+    initialRoster && initialRoster.length > 0
+      ? initialRoster
+          .filter((p) => p.id !== player.id)
+          .map((p) => ({
+            ...p,
+            current_elo: Math.min(MAX_ELO, Math.max(MIN_ELO, p.current_elo)),
+          }))
+      : []
+  );
   const [selectedOpponentId, setSelectedOpponentId] = useState<string>('');
   const [selectedSetPresetId, setSelectedSetPresetId] = useState<string>('standard');
   const [searchQuery, setSearchQuery] = useState<string>('');
@@ -100,6 +116,18 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
   const safePlayerElo = Math.min(MAX_ELO, Math.max(MIN_ELO, player.current_elo));
 
   useEffect(() => {
+    if (initialRoster && initialRoster.length > 0) {
+      const validOpponents = initialRoster
+        .filter((p) => p.id !== player.id)
+        .map((p) => ({
+          ...p,
+          current_elo: Math.min(MAX_ELO, Math.max(MIN_ELO, p.current_elo)),
+        }))
+        .sort((a, b) => b.current_elo - a.current_elo);
+      setRoster(validOpponents);
+      return;
+    }
+
     let isActive = true;
 
     const loadRoster = async () => {
@@ -145,7 +173,7 @@ export default function WhatIfSimulator({ player }: WhatIfSimulatorProps) {
     return () => {
       isActive = false;
     };
-  }, [player.id, store]);
+  }, [player.id, store, initialRoster]);
 
   useEffect(() => {
     if (roster.length > 0 && !selectedOpponentId) {
