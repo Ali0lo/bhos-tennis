@@ -11,6 +11,7 @@ import NumberTicker from '../components/NumberTicker';
 import AnimatedCounter from '../components/AnimatedCounter';
 import CourtBackground from '../components/CourtBackground';
 import MagneticButton from '../components/MagneticButton';
+import LeaderboardSkeleton from '../components/LeaderboardSkeleton';
 import TiltCard from '../components/TiltCard';
 import EloToastBadge from '../components/EloToastBadge';
 import SmoothReveal, { SmoothRevealItem } from '../components/SmoothReveal';
@@ -35,21 +36,36 @@ export default function HomePage() {
   const { t: rootT } = useTranslation();
   const store = BHOSDataStore.getInstance();
 
-  const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
-  const [matches, setMatches] = useState<MatchRecord[]>([]);
-  const [tournaments, setTournaments] = useState<Tournament[]>([]);
+  const [profiles, setProfiles] = useState<PlayerProfile[]>(() => store.getCachedLeaderboard(10));
+  const [matches, setMatches] = useState<MatchRecord[]>(() => store.getMatches());
+  const [tournaments, setTournaments] = useState<Tournament[]>(() => store.getTournaments());
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [showMatchModal, setShowMatchModal] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+
     const update = () => {
-      setProfiles(store.getProfiles());
+      if (!isMounted) return;
+      const cachedTop10 = store.getCachedLeaderboard(10);
+      setProfiles(cachedTop10.length > 0 ? cachedTop10 : store.getProfiles().slice(0, 10));
       setMatches(store.getMatches());
       setTournaments(store.getTournaments());
       setCurrentUser(store.getCurrentUser());
     };
+
     update();
-    return store.subscribe(update);
+    void store.fetchLeaderboardStandings({ limit: 10 }).then((topRows) => {
+      if (isMounted && topRows.length > 0) {
+        setProfiles(topRows);
+      }
+    });
+
+    const unsub = store.subscribe(update);
+    return () => {
+      isMounted = false;
+      unsub();
+    };
   }, [store]);
 
   const top3 = profiles.slice(0, 3);
@@ -350,7 +366,14 @@ export default function HomePage() {
             )}
           </div>
 
-          {top5.length > 0 && (
+          {top5.length === 0 ? (
+            <div
+              className="rounded-2xl bg-[#0F1623]/90 backdrop-blur-md overflow-hidden shadow-xl"
+              style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
+            >
+              <LeaderboardSkeleton rows={5} />
+            </div>
+          ) : (
             <div
               className="rounded-2xl bg-[#0F1623]/90 backdrop-blur-md overflow-hidden shadow-xl"
               style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}

@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import { motion } from 'framer-motion';
 import { BHOSDataStore } from '../../lib/data/store';
 import { PlayerProfile } from '../../lib/data/types';
-import { getSupabaseClient } from '../../lib/supabase/client';
 import SmoothReveal from '../../components/SmoothReveal';
 import CourtBackground from '../../components/CourtBackground';
 import LeaderboardTable, { isStaffMember } from '../../components/LeaderboardTable';
+import LeaderboardSkeleton from '../../components/LeaderboardSkeleton';
 import AnimatedCounter from '../../components/AnimatedCounter';
 import {
   Search,
@@ -58,9 +59,9 @@ const COHORT_PILLS: { id: string; label: string }[] = [
 export default function LeaderboardPage() {
   const store = BHOSDataStore.getInstance();
 
-  const [profiles, setProfiles] = useState<PlayerProfile[]>([]);
-  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [profiles, setProfiles] = useState<PlayerProfile[]>(() => store.getCachedLeaderboard());
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(() => store.getCurrentUser());
+  const [loading, setLoading] = useState<boolean>(() => store.getCachedLeaderboard().length === 0);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedFaculty, setSelectedFaculty] = useState<string>('Hamısı');
   const [genderFilter, setGenderFilter] = useState<'ALL' | 'male' | 'female'>('ALL');
@@ -69,56 +70,30 @@ export default function LeaderboardPage() {
   useEffect(() => {
     let isMounted = true;
 
-    async function loadLeaderboard() {
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        try {
-          const { data: sessionData } = await supabase.auth.getSession();
-          const sessionEmail = sessionData?.session?.user?.email;
-
-          const { data, error } = await supabase
-            .from('profiles')
-            .select('*')
-            .order('current_elo', { ascending: false });
-
-          if (!error && data && data.length > 0 && isMounted) {
-            const verifiedList = (data as PlayerProfile[])
-              .filter((p) => p.is_verified !== false)
-              .map((p, idx) => ({
-                ...p,
-                rank: idx + 1,
-              }));
-
-            setProfiles(verifiedList);
-
-            if (sessionEmail) {
-              const found = (data as PlayerProfile[]).find(
-                (p) => p.email?.toLowerCase() === sessionEmail.toLowerCase()
-              );
-              if (found) setCurrentUser(found);
-            } else {
-              setCurrentUser(store.getCurrentUser());
-            }
-
-            setLoading(false);
-            return;
-          }
-        } catch {}
-      }
-
-      if (isMounted) {
-        setProfiles(store.getVerifiedProfiles());
-        setCurrentUser(store.getCurrentUser());
-        setLoading(false);
-      }
+    const cached = store.getCachedLeaderboard();
+    if (cached.length > 0) {
+      setProfiles(cached);
+      setCurrentUser(store.getCurrentUser());
+      setLoading(false);
     }
 
-    loadLeaderboard();
+    store.fetchLeaderboardStandings().then((standings) => {
+      if (!isMounted) return;
+      if (standings.length > 0) {
+        setProfiles(standings);
+      } else {
+        setProfiles(store.getVerifiedProfiles());
+      }
+      setCurrentUser(store.getCurrentUser());
+      setLoading(false);
+    });
 
     const unsub = store.subscribe(() => {
       if (isMounted) {
-        setProfiles(store.getVerifiedProfiles());
+        const latest = store.getCachedLeaderboard();
+        setProfiles(latest.length > 0 ? latest : store.getVerifiedProfiles());
         setCurrentUser(store.getCurrentUser());
+        setLoading(false);
       }
     });
 
@@ -314,14 +289,7 @@ export default function LeaderboardPage() {
           style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
         >
           {loading ? (
-            <div className="p-8 space-y-3">
-              {[1, 2, 3, 4, 5, 6].map((n) => (
-                <div
-                  key={n}
-                  className="h-14 rounded-xl bg-[#131C2B] animate-pulse border border-white/5"
-                />
-              ))}
-            </div>
+            <LeaderboardSkeleton rows={5} />
           ) : filteredProfiles.length === 0 ? (
             <div className="p-12 text-center space-y-2">
               <Sparkles className="w-8 h-8 text-slate-500 mx-auto" />
@@ -331,7 +299,13 @@ export default function LeaderboardPage() {
               </p>
             </div>
           ) : (
-            <LeaderboardTable players={filteredProfiles} currentUser={currentUser} />
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.2 }}
+            >
+              <LeaderboardTable players={filteredProfiles} currentUser={currentUser} />
+            </motion.div>
           )}
         </div>
       </div>

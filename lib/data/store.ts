@@ -14,7 +14,45 @@ const STORAGE_KEYS = {
   CURRENT_USER_ID: 'bhos_tt_active_user_id_v8',
 };
 
-// Safe browser local storage access
+const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v1';
+const LEADERBOARD_TTL_MS = 60_000;
+
+interface LeaderboardCacheEntry {
+  data: PlayerProfile[];
+  timestamp: number;
+  isFull: boolean;
+}
+
+function getSessionLeaderboardCache(): LeaderboardCacheEntry | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(SESSION_LEADERBOARD_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setSessionLeaderboardCache(entry: LeaderboardCacheEntry): void {
+  if (typeof window === 'undefined') return;
+  try {
+    sessionStorage.setItem(SESSION_LEADERBOARD_KEY, JSON.stringify(entry));
+  } catch {}
+}
+
+function normalizeAvatarUrl(url?: string): string | undefined {
+  if (!url) return url;
+  if (url.includes('unsplash.com')) {
+    if (url.includes('1609710228159')) return '/images/avatars/topspin-pro.jpg';
+    if (url.includes('1517649763962')) return '/images/avatars/carbon-blade.jpg';
+    if (url.includes('1579952363873')) return '/images/avatars/varsity-champion.jpg';
+    if (url.includes('1546519638')) return '/images/avatars/smash-master.jpg';
+    if (url.includes('1534158914592')) return '/images/avatars/match-point.jpg';
+    return '/images/avatars/bhos-varsity.jpg';
+  }
+  return url;
+}
+
 function getStored<T>(key: string, fallback: T): T {
   if (typeof window === 'undefined') return fallback;
   try {
@@ -45,6 +83,8 @@ export class BHOSDataStore {
   private currentUser: PlayerProfile | null = null;
   private isCloudConnected: boolean = false;
   private realtimeChannel: any = null;
+  private leaderboardCache: LeaderboardCacheEntry | null = null;
+  private inFlightLeaderboardPromise: Promise<PlayerProfile[]> | null = null;
 
   private listeners: (() => void)[] = [];
 
@@ -66,6 +106,7 @@ export class BHOSDataStore {
         } catch {}
       });
 
+      this.leaderboardCache = getSessionLeaderboardCache();
       this.profiles = getStored(STORAGE_KEYS.PROFILES, INITIAL_PROFILES);
       const storedMatches = getStored<MatchRecord[]>(STORAGE_KEYS.MATCHES, INITIAL_MATCHES);
       const deletedMatches = getStored<string[]>('bhos_deleted_matches', []);
@@ -100,21 +141,16 @@ export class BHOSDataStore {
     return BHOSDataStore.instance;
   }
 
-  /**
-   * Initializes Supabase cloud data fetching and real-time subscription.
-   */
   private async initializeCloudSync() {
     const supabase = getSupabaseClient();
     if (!supabase) {
-      console.info('[BHOS Store] Running in client-side LocalStorage mode (Supabase env vars not set).');
       return;
     }
 
     try {
       this.isCloudConnected = true;
 
-      // 1. Listen to Supabase Auth state changes
-      supabase.auth.onAuthStateChange(async (event, session) => {
+      supabase.auth.onAuthStateChange(async (_event, session) => {
         if (session?.user?.email) {
           await this.linkProfileByEmail(session.user.email);
         } else {
@@ -125,35 +161,209 @@ export class BHOSDataStore {
         }
       });
 
-      // 2. Check initial session
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user?.email) {
-        await this.linkProfileByEmail(session.user.email);
-      } else {
-        this.currentUser = null;
-        this.currentUserId = null;
-        setStored(STORAGE_KEYS.CURRENT_USER_ID, null);
-        this.notify();
-      }
+      const sessionPromise = supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (session?.user?.email) {
+          await this.linkProfileByEmail(session.user.email);
+        } else {
+          this.currentUser = null;
+          this.currentUserId = null;
+          setStored(STORAGE_KEYS.CURRENT_USER_ID, null);
+          this.notify();
+        }
+      });
 
-      // 3. Initial cloud pull
       await Promise.allSettled([
+        this.fetchLeaderboardStandings(),
         this.fetchProfilesFromCloud(),
         this.fetchMatchesFromCloud(),
         this.fetchTournamentsFromCloud(),
-        this.fetchReservationsFromCloud(),
+        sessionPromise,
       ]);
 
-      // Setup Realtime Subscription
       this.setupRealtimeSubscription(supabase);
     } catch (err) {
       console.warn('[BHOS Store] Cloud sync initialization error:', err);
     }
   }
 
-  /**
-   * Fetches latest profiles from Supabase.
-   */
+  public getCachedLeaderboard(limit?: number): PlayerProfile[] {
+    const cached = this.leaderboardCache || getSessionLeaderboardCache();
+    if (cached && cached.data.length > 0) {
+      this.leaderboardCache = cached;
+      return limit ? cached.data.slice(0, limit) : cached.data;
+    }
+    const verified = this.getVerifiedProfiles();
+    return limit ? verified.slice(0, limit) : verified;
+  }
+
+  public async fetchLeaderboardStandings(options?: {
+    limit?: number;
+    force?: boolean;
+  }): Promise<PlayerProfile[]> {
+    const limit = options?.limit;
+    const force = Boolean(options?.force);
+    const now = Date.now();
+
+    const cached = this.leaderboardCache || getSessionLeaderboardCache();
+    if (cached && cached.data.length > 0) {
+      this.leaderboardCache = cached;
+      const isFresh = now - cached.timestamp < LEADERBOARD_TTL_MS;
+      const satisfiesScope = cached.isFull || (Boolean(limit) && cached.data.length >= limit!);
+
+      if (!force && isFresh && satisfiesScope) {
+        return limit ? cached.data.slice(0, limit) : cached.data;
+      }
+
+      if (!force && satisfiesScope) {
+        void this.revalidateLeaderboardFromCloud(limit);
+        return limit ? cached.data.slice(0, limit) : cached.data;
+      }
+    }
+
+    return this.revalidateLeaderboardFromCloud(limit);
+  }
+
+  private async revalidateLeaderboardFromCloud(limit?: number): Promise<PlayerProfile[]> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      return this.getCachedLeaderboard(limit);
+    }
+
+    if (this.inFlightLeaderboardPromise && !limit) {
+      return this.inFlightLeaderboardPromise;
+    }
+
+    const task = (async (): Promise<PlayerProfile[]> => {
+      try {
+        let viewQuery = supabase
+          .from('leaderboard_standings')
+          .select('id, full_name, faculty, current_elo, avatar_url, origin, total_matches, wins, win_rate')
+          .order('current_elo', { ascending: false });
+
+        if (limit) {
+          viewQuery = viewQuery.limit(limit);
+        }
+
+        const { data, error } = await viewQuery;
+
+        if (!error && data && data.length > 0) {
+          const existingById = new Map(this.profiles.map((p) => [p.id, p]));
+          const mapped: PlayerProfile[] = data.map((row: any, idx: number) => {
+            const prev = existingById.get(row.id);
+            const totalMatches = Number(row.total_matches ?? prev?.matches_played ?? 0);
+            const wins = Number(row.wins ?? prev?.wins ?? 0);
+            const losses = Math.max(0, totalMatches - wins);
+
+            return {
+              id: row.id,
+              full_name: row.full_name,
+              email: prev?.email || '',
+              major_faculty: row.faculty || prev?.major_faculty || 'Computer Engineering',
+              admission_year: prev?.admission_year ?? 2024,
+              user_type: prev?.user_type || (row.full_name?.includes('İftixar') ? 'staff' : 'student'),
+              gender: prev?.gender || 'male',
+              role:
+                prev?.role ||
+                (row.full_name?.includes('İftixar')
+                  ? 'coach'
+                  : row.full_name?.includes('İsgəndərli')
+                  ? 'president'
+                  : 'player'),
+              playing_level: prev?.playing_level || 'Advanced',
+              playing_style: prev?.playing_style || 'Shakehand Attack',
+              blade_equipment: prev?.blade_equipment || 'Butterfly Viscaria',
+              forehand_rubber: prev?.forehand_rubber || 'Tenergy 05',
+              backhand_rubber: prev?.backhand_rubber || 'Dignics 09C',
+              current_elo: Number(row.current_elo ?? 0),
+              matches_played: totalMatches,
+              wins,
+              losses,
+              status: 'approved',
+              origin: row.origin || prev?.origin || 'Qeydiyyat',
+              is_verified: true,
+              is_active: true,
+              avatar_url: normalizeAvatarUrl(row.avatar_url || prev?.avatar_url),
+              rank: idx + 1,
+              created_at: prev?.created_at || new Date().toISOString(),
+            };
+          });
+
+          if (!limit) {
+            const unverified = this.profiles.filter((p) => isProfilePending(p));
+            this.profiles = [...mapped, ...unverified];
+            this.recalculateRanks();
+            setStored(STORAGE_KEYS.PROFILES, this.profiles);
+          }
+
+          const cacheEntry: LeaderboardCacheEntry = {
+            data: mapped,
+            timestamp: Date.now(),
+            isFull: !limit,
+          };
+          this.leaderboardCache = cacheEntry;
+          setSessionLeaderboardCache(cacheEntry);
+          this.notify();
+
+          return limit ? mapped.slice(0, limit) : mapped;
+        }
+
+        let fallbackQuery = supabase
+          .from('profiles')
+          .select(
+            'id, full_name, email, major_faculty, admission_year, user_type, gender, role, playing_level, current_elo, matches_played, wins, losses, status, origin, is_verified, is_active, avatar_url, created_at'
+          )
+          .order('current_elo', { ascending: false });
+
+        if (limit) {
+          fallbackQuery = fallbackQuery.limit(limit);
+        }
+
+        const { data: fallbackData, error: fallbackError } = await fallbackQuery;
+        if (!fallbackError && fallbackData && fallbackData.length > 0) {
+          const normalized = (fallbackData as PlayerProfile[]).map((p) => ({
+            ...p,
+            avatar_url: normalizeAvatarUrl(p.avatar_url),
+          }));
+
+          const verified = normalized
+            .filter((p) => !isProfilePending(p))
+            .map((p, idx) => ({ ...p, rank: idx + 1 }));
+
+          if (!limit) {
+            this.profiles = normalized;
+            this.recalculateRanks();
+            setStored(STORAGE_KEYS.PROFILES, this.profiles);
+          }
+
+          const cacheEntry: LeaderboardCacheEntry = {
+            data: verified,
+            timestamp: Date.now(),
+            isFull: !limit,
+          };
+          this.leaderboardCache = cacheEntry;
+          setSessionLeaderboardCache(cacheEntry);
+          this.notify();
+
+          return limit ? verified.slice(0, limit) : verified;
+        }
+      } catch (err) {
+        console.warn('[BHOS Store] Leaderboard fetch error:', err);
+      } finally {
+        if (!limit) {
+          this.inFlightLeaderboardPromise = null;
+        }
+      }
+
+      return this.getCachedLeaderboard(limit);
+    })();
+
+    if (!limit) {
+      this.inFlightLeaderboardPromise = task;
+    }
+
+    return task;
+  }
+
   public async fetchProfilesFromCloud(): Promise<void> {
     const supabase = getSupabaseClient();
     if (!supabase) return;
@@ -170,19 +380,22 @@ export class BHOSDataStore {
       }
 
       if (data && data.length > 0) {
-        this.profiles = (data as PlayerProfile[]).map((p) => {
-          if (p.avatar_url && p.avatar_url.includes('unsplash.com')) {
-            if (p.avatar_url.includes('1609710228159')) return { ...p, avatar_url: '/images/avatars/topspin-pro.jpg' };
-            if (p.avatar_url.includes('1517649763962')) return { ...p, avatar_url: '/images/avatars/carbon-blade.jpg' };
-            if (p.avatar_url.includes('1579952363873')) return { ...p, avatar_url: '/images/avatars/varsity-champion.jpg' };
-            if (p.avatar_url.includes('1546519638')) return { ...p, avatar_url: '/images/avatars/smash-master.jpg' };
-            if (p.avatar_url.includes('1534158914592')) return { ...p, avatar_url: '/images/avatars/match-point.jpg' };
-            return { ...p, avatar_url: '/images/avatars/bhos-varsity.jpg' };
-          }
-          return p;
-        });
+        this.profiles = (data as PlayerProfile[]).map((p) => ({
+          ...p,
+          avatar_url: normalizeAvatarUrl(p.avatar_url),
+        }));
         this.recalculateRanks();
         setStored(STORAGE_KEYS.PROFILES, this.profiles);
+
+        const verified = this.getVerifiedProfiles();
+        const cacheEntry: LeaderboardCacheEntry = {
+          data: verified,
+          timestamp: Date.now(),
+          isFull: true,
+        };
+        this.leaderboardCache = cacheEntry;
+        setSessionLeaderboardCache(cacheEntry);
+
         this.notify();
       }
     } catch (err) {
@@ -190,15 +403,12 @@ export class BHOSDataStore {
     }
   }
 
-  /**
-   * Fetches latest matches from Supabase.
-   */
   public async fetchMatchesFromCloud(): Promise<void> {
     const supabase = getSupabaseClient();
     if (!supabase) return;
 
     try {
-      await supabase.rpc('auto_resolve_stale_matches', { hours_threshold: 48 }).then(() => {}, () => {});
+      void supabase.rpc('auto_resolve_stale_matches', { hours_threshold: 48 }).then(() => {}, () => {});
 
       const { data, error } = await supabase
         .from('matches')
@@ -248,9 +458,7 @@ export class BHOSDataStore {
     }
   }
 
-  /**
-   * Fetches tournaments from Supabase.
-   */
+  
   public async fetchTournamentsFromCloud(): Promise<void> {
     const supabase = getSupabaseClient();
     if (!supabase) return;
@@ -271,9 +479,7 @@ export class BHOSDataStore {
     }
   }
 
-  /**
-   * Fetches table reservations from Supabase.
-   */
+  
   public async fetchReservationsFromCloud(): Promise<void> {
     const supabase = getSupabaseClient();
     if (!supabase) return;
@@ -294,9 +500,7 @@ export class BHOSDataStore {
     }
   }
 
-  /**
-   * Connects to Supabase Realtime channel for live updates across all clients.
-   */
+  
   private setupRealtimeSubscription(supabase: any) {
     if (this.realtimeChannel) {
       supabase.removeChannel(this.realtimeChannel);
@@ -437,7 +641,6 @@ export class BHOSDataStore {
     });
   }
 
-  // --- Auth / Active User ---
   public getCurrentUser(): PlayerProfile | null {
     if (this.currentUser) return this.currentUser;
     if (this.currentUserId) {
@@ -457,12 +660,10 @@ export class BHOSDataStore {
   public async linkProfileByEmail(email: string): Promise<PlayerProfile | null> {
     const normalizedEmail = email.trim().toLowerCase();
 
-    // 1. Look in existing local profiles first
     let profile = this.profiles.find(
       (p) => p.email && p.email.trim().toLowerCase() === normalizedEmail
     );
 
-    // 2. Fetch fresh record from Supabase
     const supabase = getSupabaseClient();
     if (supabase) {
       try {
@@ -523,7 +724,6 @@ export class BHOSDataStore {
     }
   }
 
-  // --- Profiles ---
   public getProfiles(): PlayerProfile[] {
     this.recalculateRanks();
     return [...this.profiles];
@@ -660,7 +860,6 @@ export class BHOSDataStore {
     this.recalculateRanks();
     this.saveLocal();
 
-    // Async Supabase Sync
     const supabase = getSupabaseClient();
     if (supabase) {
       supabase
@@ -683,7 +882,6 @@ export class BHOSDataStore {
     this.saveLocal();
     this.notify();
 
-    // Async Supabase Sync
     const supabase = getSupabaseClient();
     if (supabase) {
       supabase
@@ -729,7 +927,6 @@ export class BHOSDataStore {
     return true;
   }
 
-  // --- Matches ---
   public getMatches(): MatchRecord[] {
     return [...this.matches].sort(
       (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
@@ -1138,7 +1335,6 @@ export class BHOSDataStore {
     return matchRecord;
   }
 
-  // --- Tournaments ---
   public getTournaments(): Tournament[] {
     return [...this.tournaments];
   }
@@ -1270,7 +1466,6 @@ export class BHOSDataStore {
     return tournament;
   }
 
-  // --- Table Reservations ---
   public getReservations(date?: string): TableReservation[] {
     if (!date) return [...this.reservations];
     return this.reservations.filter(
