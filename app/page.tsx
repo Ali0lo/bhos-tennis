@@ -164,7 +164,7 @@ export default function HomePage() {
                 className="px-6 py-3 rounded-full border border-white/20 bg-slate-950/60 hover:bg-slate-900/80 backdrop-blur-md text-white font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
               >
                 <TableIcon className="w-4 h-4 text-pink-400" />
-                <span>{t('sections.book_table_btn')}</span>
+                <span>{rootT('hero.hall_tables_btn')}</span>
               </Link>
 
               {(currentUser?.role === 'president' || currentUser?.role === 'coach') && (

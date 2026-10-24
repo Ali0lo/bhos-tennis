@@ -77,13 +77,13 @@
     "badge": "Official Table Tennis Portal",
     "hero_title_1": "BHOS Table Tennis",
     "hero_title_2": "Ranking & League System",
-    "hero_desc": "ITTF-standard ELO ranking, live tournament brackets, and sports hall table reservation platform for BHOS students and faculty.",
+    "hero_desc": "ITTF-standard ELO ranking, live tournament brackets, and official club platform for BHOS students and faculty.",
     "cta_join": "Join & Compete",
     "cta_view_leaderboard": "View Leaderboard",
     "hero_stats": {
       "players": "Active Players",
       "matches": "Matches Played",
-      "tables": "Table Bookings"
+      "tables": "Campus Tables"
     },
     "sections": {
       "leaderboard_num": "01",
@@ -92,10 +92,10 @@
       "view_all_leaderboard": "View Full Standings",
       "tables_num": "02",
       "tables_title": "Sports Hall Tables",
-      "tables_subtitle": "Live availability and reservation schedules",
+      "tables_subtitle": "4 official table allocations and sports hall conduct rules",
       "table_1_label": "Table 1 — Dedicated for Ladies",
       "table_standard_label": "Tables 2–4 — General Practice",
-      "book_table_btn": "Reserve Table",
+      "book_table_btn": "Hall & Tables",
       "tournament_num": "03",
       "tournament_title": "Tournaments & Championships",
       "tournament_subtitle": "Live knockout bracket progression and upcoming competitions",

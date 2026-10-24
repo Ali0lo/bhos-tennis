@@ -77,13 +77,13 @@
     "badge": "Rəsmi Stolüstü Tennis Portalı",
     "hero_title_1": "BANM Stolüstü Tennis",
     "hero_title_2": "Reytinq və Liqa Sistemi",
-    "hero_desc": "Bakı Ali Neft Məktəbinin tələbə və əməkdaşları üçün ITTF standartlı ELO reytinqi, canlı turnir cədvəli və masa rezervasiya platforması.",
+    "hero_desc": "Bakı Ali Neft Məktəbinin tələbə və əməkdaşları üçün ITTF standartlı ELO reytinqi, canlı turnir cədvəli və rəsmi klub platforması.",
     "cta_join": "Qoşul və Reytinq Qazan",
     "cta_view_leaderboard": "Liderlər Cədvəli",
     "hero_stats": {
       "players": "Aktiv Oyunçu",
       "matches": "Oynanılmış Matç",
-      "tables": "Masa Rezervi"
+      "tables": "Kampus Masaları"
     },
     "sections": {
       "leaderboard_num": "01",
@@ -92,10 +92,10 @@
       "view_all_leaderboard": "Bütün Reytinqə Bax",
       "tables_num": "02",
       "tables_title": "İdman Zalının Masaları",
-      "tables_subtitle": "Masaların cari vəziyyəti və növbə cədvəli",
+      "tables_subtitle": "4 rəsmi masa bölgüsü və idman zalının daxili intizam qaydaları",
       "table_1_label": "Masa 1 — Xanımlar üçün Masa",
       "table_standard_label": "Masalar 2–4 — Ümumi Masalar",
-      "book_table_btn": "Masa Rezerv Et",
+      "book_table_btn": "Zal & Masalar",
       "tournament_num": "03",
       "tournament_title": "Turnirlər və Çempionatlar",
       "tournament_subtitle": "Canlı Play-off cədvəli və qarşıdakı turnirlər",

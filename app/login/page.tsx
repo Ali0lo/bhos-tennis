@@ -451,7 +451,7 @@ export default function LoginPage() {
                 <div>
                   <span className="font-bold block">{t('auth.pending_badge')}</span>
                   <span className="text-amber-200/80 text-[11px]">
-                    Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra matç qeyd edə və masa rezerv edə bilərsiniz.
+                    Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.
                   </span>
                 </div>
               </div>

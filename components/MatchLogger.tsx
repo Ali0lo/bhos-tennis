@@ -211,7 +211,7 @@ export default function MatchLogger({
 
     if (isPendingApproval) {
       setErrorMessage(
-        'Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra matç qeyd edə və masa rezerv edə bilərsiniz.'
+        'Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.'
       );
       return;
     }
@@ -398,7 +398,7 @@ export default function MatchLogger({
               Hesabınız təsdiq gözləyir
             </span>
             <span>
-              Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra matç qeyd edə və masa rezerv edə bilərsiniz.
+              Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.
             </span>
           </div>
         </div>

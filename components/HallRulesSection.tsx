@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 import SmoothReveal, { SmoothRevealItem } from './SmoothReveal';
 import { useTranslations } from '../lib/i18n';
 import {
@@ -18,7 +17,6 @@ import {
   MessageCircle,
   ExternalLink,
   CheckCircle2,
-  CalendarCheck,
 } from 'lucide-react';
 
 export default function HallRulesSection() {
@@ -126,7 +124,7 @@ export default function HallRulesSection() {
               </h2>
 
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                {t('sections.tables_subtitle')} — {t('hall_rules.subtitle')}
+                {t('hall_rules.subtitle')}
               </p>
 
               <div className="flex flex-wrap items-center gap-4 pt-1 text-xs font-mono text-slate-300">
@@ -146,13 +144,6 @@ export default function HallRulesSection() {
             </div>
 
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
-              <Link
-                href="/tables"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-[#3B82F6] hover:bg-blue-600 text-white font-display font-bold text-xs shadow-lg shadow-blue-500/25 transition-all active:scale-95"
-              >
-                <CalendarCheck className="w-4 h-4" />
-                <span>{t('sections.book_table_btn')}</span>
-              </Link>
               <a
                 href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
                 target="_blank"
