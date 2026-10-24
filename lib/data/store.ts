@@ -1563,3 +1563,278 @@ export class BHOSDataStore {
     this.saveLocal();
   }
 }
+
+export interface PlayerProfileSummaryResult {
+  profile: PlayerProfile | null;
+  recent_matches: MatchRecord[];
+  achievements: Record<string, string>;
+}
+
+const PLAYER_PROFILE_TTL_MS = 45_000;
+const inMemoryPlayerCache = new Map<
+  string,
+  { data: PlayerProfileSummaryResult; timestamp: number }
+>();
+
+function isUuidString(val: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+}
+
+function mapRawProfileToPlayerProfile(
+  raw: any,
+  fallback?: PlayerProfile
+): PlayerProfile {
+  const totalMatches = Number(
+    raw.matches_played ?? raw.total_matches ?? fallback?.matches_played ?? 0
+  );
+  const wins = Number(raw.wins ?? fallback?.wins ?? 0);
+  const losses = Number(
+    raw.losses ?? Math.max(0, totalMatches - wins)
+  );
+
+  return {
+    id: raw.id || fallback?.id || '',
+    full_name: raw.full_name || fallback?.full_name || 'Unknown',
+    email: raw.email || fallback?.email || '',
+    major_faculty:
+      raw.major_faculty || raw.faculty || fallback?.major_faculty || 'Computer Engineering',
+    admission_year: raw.admission_year ?? fallback?.admission_year ?? 2024,
+    user_type:
+      raw.user_type ||
+      fallback?.user_type ||
+      (raw.full_name?.includes('İftixar') ? 'staff' : 'student'),
+    gender: raw.gender || fallback?.gender || 'male',
+    role:
+      raw.role ||
+      fallback?.role ||
+      (raw.full_name?.includes('İftixar')
+        ? 'coach'
+        : raw.full_name?.includes('İsgəndərli')
+        ? 'president'
+        : 'player'),
+    playing_level: raw.playing_level || fallback?.playing_level || 'Intermediate',
+    playing_style: raw.playing_style || fallback?.playing_style || 'Shakehand Attack',
+    blade_equipment: raw.blade_equipment || fallback?.blade_equipment || 'Butterfly Viscaria',
+    forehand_rubber: raw.forehand_rubber || fallback?.forehand_rubber || 'Tenergy 05',
+    backhand_rubber: raw.backhand_rubber || fallback?.backhand_rubber || 'Dignics 09C',
+    current_elo: Number(raw.current_elo ?? fallback?.current_elo ?? 0),
+    matches_played: totalMatches,
+    wins,
+    losses,
+    status: raw.status || fallback?.status || 'approved',
+    origin: raw.origin || fallback?.origin || 'Qeydiyyat',
+    is_verified: raw.is_verified ?? fallback?.is_verified ?? true,
+    is_active: raw.is_active ?? fallback?.is_active ?? true,
+    avatar_url: normalizeAvatarUrl(raw.avatar_url || fallback?.avatar_url),
+    rank: raw.rank ?? fallback?.rank,
+    created_at: raw.created_at || fallback?.created_at || new Date().toISOString(),
+  };
+}
+
+export function getCachedPlayerProfile(
+  playerId: string
+): PlayerProfileSummaryResult | null {
+  if (!playerId) return null;
+  const cacheKey = `bhos_player_${playerId}`;
+  const now = Date.now();
+
+  const mem = inMemoryPlayerCache.get(cacheKey);
+  if (mem && now - mem.timestamp < PLAYER_PROFILE_TTL_MS) {
+    return mem.data;
+  }
+
+  if (typeof window !== 'undefined') {
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed?.data && now - parsed.timestamp < PLAYER_PROFILE_TTL_MS) {
+          inMemoryPlayerCache.set(cacheKey, parsed);
+          return parsed.data as PlayerProfileSummaryResult;
+        }
+      } catch {}
+    }
+  }
+
+  const store = BHOSDataStore.getInstance();
+  const localProfile = store.getProfile(playerId);
+  if (localProfile && localProfile.is_verified !== false) {
+    const localMatches = store.getPlayerMatches(localProfile.id);
+    return {
+      profile: localProfile,
+      recent_matches: localMatches,
+      achievements: {},
+    };
+  }
+
+  return null;
+}
+
+export async function fetchPlayerProfile(
+  playerId: string,
+  options?: { force?: boolean }
+): Promise<PlayerProfileSummaryResult> {
+  const cacheKey = `bhos_player_${playerId}`;
+  const force = Boolean(options?.force);
+
+  if (!force && typeof window !== 'undefined') {
+    const mem = inMemoryPlayerCache.get(cacheKey);
+    if (mem && Date.now() - mem.timestamp < PLAYER_PROFILE_TTL_MS) {
+      return mem.data;
+    }
+
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed?.data && Date.now() - parsed.timestamp < PLAYER_PROFILE_TTL_MS) {
+          inMemoryPlayerCache.set(cacheKey, parsed);
+          return parsed.data as PlayerProfileSummaryResult;
+        }
+      } catch {}
+    }
+  }
+
+  const store = BHOSDataStore.getInstance();
+  const localProfile = store.getProfile(playerId);
+  const supabase = getSupabaseClient();
+
+  if (!supabase) {
+    const fallbackResult: PlayerProfileSummaryResult = {
+      profile: localProfile || null,
+      recent_matches: localProfile ? store.getPlayerMatches(localProfile.id) : [],
+      achievements: {},
+    };
+    return fallbackResult;
+  }
+
+  const validUuid = isUuidString(playerId);
+
+  if (validUuid) {
+    const { data: rpcData, error: rpcError } = await supabase.rpc(
+      'get_player_profile_summary',
+      {
+        target_player_id: playerId,
+      }
+    );
+
+    if (!rpcError && rpcData && rpcData.profile) {
+      const normalizedProfile = mapRawProfileToPlayerProfile(
+        rpcData.profile,
+        localProfile
+      );
+      const cloudMatches: MatchRecord[] = Array.isArray(rpcData.recent_matches)
+        ? rpcData.recent_matches
+        : [];
+      const localMatches = store.getPlayerMatches(normalizedProfile.id);
+      const matchMap = new Map<string, MatchRecord>();
+      cloudMatches.forEach((m) => matchMap.set(m.id, m));
+      localMatches.forEach((m) => {
+        if (!matchMap.has(m.id)) matchMap.set(m.id, m);
+      });
+
+      const mergedMatches = Array.from(matchMap.values()).sort(
+        (a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
+      );
+
+      const summary: PlayerProfileSummaryResult = {
+        profile: normalizedProfile,
+        recent_matches: mergedMatches,
+        achievements:
+          rpcData.achievements && typeof rpcData.achievements === 'object'
+            ? rpcData.achievements
+            : {},
+      };
+
+      const entry = { data: summary, timestamp: Date.now() };
+      inMemoryPlayerCache.set(cacheKey, entry);
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.setItem(cacheKey, JSON.stringify(entry));
+        } catch {}
+      }
+
+      return summary;
+    }
+  }
+
+  const [standingsRes, profileRes, matchesRes, achRes] = await Promise.all([
+    validUuid
+      ? supabase.from('leaderboard_standings').select('*').eq('id', playerId).maybeSingle()
+      : Promise.resolve({ data: null, error: null }),
+    validUuid
+      ? supabase.from('profiles').select('*').eq('id', playerId).maybeSingle()
+      : supabase
+          .from('profiles')
+          .select('*')
+          .ilike('full_name', playerId.replace(/-/g, ' '))
+          .maybeSingle(),
+    validUuid
+      ? supabase
+          .from('matches')
+          .select(
+            'id, created_at, match_date, tournament_id, tournament_title, player1_id, player1_name, player2_id, player2_name, logged_by, logged_by_name, winner_id, player1_score, player2_score, set_scores, player1_elo_before, player2_elo_before, player1_elo_after, player2_elo_after, elo_delta, status, auto_approved'
+          )
+          .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
+          .order('match_date', { ascending: false })
+          .limit(25)
+      : Promise.resolve({ data: [] as any[], error: null }),
+    validUuid
+      ? supabase
+          .from('profile_achievements')
+          .select('badge_id, unlocked_at')
+          .eq('profile_id', playerId)
+      : Promise.resolve({ data: [] as any[], error: null }),
+  ]);
+
+  const rawProfile = profileRes.data || standingsRes.data || localProfile;
+  if (!rawProfile || rawProfile.is_verified === false) {
+    return {
+      profile: null,
+      recent_matches: [],
+      achievements: {},
+    };
+  }
+
+  const resolvedProfile = mapRawProfileToPlayerProfile(
+    { ...(standingsRes.data || {}), ...(profileRes.data || {}) },
+    localProfile
+  );
+
+  const cloudMatches = (matchesRes.data || []) as MatchRecord[];
+  const localMatches = store.getPlayerMatches(resolvedProfile.id || playerId);
+  const matchMap = new Map<string, MatchRecord>();
+  cloudMatches.forEach((m) => matchMap.set(m.id, m));
+  localMatches.forEach((m) => {
+    if (!matchMap.has(m.id)) matchMap.set(m.id, m);
+  });
+
+  const combinedMatches = Array.from(matchMap.values()).sort(
+    (a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
+  );
+
+  const achMap: Record<string, string> = {};
+  if (Array.isArray(achRes.data)) {
+    achRes.data.forEach((row: any) => {
+      if (row.badge_id) {
+        achMap[row.badge_id] = row.unlocked_at || new Date().toISOString();
+      }
+    });
+  }
+
+  const fallbackData: PlayerProfileSummaryResult = {
+    profile: resolvedProfile,
+    recent_matches: combinedMatches,
+    achievements: achMap,
+  };
+
+  const entry = { data: fallbackData, timestamp: Date.now() };
+  inMemoryPlayerCache.set(cacheKey, entry);
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.setItem(cacheKey, JSON.stringify(entry));
+    } catch {}
+  }
+
+  return fallbackData;
+}

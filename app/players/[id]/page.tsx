@@ -4,13 +4,18 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '../../../lib/supabase/client';
-import { BHOSDataStore } from '../../../lib/data/store';
+import {
+  BHOSDataStore,
+  fetchPlayerProfile,
+  getCachedPlayerProfile,
+} from '../../../lib/data/store';
 import { PlayerProfile, MatchRecord, isDefaultMember, isAutoApprovedMatch } from '../../../lib/data/types';
 import SmoothReveal from '../../../components/SmoothReveal';
 import NumberTicker from '../../../components/NumberTicker';
 import EditProfileModal from '../../../components/EditProfileModal';
 import WhatIfSimulator from '../../../components/WhatIfSimulator';
 import HeadToHeadDuel from '../../../components/HeadToHeadDuel';
+import PlayerProfileSkeleton from '../../../components/PlayerProfileSkeleton';
 import { evaluatePlayerAchievements } from '../../../lib/types/achievements';
 import {
   Trophy,
@@ -94,42 +99,52 @@ export default function PlayerProfilePage() {
   const rawId = params.id as string;
   const playerId = rawId ? decodeURIComponent(rawId) : '';
 
-  const [profile, setProfile] = useState<PlayerProfile | null>(null);
-  const [roster, setRoster] = useState<PlayerProfile[]>(() => store.getVerifiedProfiles());
-  const [matches, setMatches] = useState<MatchRecord[]>([]);
-  const [dbAchievements, setDbAchievements] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
+  const initialCached = useMemo(() => getCachedPlayerProfile(playerId), [playerId]);
+
+  const [profile, setProfile] = useState<PlayerProfile | null>(
+    () => initialCached?.profile ?? null
+  );
+  const [roster, setRoster] = useState<PlayerProfile[]>([]);
+  const [matches, setMatches] = useState<MatchRecord[]>(
+    () => initialCached?.recent_matches ?? []
+  );
+  const [dbAchievements, setDbAchievements] = useState<Record<string, string>>(
+    () => initialCached?.achievements ?? {}
+  );
+  const [loading, setLoading] = useState<boolean>(() => !initialCached?.profile);
   const [isMounted, setIsMounted] = useState(false);
-  const [currentProfile, setCurrentProfile] = useState<PlayerProfile | null>(() => store.getCurrentUser());
+  const [currentProfile, setCurrentProfile] = useState<PlayerProfile | null>(
+    () => store.getCurrentUser()
+  );
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
-    setCurrentProfile(store.getCurrentUser());
-    setRoster(store.getVerifiedProfiles());
+    const existingUser = store.getCurrentUser();
+    if (existingUser) {
+      setCurrentProfile(existingUser);
+    }
+
     const unsub = store.subscribe(() => {
       setCurrentProfile(store.getCurrentUser());
-      setRoster(store.getVerifiedProfiles());
     });
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      supabase.auth
-        .getUser()
-        .then(async ({ data }) => {
-          const email = data?.user?.email;
-          if (email) {
-            const { data: prof } = await supabase
-              .from('profiles')
-              .select('*')
-              .ilike('email', email)
-              .maybeSingle();
-            if (prof) {
-              setCurrentProfile(prof as PlayerProfile);
+    if (!existingUser) {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        supabase.auth
+          .getSession()
+          .then(async ({ data }) => {
+            const email = data?.session?.user?.email;
+            if (email) {
+              const linked = await store.linkProfileByEmail(email);
+              if (linked) {
+                setCurrentProfile(linked);
+              }
             }
-          }
-        })
-        .catch(() => {});
+          })
+          .catch(() => {});
+      }
     }
 
     return unsub;
@@ -145,6 +160,28 @@ export default function PlayerProfilePage() {
     );
   }, [currentProfile, profile]);
 
+  useEffect(() => {
+    if (!isOwnProfile) return;
+    let active = true;
+    const timer = setTimeout(() => {
+      if (!active) return;
+      const cachedStandings = store.getCachedLeaderboard();
+      if (cachedStandings.length > 0) {
+        setRoster(cachedStandings);
+      }
+      void store.fetchLeaderboardStandings().then((standings) => {
+        if (active && standings.length > 0) {
+          setRoster(standings);
+        }
+      });
+    }, 0);
+
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [isOwnProfile, store]);
+
   const isLoggedIn = Boolean(currentProfile?.id);
 
   const canEditProfile = useMemo(() => {
@@ -152,163 +189,68 @@ export default function PlayerProfilePage() {
     return isOwnProfile || currentProfile.role === 'president';
   }, [currentProfile, profile, isOwnProfile]);
 
-  const fetchPlayerData = async () => {
+  const fetchPlayerData = async (force = false) => {
     if (!playerId) return;
 
     try {
-      let fetchedProfile: PlayerProfile | null = null;
-      const supabase = getSupabaseClient();
-      const isUuid = (val: string) =>
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
-
-      if (supabase && isUuid(playerId)) {
-        const { data, error } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', playerId)
-          .single();
-
-        if (!error && data) {
-          fetchedProfile = data as PlayerProfile;
-        }
-      }
-
-      if (!fetchedProfile) {
-        const local = store.getProfile(playerId);
-        if (local) fetchedProfile = local;
-      }
-
-      if (!fetchedProfile && supabase) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('*')
-          .ilike('full_name', playerId.replace(/-/g, ' '))
-          .maybeSingle();
-        if (data) fetchedProfile = data as PlayerProfile;
-      }
-
-      if (!fetchedProfile || fetchedProfile.is_verified === false) {
+      const summary = await fetchPlayerProfile(playerId, { force });
+      if (!summary.profile || summary.profile.is_verified === false) {
         setProfile(null);
         setMatches([]);
         setLoading(false);
         return;
       }
 
-      setProfile(fetchedProfile);
+      setProfile(summary.profile);
+      setMatches(summary.recent_matches);
+      setDbAchievements(summary.achievements || {});
+      setLoading(false);
 
-      const targetIds = Array.from(new Set([playerId, fetchedProfile.id].filter(Boolean)));
-      let fetchedMatches: MatchRecord[] = [];
-
-      if (supabase) {
-        const validUuids = targetIds.filter(isUuid);
-        const orConditions: string[] = [];
-        validUuids.forEach((uid) => {
-          orConditions.push(`player1_id.eq.${uid}`, `player2_id.eq.${uid}`);
-        });
-
-        if (orConditions.length > 0) {
-          const { data: matchData, error: matchError } = await supabase
-            .from('matches')
-            .select('*')
-            .or(orConditions.join(','))
-            .order('match_date', { ascending: true });
-
-          if (!matchError && matchData) {
-            fetchedMatches = matchData as MatchRecord[];
-          }
-        }
-
-        const { data: allMatchData } = await supabase
-          .from('matches')
-          .select('*')
-          .order('match_date', { ascending: true });
-
-        if (allMatchData) {
-          const targetName = fetchedProfile.full_name?.trim().toLowerCase();
-          const filteredCloud = (allMatchData as MatchRecord[]).filter((m) => {
-            const p1Match =
-              targetIds.includes(m.player1_id) ||
-              (targetName && m.player1_name?.trim().toLowerCase() === targetName);
-            const p2Match =
-              targetIds.includes(m.player2_id) ||
-              (targetName && m.player2_name?.trim().toLowerCase() === targetName);
-            return p1Match || p2Match;
-          });
-          filteredCloud.forEach((m) => {
-            if (!fetchedMatches.some((x) => x.id === m.id)) {
-              fetchedMatches.push(m);
-            }
-          });
-        }
-      }
-
-      const localMatches = store.getPlayerMatches(fetchedProfile.id || playerId);
-      const matchMap = new Map<string, MatchRecord>();
-      fetchedMatches.forEach((m) => matchMap.set(m.id, m));
-      localMatches.forEach((m) => {
-        if (!matchMap.has(m.id)) {
-          matchMap.set(m.id, m);
-        }
-      });
-
-      const combinedMatches = Array.from(matchMap.values()).sort(
-        (a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
+      const supabase = getSupabaseClient();
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        summary.profile.id
       );
-
-      setMatches(combinedMatches);
-
-      if (supabase && isUuid(fetchedProfile.id)) {
-        try {
-          const { data: achRows } = await supabase
+      if (supabase && isUuid) {
+        const evaluated = evaluatePlayerAchievements(
+          summary.profile,
+          summary.recent_matches,
+          summary.achievements || {}
+        );
+        const newlyUnlocked = evaluated.filter(
+          (b) => b.unlocked && !(summary.achievements && summary.achievements[b.id])
+        );
+        if (newlyUnlocked.length > 0) {
+          void supabase
             .from('profile_achievements')
-            .select('badge_id, unlocked_at')
-            .eq('profile_id', fetchedProfile.id);
-
-          const map: Record<string, string> = {};
-          if (achRows) {
-            achRows.forEach((row: any) => {
-              if (row.badge_id) {
-                map[row.badge_id] = row.unlocked_at || new Date().toISOString();
-              }
-            });
-          }
-          setDbAchievements(map);
-
-          const evaluated = evaluatePlayerAchievements(
-            fetchedProfile,
-            combinedMatches,
-            map
-          );
-          const newlyUnlocked = evaluated.filter(
-            (b) => b.unlocked && !map[b.id]
-          );
-          if (newlyUnlocked.length > 0) {
-            supabase
-              .from('profile_achievements')
-              .upsert(
-                newlyUnlocked.map((b) => ({
-                  profile_id: fetchedProfile!.id,
-                  badge_id: b.id,
-                  unlocked_at: b.unlockedAt || new Date().toISOString(),
-                })),
-                { onConflict: 'profile_id,badge_id', ignoreDuplicates: true }
-              )
-              .then(() => {});
-          }
-        } catch {
-          setDbAchievements({});
+            .upsert(
+              newlyUnlocked.map((b) => ({
+                profile_id: summary.profile!.id,
+                badge_id: b.id,
+                unlocked_at: b.unlockedAt || new Date().toISOString(),
+              })),
+              { onConflict: 'profile_id,badge_id', ignoreDuplicates: true }
+            )
+            .then(() => {});
         }
       }
-    } catch (err) {
+    } catch {
       setProfile(null);
-    } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    setLoading(true);
-    fetchPlayerData();
+    const cached = getCachedPlayerProfile(playerId);
+    if (cached?.profile) {
+      setProfile(cached.profile);
+      setMatches(cached.recent_matches);
+      setDbAchievements(cached.achievements || {});
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    void fetchPlayerData(false);
 
     const supabase = getSupabaseClient();
     let channel: any = null;
@@ -318,12 +260,16 @@ export default function PlayerProfilePage() {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'matches' },
-          () => fetchPlayerData()
+          () => {
+            void fetchPlayerData(true);
+          }
         )
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${playerId}` },
-          () => fetchPlayerData()
+          () => {
+            void fetchPlayerData(true);
+          }
         )
         .subscribe();
     }
@@ -558,18 +504,7 @@ export default function PlayerProfilePage() {
   }, [matches]);
 
   if (loading) {
-    return (
-      <div className="space-y-6 max-w-5xl mx-auto py-8">
-        <div className="h-6 w-24 bg-white/5 rounded animate-pulse" />
-        <div className="h-44 w-full bg-[#0F1623] border border-white/10 rounded-3xl animate-pulse" />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="h-28 bg-[#0F1623] border border-white/10 rounded-2xl animate-pulse" />
-          ))}
-        </div>
-        <div className="h-80 bg-[#0F1623] border border-white/10 rounded-2xl animate-pulse" />
-      </div>
-    );
+    return <PlayerProfileSkeleton />;
   }
 
   if (!profile || profile.is_verified === false) {
