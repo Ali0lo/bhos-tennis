@@ -2,6 +2,8 @@
 
 import React from 'react';
 import SmoothReveal, { SmoothRevealItem } from './SmoothReveal';
+import TableCard, { TableCardData } from './TableCard';
+import MagneticButton from './MagneticButton';
 import { useTranslations } from '../lib/i18n';
 import {
   ShieldAlert,
@@ -65,7 +67,9 @@ export default function HallRulesSection() {
     },
   ];
 
-  const fourTables = [
+  const availableStatusLabel = t('sections.table_status_available');
+
+  const fourTables: TableCardData[] = [
     {
       number: 1,
       label: t('hall_rules.t1_label'),
@@ -73,6 +77,7 @@ export default function HallRulesSection() {
       isWomen: true,
       usage: t('hall_rules.t1_usage'),
       surface: 'Donic Waldner Classic 25mm ITTF',
+      statusLabel: availableStatusLabel,
     },
     {
       number: 2,
@@ -81,6 +86,7 @@ export default function HallRulesSection() {
       isWomen: false,
       usage: t('hall_rules.t2_usage'),
       surface: 'Donic Waldner Classic 25mm ITTF',
+      statusLabel: availableStatusLabel,
     },
     {
       number: 3,
@@ -89,6 +95,7 @@ export default function HallRulesSection() {
       isWomen: false,
       usage: t('hall_rules.t3_usage'),
       surface: 'Donic Waldner Classic 25mm ITTF',
+      statusLabel: availableStatusLabel,
     },
     {
       number: 4,
@@ -97,6 +104,7 @@ export default function HallRulesSection() {
       isWomen: false,
       usage: t('hall_rules.t4_usage'),
       surface: 'Donic Waldner Classic 25mm ITTF',
+      statusLabel: availableStatusLabel,
     },
   ];
 
@@ -144,32 +152,55 @@ export default function HallRulesSection() {
             </div>
 
             <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0">
-              <a
-                href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all active:scale-95"
-              >
-                <MessageCircle className="w-4 h-4 fill-slate-950" />
-                <span>{t('sections.join_whatsapp')}</span>
-                <ExternalLink className="w-3.5 h-3.5" />
-              </a>
+              <MagneticButton>
+                <a
+                  href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all active:scale-95"
+                >
+                  <MessageCircle className="w-4 h-4 fill-slate-950" />
+                  <span>{t('sections.join_whatsapp')}</span>
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </MagneticButton>
             </div>
           </div>
         </div>
       </SmoothReveal>
 
       <SmoothReveal staggerChildren={0.1} className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <SmoothRevealItem direction="right" className="rounded-3xl bg-[#0F1623] border border-rose-500/30 p-6 sm:p-7 shadow-xl relative overflow-hidden flex flex-col justify-between">
+        <SmoothRevealItem
+          direction="right"
+          className="rounded-3xl bg-[#0F1623]/90 backdrop-blur-md p-6 sm:p-7 shadow-xl relative overflow-hidden flex flex-col justify-between"
+        >
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-3xl"
+            style={{
+              background:
+                'linear-gradient(#0F1623, #0F1623) padding-box, linear-gradient(135deg, rgba(234, 179, 8, 0.4), rgba(244, 63, 94, 0.2)) border-box',
+              border: '1px solid transparent',
+            }}
+          />
           <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-rose-500/10 blur-2xl" />
           <div className="space-y-4 relative z-10">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-500/15 border border-rose-500/40 text-rose-300 text-xs font-bold uppercase tracking-wider">
                 {t('hall_rules.table1_badge')}
               </span>
-              <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-rose-500 to-pink-400 text-white font-display font-black text-sm flex items-center justify-center shadow-lg shadow-rose-500/20">
-                #1
-              </span>
+              <div className="flex items-center gap-2">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[10px] font-bold text-emerald-300">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                  </span>
+                  <span>{availableStatusLabel}</span>
+                </div>
+                <span className="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-500 via-rose-500 to-pink-400 text-white font-display font-black text-sm flex items-center justify-center shadow-lg shadow-rose-500/20">
+                  #1
+                </span>
+              </div>
             </div>
 
             <div>
@@ -194,22 +225,34 @@ export default function HallRulesSection() {
           </div>
         </SmoothRevealItem>
 
-        <SmoothRevealItem direction="right" className="rounded-3xl bg-[#0F1623] border border-cyan-500/30 p-6 sm:p-7 shadow-xl relative overflow-hidden flex flex-col justify-between">
+        <SmoothRevealItem
+          direction="right"
+          className="rounded-3xl bg-[#0F1623]/90 backdrop-blur-md border border-cyan-500/30 p-6 sm:p-7 shadow-xl relative overflow-hidden flex flex-col justify-between"
+        >
           <div className="pointer-events-none absolute -top-16 -right-16 w-48 h-48 rounded-full bg-cyan-500/10 blur-2xl" />
           <div className="space-y-4 relative z-10">
-            <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center justify-between gap-3 flex-wrap">
               <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/15 border border-cyan-500/40 text-cyan-300 text-xs font-bold uppercase tracking-wider">
                 {t('hall_rules.tables24_badge')}
               </span>
-              <div className="flex items-center gap-1.5">
-                {[2, 3, 4].map((num) => (
-                  <span
-                    key={num}
-                    className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-[#3B82F6] text-slate-950 font-display font-black text-xs flex items-center justify-center shadow-md shadow-cyan-500/20"
-                  >
-                    #{num}
+              <div className="flex items-center gap-2">
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/25 text-[10px] font-bold text-emerald-300">
+                  <span className="relative flex h-2.5 w-2.5">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                   </span>
-                ))}
+                  <span>{availableStatusLabel}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {[2, 3, 4].map((num) => (
+                    <span
+                      key={num}
+                      className="w-8 h-8 rounded-xl bg-gradient-to-tr from-cyan-400 to-[#3B82F6] text-slate-950 font-display font-black text-xs flex items-center justify-center shadow-md shadow-cyan-500/20"
+                    >
+                      #{num}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -238,60 +281,8 @@ export default function HallRulesSection() {
 
       <SmoothReveal staggerChildren={0.1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {fourTables.map((tb) => (
-          <SmoothRevealItem
-            key={tb.number}
-            direction="right"
-            className={`rounded-2xl bg-[#0F1623] border p-5 shadow-lg flex flex-col justify-between transition-all ${
-              tb.isWomen
-                ? 'border-rose-500/30 hover:border-rose-500/60'
-                : 'border-white/10 hover:border-cyan-500/40'
-            }`}
-          >
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <span
-                  className={`w-8 h-8 rounded-xl font-display font-black text-xs flex items-center justify-center ${
-                    tb.isWomen
-                      ? 'bg-rose-500/20 text-rose-300 border border-rose-500/40'
-                      : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                  }`}
-                >
-                  #{tb.number}
-                </span>
-                <span
-                  className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider border ${
-                    tb.isWomen
-                      ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                      : 'bg-cyan-500/15 text-cyan-300 border-cyan-500/30'
-                  }`}
-                >
-                  {tb.group}
-                </span>
-              </div>
-
-              <div className="my-3 py-3.5 px-3 rounded-xl bg-[#131C2B] border border-white/5 relative flex items-center justify-center">
-                <div
-                  className={`w-full h-14 rounded-lg border-2 relative flex items-center justify-center ${
-                    tb.isWomen
-                      ? 'bg-rose-950/40 border-rose-400/50'
-                      : 'bg-blue-950/50 border-cyan-400/50'
-                  }`}
-                >
-                  <div className="absolute inset-x-0 top-1/2 h-[1px] bg-white/25" />
-                  <div className="absolute inset-y-0 left-1/2 w-[2px] bg-white/60 -translate-x-1/2" />
-                  <span className="relative z-10 px-2 py-0.5 rounded bg-slate-950/90 text-[10px] font-mono font-bold text-white border border-white/10">
-                    {tb.label}
-                  </span>
-                </div>
-              </div>
-
-              <h4 className="font-display font-bold text-white text-sm">{tb.label}</h4>
-              <p className="text-xs text-slate-400 mt-1 leading-relaxed">{tb.usage}</p>
-            </div>
-
-            <div className="mt-4 pt-3 border-t border-white/5 text-[11px] font-mono text-slate-400">
-              {tb.surface}
-            </div>
+          <SmoothRevealItem key={tb.number} direction="right">
+            <TableCard table={tb} />
           </SmoothRevealItem>
         ))}
       </SmoothReveal>

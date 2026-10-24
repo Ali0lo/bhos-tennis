@@ -17,6 +17,7 @@ import {
   MAX_ELO,
   MIN_ELO,
 } from '../lib/elo/calculator';
+import MagneticButton from './MagneticButton';
 
 export interface DuelPlayerSummary {
   id: string;
@@ -59,7 +60,7 @@ export default function HeadToHeadDuel({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="rounded-2xl bg-[#0F1623] p-6 shadow-xl space-y-6 relative overflow-hidden"
+      className="rounded-2xl bg-[#0F1623]/90 backdrop-blur-md p-6 shadow-xl space-y-6 relative overflow-hidden"
       style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -235,14 +236,17 @@ export default function HeadToHeadDuel({
         </div>
       </div>
 
-      <Link
-        href={`/log-match?opponentId=${encodeURIComponent(targetPlayer.id)}`}
-        className="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-display font-bold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35"
-      >
-        <Swords className="w-4 h-4" />
-        <span>Meydan Oxu / Matç Qeyd Et</span>
-        <ChevronRight className="w-4 h-4" />
-      </Link>
+      <MagneticButton className="w-full">
+        <Link
+          href={`/log-match?opponentId=${encodeURIComponent(targetPlayer.id)}`}
+          className="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-display font-bold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35"
+        >
+          <Swords className="w-4 h-4" />
+          <span>Meydan Oxu / Matç Qeyd Et</span>
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </MagneticButton>
     </motion.div>
   );
 }
+

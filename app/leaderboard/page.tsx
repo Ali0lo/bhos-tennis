@@ -1,24 +1,18 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { BHOSDataStore } from '../../lib/data/store';
 import { PlayerProfile } from '../../lib/data/types';
 import { getSupabaseClient } from '../../lib/supabase/client';
-import NumberTicker from '../../components/NumberTicker';
 import SmoothReveal from '../../components/SmoothReveal';
+import CourtBackground from '../../components/CourtBackground';
+import LeaderboardTable, { isStaffMember } from '../../components/LeaderboardTable';
+import AnimatedCounter from '../../components/AnimatedCounter';
 import {
   Search,
   Trophy,
-  ArrowUpRight,
-  ArrowDownRight,
-  Minus,
   SlidersHorizontal,
-  Medal,
-  Crown,
   Sparkles,
-  UserCheck,
   Briefcase,
   GraduationCap,
 } from 'lucide-react';
@@ -39,6 +33,16 @@ const FACULTIES = [
   'İnformasiya Texnologiyaları',
 ];
 
+const FACULTY_TABS: { id: string; label: string }[] = [
+  { id: 'Hamısı', label: 'Hamısı' },
+  { id: 'Information Security', label: 'İnformasiya təhlükəsizliyi' },
+  { id: 'Computer Engineering', label: 'Kompüter müh.' },
+  { id: 'Process Automation', label: 'Proseslərin avtomatlaşdırılması' },
+  { id: 'Chemical Engineering', label: 'Kimya müh.' },
+  { id: 'Petroleum Engineering', label: 'Neft-qaz müh.' },
+  { id: 'Business Administration', label: 'Biznesin idarə edilməsi' },
+];
+
 const COHORT_PILLS: { id: string; label: string }[] = [
   { id: 'ALL', label: 'Hamısı' },
   { id: 'STAFF', label: 'Müəllim / Əməkdaş' },
@@ -50,17 +54,6 @@ const COHORT_PILLS: { id: string; label: string }[] = [
   { id: '2021', label: '2021' },
   { id: '2020', label: '2020' },
 ];
-
-const SMOOTH_EASE: [number, number, number, number] = [0.21, 0.47, 0.32, 0.98];
-
-function isStaffMember(player: PlayerProfile): boolean {
-  return (
-    player.user_type === 'teacher' ||
-    player.user_type === 'staff' ||
-    player.role === 'coach' ||
-    !player.admission_year
-  );
-}
 
 export default function LeaderboardPage() {
   const store = BHOSDataStore.getInstance();
@@ -110,8 +103,7 @@ export default function LeaderboardPage() {
             setLoading(false);
             return;
           }
-        } catch {
-        }
+        } catch {}
       }
 
       if (isMounted) {
@@ -166,12 +158,14 @@ export default function LeaderboardPage() {
     });
   }, [profiles, searchQuery, selectedFaculty, genderFilter, cohortFilter]);
 
-  const filterKey = `${selectedFaculty}-${genderFilter}-${cohortFilter}-${searchQuery}`;
-
   return (
     <SmoothReveal>
-      <div className="space-y-8 pb-12">
-        <div className="relative rounded-2xl border border-white/10 bg-[#0F1623] p-6 sm:p-8 shadow-2xl overflow-hidden">
+      <div className="relative space-y-8 pb-12">
+        <div
+          className="relative rounded-2xl bg-[#0F1623]/90 backdrop-blur-md p-6 sm:p-8 shadow-2xl overflow-hidden"
+          style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
+        >
+          <CourtBackground className="opacity-35" />
           <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#3B82F6]/10 blur-3xl" />
 
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
@@ -206,8 +200,10 @@ export default function LeaderboardPage() {
                   </div>
                   <div className="text-sm font-bold text-white">{currentUser.full_name}</div>
                   <div className="text-xs font-mono text-slate-400">
-                    <strong className="text-white">{currentUser.current_elo}</strong> ELO •{' '}
-                    <span className="text-[#22C55E]">{currentUser.wins}Q</span> -{' '}
+                    <strong className="text-white">
+                      <AnimatedCounter value={currentUser.current_elo} />
+                    </strong>{' '}
+                    ELO • <span className="text-[#22C55E]">{currentUser.wins}Q</span> -{' '}
                     <span className="text-[#EF4444]">{currentUser.losses}M</span>
                   </div>
                 </div>
@@ -263,6 +259,26 @@ export default function LeaderboardPage() {
           </div>
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {FACULTY_TABS.map((tab) => {
+              const active = selectedFaculty === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setSelectedFaculty(tab.id)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition border ${
+                    active
+                      ? 'bg-[#3B82F6]/20 text-[#3B82F6] border-[#3B82F6]/50 shadow-md shadow-blue-500/10'
+                      : 'bg-[#0F1623] text-slate-400 border-white/[0.06] hover:text-white hover:border-white/20'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             {COHORT_PILLS.map((pill) => {
               const active = cohortFilter === pill.id;
               const isStaffPill = pill.id === 'STAFF';
@@ -293,7 +309,10 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-[#0F1623] shadow-2xl overflow-hidden">
+        <div
+          className="rounded-2xl bg-[#0F1623]/90 backdrop-blur-md shadow-2xl overflow-hidden"
+          style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
+        >
           {loading ? (
             <div className="p-8 space-y-3">
               {[1, 2, 3, 4, 5, 6].map((n) => (
@@ -312,193 +331,7 @@ export default function LeaderboardPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 bg-[#131C2B]/80 text-[11px] uppercase font-bold tracking-wider text-slate-400">
-                    <th className="py-4 px-4 sm:px-6 w-20">Sıra</th>
-                    <th className="py-4 px-4">Oyunçu</th>
-                    <th className="py-4 px-4 hidden md:table-cell">Fakültə / İxtisas</th>
-                    <th className="py-4 px-4 text-center">Oyunlar</th>
-                    <th className="py-4 px-4 text-center hidden sm:table-cell">Qələbə faizi</th>
-                    <th className="py-4 px-4 sm:px-6 text-right">Xal</th>
-                  </tr>
-                </thead>
-                <tbody key={filterKey} className="divide-y divide-white/5 text-xs sm:text-sm">
-                  {filteredProfiles.map((player, idx) => {
-                    const rank = player.rank ?? idx + 1;
-                    const isMe = currentUser?.id === player.id;
-                    const totalGames = player.matches_played || player.wins + player.losses;
-                    const winRate =
-                      totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
-                    const rankChange = player.rank_change ?? 0;
-                    const staff = isStaffMember(player);
-                    const facultySubtitle = staff
-                      ? `${player.major_faculty || 'İdman Klubu'} • Müəllim`
-                      : `${player.major_faculty || 'Mühəndislik'} • ${player.admission_year}`;
-
-                    return (
-                      <motion.tr
-                        key={player.id}
-                        initial={{ opacity: 0, y: 18, filter: 'blur(4px)' }}
-                        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                        transition={{
-                          duration: 0.5,
-                          delay: Math.min(idx * 0.04, 0.4),
-                          ease: SMOOTH_EASE,
-                        }}
-                        className={`transition-colors group ${
-                          isMe
-                            ? 'bg-[#3B82F6]/15 hover:bg-[#3B82F6]/20 border-l-4 border-l-[#3B82F6]'
-                            : rank === 1
-                            ? 'bg-amber-500/[0.04] hover:bg-white/[0.04]'
-                            : 'hover:bg-white/[0.03]'
-                        }`}
-                      >
-                        <td className="py-4 px-4 sm:px-6 font-mono font-bold">
-                          <div className="flex items-center gap-2">
-                            {rank === 1 ? (
-                              <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-black shadow-md shadow-amber-500/20">
-                                <Crown className="w-4 h-4" />
-                              </span>
-                            ) : rank === 2 ? (
-                              <span className="w-8 h-8 rounded-xl bg-slate-300 text-slate-950 flex items-center justify-center font-black">
-                                2
-                              </span>
-                            ) : rank === 3 ? (
-                              <span className="w-8 h-8 rounded-xl bg-amber-700 text-amber-100 flex items-center justify-center font-black">
-                                3
-                              </span>
-                            ) : (
-                              <span className="w-8 h-8 rounded-xl bg-[#131C2B] border border-white/10 text-slate-300 flex items-center justify-center">
-                                {rank}
-                              </span>
-                            )}
-
-                            {rankChange > 0 ? (
-                              <span className="inline-flex items-center text-[10px] text-[#22C55E] font-mono">
-                                <ArrowUpRight className="w-3 h-3" />
-                                {rankChange}
-                              </span>
-                            ) : rankChange < 0 ? (
-                              <span className="inline-flex items-center text-[10px] text-[#EF4444] font-mono">
-                                <ArrowDownRight className="w-3 h-3" />
-                                {Math.abs(rankChange)}
-                              </span>
-                            ) : (
-                              <Minus className="w-3 h-3 text-slate-600 hidden sm:inline" />
-                            )}
-                          </div>
-                        </td>
-
-                        <td className="py-4 px-4">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center font-display font-bold text-sm shrink-0 border ${
-                                isMe
-                                  ? 'bg-[#3B82F6] text-white border-white/20'
-                                  : staff
-                                  ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
-                                  : 'bg-[#131C2B] text-slate-200 border-white/10'
-                              }`}
-                            >
-                              {player.full_name.charAt(0)}
-                            </div>
-
-                            <div className="min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <Link
-                                  href={`/players/${player.id}`}
-                                  className="font-bold text-white group-hover:text-[#3B82F6] transition truncate"
-                                >
-                                  {player.full_name}
-                                </Link>
-
-                                {isMe && (
-                                  <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#3B82F6] text-white">
-                                    <UserCheck className="w-2.5 h-2.5" />
-                                    <span>Siz</span>
-                                  </span>
-                                )}
-
-                                {staff && (
-                                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                                    Müəllim / Əməkdaş
-                                  </span>
-                                )}
-
-                                {player.role !== 'player' && (
-                                  <span
-                                    className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                                      player.role === 'president'
-                                        ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                                        : 'bg-purple-500/15 text-purple-300 border-purple-500/30'
-                                    }`}
-                                  >
-                                    {player.role === 'president' ? 'Prezident' : 'Məşqçi'}
-                                  </span>
-                                )}
-                              </div>
-
-                              <div className="text-[11px] text-slate-400 md:hidden truncate">
-                                {facultySubtitle}
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-4 px-4 hidden md:table-cell">
-                          <span className="text-xs text-slate-300 font-medium">
-                            {facultySubtitle}
-                          </span>
-                        </td>
-
-                        <td className="py-4 px-4 text-center font-mono">
-                          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#131C2B] border border-white/5 text-xs">
-                            <span className="text-[#22C55E] font-bold">{player.wins}Q</span>
-                            <span className="text-slate-600">/</span>
-                            <span className="text-[#EF4444] font-bold">{player.losses}M</span>
-                          </div>
-                        </td>
-
-                        <td className="py-4 px-4 text-center hidden sm:table-cell">
-                          <div className="flex flex-col items-center gap-1">
-                            <span
-                              className={`font-mono text-xs font-bold ${
-                                winRate >= 60
-                                  ? 'text-[#22C55E]'
-                                  : winRate >= 40
-                                  ? 'text-slate-200'
-                                  : 'text-slate-400'
-                              }`}
-                            >
-                              {winRate}%
-                            </span>
-                            <div className="w-16 h-1.5 rounded-full bg-[#131C2B] overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${
-                                  winRate >= 60 ? 'bg-[#22C55E]' : 'bg-[#3B82F6]'
-                                }`}
-                                style={{ width: `${winRate}%` }}
-                              />
-                            </div>
-                          </div>
-                        </td>
-
-                        <td className="py-4 px-4 sm:px-6 text-right">
-                          <div className="inline-flex items-baseline gap-1 font-mono text-base sm:text-lg font-black text-white">
-                            <NumberTicker value={player.current_elo} />
-                            <span className="text-[10px] font-sans font-semibold text-[#3B82F6]">
-                              XAL
-                            </span>
-                          </div>
-                        </td>
-                      </motion.tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            <LeaderboardTable players={filteredProfiles} currentUser={currentUser} />
           )}
         </div>
       </div>

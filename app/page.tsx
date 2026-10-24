@@ -8,6 +8,9 @@ import { useTranslation, useTranslations } from '../lib/i18n';
 import HallRulesSection from '../components/HallRulesSection';
 import MatchLoggerModal from '../components/MatchLoggerModal';
 import NumberTicker from '../components/NumberTicker';
+import AnimatedCounter from '../components/AnimatedCounter';
+import CourtBackground from '../components/CourtBackground';
+import MagneticButton from '../components/MagneticButton';
 import TiltCard from '../components/TiltCard';
 import EloToastBadge from '../components/EloToastBadge';
 import SmoothReveal, { SmoothRevealItem } from '../components/SmoothReveal';
@@ -61,7 +64,8 @@ export default function HomePage() {
   };
 
   return (
-    <div className="space-y-12">
+    <div className="relative space-y-12">
+      <CourtBackground className="fixed" />
       <SmoothReveal delay={0.01}>
         <div className="flex justify-center -mt-3">
           <div className="inline-flex flex-wrap sm:flex-nowrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 rounded-2xl sm:rounded-full bg-[#080D16]/85 backdrop-blur-md border border-white/10 shadow-[0_0_28px_rgba(59,130,246,0.12)]">
@@ -103,6 +107,7 @@ export default function HomePage() {
 
           <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-950/50 to-transparent" />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/30 to-slate-950/60" />
+          <CourtBackground />
 
           <div className="relative z-20 flex flex-wrap items-center justify-between gap-4">
             <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-white/15 bg-black/40 backdrop-blur-md text-xs font-semibold text-white shadow-lg">
@@ -143,21 +148,25 @@ export default function HomePage() {
             </SmoothRevealItem>
 
             <SmoothRevealItem className="flex flex-wrap items-center gap-3 pt-2">
-              <Link
-                href={currentUser ? '/log-match' : '/login'}
-                className="px-6 py-3 rounded-full bg-[#3B82F6] hover:bg-blue-500 text-white font-display font-bold text-xs sm:text-sm shadow-xl shadow-blue-500/25 active:scale-95 transition flex items-center gap-2"
-              >
-                <UserPlus className="w-4 h-4" />
-                <span>{t('cta_join')}</span>
-              </Link>
+              <MagneticButton>
+                <Link
+                  href={currentUser ? '/log-match' : '/login'}
+                  className="px-6 py-3 rounded-full bg-[#3B82F6] hover:bg-blue-500 text-white font-display font-bold text-xs sm:text-sm shadow-xl shadow-blue-500/25 active:scale-95 transition flex items-center gap-2"
+                >
+                  <UserPlus className="w-4 h-4" />
+                  <span>{t('cta_join')}</span>
+                </Link>
+              </MagneticButton>
 
-              <Link
-                href="/leaderboard"
-                className="px-6 py-3 rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-display font-bold text-xs sm:text-sm shadow-xl shadow-cyan-500/25 active:scale-95 transition flex items-center gap-2"
-              >
-                <Trophy className="w-4 h-4" />
-                <span>{t('cta_view_leaderboard')}</span>
-              </Link>
+              <MagneticButton>
+                <Link
+                  href="/leaderboard"
+                  className="px-6 py-3 rounded-full bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-display font-bold text-xs sm:text-sm shadow-xl shadow-cyan-500/25 active:scale-95 transition flex items-center gap-2"
+                >
+                  <Trophy className="w-4 h-4" />
+                  <span>{t('cta_view_leaderboard')}</span>
+                </Link>
+              </MagneticButton>
 
               <Link
                 href="/tables"
@@ -342,7 +351,10 @@ export default function HomePage() {
           </div>
 
           {top5.length > 0 && (
-            <div className="rounded-2xl border border-white/10 bg-[#0F1623] overflow-hidden shadow-xl">
+            <div
+              className="rounded-2xl bg-[#0F1623]/90 backdrop-blur-md overflow-hidden shadow-xl"
+              style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
+            >
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -359,7 +371,7 @@ export default function HomePage() {
                     {top5.map((p, idx) => {
                       const winRate = p.matches_played > 0 ? Math.round((p.wins / p.matches_played) * 100) : 0;
                       return (
-                        <tr key={p.id} className="hover:bg-white/[0.03] transition">
+                        <tr key={p.id} className="hover:bg-[#131C2B] transition-all">
                           <td className="py-3 px-4 font-mono font-bold text-slate-400">
                             #{idx + 1}
                           </td>
@@ -375,7 +387,7 @@ export default function HomePage() {
                             {translateFaculty(p.major_faculty)}
                           </td>
                           <td className="py-3 px-4 text-right font-mono font-bold text-[#3B82F6]">
-                            {p.current_elo}
+                            <AnimatedCounter value={p.current_elo} />
                           </td>
                           <td className="py-3 px-4 text-right font-mono text-slate-300 hidden md:table-cell">
                             {p.matches_played} ({p.wins}W-{p.losses}L)
@@ -585,16 +597,18 @@ export default function HomePage() {
               </p>
             </div>
 
-            <a
-              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-xs sm:text-sm shadow-xl shadow-emerald-500/25 active:scale-95 transition shrink-0"
-            >
-              <MessageCircle className="w-4 h-4 fill-slate-950" />
-              <span>{t('sections.join_whatsapp')}</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
+            <MagneticButton className="shrink-0">
+              <a
+                href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-xs sm:text-sm shadow-xl shadow-emerald-500/25 active:scale-95 transition shrink-0"
+              >
+                <MessageCircle className="w-4 h-4 fill-slate-950" />
+                <span>{t('sections.join_whatsapp')}</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
+            </MagneticButton>
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-slate-900 p-8 sm:p-10 shadow-2xl relative overflow-hidden">

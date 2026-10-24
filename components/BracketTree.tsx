@@ -245,15 +245,25 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
 
                   const isEven = mIndex % 2 === 0;
                   const pairHasWinner = isCompleted;
+                  const siblingHasWinner = Boolean(round.matches[mIndex + 1]?.winner_id);
+                  const branchActive = pairHasWinner || siblingHasWinner;
                   const slot1Pulsing = Boolean(pulsingSlots[`${rIndex}-${mIndex}-1`]);
                   const slot2Pulsing = Boolean(pulsingSlots[`${rIndex}-${mIndex}-2`]);
 
                   return (
                     <div key={match.id} className="relative group">
+                      {isFinal && (
+                        <div
+                          aria-hidden="true"
+                          className="pointer-events-none absolute -inset-1.5 rounded-3xl bg-[#EAB308]/15 blur-xl animate-pulse"
+                        />
+                      )}
                       <div
                         onClick={() => isClickable && handleOpenScoreModal(rIndex, mIndex, match)}
                         className={`rounded-2xl p-3.5 bg-[#131C2B] border transition-all duration-300 relative z-10 ${
-                          isCompleted
+                          isFinal
+                            ? 'border-[#EAB308]/60 bg-[#131C2B]/95 shadow-[0_0_28px_rgba(234,179,8,0.25)] ring-1 ring-[#EAB308]/35'
+                            : isCompleted
                             ? 'border-white/10 bg-[#131C2B]/90 shadow-lg'
                             : isReady
                             ? 'border-[#3B82F6]/70 shadow-[0_0_22px_rgba(59,130,246,0.22)] ring-1 ring-[#3B82F6]/30 hover:border-[#3B82F6]'
@@ -261,7 +271,12 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                         } ${isClickable ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.99]' : ''}`}
                       >
                         <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-2 pb-1.5 border-b border-white/5">
-                          <span>Match #{mIndex + 1}</span>
+                          <span className="flex items-center gap-1.5">
+                            {isFinal && <Trophy className="w-3 h-3 text-[#EAB308] animate-pulse" />}
+                            <span className={isFinal ? 'text-[#EAB308] font-bold' : ''}>
+                              {isFinal ? 'Championship' : `Match #${mIndex + 1}`}
+                            </span>
+                          </span>
                           {isCompleted ? (
                             <span className="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
                               <Check className="w-3 h-3 text-[#22C55E] stroke-[3]" /> Completed
@@ -410,23 +425,55 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                       </div>
 
                       {!isFinal && (
-                        <div
-                          className={`hidden md:block absolute -right-10 sm:-right-14 top-1/2 w-10 sm:w-14 h-[2px] transition-colors ${
-                            pairHasWinner
-                              ? 'bg-[#3B82F6] shadow-[0_0_8px_rgba(59,130,246,0.6)]'
-                              : 'bg-white/15'
-                          }`}
-                        />
+                        <svg
+                          className="hidden md:block absolute -right-10 sm:-right-14 top-1/2 -translate-y-1/2 w-10 sm:w-14 h-4 overflow-visible pointer-events-none"
+                          viewBox="0 0 56 16"
+                          preserveAspectRatio="none"
+                        >
+                          <motion.path
+                            d="M 0 8 L 56 8"
+                            fill="none"
+                            stroke={pairHasWinner ? '#3B82F6' : 'rgba(255, 255, 255, 0.16)'}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            initial={{ pathLength: 0 }}
+                            animate={{ pathLength: 1 }}
+                            transition={{
+                              duration: 0.75,
+                              delay: rIndex * 0.18 + mIndex * 0.08,
+                              ease: 'easeOut',
+                            }}
+                            style={{
+                              filter: pairHasWinner ? 'drop-shadow(0px 0px 6px #3B82F6)' : undefined,
+                            }}
+                          />
+                        </svg>
                       )}
 
                       {!isFinal && isEven && (
-                        <div
-                          className={`hidden md:block absolute -right-10 sm:-right-14 top-1/2 w-[2px] h-[calc(100%+2rem)] transition-colors ${
-                            pairHasWinner
-                              ? 'bg-[#3B82F6] shadow-[0_0_8px_rgba(59,130,246,0.6)]'
-                              : 'bg-white/15'
-                          }`}
-                        />
+                        <svg
+                          className="hidden md:block absolute -right-10 sm:-right-14 top-1/2 w-4 h-[calc(100%+2rem)] overflow-visible pointer-events-none"
+                          viewBox="0 0 16 100"
+                          preserveAspectRatio="none"
+                        >
+                          <motion.path
+                            d="M 16 0 L 16 100"
+                            fill="none"
+                            stroke={branchActive ? '#3B82F6' : 'rgba(255, 255, 255, 0.16)'}
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            initial={{ pathLength: 0 }}
+                            animate={{ pathLength: 1 }}
+                            transition={{
+                              duration: 0.85,
+                              delay: rIndex * 0.2 + mIndex * 0.1,
+                              ease: 'easeOut',
+                            }}
+                            style={{
+                              filter: branchActive ? 'drop-shadow(0px 0px 6px #3B82F6)' : undefined,
+                            }}
+                          />
+                        </svg>
                       )}
                     </div>
                   );
