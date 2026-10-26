@@ -239,6 +239,7 @@ export default function WhatIfSimulator({
 
   const playerBarWidth = Math.max(4, Math.min(96, playerWinPctRaw));
   const opponentBarWidth = 100 - playerBarWidth;
+  const playerIsDominant = playerBarWidth >= opponentBarWidth;
 
   const formatProbabilityDisplay = (pct: number) => {
     if (pct > 0 && pct < 1) return '<1%';
@@ -491,16 +492,24 @@ export default function WhatIfSimulator({
 
               <div className="relative h-3.5 w-full rounded-full bg-[#131C2B] overflow-hidden flex p-0.5 gap-1">
                 <motion.div
-                  initial={false}
+                  initial={{ width: '50%' }}
                   animate={{ width: `${playerBarWidth}%` }}
                   transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-                  className="h-full rounded-l-full bg-gradient-to-r from-[#2563EB] to-[#3B82F6] shadow-[0_0_12px_rgba(59,130,246,0.6)]"
+                  className={`h-full rounded-l-full shadow-[0_0_12px_rgba(59,130,246,0.6)] ${
+                    playerIsDominant
+                      ? 'bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600 bg-[length:200%_100%] animate-shimmer'
+                      : 'bg-gradient-to-r from-[#2563EB] to-[#3B82F6]'
+                  }`}
                 />
                 <motion.div
-                  initial={false}
+                  initial={{ width: '50%' }}
                   animate={{ width: `${opponentBarWidth}%` }}
                   transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-                  className="h-full rounded-r-full bg-gradient-to-r from-purple-500 to-pink-500 shadow-[0_0_12px_rgba(236,72,153,0.5)]"
+                  className={`h-full rounded-r-full shadow-[0_0_12px_rgba(236,72,153,0.5)] ${
+                    !playerIsDominant
+                      ? 'bg-gradient-to-r from-purple-600 via-pink-400 to-purple-600 bg-[length:200%_100%] animate-shimmer'
+                      : 'bg-gradient-to-r from-purple-500 to-pink-500'
+                  }`}
                 />
               </div>
 

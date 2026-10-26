@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { BHOSDataStore } from '../../lib/data/store';
 import { PlayerProfile } from '../../lib/data/types';
@@ -9,6 +10,8 @@ import CourtBackground from '../../components/CourtBackground';
 import LeaderboardTable, { isStaffMember } from '../../components/LeaderboardTable';
 import LeaderboardSkeleton from '../../components/LeaderboardSkeleton';
 import AnimatedCounter from '../../components/AnimatedCounter';
+import HoloCard from '../../components/HoloCard';
+import FacultyFilterTabs from '../../components/FacultyFilterTabs';
 import {
   Search,
   Trophy,
@@ -16,6 +19,7 @@ import {
   Sparkles,
   Briefcase,
   GraduationCap,
+  Crown,
 } from 'lucide-react';
 
 const FACULTIES = [
@@ -133,6 +137,8 @@ export default function LeaderboardPage() {
     });
   }, [profiles, searchQuery, selectedFaculty, genderFilter, cohortFilter]);
 
+  const top3Podium = useMemo(() => profiles.slice(0, 3), [profiles]);
+
   return (
     <SmoothReveal>
       <div className="relative space-y-8 pb-12">
@@ -187,6 +193,92 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
+        {top3Podium.length >= 3 && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
+            <HoloCard className="order-2 md:order-1 rounded-3xl border border-white/10 bg-[#0F1623]/95 p-6 shadow-xl">
+              <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow z-30">
+                2
+              </div>
+              <div className="pt-2 relative z-10">
+                <Link
+                  href={`/players/${top3Podium[1].id}`}
+                  className="font-display font-bold text-base text-white hover:text-[#3B82F6] transition"
+                >
+                  {top3Podium[1].full_name}
+                </Link>
+                <p className="text-xs text-slate-400 truncate mt-0.5">
+                  {top3Podium[1].major_faculty || 'BANM'}
+                </p>
+                <div className="mt-4 flex items-baseline justify-between">
+                  <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
+                    <AnimatedCounter value={top3Podium[1].current_elo} />
+                    <span className="text-xs text-slate-400 font-sans">ELO</span>
+                  </div>
+                  <span className="text-xs text-[#22C55E] font-semibold">
+                    {top3Podium[1].matches_played > 0
+                      ? Math.round((top3Podium[1].wins / top3Podium[1].matches_played) * 100)
+                      : 0}
+                    % Qələbə
+                  </span>
+                </div>
+              </div>
+            </HoloCard>
+
+            <HoloCard className="order-1 md:order-2 rounded-3xl border-2 border-amber-400/80 bg-gradient-to-b from-amber-500/15 via-[#0F1623] to-[#0F1623] p-7 shadow-2xl md:-translate-y-3">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-xl shadow-amber-500/30 z-30">
+                <Crown className="w-6 h-6" />
+              </div>
+              <div className="pt-4 text-center relative z-10">
+                <span className="inline-block px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-amber-500/30">
+                  Lider • #1
+                </span>
+                <Link
+                  href={`/players/${top3Podium[0].id}`}
+                  className="block font-display font-black text-xl text-white hover:text-[#3B82F6] transition"
+                >
+                  {top3Podium[0].full_name}
+                </Link>
+                <p className="text-xs text-slate-400 truncate mt-0.5">
+                  {top3Podium[0].major_faculty || 'BANM'}
+                </p>
+                <div className="mt-4 font-mono text-3xl font-black text-amber-400 flex items-baseline justify-center gap-1">
+                  <AnimatedCounter value={top3Podium[0].current_elo} />
+                  <span className="text-xs text-slate-300 font-sans">ELO</span>
+                </div>
+              </div>
+            </HoloCard>
+
+            <HoloCard className="order-3 rounded-3xl border border-amber-800/80 bg-[#0F1623]/95 p-6 shadow-xl">
+              <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow z-30">
+                3
+              </div>
+              <div className="pt-2 relative z-10">
+                <Link
+                  href={`/players/${top3Podium[2].id}`}
+                  className="font-display font-bold text-base text-white hover:text-[#3B82F6] transition"
+                >
+                  {top3Podium[2].full_name}
+                </Link>
+                <p className="text-xs text-slate-400 truncate mt-0.5">
+                  {top3Podium[2].major_faculty || 'BANM'}
+                </p>
+                <div className="mt-4 flex items-baseline justify-between">
+                  <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
+                    <AnimatedCounter value={top3Podium[2].current_elo} />
+                    <span className="text-xs text-slate-400 font-sans">ELO</span>
+                  </div>
+                  <span className="text-xs text-[#22C55E] font-semibold">
+                    {top3Podium[2].matches_played > 0
+                      ? Math.round((top3Podium[2].wins / top3Podium[2].matches_played) * 100)
+                      : 0}
+                    % Qələbə
+                  </span>
+                </div>
+              </div>
+            </HoloCard>
+          </div>
+        )}
+
         <div className="space-y-3">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-3">
             <div className="md:col-span-5 relative">
@@ -233,25 +325,11 @@ export default function LeaderboardPage() {
             </div>
           </div>
 
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-            {FACULTY_TABS.map((tab) => {
-              const active = selectedFaculty === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setSelectedFaculty(tab.id)}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition border ${
-                    active
-                      ? 'bg-[#3B82F6]/20 text-[#3B82F6] border-[#3B82F6]/50 shadow-md shadow-blue-500/10'
-                      : 'bg-[#0F1623] text-slate-400 border-white/[0.06] hover:text-white hover:border-white/20'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </div>
+          <FacultyFilterTabs
+            tabs={FACULTY_TABS}
+            selectedFaculty={selectedFaculty}
+            onSelect={setSelectedFaculty}
+          />
 
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
             {COHORT_PILLS.map((pill) => {

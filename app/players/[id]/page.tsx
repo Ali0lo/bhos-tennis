@@ -16,6 +16,8 @@ import EditProfileModal from '../../../components/EditProfileModal';
 import WhatIfSimulator from '../../../components/WhatIfSimulator';
 import HeadToHeadDuel from '../../../components/HeadToHeadDuel';
 import PlayerProfileSkeleton from '../../../components/PlayerProfileSkeleton';
+import HoloCard from '../../../components/HoloCard';
+import RecentFormBadges from '../../../components/RecentFormBadges';
 import { evaluatePlayerAchievements } from '../../../lib/types/achievements';
 import {
   Trophy,
@@ -541,7 +543,7 @@ export default function PlayerProfilePage() {
       </div>
 
       <SmoothReveal delay={0.05}>
-        <div className="rounded-3xl border border-white/10 bg-[#0F1623] p-6 sm:p-8 shadow-2xl relative overflow-hidden backdrop-blur-xl">
+        <HoloCard className="rounded-3xl border border-white/10 bg-[#0F1623] p-6 sm:p-8 shadow-2xl overflow-hidden backdrop-blur-xl">
           <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20" />
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
@@ -651,6 +653,9 @@ export default function PlayerProfilePage() {
                     </span>
                   )}
                 </div>
+                <div className="pt-1">
+                  <RecentFormBadges matches={matches} player={profile} playerId={playerId} />
+                </div>
               </div>
             </div>
 
@@ -666,7 +671,7 @@ export default function PlayerProfilePage() {
               </span>
             </div>
           </div>
-        </div>
+        </HoloCard>
       </SmoothReveal>
 
       <SmoothReveal delay={0.1}>
@@ -1064,16 +1069,19 @@ export default function PlayerProfilePage() {
 
       <SmoothReveal delay={0.25}>
         <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-6 shadow-xl space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-[#3B82F6]" />
               <h3 className="text-base font-display font-bold text-white">
                 Oyun Tarixçəsi və Nəticələr
               </h3>
             </div>
-            <span className="text-xs text-slate-400 font-mono">
-              {recentMatchesFeed.length} Qeydə Alınmış Oyun
-            </span>
+            <div className="flex items-center gap-4 flex-wrap">
+              <RecentFormBadges matches={matches} player={profile} playerId={playerId} />
+              <span className="text-xs text-slate-400 font-mono">
+                {recentMatchesFeed.length} Qeydə Alınmış Oyun
+              </span>
+            </div>
           </div>
 
           <div className="max-h-96 overflow-y-auto space-y-2.5 pr-1 divide-y divide-transparent">

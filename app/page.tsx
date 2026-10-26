@@ -12,6 +12,7 @@ import AnimatedCounter from '../components/AnimatedCounter';
 import CourtBackground from '../components/CourtBackground';
 import MagneticButton from '../components/MagneticButton';
 import LeaderboardSkeleton from '../components/LeaderboardSkeleton';
+import HoloCard from '../components/HoloCard';
 import TiltCard from '../components/TiltCard';
 import EloToastBadge from '../components/EloToastBadge';
 import SmoothReveal, { SmoothRevealItem } from '../components/SmoothReveal';
@@ -272,11 +273,11 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
             {top3[1] && (
-              <TiltCard className="order-2 md:order-1 rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-xl relative group hover:border-slate-600 transition">
-                <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow">
+              <HoloCard className="order-2 md:order-1 rounded-3xl border border-white/10 bg-slate-900/80 p-6 shadow-xl relative group hover:border-slate-600 transition">
+                <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow z-30">
                   2
                 </div>
-                <div className="pt-2">
+                <div className="pt-2 relative z-10">
                   <Link
                     href={`/players/${top3[1].id}`}
                     className="font-display font-bold text-base text-white hover:text-cyan-400 transition"
@@ -298,15 +299,15 @@ export default function HomePage() {
                     <span>{top3[1].wins}W - {top3[1].losses}L</span>
                   </div>
                 </div>
-              </TiltCard>
+              </HoloCard>
             )}
 
             {top3[0] && (
-              <TiltCard className="order-1 md:order-2 rounded-3xl border-2 border-amber-400/80 bg-gradient-to-b from-amber-500/10 via-slate-900/90 to-slate-900 p-7 shadow-2xl relative group hover:border-amber-400 transition md:-translate-y-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-xl shadow-amber-500/30">
+              <HoloCard className="order-1 md:order-2 rounded-3xl border-2 border-amber-400/80 bg-gradient-to-b from-amber-500/10 via-slate-900/90 to-slate-900 p-7 shadow-2xl relative group hover:border-amber-400 transition md:-translate-y-3">
+                <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-xl shadow-amber-500/30 z-30">
                   1
                 </div>
-                <div className="pt-4 text-center">
+                <div className="pt-4 text-center relative z-10">
                   <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-amber-500/30">
                     {rootT(`roles.${top3[0].role}`)} • #1
                   </div>
@@ -332,15 +333,15 @@ export default function HomePage() {
                     </span>
                   </div>
                 </div>
-              </TiltCard>
+              </HoloCard>
             )}
 
             {top3[2] && (
-              <TiltCard className="order-3 rounded-3xl border border-amber-800/80 bg-slate-900/80 p-6 shadow-xl relative group hover:border-amber-700 transition">
-                <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow">
+              <HoloCard className="order-3 rounded-3xl border border-amber-800/80 bg-slate-900/80 p-6 shadow-xl relative group hover:border-amber-700 transition">
+                <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow z-30">
                   3
                 </div>
-                <div className="pt-2">
+                <div className="pt-2 relative z-10">
                   <Link
                     href={`/players/${top3[2].id}`}
                     className="font-display font-bold text-base text-white hover:text-cyan-400 transition"
@@ -362,7 +363,7 @@ export default function HomePage() {
                     <span>{top3[2].wins}W - {top3[2].losses}L</span>
                   </div>
                 </div>
-              </TiltCard>
+              </HoloCard>
             )}
           </div>
 

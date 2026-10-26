@@ -50,6 +50,7 @@ export default function HeadToHeadDuel({
 
   const userBarWidth = Math.max(4, Math.min(96, projection.userWinPercent));
   const targetBarWidth = 100 - userBarWidth;
+  const userIsDominant = userBarWidth >= targetBarWidth;
 
   const eloDiff = safeUserElo - safeTargetElo;
   const formattedLossText =
@@ -154,13 +155,21 @@ export default function HeadToHeadDuel({
             initial={{ width: '50%' }}
             animate={{ width: `${userBarWidth}%` }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            className="h-full rounded-l-full bg-[#3B82F6] shadow-[0_0_12px_rgba(59,130,246,0.6)]"
+            className={`h-full rounded-l-full shadow-[0_0_12px_rgba(59,130,246,0.6)] ${
+              userIsDominant
+                ? 'bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600 bg-[length:200%_100%] animate-shimmer'
+                : 'bg-[#3B82F6]'
+            }`}
           />
           <motion.div
             initial={{ width: '50%' }}
             animate={{ width: `${targetBarWidth}%` }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            className="h-full rounded-r-full bg-[#A855F7] shadow-[0_0_12px_rgba(168,85,247,0.5)]"
+            className={`h-full rounded-r-full shadow-[0_0_12px_rgba(168,85,247,0.5)] ${
+              !userIsDominant
+                ? 'bg-gradient-to-r from-purple-600 via-fuchsia-400 to-purple-600 bg-[length:200%_100%] animate-shimmer'
+                : 'bg-[#A855F7]'
+            }`}
           />
         </div>
 
