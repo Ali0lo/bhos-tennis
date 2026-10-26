@@ -1120,6 +1120,29 @@ export class BHOSDataStore {
     this.notify();
   }
 
+  public async voidMatch(matchId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase bağlantısı mövcud deyil.');
+    }
+
+    const { error } = await supabase.rpc('admin_void_match', { target_match_id: matchId });
+    if (error) {
+      throw new Error(error.message || 'Matç ləğv edilə bilmədi.');
+    }
+
+    this.matches = this.matches.filter((m) => m.id !== matchId);
+    setStored(STORAGE_KEYS.MATCHES, this.matches);
+    this.clearMatchAndPlayerCaches();
+    this.notify();
+
+    await Promise.allSettled([
+      this.fetchProfilesFromCloud(),
+      this.fetchMatchesFromCloud(),
+      this.fetchLeaderboardStandings({ force: true }),
+    ]);
+  }
+
   public markMatchResolvedLocally(matchId: string, status: 'confirmed' | 'rejected'): void {
     const resolved = this.getResolvedMatchIds();
     resolved[matchId] = status;

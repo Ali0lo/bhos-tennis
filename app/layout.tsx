@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
+import PWARegistration from '../components/PWARegistration';
 import { I18nProvider } from '../lib/i18n';
 
 const inter = Inter({
@@ -12,16 +13,22 @@ const inter = Inter({
 });
 
 export const viewport: Viewport = {
+  themeColor: '#080D16',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 5,
-  themeColor: '#0A192F',
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export const metadata: Metadata = {
-  title: 'BHOS Table Tennis Club | Baku Higher Oil School',
-  description:
-    'Official table tennis management and ELO ranking portal for Baku Higher Oil School (BHOS) students, coaches, and athletes. Inspired by tabletennis.az.',
+  title: 'BANM Stolüstü Tennis Portalı',
+  description: 'Rəsmi ITTF ELO Reytinqi və Liqa Sistemi',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'BANM TT',
+  },
   keywords: [
     'BHOS',
     'Baku Higher Oil School',
@@ -30,12 +37,17 @@ export const metadata: Metadata = {
     'tabletennis.az',
     'ELO Rating',
     'Tournament Bracket',
-    'Table Reservation',
   ],
   icons: {
-    icon: '/icon.svg',
+    icon: [
+      { url: '/icon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512.png', sizes: '512x512', type: 'image/png' },
+    ],
     shortcut: '/icon.svg',
-    apple: '/icon.svg',
+    apple: [
+      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
   },
 };
 
@@ -48,6 +60,7 @@ export default function RootLayout({
     <html lang="az" className={`dark ${inter.variable}`}>
       <body className={`${inter.className} font-sans min-h-screen flex flex-col bg-[#0A192F] text-slate-100 antialiased selection:bg-bhos-cyan selection:text-bhos-navy`}>
         <I18nProvider>
+          <PWARegistration />
           <Navbar />
           <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             {children}

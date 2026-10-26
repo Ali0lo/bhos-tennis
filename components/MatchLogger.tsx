@@ -1,24 +1,26 @@
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { BHOSDataStore } from '../lib/data/store';
 import { PlayerProfile, isProfilePending } from '../lib/data/types';
 import { getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
-import { 
-  Trophy, 
-  Swords, 
-  CheckCircle2, 
-  AlertCircle, 
-  Loader2, 
-  ArrowRight, 
-  Zap, 
-  TrendingUp, 
+import AthleteCombobox from './AthleteCombobox';
+import {
+  Swords,
+  CheckCircle2,
+  AlertCircle,
+  Loader2,
+  ArrowRight,
+  Zap,
+  TrendingUp,
   TrendingDown,
-  Sparkles,
   Clock,
   ShieldCheck,
-  UserCheck
+  UserCheck,
+  Plus,
+  Minus,
 } from 'lucide-react';
 
 interface MatchLoggerProps {
@@ -57,6 +59,61 @@ export function calculateStandardElo(
   };
 }
 
+const WIN_PRESETS: Array<[number, number]> = [
+  [3, 0],
+  [3, 1],
+  [3, 2],
+];
+
+const LOSS_PRESETS: Array<[number, number]> = [
+  [0, 3],
+  [1, 3],
+  [2, 3],
+];
+
+const MAX_SETS = 7;
+
+function isApprovedAthlete(p: PlayerProfile): boolean {
+  return p.is_verified !== false && !isProfilePending(p);
+}
+
+function ScoreStepper({
+  label,
+  value,
+  onChange,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+}) {
+  return (
+    <div className="flex-1 p-3 rounded-xl bg-[#131C2B] border border-white/5">
+      <span className="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2 truncate">
+        {label}
+      </span>
+      <div className="flex items-center justify-between gap-2">
+        <button
+          type="button"
+          aria-label={`${label} azalt`}
+          onClick={() => onChange(Math.max(0, value - 1))}
+          className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 transition active:scale-95"
+        >
+          <Minus className="w-3.5 h-3.5" />
+        </button>
+        <span className="font-mono text-2xl font-black text-white w-8 text-center">{value}</span>
+        <button
+          type="button"
+          aria-label={`${label} artır`}
+          onClick={() => onChange(Math.min(MAX_SETS, value + 1))}
+          className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 transition active:scale-95"
+        >
+          <Plus className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function MatchLogger({
   onMatchLogged,
   initialOpponentId,
@@ -66,12 +123,11 @@ export default function MatchLogger({
   const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
 
-  const [playerOutcome, setPlayerOutcome] = useState<'won' | 'lost'>('won');
   const [opponentId, setOpponentId] = useState<string>(initialOpponentId || '');
-  const [adminWinnerId, setAdminWinnerId] = useState<string>('');
-  const [adminLoserId, setAdminLoserId] = useState<string>(initialOpponentId || '');
-  const [p1SetsWon, setP1SetsWon] = useState<number>(3);
-  const [p2SetsWon, setP2SetsWon] = useState<number>(1);
+  const [adminP1Id, setAdminP1Id] = useState<string>('');
+  const [adminP2Id, setAdminP2Id] = useState<string>(initialOpponentId || '');
+  const [scoreA, setScoreA] = useState<number>(0);
+  const [scoreB, setScoreB] = useState<number>(0);
   const [detailedScores, setDetailedScores] = useState<string>('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -81,10 +137,6 @@ export default function MatchLogger({
     points?: number;
     winnerName: string;
     loserName: string;
-    winnerBefore?: number;
-    winnerAfter?: number;
-    loserBefore?: number;
-    loserAfter?: number;
     scoreSummary: string;
     isPending?: boolean;
   } | null>(null);
@@ -114,7 +166,7 @@ export default function MatchLogger({
     return local;
   }, [store]);
 
-  const fetchActivePlayers = async () => {
+  const fetchActivePlayers = useCallback(async () => {
     setLoadingPlayers(true);
     const supabase = getSupabaseClient();
 
@@ -127,7 +179,7 @@ export default function MatchLogger({
           .order('full_name', { ascending: true });
 
         if (!error && data) {
-          setPlayers(data as PlayerProfile[]);
+          setPlayers((data as PlayerProfile[]).filter(isApprovedAthlete));
           setLoadingPlayers(false);
           return;
         }
@@ -136,9 +188,9 @@ export default function MatchLogger({
       }
     }
 
-    setPlayers(store.getVerifiedProfiles());
+    setPlayers(store.getVerifiedProfiles().filter(isApprovedAthlete));
     setLoadingPlayers(false);
-  };
+  }, [store]);
 
   useEffect(() => {
     fetchCurrentUser();
@@ -150,44 +202,45 @@ export default function MatchLogger({
         : null);
     if (resolvedOpponentId) {
       setOpponentId(resolvedOpponentId);
-      setAdminLoserId(resolvedOpponentId);
+      setAdminP2Id(resolvedOpponentId);
     }
-  }, [fetchCurrentUser, initialOpponentId]);
+  }, [fetchCurrentUser, fetchActivePlayers, initialOpponentId]);
 
   useEffect(() => {
-    if (
-      currentUser?.id &&
-      (initialOpponentId || adminLoserId) &&
-      !adminWinnerId &&
-      currentUser.id !== (initialOpponentId || adminLoserId)
-    ) {
-      setAdminWinnerId(currentUser.id);
+    if (currentUser?.id && adminP2Id && !adminP1Id && currentUser.id !== adminP2Id) {
+      setAdminP1Id(currentUser.id);
     }
-  }, [currentUser, initialOpponentId, adminLoserId, adminWinnerId]);
+  }, [currentUser, adminP2Id, adminP1Id]);
+
+  useEffect(() => {
+    if (currentUser?.id && opponentId === currentUser.id) {
+      setOpponentId('');
+    }
+  }, [currentUser, opponentId]);
 
   const isAdminOrCoach = useMemo(() => {
     return currentUser?.role === 'coach' || currentUser?.role === 'president';
   }, [currentUser]);
 
-  const isPendingApproval = useMemo(() => {
-    return isProfilePending(currentUser);
-  }, [currentUser]);
+  const isPendingApproval = useMemo(() => isProfilePending(currentUser), [currentUser]);
 
-  const effectiveWinner = useMemo(() => {
-    if (isAdminOrCoach) {
-      return players.find((p) => p.id === adminWinnerId);
-    }
-    if (!currentUser) return undefined;
-    return playerOutcome === 'won' ? currentUser : players.find((p) => p.id === opponentId);
-  }, [isAdminOrCoach, adminWinnerId, playerOutcome, currentUser, players, opponentId]);
+  const sideA = useMemo<PlayerProfile | undefined>(() => {
+    if (isAdminOrCoach) return players.find((p) => p.id === adminP1Id);
+    return currentUser || undefined;
+  }, [isAdminOrCoach, players, adminP1Id, currentUser]);
 
-  const effectiveLoser = useMemo(() => {
-    if (isAdminOrCoach) {
-      return players.find((p) => p.id === adminLoserId);
-    }
-    if (!currentUser) return undefined;
-    return playerOutcome === 'won' ? players.find((p) => p.id === opponentId) : currentUser;
-  }, [isAdminOrCoach, adminLoserId, playerOutcome, currentUser, players, opponentId]);
+  const sideB = useMemo<PlayerProfile | undefined>(() => {
+    if (isAdminOrCoach) return players.find((p) => p.id === adminP2Id);
+    return players.find((p) => p.id === opponentId);
+  }, [isAdminOrCoach, players, adminP2Id, opponentId]);
+
+  const scoresValid = scoreA !== scoreB && Math.max(scoreA, scoreB) > 0;
+  const aWins = scoreA > scoreB;
+
+  const effectiveWinner = scoresValid ? (aWins ? sideA : sideB) : undefined;
+  const effectiveLoser = scoresValid ? (aWins ? sideB : sideA) : undefined;
+  const setsWon = Math.max(scoreA, scoreB);
+  const setsLost = Math.min(scoreA, scoreB);
 
   const eloPreview = useMemo(() => {
     if (!effectiveWinner || !effectiveLoser || effectiveWinner.id === effectiveLoser.id) return null;
@@ -195,17 +248,36 @@ export default function MatchLogger({
       effectiveWinner.current_elo,
       effectiveLoser.current_elo,
       32,
-      p1SetsWon,
-      p2SetsWon
+      setsWon,
+      setsLost
     );
-  }, [effectiveWinner, effectiveLoser, p1SetsWon, p2SetsWon]);
+  }, [effectiveWinner, effectiveLoser, setsWon, setsLost]);
+
+  const winProbabilityA = useMemo(() => {
+    if (!sideA || !sideB) return null;
+    const a = Math.min(MAX_ELO, Math.max(MIN_ELO, sideA.current_elo));
+    const b = Math.min(MAX_ELO, Math.max(MIN_ELO, sideB.current_elo));
+    return 1 / (1 + Math.pow(10, (b - a) / 400));
+  }, [sideA, sideB]);
+
+  const canSubmit =
+    Boolean(sideA && sideB && sideA.id !== sideB.id) &&
+    scoresValid &&
+    !isSubmitting &&
+    !loadingPlayers &&
+    !isPendingApproval;
+
+  const applyPreset = (a: number, b: number) => {
+    setScoreA(a);
+    setScoreB(b);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
     if (!currentUser) {
-      setErrorMessage('You must be signed in to log a match.');
+      setErrorMessage('Matç qeyd etmək üçün daxil olmalısınız.');
       return;
     }
 
@@ -216,26 +288,24 @@ export default function MatchLogger({
       return;
     }
 
-    if (!effectiveWinner || !effectiveLoser) {
-      setErrorMessage('Please specify both the winner and loser of the match.');
+    if (!sideA || !sideB) {
+      setErrorMessage('Zəhmət olmasa hər iki oyunçunu seçin.');
       return;
     }
 
-    if (effectiveWinner.id === effectiveLoser.id) {
-      setErrorMessage('Player 1 and Player 2 cannot be the same person.');
+    if (sideA.id === sideB.id) {
+      setErrorMessage('Oyunçu özü ilə oynaya bilməz.');
       return;
     }
 
-    if (p1SetsWon <= p2SetsWon) {
-      setErrorMessage('Player 1 (Winner) must have won more sets than Player 2.');
+    if (!scoresValid || !effectiveWinner || !effectiveLoser) {
+      setErrorMessage('Etibarlı set hesabı seçin (bərabər hesab ola bilməz).');
       return;
     }
 
-    if (!isAdminOrCoach) {
-      if (effectiveWinner.id !== currentUser.id && effectiveLoser.id !== currentUser.id) {
-        setErrorMessage('You must be either Player 1 (Winner) or Player 2 (Loser) to submit this match.');
-        return;
-      }
+    if (!isAdminOrCoach && effectiveWinner.id !== currentUser.id && effectiveLoser.id !== currentUser.id) {
+      setErrorMessage('Yalnız iştirak etdiyiniz matçı qeyd edə bilərsiniz.');
+      return;
     }
 
     setIsSubmitting(true);
@@ -243,22 +313,22 @@ export default function MatchLogger({
     try {
       const supabase = getSupabaseClient();
       if (!supabase) {
-        throw new Error('Supabase client connection is unavailable.');
+        throw new Error('Supabase bağlantısı mövcud deyil.');
       }
 
       const matchId = typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
         : `m-${Date.now()}`;
 
-      const finalSetScores = detailedScores.trim() || `${p1SetsWon}-${p2SetsWon}`;
+      const finalSetScores = detailedScores.trim() || `${setsWon}-${setsLost}`;
 
       if (isAdminOrCoach) {
         const { delta, p1After, p2After } = calculateStandardElo(
           effectiveWinner.current_elo,
           effectiveLoser.current_elo,
           32,
-          p1SetsWon,
-          p2SetsWon
+          setsWon,
+          setsLost
         );
 
         const { error: matchInsertError } = await supabase.from('matches').insert([
@@ -270,14 +340,15 @@ export default function MatchLogger({
             player2_name: effectiveLoser.full_name,
             logged_by: currentUser.id,
             logged_by_name: currentUser.full_name,
-            player1_score: p1SetsWon,
-            player2_score: p2SetsWon,
+            player1_score: setsWon,
+            player2_score: setsLost,
             set_scores: finalSetScores,
             player1_elo_before: effectiveWinner.current_elo,
             player2_elo_before: effectiveLoser.current_elo,
             player1_elo_after: p1After,
             player2_elo_after: p2After,
             elo_delta: delta,
+            winner_id: effectiveWinner.id,
             status: 'confirmed',
             match_date: new Date().toISOString(),
           },
@@ -307,21 +378,18 @@ export default function MatchLogger({
 
         if (loserError) throw loserError;
 
+        store.clearMatchAndPlayerCaches();
         await Promise.allSettled([
           store.fetchProfilesFromCloud(),
           store.fetchMatchesFromCloud(),
         ]);
 
         setSuccessToast({
-          message: 'Match confirmed and ratings updated immediately!',
+          message: 'Matç təsdiqləndi və reytinqlər dərhal yeniləndi!',
           winnerName: effectiveWinner.full_name,
           loserName: effectiveLoser.full_name,
           points: delta,
-          winnerBefore: effectiveWinner.current_elo,
-          winnerAfter: p1After,
-          loserBefore: effectiveLoser.current_elo,
-          loserAfter: p2After,
-          scoreSummary: `${p1SetsWon}-${p2SetsWon}`,
+          scoreSummary: `${setsWon}-${setsLost}`,
           isPending: false,
         });
       } else {
@@ -334,8 +402,8 @@ export default function MatchLogger({
             player2_name: effectiveLoser.full_name,
             logged_by: currentUser.id,
             logged_by_name: currentUser.full_name,
-            player1_score: p1SetsWon,
-            player2_score: p2SetsWon,
+            player1_score: setsWon,
+            player2_score: setsLost,
             set_scores: finalSetScores,
             player1_elo_before: effectiveWinner.current_elo,
             player2_elo_before: effectiveLoser.current_elo,
@@ -352,25 +420,25 @@ export default function MatchLogger({
         await store.fetchMatchesFromCloud();
 
         setSuccessToast({
-          message: 'Match submitted! Waiting for opponent confirmation.',
+          message: 'Matç göndərildi! Rəqibinizin təsdiqi gözlənilir.',
           winnerName: effectiveWinner.full_name,
           loserName: effectiveLoser.full_name,
-          scoreSummary: `${p1SetsWon}-${p2SetsWon}`,
+          scoreSummary: `${setsWon}-${setsLost}`,
           isPending: true,
         });
       }
 
       setOpponentId('');
-      setAdminWinnerId('');
-      setAdminLoserId('');
-      setP1SetsWon(3);
-      setP2SetsWon(1);
+      setAdminP1Id('');
+      setAdminP2Id('');
+      setScoreA(0);
+      setScoreB(0);
       setDetailedScores('');
 
       await fetchActivePlayers();
       onMatchLogged?.();
     } catch (err: any) {
-      setErrorMessage(err.message || 'An error occurred while logging the match.');
+      setErrorMessage(err.message || 'Matç qeyd edilərkən xəta baş verdi.');
     } finally {
       setIsSubmitting(false);
     }
@@ -380,13 +448,40 @@ export default function MatchLogger({
     return (
       <div className="p-8 rounded-2xl border border-white/10 bg-[#0F1623] text-center space-y-3">
         <AlertCircle className="w-8 h-8 text-amber-400 mx-auto" />
-        <h3 className="text-base font-display font-bold text-white">Sign In Required</h3>
+        <h3 className="text-base font-display font-bold text-white">Giriş Tələb Olunur</h3>
         <p className="text-xs text-slate-400 max-w-sm mx-auto">
-          You must be logged in with your BHOS account to submit or verify match results.
+          Matç nəticəsi göndərmək və ya təsdiqləmək üçün BANM hesabınızla daxil olmalısınız.
         </p>
       </div>
     );
   }
+
+  const labelA = isAdminOrCoach ? sideA?.full_name || 'Oyunçu 1' : 'Siz';
+  const labelB = isAdminOrCoach ? sideB?.full_name || 'Oyunçu 2' : sideB?.full_name || 'Rəqib';
+  const userIsWinner = !isAdminOrCoach && scoresValid && aWins;
+
+  const presetChip = (a: number, b: number, tone: 'win' | 'loss') => {
+    const active = scoreA === a && scoreB === b;
+    const toneClasses =
+      tone === 'win'
+        ? active
+          ? 'bg-[#22C55E]/20 border-[#22C55E]/60 text-[#22C55E] shadow-[0_0_14px_rgba(34,197,94,0.25)]'
+          : 'bg-[#131C2B] border-white/10 text-slate-300 hover:border-[#22C55E]/40 hover:text-[#22C55E]'
+        : active
+        ? 'bg-[#EF4444]/20 border-[#EF4444]/60 text-[#EF4444] shadow-[0_0_14px_rgba(239,68,68,0.25)]'
+        : 'bg-[#131C2B] border-white/10 text-slate-300 hover:border-[#EF4444]/40 hover:text-[#EF4444]';
+    return (
+      <motion.button
+        key={`${a}-${b}`}
+        type="button"
+        whileTap={{ scale: 0.94 }}
+        onClick={() => applyPreset(a, b)}
+        className={`flex-1 py-2.5 rounded-xl border font-mono text-sm font-black transition ${toneClasses}`}
+      >
+        {a}–{b}
+      </motion.button>
+    );
+  };
 
   return (
     <div className="relative rounded-2xl border border-white/10 bg-[#0F1623] p-6 shadow-2xl backdrop-blur-xl">
@@ -394,15 +489,14 @@ export default function MatchLogger({
         <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs text-amber-300">
           <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold text-amber-200 block">
-              Hesabınız təsdiq gözləyir
-            </span>
+            <span className="font-bold text-amber-200 block">Hesabınız təsdiq gözləyir</span>
             <span>
-              Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.
+              Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.
             </span>
           </div>
         </div>
       )}
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-white/10">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-[#3B82F6]/10 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6]">
@@ -410,22 +504,22 @@ export default function MatchLogger({
           </div>
           <div>
             <h2 className="text-lg font-display font-black text-white flex items-center gap-2">
-              Official Match Logger
+              Matç Qeydiyyatı
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30">
-                K=32 Engine
+                K=32
               </span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
               {isAdminOrCoach
-                ? 'Coach/Admin Authority: Scores are verified and ratings update immediately.'
-                : 'Player Submission: Results require 2-Factor confirmation from your opponent.'}
+                ? 'Məşqçi/Admin: nəticə dərhal təsdiqlənir və reytinqlər yenilənir.'
+                : 'Oyunçu: nəticə rəqibinizin təsdiqindən sonra rəsmiləşir.'}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#131C2B] border border-white/5 text-xs text-slate-300">
           <UserCheck className="w-3.5 h-3.5 text-[#3B82F6]" />
-          <span>Logged as: <strong>{currentUser.full_name}</strong></span>
+          <span><strong>{currentUser.full_name}</strong></span>
           <span className="uppercase text-[9px] font-bold text-[#3B82F6]">({currentUser.role})</span>
         </div>
       </div>
@@ -442,15 +536,13 @@ export default function MatchLogger({
             <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0 mt-0.5" />
           )}
           <div className="space-y-1 text-xs">
-            <div className="font-bold text-white text-sm">
-              {successToast.message}
-            </div>
+            <div className="font-bold text-white text-sm">{successToast.message}</div>
             <div className="text-slate-300">
-              <strong>{successToast.winnerName}</strong> defeated <strong>{successToast.loserName}</strong> ({successToast.scoreSummary})
+              <strong>{successToast.winnerName}</strong> qalib gəldi — <strong>{successToast.loserName}</strong> ({successToast.scoreSummary})
             </div>
             {!successToast.isPending && successToast.points && (
               <div className="font-mono text-emerald-400 font-semibold pt-1">
-                +{successToast.points} PTS awarded to winner / -{successToast.points} PTS deducted from loser
+                Qalibə +{successToast.points} XAL / Məğluba -{successToast.points} XAL
               </div>
             )}
           </div>
@@ -465,176 +557,161 @@ export default function MatchLogger({
       )}
 
       <form onSubmit={handleSubmit} className="mt-6 space-y-6">
-        {!isAdminOrCoach ? (
-          <div className="space-y-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Your Match Result
-              </label>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  type="button"
-                  onClick={() => setPlayerOutcome('won')}
-                  className={`p-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 ${
-                    playerOutcome === 'won'
-                      ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-400 shadow-lg shadow-emerald-500/10'
-                      : 'bg-[#131C2B] border-white/10 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <Trophy className="w-4 h-4 text-emerald-400" />
-                  <span>I Won This Match</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setPlayerOutcome('lost')}
-                  className={`p-3 rounded-xl border text-xs font-bold transition flex items-center justify-center gap-2 ${
-                    playerOutcome === 'lost'
-                      ? 'bg-red-500/20 border-red-500/50 text-red-400 shadow-lg shadow-red-500/10'
-                      : 'bg-[#131C2B] border-white/10 text-slate-400 hover:text-white'
-                  }`}
-                >
-                  <TrendingDown className="w-4 h-4 text-red-400" />
-                  <span>I Lost This Match</span>
-                </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Select Opponent ({playerOutcome === 'won' ? 'Loser' : 'Winner'})
-              </label>
-              <select
-                required
-                value={opponentId}
-                onChange={(e) => setOpponentId(e.target.value)}
-                className="w-full px-3.5 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-white text-xs focus:outline-none focus:border-[#3B82F6]"
-              >
-                <option value="">Choose your opponent...</option>
-                {players
-                  .filter((p) => p.id !== currentUser.id)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.full_name} ({p.current_elo} PTS) - {p.major_faculty}
-                    </option>
-                  ))}
-              </select>
-            </div>
+        {isAdminOrCoach ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <AthleteCombobox
+              label="Oyunçu 1"
+              players={players}
+              value={adminP1Id}
+              onChange={setAdminP1Id}
+              excludeIds={adminP2Id ? [adminP2Id] : []}
+              disabled={loadingPlayers}
+            />
+            <AthleteCombobox
+              label="Oyunçu 2"
+              players={players}
+              value={adminP2Id}
+              onChange={setAdminP2Id}
+              excludeIds={adminP1Id ? [adminP1Id] : []}
+              disabled={loadingPlayers}
+            />
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Player 1 (Winner)
-              </label>
-              <select
-                required
-                value={adminWinnerId}
-                onChange={(e) => setAdminWinnerId(e.target.value)}
-                className="w-full px-3.5 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-white text-xs focus:outline-none focus:border-[#3B82F6]"
-              >
-                <option value="">Select winner...</option>
-                {players.map((p) => (
-                  <option key={p.id} value={p.id} disabled={p.id === adminLoserId}>
-                    {p.full_name} ({p.current_elo} PTS) - {p.major_faculty}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-                Player 2 (Loser)
-              </label>
-              <select
-                required
-                value={adminLoserId}
-                onChange={(e) => setAdminLoserId(e.target.value)}
-                className="w-full px-3.5 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-white text-xs focus:outline-none focus:border-[#3B82F6]"
-              >
-                <option value="">Select loser...</option>
-                {players.map((p) => (
-                  <option key={p.id} value={p.id} disabled={p.id === adminWinnerId}>
-                    {p.full_name} ({p.current_elo} PTS) - {p.major_faculty}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <AthleteCombobox
+            label="Rəqib"
+            players={players}
+            value={opponentId}
+            onChange={setOpponentId}
+            excludeIds={[currentUser.id]}
+            disabled={loadingPlayers}
+            placeholder={loadingPlayers ? 'Oyunçular yüklənir...' : 'Rəqibin adı və ya fakültəsi üzrə axtar...'}
+          />
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-              Winner Sets Won
-            </label>
-            <input
-              type="number"
-              min={1}
-              max={7}
-              value={p1SetsWon}
-              onChange={(e) => setP1SetsWon(parseInt(e.target.value, 10) || 0)}
-              className="w-full px-3.5 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-white text-xs font-mono font-bold focus:outline-none focus:border-[#3B82F6]"
-            />
+        <div className="space-y-3">
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+            Set Hesabı ({labelA} – {labelB})
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-[#22C55E]">
+                {isAdminOrCoach ? 'Oyunçu 1 qalib' : 'Qələbə'}
+              </span>
+              <div className="flex gap-2">
+                {WIN_PRESETS.map(([a, b]) => presetChip(a, b, 'win'))}
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <span className="text-[10px] uppercase tracking-wider font-bold text-[#EF4444]">
+                {isAdminOrCoach ? 'Oyunçu 2 qalib' : 'Məğlubiyyət'}
+              </span>
+              <div className="flex gap-2">
+                {LOSS_PRESETS.map(([a, b]) => presetChip(a, b, 'loss'))}
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-              Loser Sets Won
-            </label>
-            <input
-              type="number"
-              min={0}
-              max={6}
-              value={p2SetsWon}
-              onChange={(e) => setP2SetsWon(parseInt(e.target.value, 10) || 0)}
-              className="w-full px-3.5 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-white text-xs font-mono font-bold focus:outline-none focus:border-[#3B82F6]"
-            />
+          <div className="flex gap-3 pt-1">
+            <ScoreStepper label={labelA} value={scoreA} onChange={setScoreA} />
+            <ScoreStepper label={labelB} value={scoreB} onChange={setScoreB} />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-              Set Breakdown (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. 11-9, 8-11, 11-6, 12-10"
-              value={detailedScores}
-              onChange={(e) => setDetailedScores(e.target.value)}
-              className="w-full px-3.5 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-[#3B82F6]"
-            />
-          </div>
+          {scoreA === scoreB && Math.max(scoreA, scoreB) > 0 && (
+            <p className="text-[11px] text-amber-300">Hesab bərabər ola bilməz.</p>
+          )}
         </div>
 
-        {eloPreview && effectiveWinner && effectiveLoser && (
-          <div className="p-4 rounded-xl bg-[#131C2B] border border-white/5 space-y-2">
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                {isAdminOrCoach ? 'Immediate ELO Calibration' : 'Estimated Calibration Upon Opponent Confirmation'}
-              </span>
-              <span className="font-mono text-[#3B82F6] font-bold">±{eloPreview.delta} PTS</span>
-            </div>
+        <div>
+          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
+            Set Detalları (İstəyə bağlı)
+          </label>
+          <input
+            type="text"
+            placeholder="məs. 11-9, 8-11, 11-6, 12-10"
+            value={detailedScores}
+            onChange={(e) => setDetailedScores(e.target.value)}
+            className="w-full px-3.5 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-[#3B82F6]"
+          />
+        </div>
 
-            <div className="grid grid-cols-2 gap-4 pt-2 border-t border-white/5 text-xs">
-              <div>
-                <span className="text-slate-400 block">{effectiveWinner.full_name} (Winner)</span>
-                <span className="font-mono text-white font-bold">
-                  {effectiveWinner.current_elo} <ArrowRight className="inline w-3 h-3 text-slate-500 mx-1" />
-                  <span className="text-emerald-400">{eloPreview.p1After}</span>
+        <AnimatePresence mode="wait">
+          {eloPreview && effectiveWinner && effectiveLoser && (
+            <motion.div
+              key={`${effectiveWinner.id}-${effectiveLoser.id}-${setsWon}-${setsLost}`}
+              initial={{ opacity: 0, y: 8, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 26 }}
+              className="p-4 rounded-2xl bg-white/[0.03] backdrop-blur-md border border-white/10 space-y-3"
+            >
+              <div className="flex items-center justify-between text-xs">
+                <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  {isAdminOrCoach ? 'Dərhal ELO Kalibrasiyası' : 'Təsdiqdən Sonra Gözlənilən ELO'}
                 </span>
+                {winProbabilityA !== null && (
+                  <span className="font-mono text-[11px] text-slate-400">
+                    Qələbə ehtimalı ({isAdminOrCoach ? labelA : 'Siz'}):{' '}
+                    <strong className="text-white">{Math.round(winProbabilityA * 100)}%</strong>
+                  </span>
+                )}
               </div>
 
-              <div>
-                <span className="text-slate-400 block">{effectiveLoser.full_name} (Loser)</span>
-                <span className="font-mono text-white font-bold">
-                  {effectiveLoser.current_elo} <ArrowRight className="inline w-3 h-3 text-slate-500 mx-1" />
-                  <span className="text-red-400">{eloPreview.p2After}</span>
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
+              {isAdminOrCoach ? (
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 rounded-xl bg-[#22C55E]/10 border border-[#22C55E]/30">
+                    <span className="text-slate-300 block truncate">{effectiveWinner.full_name}</span>
+                    <span className="font-mono text-white font-bold flex items-center gap-1 mt-1">
+                      {effectiveWinner.current_elo}
+                      <ArrowRight className="w-3 h-3 text-slate-500" />
+                      <span className="text-[#22C55E]">{eloPreview.p1After}</span>
+                      <span className="text-[#22C55E] text-[11px]">(+{eloPreview.delta})</span>
+                    </span>
+                  </div>
+                  <div className="p-3 rounded-xl bg-[#EF4444]/10 border border-[#EF4444]/30">
+                    <span className="text-slate-300 block truncate">{effectiveLoser.full_name}</span>
+                    <span className="font-mono text-white font-bold flex items-center gap-1 mt-1">
+                      {effectiveLoser.current_elo}
+                      <ArrowRight className="w-3 h-3 text-slate-500" />
+                      <span className="text-[#EF4444]">{eloPreview.p2After}</span>
+                      <span className="text-[#EF4444] text-[11px]">(-{eloPreview.delta})</span>
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className={`flex items-center justify-between gap-3 p-3.5 rounded-xl border ${
+                    userIsWinner
+                      ? 'bg-[#22C55E]/10 border-[#22C55E]/40'
+                      : 'bg-[#EF4444]/10 border-[#EF4444]/40'
+                  }`}
+                >
+                  <div className="flex items-center gap-2.5">
+                    {userIsWinner ? (
+                      <TrendingUp className="w-5 h-5 text-[#22C55E]" />
+                    ) : (
+                      <TrendingDown className="w-5 h-5 text-[#EF4444]" />
+                    )}
+                    <span
+                      className={`font-mono text-lg font-black ${
+                        userIsWinner ? 'text-[#22C55E]' : 'text-[#EF4444]'
+                      }`}
+                    >
+                      {userIsWinner ? '+' : '-'}{eloPreview.delta} ELO
+                    </span>
+                  </div>
+                  <div className="font-mono text-xs text-slate-300 flex items-center gap-1.5">
+                    <span>{currentUser.current_elo}</span>
+                    <ArrowRight className="w-3 h-3 text-slate-500" />
+                    <strong className="text-white text-sm">
+                      {userIsWinner ? eloPreview.p1After : eloPreview.p2After}
+                    </strong>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <div className="pt-2 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           {isPendingApproval ? (
@@ -642,28 +719,27 @@ export default function MatchLogger({
               <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               Matç göndərmək üçün hesabınız Klub Prezidenti tərəfindən təsdiqlənməlidir.
             </span>
+          ) : !canSubmit && !isSubmitting ? (
+            <span className="text-[11px] text-slate-500">
+              {!sideA || !sideB ? 'Rəqib seçin' : 'Etibarlı set hesabı seçin'}
+            </span>
           ) : (
             <span />
           )}
           <button
             type="submit"
-            disabled={isSubmitting || loadingPlayers || isPendingApproval}
-            title={
-              isPendingApproval
-                ? 'Hesabınız Klub Prezidenti tərəfindən təsdiqləndikdən sonra matç qeyd edə bilərsiniz.'
-                : undefined
-            }
-            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-display font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-blue-500/20 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            disabled={!canSubmit}
+            className="w-full sm:w-auto px-6 py-3 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-display font-bold text-xs uppercase tracking-wider transition shadow-lg shadow-blue-500/20 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-none disabled:hover:bg-[#3B82F6] flex items-center justify-center gap-2"
           >
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Recording Match...</span>
+                <span>Qeyd edilir...</span>
               </>
             ) : (
               <>
                 <ShieldCheck className="w-4 h-4" />
-                <span>{isAdminOrCoach ? 'Verify & Commit Match' : 'Submit Match for Confirmation'}</span>
+                <span>{isAdminOrCoach ? 'Təsdiqlə və Qeyd Et' : 'Təsdiqə Göndər'}</span>
               </>
             )}
           </button>

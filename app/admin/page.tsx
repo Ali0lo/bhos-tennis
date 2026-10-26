@@ -36,6 +36,8 @@ import {
   Pencil,
   X,
   Calendar,
+  Ban,
+  Loader2,
 } from 'lucide-react';
 
 const FACULTIES: BHOSFaculty[] = [
@@ -70,6 +72,8 @@ export default function AdminDashboardPage() {
   const [matchesList, setMatchesList] = useState<MatchRecord[]>([]);
   const [matchSearch, setMatchSearch] = useState('');
   const [deletingMatchId, setDeletingMatchId] = useState<string | null>(null);
+  const [voidTarget, setVoidTarget] = useState<MatchRecord | null>(null);
+  const [isVoiding, setIsVoiding] = useState<boolean>(false);
   const [editingMatch, setEditingMatch] = useState<MatchRecord | null>(null);
   const [editP1Score, setEditP1Score] = useState<number>(0);
   const [editP2Score, setEditP2Score] = useState<number>(0);
@@ -188,6 +192,28 @@ export default function AdminDashboardPage() {
       showToast(err.message || 'Oyun silinərkən xəta baş verdi.');
     } finally {
       setDeletingMatchId(null);
+    }
+  };
+
+  const handleConfirmVoid = async () => {
+    if (!voidTarget) return;
+    const target = voidTarget;
+    setIsVoiding(true);
+    try {
+      await store.voidMatch(target.id);
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('bhos_tt_leaderboard_cache_v1');
+      }
+      setMatchesList((prev) => prev.filter((m) => m.id !== target.id));
+      setSelectedMatchIds((prev) => prev.filter((id) => id !== target.id));
+      setVoidTarget(null);
+      showToast(
+        `Matç ləğv edildi. ${target.elo_delta || 0} ELO xalı hər iki oyunçuya geri qaytarıldı.`
+      );
+    } catch (err: any) {
+      showToast(err.message || 'Matç ləğv edilərkən xəta baş verdi.');
+    } finally {
+      setIsVoiding(false);
     }
   };
 
@@ -1305,6 +1331,17 @@ export default function AdminDashboardPage() {
                                 >
                                   <Pencil className="w-3.5 h-3.5" />
                                 </button>
+                                {(m.status === 'confirmed' || m.status === 'approved' || !m.status) && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setVoidTarget(m)}
+                                    title="Matçı ləğv et və ELO xallarını geri qaytar"
+                                    className="inline-flex items-center gap-1 px-2 py-1 rounded-lg border border-[#EF4444]/50 text-[#EF4444] hover:bg-[#EF4444]/10 text-[11px] font-bold transition"
+                                  >
+                                    <Ban className="w-3.5 h-3.5" />
+                                    <span>Ləğv Et</span>
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => handleDeleteMatch(m)}
@@ -1335,6 +1372,63 @@ export default function AdminDashboardPage() {
                   </button>
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {voidTarget && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <div className="relative w-full max-w-md p-6 rounded-3xl bg-[#0F1623] border border-[#EF4444]/30 shadow-2xl space-y-5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center justify-center text-[#EF4444]">
+                  <Ban className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-display font-bold text-white">Matçı Ləğv Et</h3>
+                  <p className="text-[11px] text-slate-400">Bu əməliyyat geri qaytarılmır</p>
+                </div>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-[#131C2B] border border-white/5 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="font-semibold text-white">{voidTarget.player1_name}</span>
+                  <span className="font-mono font-black text-white">
+                    {voidTarget.player1_score} - {voidTarget.player2_score}
+                  </span>
+                  <span className="font-semibold text-white">{voidTarget.player2_name}</span>
+                </div>
+                <div className="text-[11px] text-slate-400 font-mono text-center">
+                  ELO dəyişikliyi: ±{voidTarget.elo_delta || 0}
+                </div>
+              </div>
+
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Bu matçı ləğv etmək istədiyinizə əminsiniz? Qazanılmış ELO xalları hər iki oyunçudan avtomatik geri qaytarılacaq.
+              </p>
+
+              <div className="flex items-center justify-end gap-2 pt-1">
+                <button
+                  type="button"
+                  disabled={isVoiding}
+                  onClick={() => setVoidTarget(null)}
+                  className="px-4 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-xs font-semibold text-slate-300 border border-white/10 transition disabled:opacity-50"
+                >
+                  İmtina
+                </button>
+                <button
+                  type="button"
+                  disabled={isVoiding}
+                  onClick={handleConfirmVoid}
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-[#EF4444] hover:bg-red-600 text-white text-xs font-bold transition shadow-lg shadow-red-500/20 disabled:opacity-60"
+                >
+                  {isVoiding ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Ban className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isVoiding ? 'Ləğv edilir...' : 'Bəli, Ləğv Et'}</span>
+                </button>
+              </div>
             </div>
           </div>
         )}
