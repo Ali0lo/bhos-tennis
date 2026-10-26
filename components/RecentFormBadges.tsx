@@ -43,7 +43,12 @@ export default function RecentFormBadges({
   playerId,
 }: RecentFormBadgesProps) {
   const recentFive = React.useMemo(() => {
-    const confirmed = matches.filter((m) => m.status === 'confirmed' || !m.status);
+    const confirmed = matches.filter(
+      (m) =>
+        (m.status === 'confirmed' || m.status === 'approved' || !m.status) &&
+        m.status !== 'rejected' &&
+        m.status !== 'pending'
+    );
     const sortedDesc = [...confirmed].sort(
       (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
     );
@@ -98,3 +103,4 @@ export default function RecentFormBadges({
     </div>
   );
 }
+

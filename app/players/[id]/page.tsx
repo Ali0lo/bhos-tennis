@@ -8,6 +8,7 @@ import {
   BHOSDataStore,
   fetchPlayerProfile,
   getCachedPlayerProfile,
+  isApprovedMatch,
 } from '../../../lib/data/store';
 import { PlayerProfile, MatchRecord, isDefaultMember, isAutoApprovedMatch } from '../../../lib/data/types';
 import SmoothReveal from '../../../components/SmoothReveal';
@@ -284,8 +285,9 @@ export default function PlayerProfilePage() {
   }, [playerId]);
 
   const validMatches = useMemo(() => {
-    return matches.filter((m) => m.status === 'confirmed' || !m.status);
-  }, [matches]);
+    const resolved = store.getResolvedMatchIds();
+    return matches.filter((m) => isApprovedMatch(m, resolved));
+  }, [matches, store]);
 
   const achievements = useMemo(() => {
     if (!profile) return [];
@@ -406,7 +408,7 @@ export default function PlayerProfilePage() {
   }, [profile, validMatches, playerId]);
 
   const actualWins = useMemo(() => {
-    return matches.filter((m) => {
+    return validMatches.filter((m) => {
       const isP1 =
         m.player1_id === playerId ||
         m.player1_id === profile?.id ||
@@ -415,9 +417,9 @@ export default function PlayerProfilePage() {
           : false);
       return isP1 ? m.player1_score > m.player2_score : m.player2_score > m.player1_score;
     }).length;
-  }, [matches, playerId, profile]);
+  }, [validMatches, playerId, profile]);
 
-  const totalMatchesCount = Math.max(profile?.matches_played || 0, matches.length);
+  const totalMatchesCount = Math.max(profile?.matches_played || 0, validMatches.length);
   const effectiveWins = Math.max(profile?.wins || 0, actualWins);
   const winRatePercent =
     totalMatchesCount > 0
@@ -500,10 +502,10 @@ export default function PlayerProfilePage() {
   }, [validMatches, playerId, profile]);
 
   const recentMatchesFeed = useMemo(() => {
-    return [...matches].sort(
+    return [...validMatches].sort(
       (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
     );
-  }, [matches]);
+  }, [validMatches]);
 
   if (loading) {
     return <PlayerProfileSkeleton />;

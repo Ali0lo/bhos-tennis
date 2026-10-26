@@ -31,3 +31,4 @@ export default function LeaderboardSkeleton({ rows = 5 }: LeaderboardSkeletonPro
     </div>
   );
 }
+

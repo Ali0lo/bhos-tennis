@@ -71,3 +71,4 @@ export default function HoloCard({ children, className = '', style }: HoloCardPr
     </motion.div>
   );
 }
+

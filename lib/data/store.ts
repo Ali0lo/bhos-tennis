@@ -15,7 +15,28 @@ const STORAGE_KEYS = {
 };
 
 const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v1';
+const SESSION_RECENT_MATCHES_KEY = 'bhos_tt_recent_matches';
 const LEADERBOARD_TTL_MS = 60_000;
+
+export function isApprovedMatch(
+  match?: Partial<MatchRecord> | null,
+  resolvedMap?: Record<string, 'confirmed' | 'rejected'>,
+  deletedIds?: string[]
+): boolean {
+  if (!match || !match.id) return false;
+  if (match.id.startsWith('m-seed-')) return false;
+  if (deletedIds && deletedIds.includes(match.id)) return false;
+  const effectiveStatus = (resolvedMap && resolvedMap[match.id]) || match.status || 'confirmed';
+  if (
+    effectiveStatus === 'rejected' ||
+    effectiveStatus === 'pending' ||
+    effectiveStatus === 'waiting' ||
+    effectiveStatus === 'scheduled'
+  ) {
+    return false;
+  }
+  return effectiveStatus === 'confirmed' || effectiveStatus === 'approved';
+}
 
 interface LeaderboardCacheEntry {
   data: PlayerProfile[];
@@ -110,11 +131,14 @@ export class BHOSDataStore {
       this.profiles = getStored(STORAGE_KEYS.PROFILES, INITIAL_PROFILES);
       const storedMatches = getStored<MatchRecord[]>(STORAGE_KEYS.MATCHES, INITIAL_MATCHES);
       const deletedMatches = getStored<string[]>('bhos_deleted_matches', []);
+      const resolvedMatches = getStored<Record<string, 'confirmed' | 'rejected'>>('bhos_resolved_matches', {});
       const matchMap = new Map<string, MatchRecord>();
 
       storedMatches.forEach((m) => {
-        if (!deletedMatches.includes(m.id) && !m.id.startsWith('m-seed-')) {
-          matchMap.set(m.id, m);
+        if (isApprovedMatch(m, resolvedMatches, deletedMatches)) {
+          const effectiveStatus =
+            resolvedMatches[m.id] || (m.status === 'approved' ? 'approved' : 'confirmed');
+          matchMap.set(m.id, { ...m, status: effectiveStatus });
         }
       });
 
@@ -413,6 +437,7 @@ export class BHOSDataStore {
       const { data, error } = await supabase
         .from('matches')
         .select('*')
+        .in('status', ['confirmed', 'approved'])
         .order('match_date', { ascending: false });
 
       if (error) {
@@ -424,25 +449,12 @@ export class BHOSDataStore {
         const deleted = getStored<string[]>('bhos_deleted_matches', []);
         const resolved = this.getResolvedMatchIds();
         const matchMap = new Map<string, MatchRecord>();
-        const thresholdMs = 48 * 60 * 60 * 1000;
-        const nowMs = Date.now();
 
         (data as MatchRecord[]).forEach((m) => {
-          if (!deleted.includes(m.id) && !m.id.startsWith('m-seed-')) {
-            let status: string = resolved[m.id] || m.status || 'confirmed';
-            let autoApproved = Boolean(m.auto_approved);
-            const createdMs = new Date(m.created_at || m.match_date).getTime();
-
-            if (
-              status === 'pending' &&
-              !m.is_disputed &&
-              !isNaN(createdMs) &&
-              nowMs - createdMs >= thresholdMs
-            ) {
-              status = 'confirmed';
-              autoApproved = true;
-            }
-
+          if (isApprovedMatch(m, resolved, deleted)) {
+            const status: string =
+              resolved[m.id] || (m.status === 'approved' ? 'approved' : 'confirmed');
+            const autoApproved = Boolean(m.auto_approved);
             matchMap.set(m.id, { ...m, status, auto_approved: autoApproved });
           }
         });
@@ -562,20 +574,21 @@ export class BHOSDataStore {
 
   private handleRealtimeMatch(payload: any) {
     const { eventType, new: newRecord, old: oldRecord } = payload;
+    const deleted = getStored<string[]>('bhos_deleted_matches', []);
+    const resolved = this.getResolvedMatchIds();
 
-    if (eventType === 'INSERT') {
-      const exists = this.matches.some((m) => m.id === newRecord.id);
-      if (!exists) {
-        this.matches.unshift(newRecord);
-        setStored(STORAGE_KEYS.MATCHES, this.matches);
-        if (newRecord.status === 'confirmed' || newRecord.status === 'approved') {
-          this.propagateVerifiedMatchToBracket(newRecord, false);
+    if (eventType === 'INSERT' || eventType === 'UPDATE') {
+      if (!isApprovedMatch(newRecord, resolved, deleted)) {
+        const hadMatch = this.matches.some((m) => m.id === newRecord?.id);
+        if (hadMatch) {
+          this.matches = this.matches.filter((m) => m.id !== newRecord.id);
+          setStored(STORAGE_KEYS.MATCHES, this.matches);
         }
-        this.fetchProfilesFromCloud();
-        this.fetchTournamentsFromCloud();
+        this.clearMatchAndPlayerCaches();
         this.notify();
+        return;
       }
-    } else if (eventType === 'UPDATE') {
+
       const idx = this.matches.findIndex((m) => m.id === newRecord.id);
       if (idx !== -1) {
         this.matches[idx] = { ...this.matches[idx], ...newRecord };
@@ -583,9 +596,8 @@ export class BHOSDataStore {
         this.matches.unshift(newRecord);
       }
       setStored(STORAGE_KEYS.MATCHES, this.matches);
-      if (newRecord.status === 'confirmed' || newRecord.status === 'approved') {
-        this.propagateVerifiedMatchToBracket(newRecord, false);
-      }
+      this.propagateVerifiedMatchToBracket(newRecord, false);
+      this.clearMatchAndPlayerCaches();
       this.fetchProfilesFromCloud();
       this.fetchTournamentsFromCloud();
       this.notify();
@@ -594,6 +606,7 @@ export class BHOSDataStore {
       if (idToDelete) {
         this.matches = this.matches.filter((m) => m.id !== idToDelete);
         setStored(STORAGE_KEYS.MATCHES, this.matches);
+        this.clearMatchAndPlayerCaches();
         this.fetchTournamentsFromCloud();
         this.notify();
       }
@@ -928,9 +941,11 @@ export class BHOSDataStore {
   }
 
   public getMatches(): MatchRecord[] {
-    return [...this.matches].sort(
-      (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
-    );
+    const deleted = getStored<string[]>('bhos_deleted_matches', []);
+    const resolved = this.getResolvedMatchIds();
+    return this.matches
+      .filter((m) => isApprovedMatch(m, resolved, deleted))
+      .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime());
   }
 
   public getPlayerMatches(playerId: string): MatchRecord[] {
@@ -948,6 +963,25 @@ export class BHOSDataStore {
           m.player2_name?.trim().toLowerCase() === targetName
         ))
     );
+  }
+
+  public clearMatchAndPlayerCaches(): void {
+    this.leaderboardCache = null;
+    inMemoryPlayerCache.clear();
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem(SESSION_LEADERBOARD_KEY);
+        sessionStorage.removeItem(SESSION_RECENT_MATCHES_KEY);
+        const keysToRemove: string[] = [];
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const k = sessionStorage.key(i);
+          if (k && k.startsWith('bhos_player_')) {
+            keysToRemove.push(k);
+          }
+        }
+        keysToRemove.forEach((k) => sessionStorage.removeItem(k));
+      } catch {}
+    }
   }
 
   public confirmMatch(matchId: string, updates?: Partial<MatchRecord>): MatchRecord | undefined {
@@ -986,6 +1020,7 @@ export class BHOSDataStore {
       this.propagateVerifiedMatchToBracket(match, true);
     }
     setStored(STORAGE_KEYS.MATCHES, this.matches);
+    this.clearMatchAndPlayerCaches();
     this.notify();
     return match;
   }
@@ -1073,12 +1108,15 @@ export class BHOSDataStore {
   }
 
   public rejectMatch(matchId: string): void {
-    const match = this.matches.find((m) => m.id === matchId);
-    if (match) {
-      match.status = 'rejected';
-    }
+    this.matches = this.matches.filter((m) => m.id !== matchId);
     this.markMatchResolvedLocally(matchId, 'rejected');
+    const deleted = getStored<string[]>('bhos_deleted_matches', []);
+    if (!deleted.includes(matchId)) {
+      deleted.push(matchId);
+      setStored('bhos_deleted_matches', deleted);
+    }
     setStored(STORAGE_KEYS.MATCHES, this.matches);
+    this.clearMatchAndPlayerCaches();
     this.notify();
   }
 
@@ -1637,10 +1675,18 @@ export function getCachedPlayerProfile(
   if (!playerId) return null;
   const cacheKey = `bhos_player_${playerId}`;
   const now = Date.now();
+  const store = BHOSDataStore.getInstance();
+  const resolved = store.getResolvedMatchIds();
+  const deleted = getStored<string[]>('bhos_deleted_matches', []);
 
   const mem = inMemoryPlayerCache.get(cacheKey);
   if (mem && now - mem.timestamp < PLAYER_PROFILE_TTL_MS) {
-    return mem.data;
+    return {
+      ...mem.data,
+      recent_matches: (mem.data.recent_matches || []).filter((m) =>
+        isApprovedMatch(m, resolved, deleted)
+      ),
+    };
   }
 
   if (typeof window !== 'undefined') {
@@ -1649,14 +1695,22 @@ export function getCachedPlayerProfile(
       try {
         const parsed = JSON.parse(cached);
         if (parsed?.data && now - parsed.timestamp < PLAYER_PROFILE_TTL_MS) {
-          inMemoryPlayerCache.set(cacheKey, parsed);
-          return parsed.data as PlayerProfileSummaryResult;
+          const filteredData: PlayerProfileSummaryResult = {
+            ...parsed.data,
+            recent_matches: (parsed.data.recent_matches || []).filter((m: MatchRecord) =>
+              isApprovedMatch(m, resolved, deleted)
+            ),
+          };
+          inMemoryPlayerCache.set(cacheKey, {
+            data: filteredData,
+            timestamp: parsed.timestamp,
+          });
+          return filteredData;
         }
       } catch {}
     }
   }
 
-  const store = BHOSDataStore.getInstance();
   const localProfile = store.getProfile(playerId);
   if (localProfile && localProfile.is_verified !== false) {
     const localMatches = store.getPlayerMatches(localProfile.id);
@@ -1676,11 +1730,19 @@ export async function fetchPlayerProfile(
 ): Promise<PlayerProfileSummaryResult> {
   const cacheKey = `bhos_player_${playerId}`;
   const force = Boolean(options?.force);
+  const store = BHOSDataStore.getInstance();
+  const resolved = store.getResolvedMatchIds();
+  const deleted = getStored<string[]>('bhos_deleted_matches', []);
 
   if (!force && typeof window !== 'undefined') {
     const mem = inMemoryPlayerCache.get(cacheKey);
     if (mem && Date.now() - mem.timestamp < PLAYER_PROFILE_TTL_MS) {
-      return mem.data;
+      return {
+        ...mem.data,
+        recent_matches: (mem.data.recent_matches || []).filter((m) =>
+          isApprovedMatch(m, resolved, deleted)
+        ),
+      };
     }
 
     const cached = sessionStorage.getItem(cacheKey);
@@ -1688,14 +1750,22 @@ export async function fetchPlayerProfile(
       try {
         const parsed = JSON.parse(cached);
         if (parsed?.data && Date.now() - parsed.timestamp < PLAYER_PROFILE_TTL_MS) {
-          inMemoryPlayerCache.set(cacheKey, parsed);
-          return parsed.data as PlayerProfileSummaryResult;
+          const filteredData: PlayerProfileSummaryResult = {
+            ...parsed.data,
+            recent_matches: (parsed.data.recent_matches || []).filter((m: MatchRecord) =>
+              isApprovedMatch(m, resolved, deleted)
+            ),
+          };
+          inMemoryPlayerCache.set(cacheKey, {
+            data: filteredData,
+            timestamp: parsed.timestamp,
+          });
+          return filteredData;
         }
       } catch {}
     }
   }
 
-  const store = BHOSDataStore.getInstance();
   const localProfile = store.getProfile(playerId);
   const supabase = getSupabaseClient();
 
@@ -1728,9 +1798,15 @@ export async function fetchPlayerProfile(
         : [];
       const localMatches = store.getPlayerMatches(normalizedProfile.id);
       const matchMap = new Map<string, MatchRecord>();
-      cloudMatches.forEach((m) => matchMap.set(m.id, m));
+      cloudMatches.forEach((m) => {
+        if (isApprovedMatch(m, resolved, deleted)) {
+          matchMap.set(m.id, m);
+        }
+      });
       localMatches.forEach((m) => {
-        if (!matchMap.has(m.id)) matchMap.set(m.id, m);
+        if (!matchMap.has(m.id) && isApprovedMatch(m, resolved, deleted)) {
+          matchMap.set(m.id, m);
+        }
       });
 
       const mergedMatches = Array.from(matchMap.values()).sort(
@@ -1775,6 +1851,7 @@ export async function fetchPlayerProfile(
           .select(
             'id, created_at, match_date, tournament_id, tournament_title, player1_id, player1_name, player2_id, player2_name, logged_by, logged_by_name, winner_id, player1_score, player2_score, set_scores, player1_elo_before, player2_elo_before, player1_elo_after, player2_elo_after, elo_delta, status, auto_approved'
           )
+          .in('status', ['confirmed', 'approved'])
           .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
           .order('match_date', { ascending: false })
           .limit(25)
@@ -1804,9 +1881,15 @@ export async function fetchPlayerProfile(
   const cloudMatches = (matchesRes.data || []) as MatchRecord[];
   const localMatches = store.getPlayerMatches(resolvedProfile.id || playerId);
   const matchMap = new Map<string, MatchRecord>();
-  cloudMatches.forEach((m) => matchMap.set(m.id, m));
+  cloudMatches.forEach((m) => {
+    if (isApprovedMatch(m, resolved, deleted)) {
+      matchMap.set(m.id, m);
+    }
+  });
   localMatches.forEach((m) => {
-    if (!matchMap.has(m.id)) matchMap.set(m.id, m);
+    if (!matchMap.has(m.id) && isApprovedMatch(m, resolved, deleted)) {
+      matchMap.set(m.id, m);
+    }
   });
 
   const combinedMatches = Array.from(matchMap.values()).sort(

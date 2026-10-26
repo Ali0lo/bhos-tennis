@@ -50,7 +50,8 @@ BEGIN
       auto_approved,
       match_date
     FROM public.matches
-    WHERE player1_id = target_player_id OR player2_id = target_player_id
+    WHERE (player1_id = target_player_id OR player2_id = target_player_id)
+      AND COALESCE(status, 'confirmed') IN ('confirmed', 'approved')
     ORDER BY match_date DESC
     LIMIT 30
   ) m;
@@ -72,3 +73,4 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.get_player_profile_summary(UUID) TO anon, authenticated;
+

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { BHOSDataStore } from '../../lib/data/store';
+import { BHOSDataStore, isApprovedMatch } from '../../lib/data/store';
 import { MatchRecord, PlayerProfile, isAutoApprovedMatch } from '../../lib/data/types';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
@@ -31,7 +31,8 @@ export default function MatchesPage() {
   const [filterType, setFilterType] = useState<'ALL' | 'TOURNAMENT' | 'RANKED'>('ALL');
 
   const updateData = useCallback(() => {
-    setMatches(store.getMatches());
+    const resolved = store.getResolvedMatchIds();
+    setMatches(store.getMatches().filter((m) => isApprovedMatch(m, resolved)));
     setCurrentUser(store.getCurrentUser());
   }, [store]);
 

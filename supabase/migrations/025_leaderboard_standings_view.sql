@@ -32,3 +32,4 @@ WHERE COALESCE(p.status, CASE WHEN COALESCE(p.is_verified, FALSE) THEN 'approved
 ORDER BY p.current_elo DESC;
 
 GRANT SELECT ON public.leaderboard_standings TO anon, authenticated;
+

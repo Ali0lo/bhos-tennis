@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BHOSDataStore } from '../lib/data/store';
+import { BHOSDataStore, isApprovedMatch } from '../lib/data/store';
 import { PlayerProfile, MatchRecord, Tournament } from '../lib/data/types';
 import { useTranslation, useTranslations } from '../lib/i18n';
 import HallRulesSection from '../components/HallRulesSection';
@@ -38,7 +38,10 @@ export default function HomePage() {
   const store = BHOSDataStore.getInstance();
 
   const [profiles, setProfiles] = useState<PlayerProfile[]>(() => store.getCachedLeaderboard(10));
-  const [matches, setMatches] = useState<MatchRecord[]>(() => store.getMatches());
+  const [matches, setMatches] = useState<MatchRecord[]>(() => {
+    const resolved = store.getResolvedMatchIds();
+    return store.getMatches().filter((m) => isApprovedMatch(m, resolved));
+  });
   const [tournaments, setTournaments] = useState<Tournament[]>(() => store.getTournaments());
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [showMatchModal, setShowMatchModal] = useState(false);
@@ -49,8 +52,9 @@ export default function HomePage() {
     const update = () => {
       if (!isMounted) return;
       const cachedTop10 = store.getCachedLeaderboard(10);
+      const resolved = store.getResolvedMatchIds();
       setProfiles(cachedTop10.length > 0 ? cachedTop10 : store.getProfiles().slice(0, 10));
-      setMatches(store.getMatches());
+      setMatches(store.getMatches().filter((m) => isApprovedMatch(m, resolved)));
       setTournaments(store.getTournaments());
       setCurrentUser(store.getCurrentUser());
     };

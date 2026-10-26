@@ -129,3 +129,4 @@ export default function CourtBackground({ className = '' }: CourtBackgroundProps
     </div>
   );
 }
+

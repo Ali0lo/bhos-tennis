@@ -269,42 +269,72 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
     }
   };
 
-  const handleReject = async (match: MatchRecord) => {
-    setProcessingId(match.id);
+  const handleRejectMatch = async (matchId: string) => {
+    setProcessingId(matchId);
     setFeedback(null);
     const supabase = getSupabaseClient();
 
     try {
-      store.rejectMatch(match.id);
+      store.rejectMatch(matchId);
+      setPendingMatches((prev) => prev.filter((m) => m.id !== matchId));
 
       if (supabase) {
-        await supabase
+        const { error } = await supabase
           .from('matches')
           .update({ status: 'rejected' })
-          .eq('id', match.id);
+          .eq('id', matchId);
+
+        if (error) throw error;
 
         await store.fetchMatchesFromCloud();
       }
 
-      setPendingMatches((prev) => prev.filter((m) => m.id !== match.id));
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('bhos_tt_leaderboard_cache_v1');
+        sessionStorage.removeItem('bhos_tt_recent_matches');
+      }
+
       setFeedback({
         type: 'success',
-        message: 'Oyun nəticəsi rədd edildi və növbədən silindi.',
+        message: 'Matç nəticəsi rədd edildi və siyahıdan çıxarıldı.',
       });
+      setTimeout(() => {
+        setFeedback((prev) => (prev?.type === 'success' ? null : prev));
+      }, 4000);
 
       onMatchUpdated?.();
     } catch (err: any) {
+      console.error('Error rejecting match:', err);
       setFeedback({
         type: 'error',
-        message: err.message || 'Oyunu rədd etmək mümkün olmadı.',
+        message: 'Xəta baş verdi: Matç rədd edilə bilmədi.',
       });
     } finally {
       setProcessingId(null);
     }
   };
 
-  if (loading || !currentUser || pendingMatches.length === 0) {
+  if (loading || !currentUser || (pendingMatches.length === 0 && !feedback)) {
     return null;
+  }
+
+  if (pendingMatches.length === 0 && feedback) {
+    return (
+      <div
+        className={`p-3.5 rounded-2xl text-xs flex items-center gap-2 border shadow-lg ${
+          feedback.type === 'success'
+            ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400'
+            : 'bg-red-500/10 border-red-500/30 text-red-400'
+        }`}
+      >
+        {feedback.type === 'success' ? (
+          <CheckCircle2 className="w-4 h-4 shrink-0" />
+        ) : (
+          <ShieldAlert className="w-4 h-4 shrink-0" />
+        )}
+        <span>{feedback.message}</span>
+      </div>
+    );
   }
 
   return (
@@ -409,7 +439,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
                 <button
                   type="button"
                   disabled={processingId === m.id}
-                  onClick={() => handleReject(m)}
+                  onClick={() => handleRejectMatch(m.id)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-500/15 hover:bg-red-500/25 border border-red-500/30 text-red-400 hover:text-red-300 text-xs font-semibold transition disabled:opacity-50"
                 >
                   {processingId === m.id ? (
