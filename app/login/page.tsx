@@ -265,6 +265,17 @@ export default function LoginPage() {
           });
 
           if (error) {
+            if (
+              error.message.toLowerCase().includes('database error saving new user') ||
+              error.message.toLowerCase().includes('database error')
+            ) {
+              throw new Error(
+                'Qeydiyyat zamanı verilənlər bazası xətası baş verdi. Zəhmət olmasa "029_skill_based_starting_elo.sql" miqrasiyasını Supabase SQL redaktorunda icra edin.'
+              );
+            }
+            if (error.message.toLowerCase().includes('user already registered')) {
+              throw new Error('Bu e-poçt ünvanı ilə artıq qeydiyyatdan keçilib. Zəhmət olmasa "Daxil Ol" bölməsinə keçin.');
+            }
             throw new Error(error.message);
           }
 
