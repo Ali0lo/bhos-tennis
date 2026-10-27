@@ -25,6 +25,7 @@ import {
   Briefcase,
   Eye,
   EyeOff,
+  Loader2,
 } from 'lucide-react';
 
 const FACULTIES: BHOSFaculty[] = [
@@ -66,7 +67,8 @@ export default function LoginPage() {
   const [major, setMajor] = useState<string>('Computer Engineering');
   const [admissionYear, setAdmissionYear] = useState<number>(2024);
   const [gender, setGender] = useState<'female' | 'male'>('male');
-  const [playingLevel, setPlayingLevel] = useState<PlayingLevel>('Intermediate');
+  const [skillLevel, setSkillLevel] = useState<'beginner' | 'intermediate' | 'advanced'>('beginner');
+  const [playingLevel, setPlayingLevel] = useState<PlayingLevel>('Beginner');
   const [showPassword, setShowPassword] = useState(false);
 
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(null);
@@ -111,6 +113,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (loading) return;
     setErrorMsg(null);
     setSuccessMsg(null);
     setLoading(true);
@@ -150,7 +153,9 @@ export default function LoginPage() {
             const resolvedVerified = isPresident || isCoach || isSeed ? true : (meta.is_verified ?? false);
             const resolvedStatus = resolvedVerified ? 'approved' : 'pending';
             const resolvedOrigin = isSeed ? 'İlkin Heyət' : 'Qeydiyyat';
-            const resolvedElo = isCoach ? 999 : (meta.current_elo !== undefined ? Math.min(999, Math.max(0, Number(meta.current_elo))) : 0);
+            const metaSkill = meta.skill_level || 'beginner';
+            const defaultStartingElo = metaSkill === 'advanced' ? 400 : metaSkill === 'intermediate' ? 250 : 100;
+            const resolvedElo = isCoach ? 999 : (meta.current_elo !== undefined ? Math.min(999, Math.max(0, Number(meta.current_elo))) : defaultStartingElo);
 
             const linked = await store.linkProfileByEmail(data.user.email);
             if (!linked) {
@@ -227,7 +232,15 @@ export default function LoginPage() {
         const resolvedVerified = isPresident || isCoach || isSeed ? true : false;
         const resolvedStatus = resolvedVerified ? 'approved' : 'pending';
         const resolvedOrigin = isSeed ? 'İlkin Heyət' : 'Qeydiyyat';
-        const resolvedElo = isCoach ? 999 : 0;
+        const resolvedPlayingLevel: PlayingLevel =
+          skillLevel === 'advanced' ? 'Advanced' : skillLevel === 'intermediate' ? 'Intermediate' : 'Beginner';
+        const resolvedElo = isCoach
+          ? 999
+          : skillLevel === 'advanced'
+          ? 400
+          : skillLevel === 'intermediate'
+          ? 250
+          : 100;
 
         if (supabase) {
           const { data, error } = await supabase.auth.signUp({
@@ -244,8 +257,9 @@ export default function LoginPage() {
                 origin: resolvedOrigin,
                 is_verified: resolvedVerified,
                 current_elo: resolvedElo,
+                skill_level: skillLevel,
                 gender,
-                playing_level: playingLevel,
+                playing_level: resolvedPlayingLevel,
               },
             },
           });
@@ -264,7 +278,7 @@ export default function LoginPage() {
             user_type: resolvedUserType,
             gender,
             role: resolvedRole,
-            playing_level: playingLevel,
+            playing_level: resolvedPlayingLevel,
             playing_style: 'Shakehand All-round',
             blade_equipment: 'Standard Club Racket',
             forehand_rubber: 'Standard Red',
@@ -360,7 +374,7 @@ export default function LoginPage() {
             user_type: resolvedUserType,
             gender,
             role: resolvedRole,
-            playing_level: playingLevel,
+            playing_level: resolvedPlayingLevel,
             playing_style: 'Shakehand All-round',
             blade_equipment: 'Standard Club Racket',
             forehand_rubber: 'Standard Red',
@@ -634,53 +648,116 @@ export default function LoginPage() {
                   )}
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                      {t('auth.gender')}
+                <div>
+                  <label className="block text-xs font-semibold text-slate-300 mb-1.5">
+                    {t('auth.gender')}
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-950/90 border border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => setGender('female')}
+                      className={`py-2 rounded-lg text-xs font-semibold transition ${
+                        gender === 'female'
+                          ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {t('auth.gender_female')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setGender('male')}
+                      className={`py-2 rounded-lg text-xs font-semibold transition ${
+                        gender === 'male'
+                          ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                          : 'text-slate-400 hover:text-slate-200'
+                      }`}
+                    >
+                      {t('auth.gender_male')}
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-semibold text-slate-300 flex items-center gap-1.5">
+                      <Award className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Təcrübə Səviyyəsi (Başlanğıc ELO)</span>
                     </label>
-                    <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-950/90 border border-slate-800">
-                      <button
-                        type="button"
-                        onClick={() => setGender('female')}
-                        className={`py-2 rounded-lg text-xs font-semibold transition ${
-                          gender === 'female'
-                            ? 'bg-pink-500/20 text-pink-300 border border-pink-500/40'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        {t('auth.gender_female')}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setGender('male')}
-                        className={`py-2 rounded-lg text-xs font-semibold transition ${
-                          gender === 'male'
-                            ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                            : 'text-slate-400 hover:text-slate-200'
-                        }`}
-                      >
-                        {t('auth.gender_male')}
-                      </button>
-                    </div>
+                    <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
+                      {skillLevel === 'advanced' ? '400 Xal' : skillLevel === 'intermediate' ? '250 Xal' : '100 Xal'}
+                    </span>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
-                      <Award className="w-3.5 h-3.5 text-amber-400" />
-                      <span>{t('auth.playing_level')}</span>
-                    </label>
-                    <select
-                      value={playingLevel}
-                      onChange={(e) => setPlayingLevel(e.target.value as PlayingLevel)}
-                      className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950/90 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400 transition"
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSkillLevel('beginner');
+                        setPlayingLevel('Beginner');
+                      }}
+                      className={`p-3 rounded-xl border text-left transition relative flex flex-col justify-between gap-1.5 ${
+                        skillLevel === 'beginner'
+                          ? 'border-[#3B82F6] bg-[#3B82F6]/15 shadow-lg shadow-[#3B82F6]/10 ring-1 ring-[#3B82F6]/50'
+                          : 'border-white/10 bg-[#131C2B] hover:border-white/20'
+                      }`}
                     >
-                      {PLAYING_LEVELS.map((lvl) => (
-                        <option key={lvl} value={lvl}>
-                          {t(`levels.${lvl}`)}
-                        </option>
-                      ))}
-                    </select>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-display font-bold text-white">Başlanğıc</span>
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                          100 PTS
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-snug">
+                        Həvəskar / Yeni başlayan
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSkillLevel('intermediate');
+                        setPlayingLevel('Intermediate');
+                      }}
+                      className={`p-3 rounded-xl border text-left transition relative flex flex-col justify-between gap-1.5 ${
+                        skillLevel === 'intermediate'
+                          ? 'border-[#3B82F6] bg-[#3B82F6]/15 shadow-lg shadow-[#3B82F6]/10 ring-1 ring-[#3B82F6]/50'
+                          : 'border-white/10 bg-[#131C2B] hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-display font-bold text-white">Orta Səviyyə</span>
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                          250 PTS
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-snug">
+                        Əsas vuruşları bilən / Stabil oyun
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSkillLevel('advanced');
+                        setPlayingLevel('Advanced');
+                      }}
+                      className={`p-3 rounded-xl border text-left transition relative flex flex-col justify-between gap-1.5 ${
+                        skillLevel === 'advanced'
+                          ? 'border-[#3B82F6] bg-[#3B82F6]/15 shadow-lg shadow-[#3B82F6]/10 ring-1 ring-[#3B82F6]/50'
+                          : 'border-white/10 bg-[#131C2B] hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-display font-bold text-white">Təcrübəli</span>
+                        <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
+                          400 PTS
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-snug">
+                        Turnir iştirakçısı / Peşəkar
+                      </p>
+                    </button>
                   </div>
                 </div>
               </>
@@ -736,10 +813,10 @@ export default function LoginPage() {
             </div>
 
             {mode === 'signup' && (
-              <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 flex items-center gap-2 text-[11px] text-slate-300">
+              <div className="p-3.5 rounded-xl bg-cyan-500/5 border border-cyan-500/20 flex items-center gap-2.5 text-[11px] text-slate-300">
                 <Sparkles className="w-4 h-4 text-cyan-400 shrink-0" />
                 <span>
-                  Yeni üzvlər baza olaraq <strong className="text-cyan-300">0 ELO</strong> ilə başlayır və Klub Prezidenti / Məşqçi tərəfindən təsdiqləndikdən sonra reytinq cədvəlində aktivləşir.
+                  Yeni üzvlər seçdikləri təcrübə səviyyəsinə uyğun (<strong className="text-cyan-300">100</strong>, <strong className="text-cyan-300">250</strong> və ya <strong className="text-cyan-300">400 ELO</strong>) xalla başlayır və Klub Rəhbərliyi tərəfindən təsdiqləndikdən sonra reytinq cədvəlində aktivləşir.
                 </span>
               </div>
             )}
@@ -749,10 +826,16 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-3.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 disabled:opacity-50 text-slate-950 font-display font-black text-sm shadow-xl shadow-cyan-500/20 transition flex items-center justify-center gap-2"
             >
-              <Shield className="w-4 h-4" />
+              {loading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Shield className="w-4 h-4" />
+              )}
               <span>
                 {loading
-                  ? 'Gözləyin...'
+                  ? mode === 'signin'
+                    ? 'Giriş edilir...'
+                    : 'Qeydiyyat tamamlanır...'
                   : mode === 'signin'
                   ? t('auth.signin_btn')
                   : t('auth.signup_btn')}

@@ -15,3 +15,4 @@ export default function PWARegistration() {
 
   return null;
 }
+

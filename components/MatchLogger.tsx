@@ -274,6 +274,7 @@ export default function MatchLogger({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setErrorMessage(null);
 
     if (!currentUser) {

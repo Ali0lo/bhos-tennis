@@ -15,6 +15,7 @@ import LeaderboardSkeleton from '../components/LeaderboardSkeleton';
 import HoloCard from '../components/HoloCard';
 import TiltCard from '../components/TiltCard';
 import EloToastBadge from '../components/EloToastBadge';
+import OnboardingBanner from '../components/OnboardingBanner';
 import SmoothReveal, { SmoothRevealItem } from '../components/SmoothReveal';
 import {
   Trophy,
@@ -247,6 +248,10 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+      </SmoothReveal>
+
+      <SmoothReveal delay={0.04}>
+        <OnboardingBanner />
       </SmoothReveal>
 
       <SmoothReveal delay={0.08}>

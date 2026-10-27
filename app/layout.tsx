@@ -21,8 +21,35 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: 'BANM Stolüstü Tennis Portalı',
-  description: 'Rəsmi ITTF ELO Reytinqi və Liqa Sistemi',
+  metadataBase: new URL('https://www.tabletennisbhos.me'),
+  title: {
+    default: 'BANM Stolüstü Tennis Portalı | Rəsmi Liqa və Reytinq',
+    template: '%s | BANM Stolüstü Tennis',
+  },
+  description:
+    'Bakı Ali Neft Məktəbinin rəsmi stolüstü tennis platforması. Canlı ELO reytinqi, matç nəticələri və zal qaydaları.',
+  openGraph: {
+    title: 'BANM Stolüstü Tennis Portalı',
+    description: 'Öz reytinqini öyrən, rəqiblərinə meydan oxu və liqada yüksəl!',
+    url: 'https://www.tabletennisbhos.me',
+    siteName: 'BANM Table Tennis',
+    images: [
+      {
+        url: '/og-image.png',
+        width: 1200,
+        height: 630,
+        alt: 'BANM Table Tennis League Banner',
+      },
+    ],
+    locale: 'az_AZ',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'BANM Stolüstü Tennis Portalı',
+    description: 'Bakı Ali Neft Məktəbi rəsmi ELO reytinq sistemi.',
+    images: ['/og-image.png'],
+  },
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
