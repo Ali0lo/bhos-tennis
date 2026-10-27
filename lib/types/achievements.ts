@@ -156,7 +156,9 @@ export function evaluatePlayerAchievements(
     (profile.current_elo >= 800 ? profile.created_at : null);
 
   const hasFoundingMember =
-    Boolean(dbUnlockedMap.founding_member) || isDefaultMember(profile.id, profile.email);
+    Boolean(dbUnlockedMap.founding_member) ||
+    isDefaultMember(profile.id, profile.email) ||
+    profile.origin === 'İlkin Heyət';
   const foundingMemberDate: string | null =
     dbUnlockedMap.founding_member ||
     (hasFoundingMember ? profile.created_at : null);

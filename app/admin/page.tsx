@@ -90,6 +90,7 @@ export default function AdminDashboardPage() {
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [togglingFoundingId, setTogglingFoundingId] = useState<string | null>(null);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editPlayerName, setEditPlayerName] = useState<string>('');
   const [memberFilter, setMemberFilter] = useState<'all' | 'registered' | 'default' | 'pending'>('all');
@@ -392,6 +393,62 @@ export default function AdminDashboardPage() {
       showToast(err.message || 'Üzvü silərkən xəta baş verdi.');
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleToggleFoundingMember = async (player: PlayerProfile) => {
+    const isCurrentlyFounding =
+      player.origin === 'İlkin Heyət' || isDefaultMember(player.id, player.email);
+    const nextOrigin: 'İlkin Heyət' | 'Qeydiyyat' = isCurrentlyFounding
+      ? 'Qeydiyyat'
+      : 'İlkin Heyət';
+
+    setTogglingFoundingId(player.id);
+    try {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        if (!isCurrentlyFounding) {
+          await supabase.from('profile_achievements').upsert(
+            [
+              {
+                profile_id: player.id,
+                badge_id: 'founding_member',
+                unlocked_at: new Date().toISOString(),
+              },
+            ],
+            { onConflict: 'profile_id,badge_id' }
+          );
+        } else {
+          await supabase
+            .from('profile_achievements')
+            .delete()
+            .eq('profile_id', player.id)
+            .eq('badge_id', 'founding_member');
+        }
+
+        await supabase
+          .from('profiles')
+          .update({ origin: nextOrigin })
+          .eq('id', player.id);
+      }
+
+      store.updateProfile(player.id, { origin: nextOrigin });
+
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem(`bhos_player_${player.id}`);
+        } catch {}
+      }
+
+      showToast(
+        !isCurrentlyFounding
+          ? `"${player.full_name}" adlı oyunçuya 🏆 Qızıl Heyət nailiyyəti verildi!`
+          : `"${player.full_name}" üçün Qızıl Heyət statusu ləğv edildi.`
+      );
+    } catch (err: any) {
+      showToast(err.message || 'Xəta baş verdi.');
+    } finally {
+      setTogglingFoundingId(null);
     }
   };
 
@@ -900,15 +957,41 @@ export default function AdminDashboardPage() {
                                     <Calendar className="w-3 h-3 text-cyan-400 shrink-0" />
                                     <span>{formatDateTimeAz(p.created_at)}</span>
                                   </div>
-                                  <div className="mt-1 flex flex-wrap items-center gap-1">
-                                    {getProfileOrigin(p) === 'İlkin Heyət' ? (
-                                      <span
-                                        title="Sistem tərəfindən ilkin verilmiş heyət üzvü"
-                                        className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25"
-                                      >
-                                        İlkin Heyət
+                                  <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleFoundingMember(p)}
+                                      disabled={togglingFoundingId === p.id}
+                                      title={
+                                        getProfileOrigin(p) === 'İlkin Heyət'
+                                          ? 'Qızıl Heyət statusunu ləğv etmək üçün klikləyin'
+                                          : 'Qızıl Heyət nailiyyətini vermək üçün klikləyin'
+                                      }
+                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition active:scale-95 disabled:opacity-50 ${
+                                        getProfileOrigin(p) === 'İlkin Heyət'
+                                          ? 'bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 shadow-sm shadow-amber-500/15'
+                                          : 'bg-white/5 hover:bg-amber-500/15 text-slate-400 hover:text-amber-300 border border-white/10 hover:border-amber-500/30'
+                                      }`}
+                                    >
+                                      {togglingFoundingId === p.id ? (
+                                        <Loader2 className="w-3 h-3 animate-spin text-amber-400" />
+                                      ) : (
+                                        <Trophy
+                                          className={`w-3 h-3 ${
+                                            getProfileOrigin(p) === 'İlkin Heyət'
+                                              ? 'text-amber-400'
+                                              : 'opacity-40'
+                                          }`}
+                                        />
+                                      )}
+                                      <span>
+                                        {getProfileOrigin(p) === 'İlkin Heyət'
+                                          ? 'Qızıl Heyət'
+                                          : '+ Qızıl Heyət'}
                                       </span>
-                                    ) : (
+                                    </button>
+
+                                    {getProfileOrigin(p) !== 'İlkin Heyət' && (
                                       <span
                                         title="Saytdan rəsmi qeydiyyatdan keçmiş istifadəçi"
                                         className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20"
@@ -916,6 +999,7 @@ export default function AdminDashboardPage() {
                                         Qeydiyyat
                                       </span>
                                     )}
+
                                     {isProfilePending(p) && (
                                       <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-orange-500/15 text-orange-300 border border-orange-500/30">
                                         Gözləyən
@@ -976,6 +1060,27 @@ export default function AdminDashboardPage() {
                                 </td>
                                 <td className="py-3 px-3 text-right">
                                   <div className="flex items-center justify-end gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleToggleFoundingMember(p)}
+                                      disabled={togglingFoundingId === p.id}
+                                      title={
+                                        getProfileOrigin(p) === 'İlkin Heyət'
+                                          ? 'Qızıl Heyət statusunu ləğv et'
+                                          : 'Qızıl Heyət nailiyyətini ver'
+                                      }
+                                      className={`p-1.5 rounded-lg border transition ${
+                                        getProfileOrigin(p) === 'İlkin Heyət'
+                                          ? 'bg-amber-500/15 text-amber-300 border-amber-500/30 hover:bg-amber-500/25'
+                                          : 'bg-white/5 text-slate-400 border-white/10 hover:text-amber-300 hover:border-amber-500/30'
+                                      }`}
+                                    >
+                                      {togglingFoundingId === p.id ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin text-amber-400" />
+                                      ) : (
+                                        <Trophy className="w-3.5 h-3.5" />
+                                      )}
+                                    </button>
                                     <button
                                       type="button"
                                       onClick={() => handleStartEditName(p)}
