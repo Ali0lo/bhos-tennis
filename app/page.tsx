@@ -38,7 +38,19 @@ export default function HomePage() {
   const { t: rootT } = useTranslation();
   const store = BHOSDataStore.getInstance();
 
-  const [profiles, setProfiles] = useState<PlayerProfile[]>(() => store.getCachedLeaderboard());
+  const [profiles, setProfiles] = useState<PlayerProfile[]>(() => {
+    const cached = store.getCachedLeaderboard();
+    const verified = store.getVerifiedProfiles();
+    const all = store.getProfiles();
+    if (cached.length >= verified.length && cached.length > 0) return cached;
+    return verified.length > 0 ? verified : all;
+  });
+  const [totalPlayersCount, setTotalPlayersCount] = useState<number>(() => {
+    const all = store.getProfiles();
+    const verified = store.getVerifiedProfiles();
+    const cached = store.getCachedLeaderboard();
+    return Math.max(all.length, verified.length, cached.length);
+  });
   const [matches, setMatches] = useState<MatchRecord[]>(() => {
     const resolved = store.getResolvedMatchIds();
     return store.getMatches().filter((m) => isApprovedMatch(m, resolved));
@@ -53,8 +65,19 @@ export default function HomePage() {
     const update = () => {
       if (!isMounted) return;
       const cached = store.getCachedLeaderboard();
+      const verified = store.getVerifiedProfiles();
+      const all = store.getProfiles();
+      const maxCount = Math.max(all.length, verified.length, cached.length);
+      setTotalPlayersCount(maxCount);
+
       const resolved = store.getResolvedMatchIds();
-      setProfiles(cached.length > 0 ? cached : store.getVerifiedProfiles());
+      if (cached.length >= maxCount && cached.length > 0) {
+        setProfiles(cached);
+      } else if (verified.length > 0) {
+        setProfiles(verified);
+      } else {
+        setProfiles(all);
+      }
       setMatches(store.getMatches().filter((m) => isApprovedMatch(m, resolved)));
       setTournaments(store.getTournaments());
       setCurrentUser(store.getCurrentUser());
@@ -62,8 +85,18 @@ export default function HomePage() {
 
     update();
     void store.fetchLeaderboardStandings().then((allRows) => {
-      if (isMounted && allRows.length > 0) {
-        setProfiles(allRows);
+      if (isMounted) {
+        const verified = store.getVerifiedProfiles();
+        const all = store.getProfiles();
+        const maxCount = Math.max(all.length, verified.length, allRows.length);
+        setTotalPlayersCount(maxCount);
+        if (allRows.length >= maxCount) {
+          setProfiles(allRows);
+        } else if (verified.length > 0) {
+          setProfiles(verified);
+        } else {
+          setProfiles(all);
+        }
       }
     });
 
@@ -216,7 +249,7 @@ export default function HomePage() {
                 {t('hero_stats.players')}
               </span>
               <div className="text-xl sm:text-2xl font-mono font-black text-white flex items-baseline gap-1.5">
-                <NumberTicker value={profiles.length} />
+                <NumberTicker value={totalPlayersCount} />
                 <span className="text-xs font-sans text-slate-400">{rootT('hero.players_count')}</span>
               </div>
             </div>
@@ -275,7 +308,7 @@ export default function HomePage() {
               href="/leaderboard"
               className="text-xs font-semibold text-cyan-400 hover:underline flex items-center gap-1 self-start sm:self-auto"
             >
-              <span>{t('sections.view_all_leaderboard')} ({profiles.length})</span>
+              <span>{t('sections.view_all_leaderboard')} ({totalPlayersCount})</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
           </div>

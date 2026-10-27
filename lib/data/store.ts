@@ -14,7 +14,7 @@ const STORAGE_KEYS = {
   CURRENT_USER_ID: 'bhos_tt_active_user_id_v8',
 };
 
-const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v1';
+const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v2';
 const SESSION_RECENT_MATCHES_KEY = 'bhos_tt_recent_matches';
 const LEADERBOARD_TTL_MS = 60_000;
 
@@ -212,12 +212,15 @@ export class BHOSDataStore {
 
   public getCachedLeaderboard(limit?: number): PlayerProfile[] {
     const cached = this.leaderboardCache || getSessionLeaderboardCache();
-    if (cached && cached.data.length > 0) {
+    const verified = this.getVerifiedProfiles();
+    const all = this.profiles;
+    const bestLocal = verified.length > 0 ? verified : all;
+
+    if (cached && cached.data.length >= bestLocal.length && cached.data.length > 0) {
       this.leaderboardCache = cached;
       return limit ? cached.data.slice(0, limit) : cached.data;
     }
-    const verified = this.getVerifiedProfiles();
-    return limit ? verified.slice(0, limit) : verified;
+    return limit ? bestLocal.slice(0, limit) : bestLocal;
   }
 
   public async fetchLeaderboardStandings(options?: {
@@ -229,7 +232,10 @@ export class BHOSDataStore {
     const now = Date.now();
 
     const cached = this.leaderboardCache || getSessionLeaderboardCache();
-    if (cached && cached.data.length > 0) {
+    const verified = this.getVerifiedProfiles();
+    const bestLocal = verified.length > 0 ? verified : this.profiles;
+
+    if (cached && cached.data.length >= bestLocal.length && cached.data.length > 0) {
       this.leaderboardCache = cached;
       const isFresh = now - cached.timestamp < LEADERBOARD_TTL_MS;
       const satisfiesScope = cached.isFull || (Boolean(limit) && cached.data.length >= limit!);
@@ -312,16 +318,19 @@ export class BHOSDataStore {
             };
           });
 
+          const localVerified = this.getVerifiedProfiles();
+          const bestList = mapped.length >= localVerified.length ? mapped : localVerified;
+
           if (!limit) {
             const unverified = this.profiles.filter((p) => isProfilePending(p));
-            this.profiles = [...mapped, ...unverified];
+            this.profiles = [...bestList, ...unverified];
             this.recalculateRanks();
             setStored(STORAGE_KEYS.PROFILES, this.profiles);
           }
 
           if (!limit || !this.leaderboardCache?.isFull) {
             const cacheEntry: LeaderboardCacheEntry = {
-              data: mapped,
+              data: bestList,
               timestamp: Date.now(),
               isFull: !limit,
             };
@@ -330,7 +339,7 @@ export class BHOSDataStore {
           }
           this.notify();
 
-          return limit ? mapped.slice(0, limit) : mapped;
+          return limit ? bestList.slice(0, limit) : bestList;
         }
 
         let fallbackQuery = supabase
