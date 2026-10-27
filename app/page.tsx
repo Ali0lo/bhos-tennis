@@ -38,7 +38,7 @@ export default function HomePage() {
   const { t: rootT } = useTranslation();
   const store = BHOSDataStore.getInstance();
 
-  const [profiles, setProfiles] = useState<PlayerProfile[]>(() => store.getCachedLeaderboard(10));
+  const [profiles, setProfiles] = useState<PlayerProfile[]>(() => store.getCachedLeaderboard());
   const [matches, setMatches] = useState<MatchRecord[]>(() => {
     const resolved = store.getResolvedMatchIds();
     return store.getMatches().filter((m) => isApprovedMatch(m, resolved));
@@ -52,18 +52,18 @@ export default function HomePage() {
 
     const update = () => {
       if (!isMounted) return;
-      const cachedTop10 = store.getCachedLeaderboard(10);
+      const cached = store.getCachedLeaderboard();
       const resolved = store.getResolvedMatchIds();
-      setProfiles(cachedTop10.length > 0 ? cachedTop10 : store.getProfiles().slice(0, 10));
+      setProfiles(cached.length > 0 ? cached : store.getVerifiedProfiles());
       setMatches(store.getMatches().filter((m) => isApprovedMatch(m, resolved)));
       setTournaments(store.getTournaments());
       setCurrentUser(store.getCurrentUser());
     };
 
     update();
-    void store.fetchLeaderboardStandings({ limit: 10 }).then((topRows) => {
-      if (isMounted && topRows.length > 0) {
-        setProfiles(topRows);
+    void store.fetchLeaderboardStandings().then((allRows) => {
+      if (isMounted && allRows.length > 0) {
+        setProfiles(allRows);
       }
     });
 

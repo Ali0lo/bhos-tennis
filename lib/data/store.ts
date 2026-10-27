@@ -319,13 +319,15 @@ export class BHOSDataStore {
             setStored(STORAGE_KEYS.PROFILES, this.profiles);
           }
 
-          const cacheEntry: LeaderboardCacheEntry = {
-            data: mapped,
-            timestamp: Date.now(),
-            isFull: !limit,
-          };
-          this.leaderboardCache = cacheEntry;
-          setSessionLeaderboardCache(cacheEntry);
+          if (!limit || !this.leaderboardCache?.isFull) {
+            const cacheEntry: LeaderboardCacheEntry = {
+              data: mapped,
+              timestamp: Date.now(),
+              isFull: !limit,
+            };
+            this.leaderboardCache = cacheEntry;
+            setSessionLeaderboardCache(cacheEntry);
+          }
           this.notify();
 
           return limit ? mapped.slice(0, limit) : mapped;
