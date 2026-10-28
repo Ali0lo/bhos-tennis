@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { BHOSDataStore } from '../lib/data/store';
 import { PlayerProfile, isProfilePending } from '../lib/data/types';
-import { getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
+import { calculateEloDelta, getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
 import AthleteCombobox from './AthleteCombobox';
 import {
   Swords,
@@ -43,11 +43,18 @@ export function calculateStandardElo(
 } {
   const safeP1 = Math.min(MAX_ELO, Math.max(MIN_ELO, p1Elo));
   const safeP2 = Math.min(MAX_ELO, Math.max(MIN_ELO, p2Elo));
+  const sWon = setsWon ?? 3;
+  const sLost = setsLost ?? 0;
+  const delta = calculateEloDelta({
+    playerElo: safeP1,
+    opponentElo: safeP2,
+    playerScore: sWon,
+    opponentScore: sLost,
+    isWinner: true,
+  });
   const exponent = (safeP2 - safeP1) / 400;
   const expectedP1 = 1 / (1 + Math.pow(10, exponent));
-  const setMultiplier = getSetDominanceMultiplier(setsWon, setsLost);
-  let delta = Math.round(kFactor * (1 - expectedP1) * setMultiplier);
-  if (delta < 1) delta = 1;
+  const setMultiplier = getSetDominanceMultiplier(sWon, sLost);
   const p1After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP1 + delta));
   const p2After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP2 - delta));
   return {
@@ -60,12 +67,14 @@ export function calculateStandardElo(
 }
 
 const WIN_PRESETS: Array<[number, number]> = [
+  [4, 0],
   [3, 0],
   [3, 1],
   [3, 2],
 ];
 
 const LOSS_PRESETS: Array<[number, number]> = [
+  [0, 4],
   [0, 3],
   [1, 3],
   [2, 3],
@@ -477,7 +486,7 @@ export default function MatchLogger({
         type="button"
         whileTap={{ scale: 0.94 }}
         onClick={() => applyPreset(a, b)}
-        className={`flex-1 py-2.5 rounded-xl border font-mono text-sm font-black transition ${toneClasses}`}
+        className={`py-2 rounded-xl border font-mono text-xs sm:text-sm font-black transition text-center ${toneClasses}`}
       >
         {a}–{b}
       </motion.button>
@@ -598,7 +607,7 @@ export default function MatchLogger({
               <span className="text-[10px] uppercase tracking-wider font-bold text-[#22C55E]">
                 {isAdminOrCoach ? 'Oyunçu 1 qalib' : 'Qələbə'}
               </span>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {WIN_PRESETS.map(([a, b]) => presetChip(a, b, 'win'))}
               </div>
             </div>
@@ -606,7 +615,7 @@ export default function MatchLogger({
               <span className="text-[10px] uppercase tracking-wider font-bold text-[#EF4444]">
                 {isAdminOrCoach ? 'Oyunçu 2 qalib' : 'Məğlubiyyət'}
               </span>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-4 gap-1.5">
                 {LOSS_PRESETS.map(([a, b]) => presetChip(a, b, 'loss'))}
               </div>
             </div>

@@ -1,6 +1,49 @@
 export const MIN_ELO = 0;
 export const MAX_ELO = 999;
 
+export interface EloCalculationParams {
+  playerElo: number;
+  opponentElo: number;
+  playerScore: number;
+  opponentScore: number;
+  isWinner: boolean;
+}
+
+export function calculateEloDelta({
+  playerElo,
+  opponentElo,
+  playerScore,
+  opponentScore,
+  isWinner,
+}: EloCalculationParams): number {
+  const K = 32;
+
+  const expectedProbability = 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
+
+  const winnerScore = Math.max(playerScore, opponentScore);
+  const loserScore = Math.min(playerScore, opponentScore);
+  const setMargin = Math.max(1, winnerScore - loserScore);
+
+  let dominanceMultiplier = 1.0;
+  if (setMargin >= 4) {
+    dominanceMultiplier = 1.30;
+  } else if (setMargin === 3) {
+    dominanceMultiplier = 1.18;
+  } else if (setMargin === 2) {
+    dominanceMultiplier = 1.06;
+  } else {
+    dominanceMultiplier = 0.95;
+  }
+
+  if (isWinner) {
+    const rawGain = K * (1 - expectedProbability) * dominanceMultiplier;
+    return Math.max(2, Math.min(48, Math.round(rawGain)));
+  } else {
+    const rawLoss = K * (0 - expectedProbability) * dominanceMultiplier;
+    return Math.min(-2, Math.max(-48, Math.round(rawLoss)));
+  }
+}
+
 export interface MatchupPrediction {
   winProbability: number;
   winEloGain: number;
@@ -82,17 +125,18 @@ export function getSetDominanceMultiplier(
   }
   const hi = Math.max(setsWon, setsLost);
   const lo = Math.min(setsWon, setsLost);
+  const setMargin = Math.max(1, hi - lo);
 
-  if (lo === 0 && (hi === 3 || hi === 2)) {
-    return 1.15;
+  if (setMargin >= 4) {
+    return 1.30;
   }
-  if (hi === 3 && lo === 2) {
-    return 0.9;
+  if (setMargin === 3) {
+    return 1.18;
   }
-  if ((hi === 3 && lo === 1) || (hi === 2 && lo === 1)) {
-    return 1.0;
+  if (setMargin === 2) {
+    return 1.06;
   }
-  return 1.0;
+  return 0.95;
 }
 
 export function calculateWhatIf(
@@ -110,7 +154,6 @@ export function calculateWhatIf(
     MAX_ELO,
     Math.max(MIN_ELO, Number.isFinite(opponentElo) ? opponentElo : 0)
   );
-  const safeK = kFactor > 0 ? kFactor : 32;
   const setMultiplier = getSetDominanceMultiplier(setsWon, setsLost);
 
   const exponent = Math.max(
@@ -120,13 +163,25 @@ export function calculateWhatIf(
   const rawWinProbability = 1 / (1 + Math.pow(10, exponent));
   const winProbability = Math.max(0, Math.min(1, rawWinProbability));
 
-  const rawWinDelta = Math.max(
-    1,
-    Math.round(safeK * (1 - winProbability) * setMultiplier)
-  );
-  const rawLossDelta = Math.max(
-    1,
-    Math.round(safeK * winProbability * setMultiplier)
+  const pScore = setsWon ?? 3;
+  const oScore = setsLost ?? 0;
+
+  const rawWinDelta = calculateEloDelta({
+    playerElo: safePlayerElo,
+    opponentElo: safeOpponentElo,
+    playerScore: pScore,
+    opponentScore: oScore,
+    isWinner: true,
+  });
+
+  const rawLossDelta = Math.abs(
+    calculateEloDelta({
+      playerElo: safePlayerElo,
+      opponentElo: safeOpponentElo,
+      playerScore: oScore,
+      opponentScore: pScore,
+      isWinner: false,
+    })
   );
 
   const projectedPlayerWin = Math.min(MAX_ELO, safePlayerElo + rawWinDelta);

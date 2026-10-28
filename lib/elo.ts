@@ -1,11 +1,19 @@
-/**
- * Official Table Tennis ELO Rating Calculation Engine
- * Baku Higher Oil School (BHOS) Table Tennis Club
- */
+import {
+  calculateEloDelta,
+  EloCalculationParams,
+  getSetDominanceMultiplier,
+  MAX_ELO,
+  MIN_ELO,
+} from './elo/calculator';
 
-import { getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from './elo/calculator';
+export {
+  calculateEloDelta,
+  getSetDominanceMultiplier,
+  MAX_ELO,
+  MIN_ELO,
+};
 
-export { getSetDominanceMultiplier, MAX_ELO, MIN_ELO };
+export type { EloCalculationParams };
 
 export interface EloCalculationInput {
   player1Elo: number;
@@ -24,48 +32,34 @@ export interface EloCalculationResult {
   player2EloBefore: number;
   player1EloAfter: number;
   player2EloAfter: number;
-  delta: number; // Signed delta for Player 1 (+delta if won, -delta if lost)
-  winnerGained: number; // Positive absolute points gained by the winner
-  p1WinProbability: number; // 0.0 to 1.0 (e.g. 0.65 = 65%)
-  p2WinProbability: number; // 0.0 to 1.0 (e.g. 0.35 = 35%)
+  delta: number;
+  winnerGained: number;
+  p1WinProbability: number;
+  p2WinProbability: number;
   setMultiplier?: number;
 }
 
-/**
- * Determine dynamic K-Factor based on player experience and tournament context
- */
 export function getKFactor(
   isTournament: boolean = false,
   matchesPlayed: number = 20,
   customK?: number
 ): number {
   if (customK && customK > 0) return customK;
-  if (isTournament) return 48; // High stakes for official tournaments
-  if (matchesPlayed < 10) return 40; // Accelerated calibration for newcomers
-  return 32; // Standard club ranked match
+  if (isTournament) return 48;
+  if (matchesPlayed < 10) return 40;
+  return 32;
 }
 
-/**
- * Calculate expected probability of winning
- * E_A = 1 / (1 + 10 ^ ((R_B - R_A) / 400))
- */
 export function calculateWinProbability(ratingA: number, ratingB: number): number {
   const exponent = (ratingB - ratingA) / 400;
   return 1 / (1 + Math.pow(10, exponent));
 }
 
-/**
- * Calculate updated ELO ratings following official match outcome
- */
 export function calculateMatchElo(input: EloCalculationInput): EloCalculationResult {
   const {
     player1Elo,
     player2Elo,
     player1Won,
-    isTournament = false,
-    player1MatchesPlayed = 20,
-    player2MatchesPlayed = 20,
-    customKFactor,
     player1SetsWon,
     player2SetsWon,
   } = input;
@@ -76,20 +70,17 @@ export function calculateMatchElo(input: EloCalculationInput): EloCalculationRes
   const p1Expected = calculateWinProbability(safeP1Elo, safeP2Elo);
   const p2Expected = 1 - p1Expected;
 
-  // Average K-factor between the two players' profiles
-  const k1 = getKFactor(isTournament, player1MatchesPlayed, customKFactor);
-  const k2 = getKFactor(isTournament, player2MatchesPlayed, customKFactor);
-  const k = Math.round((k1 + k2) / 2);
+  const p1Sets = player1SetsWon ?? (player1Won ? 3 : 0);
+  const p2Sets = player2SetsWon ?? (player1Won ? 0 : 3);
+  const setMultiplier = getSetDominanceMultiplier(p1Sets, p2Sets);
 
-  const setMultiplier = getSetDominanceMultiplier(player1SetsWon, player2SetsWon);
-  const actualScore1 = player1Won ? 1 : 0;
-  
-  // Rating change: Delta = Round(K * (Actual - Expected))
-  let rawDelta = Math.round(k * (actualScore1 - p1Expected) * setMultiplier);
-
-  // Ensure winner gains at least 1 point even in extreme upsets/mismatches
-  if (player1Won && rawDelta < 1) rawDelta = 1;
-  if (!player1Won && rawDelta > -1) rawDelta = -1;
+  let rawDelta = calculateEloDelta({
+    playerElo: safeP1Elo,
+    opponentElo: safeP2Elo,
+    playerScore: p1Sets,
+    opponentScore: p2Sets,
+    isWinner: player1Won,
+  });
 
   const winnerGained = Math.abs(rawDelta);
   const p1After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP1Elo + rawDelta));
@@ -108,10 +99,6 @@ export function calculateMatchElo(input: EloCalculationInput): EloCalculationRes
   };
 }
 
-/**
- * Parse and validate table tennis set scores
- * e.g. "11-9, 8-11, 11-6, 12-10" -> returns games won { p1: 3, p2: 1, isValid: true }
- */
 export function parseSetScores(setScoresString: string): {
   player1Games: number;
   player2Games: number;
@@ -142,7 +129,6 @@ export function parseSetScores(setScoresString: string): {
     }
 
     const [s1, s2] = tokens;
-    // Table tennis set rule: First to 11 with at least 2 point lead
     const maxScore = Math.max(s1, s2);
     const diff = Math.abs(s1 - s2);
 
@@ -169,4 +155,3 @@ export function parseSetScores(setScoresString: string): {
     isValid: sets.length > 0,
   };
 }
-

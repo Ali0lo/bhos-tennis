@@ -38,28 +38,36 @@ interface SetPreset {
 
 const SET_PRESETS: SetPreset[] = [
   {
+    id: 'clean_sweep',
+    label: '4–0',
+    sublabel: 'Təmiz Üstünlük',
+    setsWon: 4,
+    setsLost: 0,
+    multiplierLabel: '1.30×',
+  },
+  {
     id: 'sweep',
-    label: '3–0 / 2–0',
+    label: '3–0 / 4–1',
     sublabel: 'Dominant Qələbə',
     setsWon: 3,
     setsLost: 0,
-    multiplierLabel: '1.15×',
+    multiplierLabel: '1.18×',
   },
   {
     id: 'standard',
-    label: '3–1 / 2–1',
-    sublabel: 'Standart Hesab',
+    label: '3–1 / 4–2 / 2–0',
+    sublabel: 'Aydın Üstünlük',
     setsWon: 3,
     setsLost: 1,
-    multiplierLabel: '1.00×',
+    multiplierLabel: '1.06×',
   },
   {
     id: 'close',
-    label: '3–2',
+    label: '3–2 / 4–3 / 2–1',
     sublabel: 'Gərgin Mübarizə',
     setsWon: 3,
     setsLost: 2,
-    multiplierLabel: '0.90×',
+    multiplierLabel: '0.95×',
   },
 ];
 
@@ -415,12 +423,12 @@ export default function WhatIfSimulator({
               Set Dominantlığı Əmsalı (M)
             </span>
             <span className="text-[10px] text-slate-400">
-              Quru hesabla qələbə (3–0 / 2–0) daha yüksək reytinq artımı verir
+              Set fərqi böyük olduqca (məs. 4–0) reytinq artımı daha yüksək olur
             </span>
           </div>
         </div>
 
-        <div className="grid grid-cols-3 gap-1.5 p-1 rounded-xl bg-[#080D16] border border-white/10">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-xl bg-[#080D16] border border-white/10">
           {SET_PRESETS.map((preset) => {
             const active = preset.id === selectedSetPresetId;
             return (
