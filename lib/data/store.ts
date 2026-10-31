@@ -1077,14 +1077,30 @@ export class BHOSDataStore {
     if (!profile) throw new Error(`Profile ${id} not found`);
 
     profile.role = role;
+    if (role === 'president' || role === 'coach') {
+      profile.is_verified = true;
+      profile.status = 'approved';
+    }
+    this.leaderboardCache = null;
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem(SESSION_LEADERBOARD_KEY);
+        sessionStorage.removeItem(`bhos_player_${id}`);
+      } catch {}
+    }
     this.saveLocal();
     this.notify();
 
     const supabase = getSupabaseClient();
     if (supabase) {
+      const payload: Record<string, any> = { role };
+      if (role === 'president' || role === 'coach') {
+        payload.is_verified = true;
+        payload.status = 'approved';
+      }
       supabase
         .from('profiles')
-        .update({ role })
+        .update(payload)
         .eq('id', id)
         .then(({ error }) => {
           if (error) console.warn('[BHOS Store] Supabase updateUserRole failed:', error.message);
