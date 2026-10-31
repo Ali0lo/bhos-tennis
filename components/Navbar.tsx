@@ -5,7 +5,12 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation, Locale } from '../lib/i18n';
 import { BHOSDataStore } from '../lib/data/store';
-import { PlayerProfile, UserRole } from '../lib/data/types';
+import {
+  PlayerProfile,
+  UserRole,
+  canAccessAdminPanel,
+  isPresidentBadgeHolder,
+} from '../lib/data/types';
 import { usePendingMatchesCount } from '../lib/hooks/usePendingMatchesCount';
 import { 
   History, 
@@ -54,7 +59,7 @@ export default function Navbar() {
   ];
 
   const navLinks = [...publicNavLinks];
-  if (currentUser && (currentUser.role === 'president' || currentUser.role === 'coach')) {
+  if (canAccessAdminPanel(currentUser)) {
     navLinks.push({ href: '/admin', label: t('nav.admin') || 'Prezident Paneli' });
   }
 
@@ -66,10 +71,11 @@ export default function Navbar() {
     router.refresh();
   };
 
-  const getRoleBadgeColor = (role: UserRole) => {
-    switch (role) {
-      case 'president':
-        return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+  const getRoleBadgeColor = (user: PlayerProfile) => {
+    if (isPresidentBadgeHolder(user)) {
+      return 'bg-amber-500/20 text-amber-300 border-amber-500/40';
+    }
+    switch (user.role) {
       case 'coach':
         return 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40';
       case 'player':
@@ -145,7 +151,7 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center justify-end gap-2.5 ml-auto">
-            {currentUser && (currentUser.role === 'president' || currentUser.role === 'coach') && (
+            {canAccessAdminPanel(currentUser) && (
               <Link
                 href="/admin"
                 className={`hidden lg:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shadow-sm ${
@@ -207,7 +213,7 @@ export default function Navbar() {
                     setMobileMenuOpen(false);
                   }}
                   className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-medium transition ${getRoleBadgeColor(
-                    currentUser.role
+                    currentUser
                   )}`}
                 >
                   {currentUser.avatar_url ? (
@@ -242,10 +248,14 @@ export default function Navbar() {
                       <div className="flex items-center gap-2 mt-2">
                         <span
                           className={`text-[9px] px-1.5 py-0.5 rounded-full border uppercase ${getRoleBadgeColor(
-                            currentUser.role
+                            currentUser
                           )}`}
                         >
-                          {currentUser.role === 'president' ? 'Prezident' : currentUser.role === 'coach' ? 'Məşqçi' : 'Oyunçu'}
+                          {isPresidentBadgeHolder(currentUser)
+                            ? 'Prezident'
+                            : currentUser.role === 'coach'
+                            ? 'Məşqçi'
+                            : 'Oyunçu'}
                         </span>
                         <span className="text-[11px] font-bold text-cyan-400">
                           {currentUser.current_elo.toLocaleString()} XAL
@@ -290,7 +300,7 @@ export default function Navbar() {
                         <span>Profili Fərdiləşdir</span>
                       </button>
 
-                      {(currentUser.role === 'president' || currentUser.role === 'coach') && (
+                      {canAccessAdminPanel(currentUser) && (
                         <Link
                           href="/admin"
                           onClick={() => setUserDropdownOpen(false)}
@@ -325,7 +335,7 @@ export default function Navbar() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="lg:hidden w-full max-w-6xl mt-2.5 rounded-3xl border border-white/15 bg-[#0F1623]/95 backdrop-blur-2xl p-4 shadow-2xl shadow-black/90 pointer-events-auto space-y-3">
+          <div className="lg:hidden w-full max-w-6xl mt-2.5 max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain rounded-3xl border border-white/15 bg-[#0F1623]/95 backdrop-blur-2xl p-4 shadow-2xl shadow-black/90 pointer-events-auto space-y-3">
             <div className="grid grid-cols-3 gap-1">
               {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
                 <button
@@ -380,10 +390,14 @@ export default function Navbar() {
                     </div>
                     <span
                       className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${getRoleBadgeColor(
-                        currentUser.role
+                        currentUser
                       )}`}
                     >
-                      {currentUser.role === 'president' ? 'Prezident' : currentUser.role === 'coach' ? 'Məşqçi' : 'Oyunçu'}
+                      {isPresidentBadgeHolder(currentUser)
+                        ? 'Prezident'
+                        : currentUser.role === 'coach'
+                        ? 'Məşqçi'
+                        : 'Oyunçu'}
                     </span>
                   </div>
                   <Link

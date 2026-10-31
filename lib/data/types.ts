@@ -210,6 +210,51 @@ export function isProfileApproved(profile?: PlayerProfile | null): boolean {
   return !isProfilePending(profile);
 }
 
+export function isPresidentBadgeHolder(profile?: PlayerProfile | null): boolean {
+  if (!profile) return false;
+  if (profile.role === 'president') return true;
+  const email = (profile.email || '').trim().toLowerCase();
+  if (
+    email === 'ali.iskandarli.std@bhos.edu.az' ||
+    email === 'ali.iskandarli@bhos.edu.az' ||
+    email.startsWith('fidan.abdullayeva')
+  ) {
+    return true;
+  }
+  const foldedName = foldDepartmentAscii(profile.full_name || '');
+  if (foldedName === 'fidanabdullayeva') {
+    return true;
+  }
+  return false;
+}
+
+export function canAccessAdminPanel(profile?: PlayerProfile | null): boolean {
+  if (!profile) return false;
+  if (profile.role === 'coach') return true;
+  const email = (profile.email || '').trim().toLowerCase();
+  if (
+    email === 'ali.iskandarli.std@bhos.edu.az' ||
+    email === 'ali.iskandarli@bhos.edu.az' ||
+    email === 'iftixar.coach@gmail.com' ||
+    email === 'iftixar@bhos.edu.az'
+  ) {
+    return true;
+  }
+  if (
+    profile.id === 'p-1' ||
+    profile.id === 'p-2' ||
+    profile.id === '00000000-0000-0000-0000-000000000001' ||
+    profile.id === '00000000-0000-0000-0000-000000000002'
+  ) {
+    return true;
+  }
+  const foldedName = foldDepartmentAscii(profile.full_name || '');
+  if (foldedName === 'aliiskandarli' || foldedName === 'eliisgenderli') {
+    return true;
+  }
+  return false;
+}
+
 export function formatDateTimeAz(dateStr?: string | null): string {
   if (!dateStr) return '—';
   const d = new Date(dateStr);

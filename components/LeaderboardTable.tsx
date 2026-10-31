@@ -11,6 +11,7 @@ import {
   resolveCanonicalDepartment,
   matchesDepartmentFilter,
   isAllDepartmentsFilter,
+  isPresidentBadgeHolder,
 } from '../lib/data/types';
 import AnimatedCounter from './AnimatedCounter';
 import {
@@ -267,15 +268,15 @@ export default function LeaderboardTable({
                             </span>
                           )}
 
-                          {player.role !== 'player' && (
+                          {(isPresidentBadgeHolder(player) || player.role === 'coach') && (
                             <span
                               className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
-                                player.role === 'president'
+                                isPresidentBadgeHolder(player)
                                   ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
                                   : 'bg-purple-500/15 text-purple-300 border-purple-500/30'
                               }`}
                             >
-                              {player.role === 'president' ? 'Prezident' : 'Məşqçi'}
+                              {isPresidentBadgeHolder(player) ? 'Prezident' : 'Məşqçi'}
                             </span>
                           )}
                         </div>

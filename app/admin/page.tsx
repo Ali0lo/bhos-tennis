@@ -11,6 +11,8 @@ import {
   getProfileOrigin,
   isProfilePending,
   formatDateTimeAz,
+  canAccessAdminPanel,
+  isPresidentBadgeHolder,
 } from '../../lib/data/types';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import {
@@ -45,6 +47,7 @@ import {
   Calendar,
   Ban,
   Loader2,
+  Crown,
 } from 'lucide-react';
 
 const FACULTIES: BHOSFaculty[] = [
@@ -96,6 +99,7 @@ export default function AdminDashboardPage() {
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingFoundingId, setTogglingFoundingId] = useState<string | null>(null);
+  const [togglingPresidentId, setTogglingPresidentId] = useState<string | null>(null);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editPlayerName, setEditPlayerName] = useState<string>('');
   const [memberFilter, setMemberFilter] = useState<'all' | 'registered' | 'default' | 'pending'>('all');
@@ -457,6 +461,38 @@ export default function AdminDashboardPage() {
     }
   };
 
+  const handleTogglePresidentBadge = async (player: PlayerProfile) => {
+    const isCurrentlyPres = player.role === 'president';
+    const nextRole: UserRole = isCurrentlyPres ? 'player' : 'president';
+
+    setTogglingPresidentId(player.id);
+    try {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        await supabase
+          .from('profiles')
+          .update({
+            role: nextRole,
+            is_verified: true,
+            status: 'approved',
+          })
+          .eq('id', player.id);
+      }
+
+      store.updateUserRole(player.id, nextRole);
+
+      showToast(
+        !isCurrentlyPres
+          ? `"${player.full_name}" üçün 👑 Prezident nişanı (Reytinq Cədvəli) aktivləşdirildi!`
+          : `"${player.full_name}" üçün Prezident nişanı ləğv edildi.`
+      );
+    } catch (err: any) {
+      showToast(err.message || 'Xəta baş verdi.');
+    } finally {
+      setTogglingPresidentId(null);
+    }
+  };
+
   const handleAddMemberSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const cleanFullName = sanitizePlayerName(newFullName, 80);
@@ -570,8 +606,7 @@ export default function AdminDashboardPage() {
     showToast('Portal məlumatları ilkin BANM vəziyyətinə qaytarıldı.');
   };
 
-  const isAuthorized =
-    currentUser?.role === 'president' || currentUser?.role === 'coach';
+  const isAuthorized = canAccessAdminPanel(currentUser);
 
   return (
     <SmoothReveal>
@@ -1022,6 +1057,39 @@ export default function AdminDashboardPage() {
                                         {getProfileOrigin(p) === 'İlkin Heyət'
                                           ? 'Qızıl Heyət'
                                           : '+ Qızıl Heyət'}
+                                      </span>
+                                    </button>
+
+                                    <button
+                                      type="button"
+                                      onClick={() => handleTogglePresidentBadge(p)}
+                                      disabled={togglingPresidentId === p.id}
+                                      title={
+                                        isPresidentBadgeHolder(p)
+                                          ? 'Prezident nişanını ləğv etmək üçün klikləyin'
+                                          : 'Reytinq cədvəlində Prezident nişanı vermək üçün klikləyin'
+                                      }
+                                      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold transition active:scale-95 disabled:opacity-50 ${
+                                        isPresidentBadgeHolder(p)
+                                          ? 'bg-purple-500/20 hover:bg-purple-500/30 text-purple-300 border border-purple-500/40 shadow-sm shadow-purple-500/15'
+                                          : 'bg-white/5 hover:bg-purple-500/15 text-slate-400 hover:text-purple-300 border border-white/10 hover:border-purple-500/30'
+                                      }`}
+                                    >
+                                      {togglingPresidentId === p.id ? (
+                                        <Loader2 className="w-3 h-3 animate-spin text-purple-400" />
+                                      ) : (
+                                        <Crown
+                                          className={`w-3 h-3 ${
+                                            isPresidentBadgeHolder(p)
+                                              ? 'text-purple-400'
+                                              : 'opacity-40'
+                                          }`}
+                                        />
+                                      )}
+                                      <span>
+                                        {isPresidentBadgeHolder(p)
+                                          ? 'Prezident'
+                                          : '+ Prezident'}
                                       </span>
                                     </button>
 

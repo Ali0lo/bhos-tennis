@@ -10,7 +10,13 @@ import {
   getCachedPlayerProfile,
   isApprovedMatch,
 } from '../../../lib/data/store';
-import { PlayerProfile, MatchRecord, isDefaultMember, isAutoApprovedMatch } from '../../../lib/data/types';
+import {
+  PlayerProfile,
+  MatchRecord,
+  isDefaultMember,
+  isAutoApprovedMatch,
+  isPresidentBadgeHolder,
+} from '../../../lib/data/types';
 import SmoothReveal from '../../../components/SmoothReveal';
 import NumberTicker from '../../../components/NumberTicker';
 import EditProfileModal from '../../../components/EditProfileModal';
@@ -599,12 +605,12 @@ export default function PlayerProfilePage() {
                     className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
                       profile.role === 'coach'
                         ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                        : profile.role === 'president'
+                        : isPresidentBadgeHolder(profile)
                         ? 'bg-purple-500/15 text-purple-300 border-purple-500/30'
                         : 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30'
                     }`}
                   >
-                    {profile.role === 'president' ? 'Prezident' : profile.role === 'coach' ? 'Məşqçi' : 'Oyunçu'}
+                    {isPresidentBadgeHolder(profile) ? 'Prezident' : profile.role === 'coach' ? 'Məşqçi' : 'Oyunçu'}
                   </span>
 
                   {(!profile.admission_year || profile.user_type === 'teacher' || profile.user_type === 'staff' || profile.role === 'coach') ? (

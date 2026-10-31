@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { BHOSDataStore, isApprovedMatch } from '../lib/data/store';
-import { PlayerProfile, MatchRecord, Tournament } from '../lib/data/types';
+import { PlayerProfile, MatchRecord, Tournament, canAccessAdminPanel } from '../lib/data/types';
 import { useTranslation, useTranslations } from '../lib/i18n';
 import HallRulesSection from '../components/HallRulesSection';
 import MatchLoggerModal from '../components/MatchLoggerModal';
@@ -231,7 +231,7 @@ export default function HomePage() {
                 <span>{rootT('hero.hall_tables_btn')}</span>
               </Link>
 
-              {(currentUser?.role === 'president' || currentUser?.role === 'coach') && (
+              {canAccessAdminPanel(currentUser) && (
                 <button
                   onClick={() => setShowMatchModal(true)}
                   className="px-5 py-3 rounded-full border border-cyan-400/40 bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
