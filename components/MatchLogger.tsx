@@ -546,11 +546,11 @@ export default function MatchLogger({
     const toneClasses =
       tone === 'win'
         ? active
-          ? 'bg-[#22C55E]/20 border-[#22C55E]/60 text-[#22C55E] shadow-[0_0_14px_rgba(34,197,94,0.25)]'
-          : 'bg-[#131C2B] border-white/10 text-slate-300 hover:border-[#22C55E]/40 hover:text-[#22C55E]'
+          ? 'bg-emerald-600/20 border-emerald-500 text-emerald-400 shadow-sm'
+          : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-emerald-600/50 hover:text-emerald-400'
         : active
-        ? 'bg-[#EF4444]/20 border-[#EF4444]/60 text-[#EF4444] shadow-[0_0_14px_rgba(239,68,68,0.25)]'
-        : 'bg-[#131C2B] border-white/10 text-slate-300 hover:border-[#EF4444]/40 hover:text-[#EF4444]';
+        ? 'bg-rose-600/20 border-rose-500 text-rose-400 shadow-sm'
+        : 'bg-slate-950 border-slate-800 text-slate-300 hover:border-rose-600/50 hover:text-rose-400';
     return (
       <motion.button
         key={`${a}-${b}`}
@@ -565,7 +565,7 @@ export default function MatchLogger({
   };
 
   return (
-    <div className="relative rounded-2xl border border-white/10 bg-[#0F1623] p-6 shadow-2xl backdrop-blur-xl">
+    <div className="relative rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
       {isPendingApproval && (
         <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs text-amber-300">
           <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />

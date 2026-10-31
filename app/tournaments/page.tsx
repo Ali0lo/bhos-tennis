@@ -9,15 +9,13 @@ export default function TournamentsPage() {
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 pt-20 pb-16">
       <SmoothReveal delay={0.05} scale>
-        <div className="relative w-full max-w-2xl mx-auto rounded-3xl bg-[#0F1623]/90 backdrop-blur-xl border border-white/10 p-8 sm:p-12 shadow-2xl shadow-black/60 overflow-hidden text-center">
-          <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-[#3B82F6]/20 blur-3xl" />
-
+        <div className="relative w-full max-w-2xl mx-auto rounded-3xl bg-slate-900 border border-slate-800 p-8 sm:p-12 shadow-sm overflow-hidden text-center">
           <div className="relative flex flex-col items-center gap-6">
-            <div className="w-16 h-16 rounded-2xl bg-[#131C2B] border border-[#3B82F6]/30 flex items-center justify-center shadow-lg shadow-blue-500/10">
+            <div className="w-16 h-16 rounded-2xl bg-slate-950 border border-blue-600/30 flex items-center justify-center shadow-sm">
               <Trophy className="w-8 h-8 text-amber-400" />
             </div>
 
-            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#3B82F6] text-[11px] font-bold uppercase tracking-widest">
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-700/15 border border-blue-600/30 text-blue-400 text-[11px] font-bold uppercase tracking-widest">
               <CalendarClock className="w-3.5 h-3.5" />
               Turnirlər • Fevral – Mart
             </span>
@@ -26,7 +24,7 @@ export default function TournamentsPage() {
               Coming Soon
             </h1>
 
-            <div className="w-full rounded-2xl bg-[#131C2B] border border-white/5 p-6 space-y-4">
+            <div className="w-full rounded-2xl bg-slate-950 border border-slate-800 p-6 space-y-4">
               <p className="text-sm sm:text-base leading-relaxed text-slate-300">
                 Universitet çempionatı ikinci semestrdə (Fevral - Mart aylarında) keçiriləcək. Dəqiq tarixlər tezliklə elan olunacaq.
               </p>
@@ -39,7 +37,7 @@ export default function TournamentsPage() {
 
             <Link
               href="/leaderboard"
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#131C2B] hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white font-bold text-xs transition"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-bold text-xs transition shadow-sm"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Reytinq Cədvəlinə Qayıt</span>

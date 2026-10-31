@@ -61,17 +61,16 @@ export default function HeadToHeadDuel({
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="rounded-2xl bg-[#0F1623]/90 backdrop-blur-md p-6 shadow-xl space-y-6 relative overflow-hidden"
-      style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
+      className="rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-sm space-y-6 relative overflow-hidden"
     >
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-widest text-[#3B82F6]">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-widest text-blue-400">
               <Zap className="w-3.5 h-3.5" />
               DUEL PROQNOZU
             </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-[#131C2B] text-slate-400 border border-white/10">
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-950 text-slate-400 border border-slate-800">
               K=32 • 0–{MAX_ELO} ELO
             </span>
           </div>
@@ -80,16 +79,16 @@ export default function HeadToHeadDuel({
           </h3>
         </div>
 
-        <div className="flex items-center gap-3 self-start sm:self-auto px-3.5 py-2 rounded-xl bg-[#131C2B] border border-white/[0.06]">
+        <div className="flex items-center gap-3 self-start sm:self-auto px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800">
           <div className="flex items-center gap-2">
             {currentUser.avatar_url ? (
               <img
                 src={currentUser.avatar_url}
                 alt={currentUser.full_name}
-                className="w-7 h-7 rounded-lg object-cover border border-[#3B82F6]/40"
+                className="w-7 h-7 rounded-lg object-cover border border-blue-600/40"
               />
             ) : (
-              <div className="w-7 h-7 rounded-lg bg-[#3B82F6]/20 border border-[#3B82F6]/40 flex items-center justify-center text-xs font-bold text-[#3B82F6]">
+              <div className="w-7 h-7 rounded-lg bg-blue-700/20 border border-blue-600/40 flex items-center justify-center text-xs font-bold text-blue-400">
                 {currentUser.full_name.charAt(0).toUpperCase()}
               </div>
             )}
@@ -112,7 +111,7 @@ export default function HeadToHeadDuel({
               <span className="text-slate-400 block text-[10px] leading-none truncate max-w-[90px]">
                 {targetPlayer.full_name.split(' ')[0]}
               </span>
-              <span className="font-mono font-bold text-[#A855F7]">
+              <span className="font-mono font-bold text-rose-400">
                 {safeTargetElo}
               </span>
             </div>
@@ -120,10 +119,10 @@ export default function HeadToHeadDuel({
               <img
                 src={targetPlayer.avatar_url}
                 alt={targetPlayer.full_name}
-                className="w-7 h-7 rounded-lg object-cover border border-[#A855F7]/40"
+                className="w-7 h-7 rounded-lg object-cover border border-rose-600/40"
               />
             ) : (
-              <div className="w-7 h-7 rounded-lg bg-[#A855F7]/20 border border-[#A855F7]/40 flex items-center justify-center text-xs font-bold text-[#A855F7]">
+              <div className="w-7 h-7 rounded-lg bg-rose-600/20 border border-rose-600/40 flex items-center justify-center text-xs font-bold text-rose-400">
                 {targetPlayer.full_name.charAt(0).toUpperCase()}
               </div>
             )}
@@ -131,10 +130,10 @@ export default function HeadToHeadDuel({
         </div>
       </div>
 
-      <div className="p-4 rounded-xl bg-[#131C2B] border border-white/[0.06] space-y-3">
+      <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
         <div className="flex items-center justify-between text-xs">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] shadow-[0_0_8px_#3B82F6] shrink-0" />
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0" />
             <span className="font-bold text-white truncate">
               Siz ({currentUser.full_name.split(' ')[0]})
             </span>
@@ -146,48 +145,48 @@ export default function HeadToHeadDuel({
             <span className="font-bold text-white truncate">
               {targetPlayer.full_name}
             </span>
-            <span className="w-2.5 h-2.5 rounded-full bg-[#A855F7] shadow-[0_0_8px_#A855F7] shrink-0" />
+            <span className="w-2.5 h-2.5 rounded-full bg-rose-600 shrink-0" />
           </div>
         </div>
 
-        <div className="relative h-3.5 w-full rounded-full bg-[#080D16] overflow-hidden flex p-0.5 gap-1 border border-white/5">
+        <div className="relative h-3.5 w-full rounded-full bg-slate-900 overflow-hidden flex p-0.5 gap-1 border border-slate-800">
           <motion.div
             initial={{ width: '50%' }}
             animate={{ width: `${userBarWidth}%` }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            className={`h-full rounded-l-full shadow-[0_0_12px_rgba(59,130,246,0.6)] ${
+            className={`h-full rounded-l-full ${
               userIsDominant
-                ? 'bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600 bg-[length:200%_100%] animate-shimmer'
-                : 'bg-[#3B82F6]'
+                ? 'bg-blue-600'
+                : 'bg-blue-700'
             }`}
           />
           <motion.div
             initial={{ width: '50%' }}
             animate={{ width: `${targetBarWidth}%` }}
             transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-            className={`h-full rounded-r-full shadow-[0_0_12px_rgba(168,85,247,0.5)] ${
+            className={`h-full rounded-r-full ${
               !userIsDominant
-                ? 'bg-gradient-to-r from-purple-600 via-fuchsia-400 to-purple-600 bg-[length:200%_100%] animate-shimmer'
-                : 'bg-[#A855F7]'
+                ? 'bg-rose-500'
+                : 'bg-rose-600'
             }`}
           />
         </div>
 
         <div className="flex items-center justify-between text-xs font-mono">
-          <span className="font-bold text-[#3B82F6]">
+          <span className="font-bold text-blue-400">
             {projection.userWinPercent}% Ehtimal
           </span>
-          <span className="font-bold text-[#A855F7]">
+          <span className="font-bold text-rose-400">
             {projection.targetWinPercent}% Ehtimal
           </span>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-        <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col justify-between gap-3">
+        <div className="p-4 rounded-xl bg-emerald-600/10 border border-emerald-600/25 flex flex-col justify-between gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-[#22C55E]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+              <TrendingUp className="w-4 h-4 text-emerald-500" />
               Qələbə Qazansanız
             </span>
             {projection.projectedWinElo >= MAX_ELO && (
@@ -197,7 +196,7 @@ export default function HeadToHeadDuel({
             )}
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-mono font-black text-[#22C55E]">
+            <span className="text-2xl sm:text-3xl font-mono font-black text-emerald-500">
               +{projection.winDelta} PTS
             </span>
             <div className="text-right">
@@ -206,7 +205,7 @@ export default function HeadToHeadDuel({
               </span>
               <span className="text-sm font-mono font-bold text-white">
                 {safeUserElo} &rarr;{' '}
-                <span className="text-[#22C55E]">
+                <span className="text-emerald-500">
                   {projection.projectedWinElo}
                 </span>
               </span>
@@ -214,10 +213,10 @@ export default function HeadToHeadDuel({
           </div>
         </div>
 
-        <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/20 flex flex-col justify-between gap-3">
+        <div className="p-4 rounded-xl bg-rose-600/10 border border-rose-600/25 flex flex-col justify-between gap-3">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-red-300 flex items-center gap-1.5">
-              <TrendingDown className="w-4 h-4 text-[#EF4444]" />
+            <span className="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
+              <TrendingDown className="w-4 h-4 text-rose-500" />
               Məğlub Olsanız
             </span>
             {projection.projectedLossElo === MIN_ELO && (
@@ -227,7 +226,7 @@ export default function HeadToHeadDuel({
             )}
           </div>
           <div className="flex items-baseline justify-between">
-            <span className="text-2xl sm:text-3xl font-mono font-black text-[#EF4444]">
+            <span className="text-2xl sm:text-3xl font-mono font-black text-rose-500">
               {formattedLossText}
             </span>
             <div className="text-right">
@@ -236,7 +235,7 @@ export default function HeadToHeadDuel({
               </span>
               <span className="text-sm font-mono font-bold text-white">
                 {safeUserElo} &rarr;{' '}
-                <span className="text-[#EF4444]">
+                <span className="text-rose-500">
                   {projection.projectedLossElo}
                 </span>
               </span>
@@ -248,7 +247,7 @@ export default function HeadToHeadDuel({
       <MagneticButton className="w-full">
         <Link
           href={`/log-match?opponentId=${encodeURIComponent(targetPlayer.id)}`}
-          className="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-display font-bold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-lg shadow-blue-500/20 hover:shadow-blue-500/35"
+          className="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-sm"
         >
           <Swords className="w-4 h-4" />
           <span>Meydan Oxu / Matç Qeyd Et</span>

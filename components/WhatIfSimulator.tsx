@@ -271,13 +271,10 @@ export default function WhatIfSimulator({
       : 0;
 
   return (
-    <div
-      className="rounded-2xl bg-[#0F1623] p-6 shadow-xl space-y-6 relative"
-      style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
-    >
+    <div className="rounded-2xl bg-slate-900 border border-slate-800 p-6 shadow-sm space-y-6 relative">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6] shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+          <div className="w-10 h-10 rounded-xl bg-blue-700/15 border border-blue-600/30 flex items-center justify-center text-blue-400 shadow-sm">
             <Calculator className="w-5 h-5" />
           </div>
           <div>
@@ -438,7 +435,7 @@ export default function WhatIfSimulator({
                 onClick={() => setSelectedSetPresetId(preset.id)}
                 className={`px-3 py-1.5 rounded-lg text-center transition-all ${
                   active
-                    ? 'bg-[#3B82F6]/20 text-white border border-[#3B82F6]/40 shadow-[0_0_12px_rgba(59,130,246,0.25)]'
+                    ? 'bg-blue-700/20 text-white border border-blue-600/40 shadow-sm'
                     : 'text-slate-400 hover:text-white border border-transparent'
                 }`}
               >
@@ -473,10 +470,10 @@ export default function WhatIfSimulator({
             transition={{ type: 'spring', stiffness: 260, damping: 24 }}
             className="space-y-5"
           >
-            <div className="p-4 rounded-xl bg-[#080D16] border border-white/[0.06] space-y-3">
+            <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] shadow-[0_0_8px_#3B82F6]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-blue-600" />
                   <span className="font-bold text-white truncate max-w-[140px] sm:max-w-none">
                     {player.full_name}
                   </span>
@@ -494,29 +491,29 @@ export default function WhatIfSimulator({
                   <span className="font-bold text-white truncate max-w-[140px] sm:max-w-none">
                     {selectedOpponent.full_name}
                   </span>
-                  <span className="w-2.5 h-2.5 rounded-full bg-pink-500 shadow-[0_0_8px_#EC4899]" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
                 </div>
               </div>
 
-              <div className="relative h-3.5 w-full rounded-full bg-[#131C2B] overflow-hidden flex p-0.5 gap-1">
+              <div className="relative h-3.5 w-full rounded-full bg-slate-900 overflow-hidden flex p-0.5 gap-1">
                 <motion.div
                   initial={{ width: '50%' }}
                   animate={{ width: `${playerBarWidth}%` }}
                   transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-                  className={`h-full rounded-l-full shadow-[0_0_12px_rgba(59,130,246,0.6)] ${
+                  className={`h-full rounded-l-full ${
                     playerIsDominant
-                      ? 'bg-gradient-to-r from-blue-600 via-blue-400 to-blue-600 bg-[length:200%_100%] animate-shimmer'
-                      : 'bg-gradient-to-r from-[#2563EB] to-[#3B82F6]'
+                      ? 'bg-blue-600'
+                      : 'bg-blue-700'
                   }`}
                 />
                 <motion.div
                   initial={{ width: '50%' }}
                   animate={{ width: `${opponentBarWidth}%` }}
                   transition={{ type: 'spring', stiffness: 120, damping: 20 }}
-                  className={`h-full rounded-r-full shadow-[0_0_12px_rgba(236,72,153,0.5)] ${
+                  className={`h-full rounded-r-full ${
                     !playerIsDominant
-                      ? 'bg-gradient-to-r from-purple-600 via-pink-400 to-purple-600 bg-[length:200%_100%] animate-shimmer'
-                      : 'bg-gradient-to-r from-purple-500 to-pink-500'
+                      ? 'bg-rose-500'
+                      : 'bg-rose-600'
                   }`}
                 />
               </div>
@@ -687,7 +684,7 @@ export default function WhatIfSimulator({
 
               <Link
                 href={`/log-match?opponentId=${encodeURIComponent(selectedOpponent.id)}`}
-                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#3B82F6]/15 hover:bg-[#3B82F6] text-[#3B82F6] hover:text-white border border-[#3B82F6]/30 font-display font-bold text-xs transition-all shadow-[0_0_20px_rgba(59,130,246,0.15)] hover:shadow-[0_0_25px_rgba(59,130,246,0.4)] shrink-0"
+                className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs transition-all shadow-sm shrink-0"
               >
                 <Swords className="w-3.5 h-3.5" />
                 Bu Oyunçu ilə Matç Qeyd Et

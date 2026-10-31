@@ -433,11 +433,11 @@ export default function LoginPage() {
     <SmoothReveal>
       <div className="max-w-lg mx-auto pt-4 pb-12 space-y-6">
         <div className="text-center space-y-2">
-          <div className="w-16 h-16 rounded-2xl bg-slate-900/90 border border-cyan-500/30 flex items-center justify-center mx-auto shadow-xl shadow-cyan-500/15">
+          <div className="w-16 h-16 rounded-2xl bg-slate-900 border border-blue-600/30 flex items-center justify-center mx-auto shadow-sm">
             <img
               src="/images/bhos-crest.png"
               alt="BHOS Crest"
-              className="w-11 h-11 object-contain filter drop-shadow-[0_0_8px_rgba(0,229,255,0.6)]"
+              className="w-11 h-11 object-contain"
             />
           </div>
           <h1 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">
@@ -449,10 +449,10 @@ export default function LoginPage() {
         </div>
 
         {currentUser && (
-          <div className="p-5 rounded-3xl border border-cyan-500/30 bg-slate-900/80 backdrop-blur-xl shadow-xl space-y-4">
+          <div className="p-5 rounded-3xl border border-slate-800 bg-slate-900 shadow-sm space-y-4">
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-2xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-300 font-display font-black text-base">
+                <div className="w-11 h-11 rounded-2xl bg-blue-700/20 border border-blue-600/40 flex items-center justify-center text-blue-300 font-display font-black text-base">
                   {currentUser.full_name.charAt(0)}
                 </div>
                 <div>
@@ -460,7 +460,7 @@ export default function LoginPage() {
                     <span className="font-display font-bold text-white text-sm">
                       {currentUser.full_name}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase bg-blue-700/20 text-blue-300 border border-blue-600/30">
                       {t(`roles.${currentUser.role}`)}
                     </span>
                   </div>

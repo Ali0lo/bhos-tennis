@@ -799,8 +799,8 @@ export default function PlayerProfilePage() {
             {achievements.map((badge) => {
               const isGold = badge.accentColor === 'gold';
               const unlockedBorder = isGold
-                ? 'border-[#EAB308]/30 shadow-[0_0_22px_rgba(234,179,8,0.16)] bg-gradient-to-br from-[#131C2B] to-[#0F1623]'
-                : 'border-[#3B82F6]/30 shadow-[0_0_22px_rgba(59,130,246,0.16)] bg-gradient-to-br from-[#131C2B] to-[#0F1623]';
+                ? 'border-amber-500/40 shadow-sm bg-slate-900'
+                : 'border-blue-600/40 shadow-sm bg-slate-900';
 
               return (
                 <div
@@ -809,7 +809,7 @@ export default function PlayerProfilePage() {
                   className={`group relative rounded-xl p-4 border transition-all duration-200 ${
                     badge.unlocked
                       ? unlockedBorder
-                      : 'border-white/[0.06] bg-[#080D16]/80 opacity-60 hover:opacity-85'
+                      : 'border-slate-800 bg-slate-950 opacity-60 hover:opacity-85'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -818,9 +818,9 @@ export default function PlayerProfilePage() {
                         className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 border ${
                           badge.unlocked
                             ? isGold
-                              ? 'bg-[#EAB308]/15 border-[#EAB308]/40 shadow-[0_0_14px_rgba(234,179,8,0.25)]'
-                              : 'bg-[#3B82F6]/15 border-[#3B82F6]/40 shadow-[0_0_14px_rgba(59,130,246,0.25)]'
-                            : 'bg-[#131C2B] border-white/10 grayscale'
+                              ? 'bg-amber-500/15 border-amber-500/40 shadow-sm'
+                              : 'bg-blue-700/15 border-blue-600/40 shadow-sm'
+                            : 'bg-slate-900 border-slate-800 grayscale'
                         }`}
                       >
                         <span>{badge.emoji}</span>
@@ -912,17 +912,17 @@ export default function PlayerProfilePage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {rivalries.map((rival) => {
                 const cardBorderClass = rival.isNemesis
-                  ? 'border-[#EF4444]/60 shadow-[0_0_20px_rgba(239,68,68,0.2)]'
+                  ? 'border-rose-600/60 shadow-sm'
                   : rival.isFavorable
-                  ? 'border-[#22C55E]/60 shadow-[0_0_20px_rgba(34,197,94,0.2)]'
+                  ? 'border-emerald-600/60 shadow-sm'
                   : rival.isTopTarget
-                  ? 'border-amber-400/50 shadow-[0_0_20px_rgba(251,191,36,0.15)]'
-                  : 'border-white/10 hover:border-white/20 shadow-xl';
+                  ? 'border-amber-500/50 shadow-sm'
+                  : 'border-slate-800 hover:border-slate-700 shadow-sm';
 
                 return (
                   <div
                     key={rival.opponentId}
-                    className={`rounded-2xl bg-[#0F1623] p-4.5 border backdrop-blur-md transition-all duration-300 flex flex-col justify-between gap-3.5 ${cardBorderClass}`}
+                    className={`rounded-2xl bg-slate-900 p-4.5 border transition-all duration-300 flex flex-col justify-between gap-3.5 ${cardBorderClass}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">

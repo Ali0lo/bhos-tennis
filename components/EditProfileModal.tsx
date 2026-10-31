@@ -282,11 +282,11 @@ export default function EditProfileModal({
   };
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-black/80 backdrop-blur-md animate-fadeIn overflow-y-auto overscroll-contain">
-      <div className="relative w-full max-w-2xl bg-[#0F1623] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]">
-        <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 bg-[#131C2B]/80">
+    <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-slate-950/85 animate-fadeIn overflow-y-auto overscroll-contain">
+      <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800 bg-slate-950">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6]">
+            <div className="w-10 h-10 rounded-2xl bg-blue-700/15 border border-blue-600/30 flex items-center justify-center text-blue-400">
               <Camera className="w-5 h-5" />
             </div>
             <div>
@@ -301,7 +301,7 @@ export default function EditProfileModal({
 
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-400 hover:text-white transition"
+            className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition"
           >
             <X className="w-4 h-4" />
           </button>
@@ -309,15 +309,15 @@ export default function EditProfileModal({
 
         <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6">
           {errorMsg && (
-            <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-semibold text-red-400">
+            <div className="p-3.5 rounded-xl bg-rose-600/10 border border-rose-600/20 text-xs font-semibold text-rose-400">
               {errorMsg}
             </div>
           )}
 
-          <div className="rounded-2xl border border-white/10 bg-[#131C2B] p-5 space-y-4">
+          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-4">
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase font-bold text-slate-400 tracking-wider flex items-center gap-2">
-                <Camera className="w-4 h-4 text-cyan-400" />
+                <Camera className="w-4 h-4 text-blue-400" />
                 Profil Şəkli / Avatar
               </span>
 
@@ -339,29 +339,29 @@ export default function EditProfileModal({
                   <img
                     src={avatarUrl}
                     alt={profile.full_name}
-                    className="w-24 h-24 rounded-2xl object-cover border-2 border-cyan-400/50 shadow-xl shadow-cyan-500/10"
+                    className="w-24 h-24 rounded-2xl object-cover border-2 border-blue-600/60 shadow-sm"
                   />
                 ) : (
-                  <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] flex items-center justify-center text-white font-display font-black text-4xl shadow-xl shadow-blue-500/20 border-2 border-white/10">
+                  <div className="w-24 h-24 rounded-2xl bg-blue-700 flex items-center justify-center text-white font-display font-black text-4xl shadow-sm border-2 border-slate-700">
                     {profile.full_name.charAt(0).toUpperCase()}
                   </div>
                 )}
 
                 {isProcessingImage && (
-                  <div className="absolute inset-0 bg-black/70 rounded-2xl flex items-center justify-center">
-                    <Loader2 className="w-6 h-6 text-cyan-400 animate-spin" />
+                  <div className="absolute inset-0 bg-slate-950/75 rounded-2xl flex items-center justify-center">
+                    <Loader2 className="w-6 h-6 text-blue-400 animate-spin" />
                   </div>
                 )}
               </div>
 
               <div className="flex-1 w-full space-y-3">
-                <div className="flex items-center gap-1.5 p-1 bg-[#0F1623] rounded-xl border border-white/5">
+                <div className="flex items-center gap-1.5 p-1 bg-slate-900 rounded-xl border border-slate-800">
                   <button
                     type="button"
                     onClick={() => setAvatarTab('upload')}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition ${
                       avatarTab === 'upload'
-                        ? 'bg-[#3B82F6] text-white shadow-md'
+                        ? 'bg-blue-700 text-white shadow-sm'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -374,7 +374,7 @@ export default function EditProfileModal({
                     onClick={() => setAvatarTab('presets')}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition ${
                       avatarTab === 'presets'
-                        ? 'bg-[#3B82F6] text-white shadow-md'
+                        ? 'bg-blue-700 text-white shadow-sm'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -387,7 +387,7 @@ export default function EditProfileModal({
                     onClick={() => setAvatarTab('url')}
                     className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-semibold rounded-lg transition ${
                       avatarTab === 'url'
-                        ? 'bg-[#3B82F6] text-white shadow-md'
+                        ? 'bg-blue-700 text-white shadow-sm'
                         : 'text-slate-400 hover:text-white'
                     }`}
                   >
@@ -409,9 +409,9 @@ export default function EditProfileModal({
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={isProcessingImage}
-                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed border-white/20 bg-[#0F1623]/70 hover:bg-[#0F1623] hover:border-cyan-400/50 text-slate-300 text-xs font-semibold transition"
+                      className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-blue-500 text-slate-300 text-xs font-semibold transition"
                     >
-                      <Upload className="w-4 h-4 text-cyan-400" />
+                      <Upload className="w-4 h-4 text-blue-400" />
                       <span>Cihazdan şəkil seçin (PNG, JPG, WebP)</span>
                     </button>
                   </div>
@@ -428,8 +428,8 @@ export default function EditProfileModal({
                           onClick={() => setAvatarUrl(preset.url)}
                           className={`relative rounded-xl overflow-hidden aspect-square border-2 transition ${
                             isSelected
-                              ? 'border-cyan-400 shadow-lg shadow-cyan-500/20 scale-105'
-                              : 'border-white/10 hover:border-white/30'
+                              ? 'border-blue-500 shadow-sm scale-105'
+                              : 'border-slate-800 hover:border-slate-600'
                           }`}
                           title={preset.name}
                         >
@@ -439,7 +439,7 @@ export default function EditProfileModal({
                             className="w-full h-full object-cover"
                           />
                           {isSelected && (
-                            <div className="absolute inset-0 bg-cyan-500/20 flex items-center justify-center">
+                            <div className="absolute inset-0 bg-blue-700/25 flex items-center justify-center">
                               <Check className="w-4 h-4 text-white" />
                             </div>
                           )}
@@ -456,12 +456,12 @@ export default function EditProfileModal({
                       value={urlInput}
                       onChange={(e) => setUrlInput(e.target.value)}
                       placeholder="https://example.com/photo.jpg"
-                      className="flex-1 px-3 py-2 bg-[#0F1623] border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition"
+                      className="flex-1 px-3 py-2 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
                     />
                     <button
                       type="button"
                       onClick={handleApplyUrl}
-                      className="px-3.5 py-2 bg-[#3B82F6] hover:bg-blue-600 text-white rounded-xl text-xs font-semibold transition"
+                      className="px-3.5 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-xl text-xs font-semibold transition"
                     >
                       Tətbiq et
                     </button>
@@ -471,9 +471,9 @@ export default function EditProfileModal({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#131C2B] p-5 space-y-4">
+          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-4">
             <span className="text-xs uppercase font-bold text-slate-400 tracking-wider flex items-center gap-2">
-              <Swords className="w-4 h-4 text-[#3B82F6]" />
+              <Swords className="w-4 h-4 text-blue-400" />
               Avadanlıq & Raket Spesifikasiyası
             </span>
 
@@ -487,7 +487,7 @@ export default function EditProfileModal({
                   value={bladeEquipment}
                   onChange={(e) => setBladeEquipment(e.target.value)}
                   placeholder="Məsələn: Butterfly Viscaria ALC"
-                  className="w-full px-3.5 py-2.5 bg-[#0F1623] border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] transition"
+                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
                 />
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   {BLADE_SUGGESTIONS.slice(0, 4).map((item) => (
@@ -495,7 +495,7 @@ export default function EditProfileModal({
                       key={item}
                       type="button"
                       onClick={() => setBladeEquipment(item)}
-                      className="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5 transition"
+                      className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition"
                     >
                       {item}
                     </button>
@@ -513,7 +513,7 @@ export default function EditProfileModal({
                     value={forehandRubber}
                     onChange={(e) => setForehandRubber(e.target.value)}
                     placeholder="Məsələn: Butterfly Dignics 09C"
-                    className="w-full px-3.5 py-2.5 bg-[#0F1623] border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] transition"
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
                   />
                   <div className="flex flex-wrap gap-1 mt-2">
                     {FOREHAND_SUGGESTIONS.slice(0, 3).map((item) => (
@@ -521,7 +521,7 @@ export default function EditProfileModal({
                         key={item}
                         type="button"
                         onClick={() => setForehandRubber(item)}
-                        className="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5 transition"
+                        className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition"
                       >
                         {item}
                       </button>
@@ -538,7 +538,7 @@ export default function EditProfileModal({
                     value={backhandRubber}
                     onChange={(e) => setBackhandRubber(e.target.value)}
                     placeholder="Məsələn: Butterfly Tenergy 05"
-                    className="w-full px-3.5 py-2.5 bg-[#0F1623] border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6] transition"
+                    className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
                   />
                   <div className="flex flex-wrap gap-1 mt-2">
                     {BACKHAND_SUGGESTIONS.slice(0, 3).map((item) => (
@@ -546,7 +546,7 @@ export default function EditProfileModal({
                         key={item}
                         type="button"
                         onClick={() => setBackhandRubber(item)}
-                        className="text-[10px] px-2 py-0.5 rounded-lg bg-white/5 hover:bg-white/10 text-slate-400 hover:text-white border border-white/5 transition"
+                        className="text-[10px] px-2 py-0.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition"
                       >
                         {item}
                       </button>
@@ -557,9 +557,9 @@ export default function EditProfileModal({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#131C2B] p-5 space-y-4">
+          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-4">
             <span className="text-xs uppercase font-bold text-slate-400 tracking-wider flex items-center gap-2">
-              <Layers className="w-4 h-4 text-emerald-400" />
+              <Layers className="w-4 h-4 text-emerald-500" />
               Oyun Stili & Taktiki Parametrlər
             </span>
 
@@ -571,7 +571,7 @@ export default function EditProfileModal({
                 <select
                   value={playingStyle}
                   onChange={(e) => setPlayingStyle(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#0F1623] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400 transition"
+                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500 transition"
                 >
                   {PLAYING_STYLES.map((style) => (
                     <option key={style} value={style}>
@@ -588,7 +588,7 @@ export default function EditProfileModal({
                 <select
                   value={playingLevel}
                   onChange={(e) => setPlayingLevel(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#0F1623] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-emerald-400 transition"
+                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500 transition"
                 >
                   {PLAYING_LEVELS.map((level) => (
                     <option key={level} value={level}>
@@ -600,9 +600,9 @@ export default function EditProfileModal({
             </div>
           </div>
 
-          <div className="rounded-2xl border border-white/10 bg-[#131C2B] p-5 space-y-4">
+          <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-4">
             <span className="text-xs uppercase font-bold text-slate-400 tracking-wider flex items-center gap-2">
-              <GraduationCap className="w-4 h-4 text-purple-400" />
+              <GraduationCap className="w-4 h-4 text-blue-400" />
               Təhsil & Fakültə
             </span>
 
@@ -614,7 +614,7 @@ export default function EditProfileModal({
                 <select
                   value={majorFaculty}
                   onChange={(e) => setMajorFaculty(e.target.value)}
-                  className="w-full px-3.5 py-2.5 bg-[#0F1623] border border-white/10 rounded-xl text-xs text-white focus:outline-none focus:border-purple-400 transition"
+                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white focus:outline-none focus:border-blue-500 transition"
                 >
                   {FACULTIES.map((fac) => (
                     <option key={fac} value={fac}>
@@ -635,7 +635,7 @@ export default function EditProfileModal({
                   value={admissionYear || ''}
                   onChange={(e) => setAdmissionYear(e.target.value ? parseInt(e.target.value) : null)}
                   placeholder="2024"
-                  className="w-full px-3.5 py-2.5 bg-[#0F1623] border border-white/10 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-purple-400 transition"
+                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
                 />
               </div>
             </div>
@@ -646,7 +646,7 @@ export default function EditProfileModal({
               type="button"
               onClick={onClose}
               disabled={saving}
-              className="px-4 py-2.5 rounded-xl border border-white/10 hover:bg-white/5 text-slate-300 text-xs font-semibold transition"
+              className="px-4 py-2.5 rounded-xl border border-slate-800 hover:bg-slate-800 text-slate-300 text-xs font-semibold transition"
             >
               Ləğv et
             </button>
@@ -654,7 +654,7 @@ export default function EditProfileModal({
             <button
               type="submit"
               disabled={saving || isProcessingImage}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-gradient-to-r from-[#3B82F6] to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white text-xs font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 transition disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold shadow-sm transition disabled:opacity-50"
             >
               {saving ? (
                 <>

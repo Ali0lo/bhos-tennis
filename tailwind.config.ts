@@ -11,16 +11,16 @@ const config: Config = {
     extend: {
       colors: {
         bhos: {
-          navy: "#0A192F",
+          navy: "#0B0F19",
           midnight: "#0F172A",
-          darkCard: "#13233D",
+          darkCard: "#0F172A",
           border: "#1E293B",
-          cyan: "#00E5FF",
-          cyanGlow: "#38BDF8",
-          blue: "#0284C7",
-          gold: "#F59E0B",
-          emerald: "#10B981",
-          crimson: "#EF4444",
+          cyan: "#1D4ED8",
+          cyanGlow: "#2563EB",
+          blue: "#1D4ED8",
+          gold: "#D97706",
+          emerald: "#059669",
+          crimson: "#E11D48",
         },
       },
       fontFamily: {

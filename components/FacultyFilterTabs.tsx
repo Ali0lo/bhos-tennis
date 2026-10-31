@@ -36,14 +36,14 @@ export default function FacultyFilterTabs({
             onClick={() => onSelect(tab.id)}
             className={`relative px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-colors border ${
               isActive
-                ? 'text-[#3B82F6] border-transparent'
-                : 'bg-[#0F1623] text-slate-400 border-white/[0.06] hover:text-white hover:border-white/20'
+                ? 'text-white border-transparent'
+                : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
             }`}
           >
             {isActive && (
               <motion.div
                 layoutId="activeFilterIndicator"
-                className="absolute inset-0 rounded-xl bg-blue-500/15 border border-blue-500/30 shadow-[0_0_16px_rgba(59,130,246,0.15)]"
+                className="absolute inset-0 rounded-xl bg-blue-700 border border-blue-600 shadow-sm"
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               />
             )}

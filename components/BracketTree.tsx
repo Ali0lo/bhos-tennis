@@ -259,7 +259,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-2xl border border-amber-500/40 bg-gradient-to-r from-amber-500/15 via-[#131C2B] to-amber-500/10 flex items-center justify-between gap-4 shadow-[0_0_25px_rgba(234,179,8,0.15)]"
+          className="p-4 rounded-2xl border border-amber-500/40 bg-slate-900 flex items-center justify-between gap-4 shadow-sm"
         >
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 shrink-0">
@@ -374,38 +374,32 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
 
                   return (
                     <div key={match.id} className="relative group">
-                      {isFinal && (
-                        <div
-                          aria-hidden="true"
-                          className="pointer-events-none absolute -inset-1.5 rounded-3xl bg-[#EAB308]/15 blur-xl animate-pulse"
-                        />
-                      )}
                       <div
                         onClick={() => isClickable && handleOpenScoreModal(rIndex, mIndex, match)}
-                        className={`rounded-2xl p-3.5 bg-[#131C2B] border transition-all duration-300 relative z-10 ${
+                        className={`rounded-2xl p-3.5 bg-slate-900 border transition-all duration-300 relative z-10 ${
                           isFinal
-                            ? 'border-[#EAB308]/60 bg-[#131C2B]/95 shadow-[0_0_28px_rgba(234,179,8,0.25)] ring-1 ring-[#EAB308]/35'
+                            ? 'border-amber-500/70 bg-slate-900 shadow-md ring-1 ring-amber-500/30'
                             : isCompleted
-                            ? 'border-white/10 bg-[#131C2B]/90 shadow-lg'
+                            ? 'border-slate-800 bg-slate-900 shadow-sm'
                             : isReady
-                            ? 'border-[#3B82F6]/70 shadow-[0_0_22px_rgba(59,130,246,0.22)] ring-1 ring-[#3B82F6]/30 hover:border-[#3B82F6]'
-                            : 'border-white/5 bg-[#131C2B]/55 opacity-70'
+                            ? 'border-blue-600/70 shadow-sm ring-1 ring-blue-600/30 hover:border-blue-500'
+                            : 'border-slate-800/70 bg-slate-900/60 opacity-70'
                         } ${isClickable ? 'cursor-pointer hover:scale-[1.02] active:scale-[0.99]' : ''}`}
                       >
-                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-2 pb-1.5 border-b border-white/5">
+                        <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-2 pb-1.5 border-b border-slate-800">
                           <span className="flex items-center gap-1.5">
-                            {isFinal && <Trophy className="w-3 h-3 text-[#EAB308] animate-pulse" />}
-                            <span className={isFinal ? 'text-[#EAB308] font-bold' : ''}>
+                            {isFinal && <Trophy className="w-3 h-3 text-amber-400 animate-pulse" />}
+                            <span className={isFinal ? 'text-amber-400 font-bold' : ''}>
                               {isFinal ? 'Championship' : `Match #${mIndex + 1}`}
                             </span>
                           </span>
                           {isCompleted ? (
                             <span className="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                              <Check className="w-3 h-3 text-[#22C55E] stroke-[3]" /> Completed
+                              <Check className="w-3 h-3 text-emerald-500 stroke-[3]" /> Completed
                             </span>
                           ) : isReady ? (
-                            <span className="text-[#3B82F6] font-bold uppercase tracking-wider flex items-center gap-1.5">
-                              <span className="w-1.5 h-1.5 rounded-full bg-[#3B82F6] animate-ping" />
+                            <span className="text-blue-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
+                              <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
                               <Radio className="w-3 h-3" />
                               <span>Live / Ready</span>
                             </span>
@@ -423,29 +417,24 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                                 slot1Pulsing
                                   ? {
                                       scale: [1, 1.03, 1],
-                                      boxShadow: [
-                                        '0 0 0px rgba(59,130,246,0)',
-                                        '0 0 20px rgba(59,130,246,0.55)',
-                                        '0 0 0px rgba(59,130,246,0)',
-                                      ],
                                     }
                                   : undefined
                               }
                               transition={{ duration: 1.1, repeat: slot1Pulsing ? 2 : 0 }}
                               className={`flex items-center justify-between p-2 rounded-xl text-xs transition ${
                                 p1Won
-                                  ? 'bg-[#3B82F6]/20 text-white font-bold border border-[#3B82F6]/50 shadow-[0_0_12px_rgba(59,130,246,0.28)]'
+                                  ? 'bg-blue-700/20 text-white font-bold border border-blue-600/50 shadow-sm'
                                   : isCompleted
-                                  ? 'text-slate-500 opacity-60 bg-white/[0.01]'
+                                  ? 'text-slate-500 opacity-60 bg-slate-950/50'
                                   : slot1Pulsing
-                                  ? 'bg-[#3B82F6]/15 text-white border border-[#3B82F6]/60 animate-pulse'
-                                  : 'text-slate-200 bg-white/[0.02] border border-transparent'
+                                  ? 'bg-blue-700/15 text-white border border-blue-600/60 animate-pulse'
+                                  : 'text-slate-200 bg-slate-950/60 border border-transparent'
                               }`}
                             >
                               <div className="flex items-center gap-1.5 min-w-0 pr-2">
-                                {p1Won && <Award className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
+                                {p1Won && <Award className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
                                 {slot1Pulsing && !p1Won && (
-                                  <Sparkles className="w-3.5 h-3.5 text-[#3B82F6] shrink-0 animate-bounce" />
+                                  <Sparkles className="w-3.5 h-3.5 text-blue-400 shrink-0 animate-bounce" />
                                 )}
                                 <span className="truncate font-semibold">
                                   {match.player1.full_name}
@@ -453,16 +442,16 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                               </div>
                               <span
                                 className={`font-mono font-black text-sm shrink-0 ${
-                                  p1Won ? 'text-[#3B82F6]' : ''
+                                  p1Won ? 'text-blue-400' : ''
                                 }`}
                               >
                                 {match.player1_score !== undefined ? match.player1_score : '-'}
                               </span>
                             </motion.div>
                           ) : (
-                            <div className="flex items-center justify-between p-2 rounded-xl text-xs border border-dashed border-white/10 bg-white/[0.01] opacity-55">
+                            <div className="flex items-center justify-between p-2 rounded-xl text-xs border border-dashed border-slate-800 bg-slate-950/40 opacity-55">
                               <div className="flex items-center gap-2 min-w-0 pr-2">
-                                <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-mono uppercase tracking-wider text-slate-500">
+                                <span className="px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-[9px] font-mono uppercase tracking-wider text-slate-500">
                                   {match.is_bye ? 'BYE' : 'TBD'}
                                 </span>
                                 <span className="text-slate-600 font-mono tracking-widest text-[11px]">
@@ -479,29 +468,24 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                                 slot2Pulsing
                                   ? {
                                       scale: [1, 1.03, 1],
-                                      boxShadow: [
-                                        '0 0 0px rgba(59,130,246,0)',
-                                        '0 0 20px rgba(59,130,246,0.55)',
-                                        '0 0 0px rgba(59,130,246,0)',
-                                      ],
                                     }
                                   : undefined
                               }
                               transition={{ duration: 1.1, repeat: slot2Pulsing ? 2 : 0 }}
                               className={`flex items-center justify-between p-2 rounded-xl text-xs transition ${
                                 p2Won
-                                  ? 'bg-[#3B82F6]/20 text-white font-bold border border-[#3B82F6]/50 shadow-[0_0_12px_rgba(59,130,246,0.28)]'
+                                  ? 'bg-blue-700/20 text-white font-bold border border-blue-600/50 shadow-sm'
                                   : isCompleted
-                                  ? 'text-slate-500 opacity-60 bg-white/[0.01]'
+                                  ? 'text-slate-500 opacity-60 bg-slate-950/50'
                                   : slot2Pulsing
-                                  ? 'bg-[#3B82F6]/15 text-white border border-[#3B82F6]/60 animate-pulse'
-                                  : 'text-slate-200 bg-white/[0.02] border border-transparent'
+                                  ? 'bg-blue-700/15 text-white border border-blue-600/60 animate-pulse'
+                                  : 'text-slate-200 bg-slate-950/60 border border-transparent'
                               }`}
                             >
                               <div className="flex items-center gap-1.5 min-w-0 pr-2">
-                                {p2Won && <Award className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />}
+                                {p2Won && <Award className="w-3.5 h-3.5 text-blue-400 shrink-0" />}
                                 {slot2Pulsing && !p2Won && (
-                                  <Sparkles className="w-3.5 h-3.5 text-[#3B82F6] shrink-0 animate-bounce" />
+                                  <Sparkles className="w-3.5 h-3.5 text-blue-400 shrink-0 animate-bounce" />
                                 )}
                                 <span className="truncate font-semibold">
                                   {match.player2.full_name}
@@ -509,7 +493,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                               </div>
                               <span
                                 className={`font-mono font-black text-sm shrink-0 ${
-                                  p2Won ? 'text-[#3B82F6]' : ''
+                                  p2Won ? 'text-blue-400' : ''
                                 }`}
                               >
                                 {match.player2_score !== undefined ? match.player2_score : '-'}

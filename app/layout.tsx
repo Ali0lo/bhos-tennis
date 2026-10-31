@@ -13,11 +13,9 @@ const inter = Inter({
 });
 
 export const viewport: Viewport = {
-  themeColor: '#080D16',
+  themeColor: '#0B0F19',
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export const metadata: Metadata = {
@@ -85,7 +83,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="az" className={`dark ${inter.variable}`}>
-      <body className={`${inter.className} font-sans min-h-screen flex flex-col bg-[#0A192F] text-slate-100 antialiased selection:bg-bhos-cyan selection:text-bhos-navy`}>
+      <body className={`${inter.className} font-sans min-h-screen flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-blue-700 selection:text-white`}>
         <I18nProvider>
           <PWARegistration />
           <Navbar />

@@ -132,20 +132,20 @@ export default function LeaderboardTable({
   }, [totalPages, safePage]);
 
   return (
-    <div className="space-y-3">
-      <div className="overflow-x-auto px-2 sm:px-3 py-2">
-        <table className="w-full text-left border-separate border-spacing-y-1.5">
+    <div className="space-y-0">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left border-collapse">
           <thead>
-            <tr className="text-[11px] uppercase font-bold tracking-wider text-slate-400">
-              <th className="py-3 px-4 sm:px-5 w-20">Sıra</th>
-              <th className="py-3 px-4">Oyunçu</th>
-              <th className="py-3 px-4 hidden md:table-cell">Fakültə / İxtisas</th>
-              <th className="py-3 px-4 text-center">Oyunlar</th>
-              <th className="py-3 px-4 text-center hidden sm:table-cell">Qələbə faizi</th>
-              <th className="py-3 px-4 sm:px-5 text-right">Xal</th>
+            <tr className="border-b border-slate-800 bg-slate-950/60 text-[11px] uppercase font-bold tracking-wider text-slate-400">
+              <th className="py-3.5 px-4 sm:px-5 w-20">Sıra</th>
+              <th className="py-3.5 px-4">Oyunçu</th>
+              <th className="py-3.5 px-4 hidden md:table-cell">Fakültə / İxtisas</th>
+              <th className="py-3.5 px-4 text-center">Oyunlar</th>
+              <th className="py-3.5 px-4 text-center hidden sm:table-cell">Qələbə faizi</th>
+              <th className="py-3.5 px-4 sm:px-5 text-right">Xal</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="divide-y divide-slate-800">
             <AnimatePresence mode="popLayout" initial={false}>
               {displayedPlayers.map((player, idx) => {
                 const rank = player.rank ?? startIndex + idx + 1;
@@ -165,33 +165,22 @@ export default function LeaderboardTable({
                 <motion.tr
                   key={player.id}
                   layout
-                  initial={{ opacity: 0, y: 12, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.96, transition: { duration: 0.15 } }}
-                  whileHover={{
-                    scale: 1.01,
-                    y: -2,
-                    boxShadow:
-                      '0 10px 30px -10px rgba(59, 130, 246, 0.2), inset 0 0 0 1px rgba(59, 130, 246, 0.25)',
-                  }}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, transition: { duration: 0.15 } }}
                   transition={ROW_SPRING}
-                  className={`group rounded-2xl will-change-transform ${
+                  className={`group transition-colors ${
                     isMe
-                      ? 'bg-[#3B82F6]/15'
+                      ? 'bg-blue-700/15 hover:bg-blue-700/20'
                       : rank === 1
-                      ? 'bg-gradient-to-r from-amber-500/[0.08] via-[#131C2B] to-[#131C2B]'
-                      : 'bg-[#131C2B]/85 hover:bg-[#131C2B]'
+                      ? 'bg-amber-500/[0.04] hover:bg-slate-800/60'
+                      : 'bg-slate-900 hover:bg-slate-800/60'
                   }`}
-                  style={{
-                    boxShadow: isMe
-                      ? 'inset 0 0 0 1px rgba(59, 130, 246, 0.45)'
-                      : 'inset 0 0 0 1px rgba(255, 255, 255, 0.05)',
-                  }}
                 >
-                  <td className="py-3.5 px-4 sm:px-5 font-mono font-bold rounded-l-2xl">
+                  <td className="py-3.5 px-4 sm:px-5 font-mono font-bold">
                     <div className="flex items-center gap-2">
                       {rank === 1 ? (
-                        <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-black shadow-md shadow-amber-500/20">
+                        <span className="w-8 h-8 rounded-xl bg-amber-400 text-slate-950 flex items-center justify-center font-black shadow-sm">
                           <Crown className="w-4 h-4" />
                         </span>
                       ) : rank === 2 ? (
@@ -203,18 +192,18 @@ export default function LeaderboardTable({
                           3
                         </span>
                       ) : (
-                        <span className="w-8 h-8 rounded-xl bg-[#0F1623] border border-white/10 text-slate-300 flex items-center justify-center">
+                        <span className="w-8 h-8 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 flex items-center justify-center">
                           {rank}
                         </span>
                       )}
 
                       {rankChange > 0 ? (
-                        <span className="inline-flex items-center text-[10px] text-[#22C55E] font-mono">
+                        <span className="inline-flex items-center text-[10px] text-emerald-500 font-mono">
                           <ArrowUpRight className="w-3 h-3" />
                           {rankChange}
                         </span>
                       ) : rankChange < 0 ? (
-                        <span className="inline-flex items-center text-[10px] text-[#EF4444] font-mono">
+                        <span className="inline-flex items-center text-[10px] text-rose-500 font-mono">
                           <ArrowDownRight className="w-3 h-3" />
                           {Math.abs(rankChange)}
                         </span>
@@ -229,10 +218,10 @@ export default function LeaderboardTable({
                       <div
                         className={`w-10 h-10 rounded-xl flex items-center justify-center font-display font-bold text-sm shrink-0 border overflow-hidden ${
                           isMe
-                            ? 'bg-[#3B82F6] text-white border-white/20'
+                            ? 'bg-blue-700 text-white border-blue-500'
                             : staff
-                            ? 'bg-indigo-500/15 text-indigo-300 border-indigo-500/30'
-                            : 'bg-[#0F1623] text-slate-200 border-white/10'
+                            ? 'bg-blue-950 text-blue-300 border-blue-800'
+                            : 'bg-slate-950 text-slate-200 border-slate-800'
                         }`}
                       >
                         {player.avatar_url ? (
@@ -250,20 +239,20 @@ export default function LeaderboardTable({
                         <div className="flex items-center gap-2 flex-wrap">
                           <Link
                             href={`/players/${player.id}`}
-                            className="font-bold text-white group-hover:text-[#3B82F6] transition truncate"
+                            className="font-bold text-white group-hover:text-blue-400 transition truncate"
                           >
                             {player.full_name}
                           </Link>
 
                           {isMe && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#3B82F6] text-white">
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-700 text-white">
                               <UserCheck className="w-2.5 h-2.5" />
                               <span>Siz</span>
                             </span>
                           )}
 
                           {staff && (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-950 text-blue-300 border border-blue-800">
                               Müəllim / Əməkdaş
                             </span>
                           )}
@@ -273,7 +262,7 @@ export default function LeaderboardTable({
                               className={`px-2 py-0.5 rounded-full text-[10px] font-semibold border ${
                                 isPresidentBadgeHolder(player)
                                   ? 'bg-amber-500/15 text-amber-300 border-amber-500/30'
-                                  : 'bg-purple-500/15 text-purple-300 border-purple-500/30'
+                                  : 'bg-emerald-600/15 text-emerald-400 border-emerald-600/30'
                               }`}
                             >
                               {isPresidentBadgeHolder(player) ? 'Prezident' : 'Məşqçi'}
@@ -295,10 +284,10 @@ export default function LeaderboardTable({
                   </td>
 
                   <td className="py-3.5 px-4 text-center font-mono">
-                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#0F1623] border border-white/5 text-xs">
-                      <span className="text-[#22C55E] font-bold">{player.wins}Q</span>
+                    <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs">
+                      <span className="text-emerald-500 font-bold">{player.wins}Q</span>
                       <span className="text-slate-600">/</span>
-                      <span className="text-[#EF4444] font-bold">{player.losses}M</span>
+                      <span className="text-rose-500 font-bold">{player.losses}M</span>
                     </div>
                   </td>
 
@@ -307,7 +296,7 @@ export default function LeaderboardTable({
                       <span
                         className={`font-mono text-xs font-bold ${
                           winRate >= 60
-                            ? 'text-[#22C55E]'
+                            ? 'text-emerald-500'
                             : winRate >= 40
                             ? 'text-slate-200'
                             : 'text-slate-400'
@@ -315,10 +304,10 @@ export default function LeaderboardTable({
                       >
                         {winRate}%
                       </span>
-                      <div className="w-16 h-1.5 rounded-full bg-[#0F1623] overflow-hidden">
+                      <div className="w-16 h-1.5 rounded-full bg-slate-950 overflow-hidden">
                         <div
                           className={`h-full rounded-full ${
-                            winRate >= 60 ? 'bg-[#22C55E]' : 'bg-[#3B82F6]'
+                            winRate >= 60 ? 'bg-emerald-600' : 'bg-blue-600'
                           }`}
                           style={{ width: `${winRate}%` }}
                         />
@@ -326,10 +315,10 @@ export default function LeaderboardTable({
                     </div>
                   </td>
 
-                  <td className="py-3.5 px-4 sm:px-5 text-right rounded-r-2xl">
+                  <td className="py-3.5 px-4 sm:px-5 text-right">
                     <div className="inline-flex items-baseline gap-1 font-mono text-base sm:text-lg font-black text-white">
                       <AnimatedCounter value={player.current_elo} />
-                      <span className="text-[10px] font-sans font-semibold text-[#3B82F6]">
+                      <span className="text-[10px] font-sans font-semibold text-blue-400">
                         XAL
                       </span>
                     </div>
@@ -343,7 +332,7 @@ export default function LeaderboardTable({
       </div>
 
       {enablePagination && totalPlayers > 0 && (
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-t border-white/5 bg-[#0F1623]/60">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-t border-slate-800 bg-slate-950/60">
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
             <span>
               Cəmi <strong className="text-white font-mono">{totalPlayers}</strong> oyunçudan{' '}
@@ -353,7 +342,7 @@ export default function LeaderboardTable({
               göstərilir
             </span>
 
-            <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-[#131C2B] border border-white/10">
+            <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-slate-900 border border-slate-800">
               {([25, 50] as const).map((size) => (
                 <button
                   key={size}
@@ -361,7 +350,7 @@ export default function LeaderboardTable({
                   onClick={() => setPageSize(size)}
                   className={`px-2 py-0.5 rounded-md text-[11px] font-mono font-bold transition ${
                     pageSize === size
-                      ? 'bg-[#3B82F6] text-white shadow'
+                      ? 'bg-blue-700 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -377,7 +366,7 @@ export default function LeaderboardTable({
                 type="button"
                 disabled={safePage <= 1}
                 onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#131C2B] hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white transition disabled:opacity-40 disabled:pointer-events-none"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition disabled:opacity-40 disabled:pointer-events-none"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
                 <span>Əvvəlki</span>
@@ -399,8 +388,8 @@ export default function LeaderboardTable({
                       onClick={() => setCurrentPage(item)}
                       className={`w-8 h-8 rounded-xl text-xs font-mono font-bold transition ${
                         safePage === item
-                          ? 'bg-[#3B82F6] text-white shadow-md shadow-blue-500/20'
-                          : 'bg-[#131C2B] text-slate-400 hover:text-white border border-white/5'
+                          ? 'bg-blue-700 text-white shadow-sm'
+                          : 'bg-slate-900 text-slate-400 hover:text-white border border-slate-800'
                       }`}
                     >
                       {item}
@@ -413,7 +402,7 @@ export default function LeaderboardTable({
                 type="button"
                 disabled={safePage >= totalPages}
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-[#131C2B] hover:bg-white/10 border border-white/10 text-xs font-semibold text-slate-300 hover:text-white transition disabled:opacity-40 disabled:pointer-events-none"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition disabled:opacity-40 disabled:pointer-events-none"
               >
                 <span>Növbəti</span>
                 <ChevronRight className="w-3.5 h-3.5" />

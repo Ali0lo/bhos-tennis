@@ -9,13 +9,13 @@ export default function Footer() {
   const { t } = useTranslation();
 
   return (
-    <footer className="border-t border-bhos-border bg-bhos-navy/80 mt-20 text-slate-400 text-sm">
+    <footer className="border-t border-slate-800 bg-slate-900 mt-20 text-slate-400 text-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-full bg-cyan-500/10 border border-cyan-500/30 p-1 flex items-center justify-center shadow-lg">
-                <img src="/images/bhos-crest.png" alt="BHOS Logo" className="w-full h-full object-contain filter drop-shadow-[0_0_6px_rgba(0,229,255,0.6)]" />
+              <div className="w-11 h-11 rounded-full bg-blue-700/15 border border-blue-600/40 p-1 flex items-center justify-center shadow-sm">
+                <img src="/images/bhos-crest.png" alt="BHOS Logo" className="w-full h-full object-contain" />
               </div>
               <div>
                 <h3 className="text-white font-bold font-display text-base">
@@ -31,7 +31,7 @@ export default function Footer() {
             </p>
             <div className="flex items-center gap-4 text-xs">
               <div className="flex items-center gap-1 text-slate-300">
-                <MapPin className="w-3.5 h-3.5 text-bhos-cyan" />
+                <MapPin className="w-3.5 h-3.5 text-blue-500" />
                 <span>{t('footer.campus')}</span>
               </div>
             </div>
@@ -43,22 +43,22 @@ export default function Footer() {
             </h4>
             <ul className="space-y-2 text-xs">
               <li>
-                <Link href="/leaderboard" className="hover:text-bhos-cyan transition">
+                <Link href="/leaderboard" className="hover:text-blue-400 transition">
                   {t('nav.leaderboard')}
                 </Link>
               </li>
               <li>
-                <Link href="/matches" className="hover:text-bhos-cyan transition">
+                <Link href="/matches" className="hover:text-blue-400 transition">
                   {t('nav.matches')}
                 </Link>
               </li>
               <li>
-                <Link href="/tournaments" className="hover:text-bhos-cyan transition">
+                <Link href="/tournaments" className="hover:text-blue-400 transition">
                   {t('nav.tournaments')}
                 </Link>
               </li>
               <li>
-                <Link href="/tables" className="hover:text-bhos-cyan transition">
+                <Link href="/tables" className="hover:text-blue-400 transition">
                   {t('nav.tables')}
                 </Link>
               </li>
@@ -86,7 +86,7 @@ export default function Footer() {
                   href="https://tabletennis.az"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-slate-300 hover:text-bhos-cyan transition"
+                  className="flex items-center gap-1 text-slate-300 hover:text-blue-400 transition"
                 >
                   <span>tabletennis.az (ATTF)</span>
                   <ExternalLink className="w-3 h-3 text-slate-500" />
@@ -97,14 +97,14 @@ export default function Footer() {
                   href="https://bhos.edu.az"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-slate-300 hover:text-bhos-cyan transition"
+                  className="flex items-center gap-1 text-slate-300 hover:text-blue-400 transition"
                 >
                   <span>bhos.edu.az</span>
                   <ExternalLink className="w-3 h-3 text-slate-500" />
                 </a>
               </li>
               <li>
-                <span className="inline-block px-2 py-1 rounded bg-slate-800 text-[11px] text-emerald-400 border border-emerald-500/30">
+                <span className="inline-block px-2 py-1 rounded bg-slate-800 text-[11px] text-emerald-400 border border-emerald-600/30">
                   {t('footer.ittf_compliant')}
                 </span>
               </li>
@@ -112,10 +112,10 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-bhos-border flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
+        <div className="mt-12 pt-6 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-3">
           <p>© {new Date().getFullYear()} {t('footer.rights')}</p>
           <p className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-bhos-cyan" />
+            <ShieldCheck className="w-3.5 h-3.5 text-blue-500" />
             <span>{t('footer.elo_badge')}</span>
           </p>
         </div>

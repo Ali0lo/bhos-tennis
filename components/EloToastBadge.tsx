@@ -25,10 +25,10 @@ export default function EloToastBadge({ delta, className = '', size = 'md' }: El
       animate={{ scale: 1, opacity: 1 }}
       whileHover={{ scale: 1.08 }}
       transition={{ type: 'spring', stiffness: 500, damping: 25 }}
-      className={`inline-flex items-center font-mono font-bold rounded-full border shadow-lg ${
+      className={`inline-flex items-center font-mono font-bold rounded-full border shadow-sm ${
         isPositive
-          ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/40 shadow-emerald-500/20'
-          : 'bg-rose-500/15 text-rose-300 border-rose-500/40 shadow-rose-500/20'
+          ? 'bg-emerald-600/15 text-emerald-400 border-emerald-600/40'
+          : 'bg-rose-600/15 text-rose-400 border-rose-600/40'
       } ${sizeClasses} ${className}`}
     >
       <span>

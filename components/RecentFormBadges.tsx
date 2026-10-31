@@ -91,8 +91,8 @@ export default function RecentFormBadges({
               title={`${won ? 'Qələbə (W)' : 'Məğlubiyyət (L)'} vs ${opponentName} (${myScore}-${opScore})`}
               className={`w-6 h-6 rounded-lg font-mono text-[11px] font-black flex items-center justify-center border select-none will-change-transform ${
                 won
-                  ? 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/40 shadow-[0_0_12px_rgba(34,197,94,0.3)]'
-                  : 'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/35'
+                  ? 'bg-emerald-600/15 text-emerald-500 border-emerald-600/40 shadow-sm'
+                  : 'bg-rose-600/15 text-rose-500 border-rose-600/40'
               }`}
             >
               {won ? 'W' : 'L'}

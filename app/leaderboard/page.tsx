@@ -143,16 +143,12 @@ export default function LeaderboardPage() {
   return (
     <SmoothReveal>
       <div className="relative space-y-8 pb-12">
-        <div
-          className="relative rounded-2xl bg-[#0F1623]/90 backdrop-blur-md p-6 sm:p-8 shadow-2xl overflow-hidden"
-          style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
-        >
-          <CourtBackground className="opacity-35" />
-          <div className="pointer-events-none absolute -top-24 -right-24 w-72 h-72 rounded-full bg-[#3B82F6]/10 blur-3xl" />
+        <div className="relative rounded-2xl bg-slate-900 border border-slate-800 p-6 sm:p-8 shadow-sm overflow-hidden">
+          <CourtBackground className="opacity-20" />
 
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             <div className="space-y-2">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#131C2B] border border-white/10 text-[#3B82F6] text-xs font-bold uppercase tracking-wider">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-950 border border-slate-800 text-blue-400 text-xs font-bold uppercase tracking-wider">
                 <Trophy className="w-3.5 h-3.5" />
                 <span>Rəsmi Universitet Reytinqi</span>
               </div>
@@ -165,17 +161,17 @@ export default function LeaderboardPage() {
             </div>
 
             {currentUser && (
-              <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#131C2B] border border-[#3B82F6]/30 shadow-lg shrink-0">
-                <div className="w-11 h-11 rounded-xl bg-[#3B82F6]/20 border border-[#3B82F6]/40 flex items-center justify-center text-[#3B82F6] font-display font-black text-base">
+              <div className="flex items-center gap-4 p-4 rounded-2xl bg-slate-950 border border-blue-600/40 shadow-sm shrink-0">
+                <div className="w-11 h-11 rounded-xl bg-blue-700/20 border border-blue-600/40 flex items-center justify-center text-blue-400 font-display font-black text-base">
                   {currentUser.full_name.charAt(0)}
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#3B82F6]">
+                    <span className="text-[10px] uppercase font-bold tracking-wider text-blue-400">
                       Sizin Reytinqiniz
                     </span>
                     {currentUser.rank && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-[#3B82F6]/20 text-white">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-700 text-white">
                         #{currentUser.rank}
                       </span>
                     )}
@@ -185,8 +181,8 @@ export default function LeaderboardPage() {
                     <strong className="text-white">
                       <AnimatedCounter value={currentUser.current_elo} />
                     </strong>{' '}
-                    ELO • <span className="text-[#22C55E]">{currentUser.wins}Q</span> -{' '}
-                    <span className="text-[#EF4444]">{currentUser.losses}M</span>
+                    ELO • <span className="text-emerald-500">{currentUser.wins}Q</span> -{' '}
+                    <span className="text-rose-500">{currentUser.losses}M</span>
                   </div>
                 </div>
               </div>
@@ -196,14 +192,14 @@ export default function LeaderboardPage() {
 
         {top3Podium.length >= 3 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
-            <HoloCard className="order-2 md:order-1 rounded-3xl border border-white/10 bg-[#0F1623]/95 p-6 shadow-xl">
-              <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow z-30">
+            <HoloCard className="order-2 md:order-1 rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow-sm z-30">
                 2
               </div>
               <div className="pt-2 relative z-10">
                 <Link
                   href={`/players/${top3Podium[1].id}`}
-                  className="font-display font-bold text-base text-white hover:text-[#3B82F6] transition"
+                  className="font-display font-bold text-base text-white hover:text-blue-400 transition"
                 >
                   {top3Podium[1].full_name}
                 </Link>
@@ -215,7 +211,7 @@ export default function LeaderboardPage() {
                     <AnimatedCounter value={top3Podium[1].current_elo} />
                     <span className="text-xs text-slate-400 font-sans">ELO</span>
                   </div>
-                  <span className="text-xs text-[#22C55E] font-semibold">
+                  <span className="text-xs text-emerald-500 font-semibold">
                     {top3Podium[1].matches_played > 0
                       ? Math.round((top3Podium[1].wins / top3Podium[1].matches_played) * 100)
                       : 0}
@@ -225,17 +221,17 @@ export default function LeaderboardPage() {
               </div>
             </HoloCard>
 
-            <HoloCard className="order-1 md:order-2 rounded-3xl border-2 border-amber-400/80 bg-gradient-to-b from-amber-500/15 via-[#0F1623] to-[#0F1623] p-7 shadow-2xl md:-translate-y-3">
-              <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-xl shadow-amber-500/30 z-30">
+            <HoloCard className="order-1 md:order-2 rounded-3xl border-2 border-amber-500/80 bg-slate-900 p-7 shadow-md md:-translate-y-3">
+              <div className="w-12 h-12 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-sm z-30">
                 <Crown className="w-6 h-6" />
               </div>
               <div className="pt-4 text-center relative z-10">
-                <span className="inline-block px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-amber-500/30">
+                <span className="inline-block px-3 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-amber-500/30">
                   Lider • #1
                 </span>
                 <Link
                   href={`/players/${top3Podium[0].id}`}
-                  className="block font-display font-black text-xl text-white hover:text-[#3B82F6] transition"
+                  className="block font-display font-black text-xl text-white hover:text-blue-400 transition"
                 >
                   {top3Podium[0].full_name}
                 </Link>
@@ -249,14 +245,14 @@ export default function LeaderboardPage() {
               </div>
             </HoloCard>
 
-            <HoloCard className="order-3 rounded-3xl border border-amber-800/80 bg-[#0F1623]/95 p-6 shadow-xl">
-              <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow z-30">
+            <HoloCard className="order-3 rounded-3xl border border-amber-800/80 bg-slate-900 p-6 shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow-sm z-30">
                 3
               </div>
               <div className="pt-2 relative z-10">
                 <Link
                   href={`/players/${top3Podium[2].id}`}
-                  className="font-display font-bold text-base text-white hover:text-[#3B82F6] transition"
+                  className="font-display font-bold text-base text-white hover:text-blue-400 transition"
                 >
                   {top3Podium[2].full_name}
                 </Link>
@@ -268,7 +264,7 @@ export default function LeaderboardPage() {
                     <AnimatedCounter value={top3Podium[2].current_elo} />
                     <span className="text-xs text-slate-400 font-sans">ELO</span>
                   </div>
-                  <span className="text-xs text-[#22C55E] font-semibold">
+                  <span className="text-xs text-emerald-500 font-semibold">
                     {top3Podium[2].matches_played > 0
                       ? Math.round((top3Podium[2].wins / top3Podium[2].matches_played) * 100)
                       : 0}
@@ -289,7 +285,7 @@ export default function LeaderboardPage() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Oyunçu adı və ya ixtisas üzrə axtarış..."
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0F1623] border border-white/10 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-[#3B82F6] transition shadow-lg"
+                className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-600 transition shadow-sm"
               />
             </div>
 
@@ -298,17 +294,17 @@ export default function LeaderboardPage() {
               <select
                 value={selectedFaculty}
                 onChange={(e) => setSelectedFaculty(e.target.value)}
-                className="w-full pl-11 pr-4 py-3 rounded-xl bg-[#0F1623] border border-white/10 text-xs sm:text-sm text-white focus:outline-none focus:border-[#3B82F6] transition shadow-lg appearance-none"
+                className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs sm:text-sm text-white focus:outline-none focus:border-blue-600 transition shadow-sm appearance-none"
               >
                 {FACULTIES.map((fac) => (
-                  <option key={fac} value={fac} className="bg-[#0F1623] text-white">
+                  <option key={fac} value={fac} className="bg-slate-900 text-white">
                     {fac === 'Hamısı' ? 'Bütün Fakültələr / Kafedralar' : fac}
                   </option>
                 ))}
               </select>
             </div>
 
-            <div className="md:col-span-3 flex p-1 rounded-xl bg-[#0F1623] border border-white/10 shadow-lg">
+            <div className="md:col-span-3 flex p-1 rounded-xl bg-slate-900 border border-slate-800 shadow-sm">
               {(['ALL', 'male', 'female'] as const).map((g) => (
                 <button
                   key={g}
@@ -316,7 +312,7 @@ export default function LeaderboardPage() {
                   onClick={() => setGenderFilter(g)}
                   className={`flex-1 py-2 rounded-lg text-xs font-bold transition ${
                     genderFilter === g
-                      ? 'bg-[#3B82F6] text-white shadow'
+                      ? 'bg-blue-700 text-white shadow-sm'
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
@@ -344,11 +340,11 @@ export default function LeaderboardPage() {
                   className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition border ${
                     active
                       ? isStaffPill
-                        ? 'bg-indigo-500/25 text-indigo-200 border-indigo-400/50 shadow-lg shadow-indigo-500/10'
-                        : 'bg-[#3B82F6] text-white border-[#3B82F6] shadow-lg shadow-blue-500/20'
+                        ? 'bg-blue-800 text-white border-blue-600 shadow-sm'
+                        : 'bg-blue-700 text-white border-blue-600 shadow-sm'
                       : isStaffPill
-                      ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30 hover:bg-indigo-500/20'
-                      : 'bg-[#0F1623] text-slate-400 border-white/10 hover:text-white hover:border-white/20'
+                      ? 'bg-slate-900 text-blue-300 border-blue-800/50 hover:bg-slate-800'
+                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:border-slate-700'
                   }`}
                 >
                   {isStaffPill ? (
@@ -363,10 +359,7 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        <div
-          className="rounded-2xl bg-[#0F1623]/90 backdrop-blur-md shadow-2xl overflow-hidden"
-          style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
-        >
+        <div className="rounded-2xl bg-slate-900 border border-slate-800 shadow-sm overflow-hidden">
           {loading ? (
             <LeaderboardSkeleton rows={5} />
           ) : filteredProfiles.length === 0 ? (
