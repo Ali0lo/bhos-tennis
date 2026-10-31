@@ -683,7 +683,7 @@ export default function WhatIfSimulator({
               </div>
 
               <Link
-                href={`/log-match?opponentId=${encodeURIComponent(selectedOpponent.id)}`}
+                href={`/log-match?opponent=${encodeURIComponent(BHOSDataStore.getInstance().getPlayerSlug(selectedOpponent.id))}`}
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs transition-all shadow-sm shrink-0"
               >
                 <Swords className="w-3.5 h-3.5" />

@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { BHOSDataStore } from '../../lib/data/store';
+import { BHOSDataStore, getPlayerHref } from '../../lib/data/store';
 import { PlayerProfile, UserRole, BHOSFaculty, PlayingLevel, isProfilePending, isDefaultMember } from '../../lib/data/types';
 import {
   sanitizePlayerName,
@@ -493,7 +493,7 @@ export default function LoginPage() {
                   Hazırkı ELO: <strong className="text-cyan-400 font-mono">{currentUser.current_elo}</strong>
                 </span>
                 <Link
-                  href={`/players/${currentUser.id}`}
+                  href={getPlayerHref(currentUser.id)}
                   className="text-cyan-400 hover:underline font-semibold flex items-center gap-1"
                 >
                   <span>{t('nav.my_profile')}</span>

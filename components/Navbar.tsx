@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation, Locale } from '../lib/i18n';
-import { BHOSDataStore } from '../lib/data/store';
+import { BHOSDataStore, getPlayerHref } from '../lib/data/store';
 import {
   PlayerProfile,
   UserRole,
@@ -282,7 +282,7 @@ export default function Navbar() {
                       </Link>
 
                       <Link
-                        href={`/players/${currentUser.id}`}
+                        href={getPlayerHref(currentUser.id)}
                         onClick={() => setUserDropdownOpen(false)}
                         className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800 transition"
                       >
@@ -402,7 +402,7 @@ export default function Navbar() {
                     </span>
                   </div>
                   <Link
-                    href={`/players/${currentUser.id}`}
+                    href={getPlayerHref(currentUser.id)}
                     onClick={() => setMobileMenuOpen(false)}
                     className="block text-center py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold"
                   >

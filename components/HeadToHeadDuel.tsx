@@ -18,6 +18,7 @@ import {
   MIN_ELO,
 } from '../lib/elo/calculator';
 import MagneticButton from './MagneticButton';
+import { BHOSDataStore } from '../lib/data/store';
 
 export interface DuelPlayerSummary {
   id: string;
@@ -246,7 +247,7 @@ export default function HeadToHeadDuel({
 
       <MagneticButton className="w-full">
         <Link
-          href={`/log-match?opponentId=${encodeURIComponent(targetPlayer.id)}`}
+          href={`/log-match?opponent=${encodeURIComponent(BHOSDataStore.getInstance().getPlayerSlug(targetPlayer.id))}`}
           className="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-sm"
         >
           <Swords className="w-4 h-4" />

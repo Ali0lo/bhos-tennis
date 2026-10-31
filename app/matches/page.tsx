@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
-import { BHOSDataStore, isApprovedMatch } from '../../lib/data/store';
+import { BHOSDataStore, isApprovedMatch, getPlayerHref } from '../../lib/data/store';
 import { MatchRecord, PlayerProfile, isAutoApprovedMatch } from '../../lib/data/types';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
@@ -333,7 +333,7 @@ export default function MatchesPage() {
                       <div className="flex items-center justify-between max-w-md">
                         <div className="flex items-center gap-2">
                           <Link
-                            href={`/players/${m.player1_id}`}
+                            href={getPlayerHref(m.player1_id)}
                             className={`text-sm font-bold hover:text-blue-400 transition ${
                               isUserP1 ? 'text-blue-400 underline underline-offset-2' : p1Won ? 'text-white' : 'text-slate-400'
                             }`}
@@ -359,7 +359,7 @@ export default function MatchesPage() {
                       <div className="flex items-center justify-between max-w-md">
                         <div className="flex items-center gap-2">
                           <Link
-                            href={`/players/${m.player2_id}`}
+                            href={getPlayerHref(m.player2_id)}
                             className={`text-sm font-bold hover:text-blue-400 transition ${
                               isUserP2 ? 'text-blue-400 underline underline-offset-2' : !p1Won ? 'text-white' : 'text-slate-400'
                             }`}

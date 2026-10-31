@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '../../../lib/supabase/client';
@@ -8,6 +8,7 @@ import {
   BHOSDataStore,
   fetchPlayerProfile,
   getCachedPlayerProfile,
+  getPlayerHref,
   isApprovedMatch,
 } from '../../../lib/data/store';
 import {
@@ -106,13 +107,19 @@ export default function PlayerProfilePage() {
   const router = useRouter();
   const store = BHOSDataStore.getInstance();
   const rawId = params.id as string;
-  const playerId = rawId ? decodeURIComponent(rawId) : '';
+  // Route identifier may be a readable slug (/players/ali-iskandarli) or a legacy UUID.
+  const routeIdentifier = rawId ? decodeURIComponent(rawId) : '';
 
-  const initialCached = useMemo(() => getCachedPlayerProfile(playerId), [playerId]);
+  const initialCached = useMemo(() => getCachedPlayerProfile(routeIdentifier), [routeIdentifier]);
 
   const [profile, setProfile] = useState<PlayerProfile | null>(
     () => initialCached?.profile ?? null
   );
+  // Canonical player UUID used for all match comparisons and realtime filters.
+  const playerId =
+    profile?.id || store.resolvePlayerIdentifier(routeIdentifier) || routeIdentifier;
+  const playerIdRef = useRef(playerId);
+  playerIdRef.current = playerId;
   const [roster, setRoster] = useState<PlayerProfile[]>([]);
   const [matches, setMatches] = useState<MatchRecord[]>(
     () => initialCached?.recent_matches ?? []
@@ -199,10 +206,10 @@ export default function PlayerProfilePage() {
   }, [currentProfile, profile, isOwnProfile]);
 
   const fetchPlayerData = async (force = false) => {
-    if (!playerId) return;
+    if (!routeIdentifier) return;
 
     try {
-      const summary = await fetchPlayerProfile(playerId, { force });
+      const summary = await fetchPlayerProfile(routeIdentifier, { force });
       if (!summary.profile || summary.profile.is_verified === false) {
         setProfile(null);
         setMatches([]);
@@ -249,7 +256,7 @@ export default function PlayerProfilePage() {
   };
 
   useEffect(() => {
-    const cached = getCachedPlayerProfile(playerId);
+    const cached = getCachedPlayerProfile(routeIdentifier);
     if (cached?.profile) {
       setProfile(cached.profile);
       setMatches(cached.recent_matches);
@@ -265,7 +272,7 @@ export default function PlayerProfilePage() {
     let channel: any = null;
     if (supabase) {
       channel = supabase
-        .channel(`player-detail-${playerId}`)
+        .channel(`player-detail-${routeIdentifier}`)
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'matches' },
@@ -275,9 +282,12 @@ export default function PlayerProfilePage() {
         )
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${playerId}` },
-          () => {
-            void fetchPlayerData(true);
+          { event: '*', schema: 'public', table: 'profiles' },
+          (payload: any) => {
+            const changedId = payload?.new?.id || payload?.old?.id;
+            if (changedId && changedId === playerIdRef.current) {
+              void fetchPlayerData(true);
+            }
           }
         )
         .subscribe();
@@ -288,7 +298,20 @@ export default function PlayerProfilePage() {
         supabase.removeChannel(channel);
       }
     };
-  }, [playerId]);
+  }, [routeIdentifier]);
+
+  // Canonicalize the address bar: legacy UUID / name links become /players/<slug>.
+  useEffect(() => {
+    if (!profile?.id || typeof window === 'undefined') return;
+    const canonicalHref = store.getPlayerHref(profile.id, profile.full_name);
+    if (canonicalHref.startsWith('/players/') && window.location.pathname !== canonicalHref) {
+      window.history.replaceState(
+        window.history.state,
+        '',
+        `${canonicalHref}${window.location.search}${window.location.hash}`
+      );
+    }
+  }, [profile?.id, profile?.full_name, profile?.slug, store]);
 
   const validMatches = useMemo(() => {
     const resolved = store.getResolvedMatchIds();
@@ -995,7 +1018,7 @@ export default function PlayerProfilePage() {
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
                         <Link
-                          href={`/players/${rival.opponentId}`}
+                          href={getPlayerHref(rival.opponentId)}
                           className="font-bold text-white text-sm hover:text-[#3B82F6] transition truncate block"
                         >
                           {rival.opponentName}
@@ -1206,7 +1229,7 @@ export default function PlayerProfilePage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs text-slate-400">qarşı</span>
                           <Link
-                            href={`/players/${opponentId}`}
+                            href={getPlayerHref(opponentId)}
                             className="text-sm font-bold text-white hover:text-[#3B82F6] transition"
                           >
                             {opponentName}

@@ -14,6 +14,7 @@ import {
   isPresidentBadgeHolder,
 } from '../lib/data/types';
 import AnimatedCounter from './AnimatedCounter';
+import { getPlayerHref } from '../lib/data/store';
 import {
   Crown,
   ArrowUpRight,
@@ -238,7 +239,7 @@ export default function LeaderboardTable({
                       <div className="min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <Link
-                            href={`/players/${player.id}`}
+                            href={getPlayerHref(player.id)}
                             className="font-bold text-white group-hover:text-blue-400 transition truncate"
                           >
                             {player.full_name}

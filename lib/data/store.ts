@@ -25,6 +25,7 @@ import {
   sanitizeSafeAvatarUrl,
 } from '../security/sanitize';
 import { getSupabaseClient } from '../supabase/client';
+import { buildSlugMap, generateSlug, isUuid, normalizeForSearch, shortIdSuffix } from '../utils/slug';
 
 const STORAGE_KEYS = {
   PROFILES: 'bhos_tt_profiles_v8',
@@ -129,6 +130,82 @@ export class BHOSDataStore {
 
   private listeners: (() => void)[] = [];
 
+  private slugMapCache: { signature: string; byId: Map<string, string>; bySlug: Map<string, string> } | null =
+    null;
+
+  /** All known profiles (local roster + cached standings), deduplicated by id. */
+  private getSlugUniverse(): PlayerProfile[] {
+    const byId = new Map<string, PlayerProfile>();
+    (this.leaderboardCache?.data || []).forEach((p) => p?.id && byId.set(p.id, p));
+    this.profiles.forEach((p) => p?.id && byId.set(p.id, { ...byId.get(p.id), ...p }));
+    return Array.from(byId.values());
+  }
+
+  private getSlugMaps(): { byId: Map<string, string>; bySlug: Map<string, string> } {
+    const universe = this.getSlugUniverse();
+    const signature = universe
+      .map((p) => `${p.id}:${p.slug || ''}:${p.full_name || ''}`)
+      .join('|');
+    if (this.slugMapCache && this.slugMapCache.signature === signature) {
+      return this.slugMapCache;
+    }
+    const byId = buildSlugMap(universe);
+    const bySlug = new Map<string, string>();
+    byId.forEach((slug, id) => bySlug.set(slug, id));
+    this.slugMapCache = { signature, byId, bySlug };
+    return this.slugMapCache;
+  }
+
+  /** Readable slug for a player id; falls back to a slug of `fallbackName` or the raw id. */
+  public getPlayerSlug(id: string | null | undefined, fallbackName?: string | null): string {
+    if (!id) return fallbackName ? generateSlug(fallbackName) : '';
+    const known = this.getSlugMaps().byId.get(id);
+    if (known) return known;
+    // Unknown locally: a UUID link is always safe; never guess a name slug that might collide.
+    return id;
+  }
+
+  /** Canonical profile URL for a player (`/players/ali-iskandarli`). */
+  public getPlayerHref(id: string | null | undefined, fallbackName?: string | null): string {
+    const slug = this.getPlayerSlug(id, fallbackName);
+    return `/players/${encodeURIComponent(slug)}`;
+  }
+
+  /**
+   * Resolves a route identifier (UUID, slug, or legacy hyphenated full name) to a player id
+   * using locally known profiles. Returns null when it cannot be resolved offline.
+   */
+  public resolvePlayerIdentifier(identifier: string | null | undefined): string | null {
+    if (!identifier) return null;
+    const raw = identifier.trim();
+    if (isUuid(raw)) return raw;
+
+    const { bySlug } = this.getSlugMaps();
+    const lowered = raw.toLowerCase();
+    const direct = bySlug.get(lowered);
+    if (direct) return direct;
+
+    const universe = this.getSlugUniverse();
+    const exactId = universe.find((p) => p.id === raw);
+    if (exactId) return exactId.id;
+
+    // Legacy name-based links ("ali-iskandarli", "Əli İsgəndərli") and un-suffixed slugs.
+    const wanted = normalizeForSearch(raw.replace(/-/g, ' '));
+    const byName = universe.filter((p) => normalizeForSearch(p.full_name) === wanted);
+    if (byName.length >= 1) {
+      return byName.sort(
+        (a, b) => new Date(a.created_at || 0).getTime() - new Date(b.created_at || 0).getTime()
+      )[0].id;
+    }
+    return null;
+  }
+
+  /** Finds a player by legacy UUID or readable slug. */
+  public getPlayerByIdOrSlug(identifier: string | null | undefined): PlayerProfile | undefined {
+    const id = this.resolvePlayerIdentifier(identifier);
+    if (!id) return undefined;
+    return this.getProfile(id) || this.getSlugUniverse().find((p) => p.id === id);
+  }
   private constructor() {
     if (typeof window !== 'undefined') {
       const oldKeys = [
@@ -1703,12 +1780,11 @@ export class BHOSDataStore {
       'Rəsmi BANM Stolüstü Tennis Klubu turniri.';
     const cleanRules = sanitizeMultilineText(input.custom_rules, 1500);
 
-    const slug = cleanTitle
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/(^-|-$)/g, '');
-
     const id = `tourn-${Date.now()}`;
+    const baseSlug = generateSlug(cleanTitle, id);
+    const slug = this.tournaments.some((t) => t.slug === baseSlug)
+      ? `${baseSlug}-${shortIdSuffix(String(Date.now()).slice(-4))}`
+      : baseSlug;
     const uniqueParticipantIds = Array.from(new Set((input.participant_ids || []).filter(Boolean)));
     const selectedPlayers = uniqueParticipantIds
       .map((pid) => this.getProfile(pid))
@@ -1973,7 +2049,50 @@ const inMemoryPlayerCache = new Map<
 >();
 
 function isUuidString(val: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+  return isUuid(val);
+}
+
+/** Readable profile URL (`/players/ali-iskandarli`); falls back to the UUID link if unknown. */
+export function getPlayerHref(id: string | null | undefined, fallbackName?: string | null): string {
+  return BHOSDataStore.getInstance().getPlayerHref(id, fallbackName);
+}
+
+/**
+ * Resolves a slug / legacy name URL to a profile UUID via Supabase.
+ * Tries the `profiles.slug` column first (migration 033), then a transliterated name match.
+ */
+async function resolvePlayerIdentifierRemote(identifier: string): Promise<string | null> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+  const slug = identifier.trim().toLowerCase();
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('slug', slug)
+      .maybeSingle();
+    if (!error && data?.id) return data.id as string;
+  } catch {}
+
+  try {
+    const { data } = await supabase.from('profiles').select('id, full_name, created_at');
+    if (Array.isArray(data) && data.length > 0) {
+      const slugMap = buildSlugMap(data as PlayerProfile[]);
+      let match: string | null = null;
+      slugMap.forEach((s, id) => {
+        if (!match && s === slug) match = id;
+      });
+      if (match) return match;
+      const wanted = normalizeForSearch(slug.replace(/-/g, ' '));
+      const byName = (data as PlayerProfile[]).find(
+        (p) => normalizeForSearch(p.full_name) === wanted
+      );
+      if (byName) return byName.id;
+    }
+  } catch {}
+
+  return null;
 }
 
 function mapRawProfileToPlayerProfile(
@@ -1991,6 +2110,7 @@ function mapRawProfileToPlayerProfile(
   return {
     id: raw.id || fallback?.id || '',
     full_name: raw.full_name || fallback?.full_name || 'Unknown',
+    slug: raw.slug || fallback?.slug || null,
     email: raw.email || fallback?.email || '',
     major_faculty:
       raw.major_faculty || raw.faculty || fallback?.major_faculty || 'Computer Engineering',
@@ -2028,9 +2148,11 @@ function mapRawProfileToPlayerProfile(
 }
 
 export function getCachedPlayerProfile(
-  playerId: string
+  identifier: string
 ): PlayerProfileSummaryResult | null {
-  if (!playerId) return null;
+  if (!identifier) return null;
+  const playerId =
+    BHOSDataStore.getInstance().resolvePlayerIdentifier(identifier) || identifier;
   const cacheKey = `bhos_player_${playerId}`;
   const now = Date.now();
   const store = BHOSDataStore.getInstance();
@@ -2083,9 +2205,17 @@ export function getCachedPlayerProfile(
 }
 
 export async function fetchPlayerProfile(
-  playerId: string,
+  identifier: string,
   options?: { force?: boolean }
 ): Promise<PlayerProfileSummaryResult> {
+  // Accept readable slugs (/players/ali-iskandarli) as well as legacy UUID links.
+  let playerId = identifier;
+  if (identifier && !isUuidString(identifier)) {
+    const localId = BHOSDataStore.getInstance().resolvePlayerIdentifier(identifier);
+    const resolvedId = localId || (await resolvePlayerIdentifierRemote(identifier));
+    if (resolvedId) playerId = resolvedId;
+  }
+
   const cacheKey = `bhos_player_${playerId}`;
   const force = Boolean(options?.force);
   const store = BHOSDataStore.getInstance();

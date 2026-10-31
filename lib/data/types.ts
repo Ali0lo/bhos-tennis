@@ -25,6 +25,8 @@ export type PlayingLevel = 'Beginner' | 'Intermediate' | 'Advanced';
 export interface PlayerProfile {
   id: string;
   full_name: string;
+  /** Human-readable URL slug (e.g. "ali-iskandarli"). Optional for legacy rows. */
+  slug?: string | null;
   email: string;
   major_faculty: BHOSFaculty | string;
   faculty?: string;

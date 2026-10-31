@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { BHOSDataStore, isApprovedMatch } from '../lib/data/store';
+import { BHOSDataStore, isApprovedMatch, getPlayerHref } from '../lib/data/store';
 import { PlayerProfile, MatchRecord, Tournament, canAccessAdminPanel } from '../lib/data/types';
 import { useTranslation, useTranslations } from '../lib/i18n';
 import HallRulesSection from '../components/HallRulesSection';
@@ -321,7 +321,7 @@ export default function HomePage() {
                 </div>
                 <div className="pt-2 relative z-10">
                   <Link
-                    href={`/players/${top3[1].id}`}
+                    href={getPlayerHref(top3[1].id)}
                     className="font-display font-bold text-base text-white hover:text-blue-400 transition"
                   >
                     {top3[1].full_name}
@@ -354,7 +354,7 @@ export default function HomePage() {
                     {rootT(`roles.${top3[0].role}`)} • #1
                   </div>
                   <Link
-                    href={`/players/${top3[0].id}`}
+                    href={getPlayerHref(top3[0].id)}
                     className="block font-display font-black text-xl text-white hover:text-blue-400 transition"
                   >
                     {top3[0].full_name}
@@ -385,7 +385,7 @@ export default function HomePage() {
                 </div>
                 <div className="pt-2 relative z-10">
                   <Link
-                    href={`/players/${top3[2].id}`}
+                    href={getPlayerHref(top3[2].id)}
                     className="font-display font-bold text-base text-white hover:text-blue-400 transition"
                   >
                     {top3[2].full_name}
@@ -437,7 +437,7 @@ export default function HomePage() {
                           </td>
                           <td className="py-3 px-4">
                             <Link
-                              href={`/players/${p.id}`}
+                              href={getPlayerHref(p.id)}
                               className="font-semibold text-white hover:text-blue-400 transition"
                             >
                               {p.full_name}
@@ -524,7 +524,7 @@ export default function HomePage() {
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
                           <Link
-                            href={`/players/${m.player1_id}`}
+                            href={getPlayerHref(m.player1_id)}
                             className={`text-sm font-semibold hover:text-blue-400 transition ${
                               p1Won ? 'text-white font-bold' : 'text-slate-400'
                             }`}
@@ -536,7 +536,7 @@ export default function HomePage() {
 
                         <div className="flex items-center gap-2">
                           <Link
-                            href={`/players/${m.player2_id}`}
+                            href={getPlayerHref(m.player2_id)}
                             className={`text-sm font-semibold hover:text-blue-400 transition ${
                               !p1Won ? 'text-white font-bold' : 'text-slate-400'
                             }`}

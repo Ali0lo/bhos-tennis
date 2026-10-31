@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { BHOSDataStore } from '../../lib/data/store';
+import { BHOSDataStore, getPlayerHref } from '../../lib/data/store';
 import { PlayerProfile } from '../../lib/data/types';
 import SmoothReveal from '../../components/SmoothReveal';
 import CourtBackground from '../../components/CourtBackground';
@@ -198,7 +198,7 @@ export default function LeaderboardPage() {
               </div>
               <div className="pt-2 relative z-10">
                 <Link
-                  href={`/players/${top3Podium[1].id}`}
+                  href={getPlayerHref(top3Podium[1].id)}
                   className="font-display font-bold text-base text-white hover:text-blue-400 transition"
                 >
                   {top3Podium[1].full_name}
@@ -230,7 +230,7 @@ export default function LeaderboardPage() {
                   Lider • #1
                 </span>
                 <Link
-                  href={`/players/${top3Podium[0].id}`}
+                  href={getPlayerHref(top3Podium[0].id)}
                   className="block font-display font-black text-xl text-white hover:text-blue-400 transition"
                 >
                   {top3Podium[0].full_name}
@@ -251,7 +251,7 @@ export default function LeaderboardPage() {
               </div>
               <div className="pt-2 relative z-10">
                 <Link
-                  href={`/players/${top3Podium[2].id}`}
+                  href={getPlayerHref(top3Podium[2].id)}
                   className="font-display font-bold text-base text-white hover:text-blue-400 transition"
                 >
                   {top3Podium[2].full_name}

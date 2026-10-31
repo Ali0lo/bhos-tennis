@@ -208,16 +208,22 @@ export default function MatchLogger({
   useEffect(() => {
     fetchCurrentUser();
     fetchActivePlayers();
-    const resolvedOpponentId =
+    const urlParams =
+      typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const rawOpponent =
       initialOpponentId ||
-      (typeof window !== 'undefined'
-        ? new URLSearchParams(window.location.search).get('opponentId')
-        : null);
+      urlParams?.get('opponent') ||
+      urlParams?.get('opponentId') ||
+      null;
+    // Accept readable slugs as well as legacy UUIDs.
+    const resolvedOpponentId = rawOpponent
+      ? store.resolvePlayerIdentifier(rawOpponent) || rawOpponent
+      : null;
     if (resolvedOpponentId) {
       setOpponentId(resolvedOpponentId);
       setAdminP2Id(resolvedOpponentId);
     }
-  }, [fetchCurrentUser, fetchActivePlayers, initialOpponentId]);
+  }, [fetchCurrentUser, fetchActivePlayers, initialOpponentId, store]);
 
   useEffect(() => {
     if (currentUser?.id && adminP2Id && !adminP1Id && currentUser.id !== adminP2Id) {

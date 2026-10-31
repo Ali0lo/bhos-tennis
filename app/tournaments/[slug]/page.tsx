@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '../../../lib/supabase/client';
-import { BHOSDataStore } from '../../../lib/data/store';
+import { BHOSDataStore, getPlayerHref } from '../../../lib/data/store';
 import { Tournament, PlayerProfile } from '../../../lib/data/types';
 import SmoothReveal from '../../../components/SmoothReveal';
 import BracketTree from '../../../components/BracketTree';
@@ -308,7 +308,7 @@ export default function TournamentDetailPage() {
                           #{idx + 1}
                         </span>
                         <Link
-                          href={`/players/${player.id}`}
+                          href={getPlayerHref(player.id)}
                           className="font-bold text-white hover:text-[#3B82F6] transition truncate"
                         >
                           {player.full_name}

@@ -10,8 +10,12 @@ import { Clock } from 'lucide-react';
 
 function LogMatchContent() {
   const searchParams = useSearchParams();
-  const opponentId = searchParams.get('opponentId');
+  // `?opponent=<slug>` is the clean form; legacy `?opponentId=<uuid>` links keep working.
+  const opponentParam = searchParams.get('opponent') || searchParams.get('opponentId');
   const store = BHOSDataStore.getInstance();
+  const opponentId = opponentParam
+    ? store.resolvePlayerIdentifier(opponentParam) || opponentParam
+    : null;
   const [currentProfile, setCurrentProfile] = useState<PlayerProfile | null>(null);
 
   useEffect(() => {
