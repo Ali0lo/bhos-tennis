@@ -418,12 +418,6 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
             {top3[1] && (() => {
-              const leaderElo = top3[0]?.current_elo ?? top3[1].current_elo;
-              const gapToLeader = Math.max(1, leaderElo - top3[1].current_elo);
-              const progressPct = Math.min(
-                96,
-                Math.max(15, Math.round((top3[1].current_elo / Math.max(1, leaderElo)) * 100))
-              );
               const streak2 = getActiveWinStreak(top3[1]);
 
               return (
@@ -467,21 +461,6 @@ export default function HomePage() {
                           <span className="text-xs text-emerald-500 font-semibold">
                             {Math.round((top3[1].wins / (top3[1].matches_played || 1)) * 100)}% {t('table_headers.win_rate')}
                           </span>
-                        </div>
-
-                        <div className="mt-3 space-y-1.5">
-                          <div className="flex items-center justify-between text-[10px] font-mono">
-                            <span className="text-slate-400">Liderə {gapToLeader} ELO qalıb</span>
-                            <span className="text-blue-400 font-bold">{progressPct}%</span>
-                          </div>
-                          <div className="h-1.5 w-full rounded-full bg-slate-950 border border-slate-800 overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${progressPct}%` }}
-                              transition={{ duration: 0.9, delay: 0.35, ease: 'easeOut' }}
-                              className="h-full rounded-full bg-blue-600"
-                            />
-                          </div>
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
@@ -569,12 +548,6 @@ export default function HomePage() {
             })()}
 
             {top3[2] && (() => {
-              const leaderElo = top3[0]?.current_elo ?? top3[2].current_elo;
-              const gapToLeader = Math.max(1, leaderElo - top3[2].current_elo);
-              const progressPct = Math.min(
-                95,
-                Math.max(12, Math.round((top3[2].current_elo / Math.max(1, leaderElo)) * 100))
-              );
               const streak3 = getActiveWinStreak(top3[2]);
 
               return (
@@ -618,21 +591,6 @@ export default function HomePage() {
                           <span className="text-xs text-emerald-500 font-semibold">
                             {Math.round((top3[2].wins / (top3[2].matches_played || 1)) * 100)}% {t('table_headers.win_rate')}
                           </span>
-                        </div>
-
-                        <div className="mt-3 space-y-1.5">
-                          <div className="flex items-center justify-between text-[10px] font-mono">
-                            <span className="text-slate-400">Liderə {gapToLeader} ELO qalıb</span>
-                            <span className="text-amber-400 font-bold">{progressPct}%</span>
-                          </div>
-                          <div className="h-1.5 w-full rounded-full bg-slate-950 border border-slate-800 overflow-hidden">
-                            <motion.div
-                              initial={{ width: 0 }}
-                              animate={{ width: `${progressPct}%` }}
-                              transition={{ duration: 0.9, delay: 0.25, ease: 'easeOut' }}
-                              className="h-full rounded-full bg-amber-500"
-                            />
-                          </div>
                         </div>
 
                         <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
