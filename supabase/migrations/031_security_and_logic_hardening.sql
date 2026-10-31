@@ -162,6 +162,18 @@ SET
 
 DO $$
 BEGIN
+  ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS check_student_email;
+  ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_allowed_email_domain_check;
+
+  ALTER TABLE public.profiles
+    ADD CONSTRAINT profiles_allowed_email_domain_check
+    CHECK (
+      email IS NULL
+      OR btrim(email) = ''
+      OR lower(btrim(email)) LIKE '%@bhos.edu.az'
+      OR lower(btrim(email)) LIKE '%@gmail.com'
+    ) NOT VALID;
+
   IF NOT EXISTS (
     SELECT 1 FROM pg_constraint WHERE conname = 'profiles_elo_bounds_check'
   ) THEN
@@ -201,6 +213,13 @@ BEGIN
   NEW.full_name := public.sanitize_text_sql(NEW.full_name, 80);
   IF btrim(COALESCE(NEW.full_name, '')) = '' OR char_length(NEW.full_name) < 2 THEN
     RAISE EXCEPTION 'Ad və soyad ən azı 2 simvoldan ibarət olmalıdır.';
+  END IF;
+
+  IF NEW.email IS NOT NULL THEN
+    NEW.email := lower(btrim(NEW.email));
+    IF NEW.email <> '' AND NOT (NEW.email LIKE '%@bhos.edu.az' OR NEW.email LIKE '%@gmail.com') THEN
+      RAISE EXCEPTION 'Zəhmət olmasa @bhos.edu.az və ya @gmail.com ünvanından istifadə edin.';
+    END IF;
   END IF;
 
   IF NEW.major_faculty IS NOT NULL THEN
@@ -243,6 +262,10 @@ BEGIN
       NEW.wins := 0;
       NEW.losses := 0;
       NEW.matches_played := 0;
+      IF COALESCE(NEW.email, '') LIKE '%@gmail.com' AND NEW.email <> 'iftixar.coach@gmail.com' THEN
+        NEW.is_verified := FALSE;
+        NEW.status := 'pending';
+      END IF;
       IF NEW.current_elo NOT IN (100, 250, 400) THEN
         NEW.current_elo := 100;
       END IF;

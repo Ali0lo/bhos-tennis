@@ -17,6 +17,8 @@ import {
   sanitizePlayerName,
   sanitizeTextInput,
   sanitizeMultilineText,
+  isAllowedAuthEmail,
+  ALLOWED_EMAIL_ERROR,
 } from '../../lib/security/sanitize';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
@@ -466,6 +468,11 @@ export default function AdminDashboardPage() {
       return;
     }
 
+    if (!isAllowedAuthEmail(cleanEmail)) {
+      showToast(ALLOWED_EMAIL_ERROR);
+      return;
+    }
+
     const isStaff = newUserType === 'teacher';
     const createdProfile: PlayerProfile = {
       id: `p-${Date.now()}`,
@@ -704,11 +711,7 @@ export default function AdminDashboardPage() {
                       required
                       value={newEmail}
                       onChange={(e) => setNewEmail(e.target.value)}
-                      placeholder={
-                        newUserType === 'teacher'
-                          ? 'nümunə@email.com'
-                          : 'ad.soyad.std@bhos.edu.az'
-                      }
+                      placeholder="ad.soyad.std@bhos.edu.az və ya nümunə@gmail.com"
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400"
                     />
                   </div>

@@ -66,3 +66,16 @@ export function sanitizeSafeAvatarUrl(url?: string | null): string | undefined {
 
   return undefined;
 }
+
+export const ALLOWED_EMAIL_ERROR =
+  'Zəhmət olmasa @bhos.edu.az və ya @gmail.com ünvanından istifadə edin.';
+
+export function isAllowedAuthEmail(email?: string | null): boolean {
+  if (!email || typeof email !== 'string') return false;
+  const normalized = email.trim().toLowerCase();
+  if (!normalized || normalized.length > 254) return false;
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) return false;
+  return normalized.endsWith('@bhos.edu.az') || normalized.endsWith('@gmail.com');
+}
+
+

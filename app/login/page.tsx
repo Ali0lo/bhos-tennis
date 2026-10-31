@@ -5,7 +5,12 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BHOSDataStore } from '../../lib/data/store';
 import { PlayerProfile, UserRole, BHOSFaculty, PlayingLevel, isProfilePending, isDefaultMember } from '../../lib/data/types';
-import { sanitizePlayerName, sanitizeTextInput } from '../../lib/security/sanitize';
+import {
+  sanitizePlayerName,
+  sanitizeTextInput,
+  isAllowedAuthEmail,
+  ALLOWED_EMAIL_ERROR,
+} from '../../lib/security/sanitize';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { useTranslation } from '../../lib/i18n';
 import SmoothReveal from '../../components/SmoothReveal';
@@ -131,6 +136,9 @@ export default function LoginPage() {
         if (!cleanEmail || !password) {
           throw new Error('Zəhmət olmasa e-poçt və şifrənizi daxil edin.');
         }
+        if (!isAllowedAuthEmail(cleanEmail)) {
+          throw new Error(ALLOWED_EMAIL_ERROR);
+        }
 
         if (supabase) {
           const { data, error } = await supabase.auth.signInWithPassword({
@@ -217,18 +225,11 @@ export default function LoginPage() {
           throw new Error('Zəhmət olmasa ad, soyad (ən azı 2 hərf), e-poçt və şifrənizi düzgün daxil edin.');
         }
 
-        const isTeacher = userType === 'teacher';
-        if (!isTeacher) {
-          const studentEmailRegex = /^[a-zA-Z0-9._%+-]+\.std@bhos\.edu\.az$/;
-          if (!studentEmailRegex.test(cleanEmail)) {
-            throw new Error('Tələbələr üçün e-poçt formatı: ad.soyad.std@bhos.edu.az olmalıdır');
-          }
-        } else {
-          const generalEmailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-          if (!generalEmailRegex.test(cleanEmail)) {
-            throw new Error('Zəhmət olmasa düzgün e-poçt ünvanı daxil edin.');
-          }
+        if (!isAllowedAuthEmail(cleanEmail)) {
+          throw new Error(ALLOWED_EMAIL_ERROR);
         }
+
+        const isTeacher = userType === 'teacher';
         const resolvedAdmissionYear = isTeacher ? null : Number(admissionYear);
         const resolvedUserType = isTeacher ? 'teacher' : 'student';
 
@@ -792,11 +793,7 @@ export default function LoginPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder={
-                  mode === 'signup' && userType === 'teacher'
-                    ? 'nümunə@email.com'
-                    : 'ad.soyad.std@bhos.edu.az'
-                }
+                placeholder="ad.soyad.std@bhos.edu.az və ya nümunə@gmail.com"
                 className="w-full px-4 py-3 rounded-xl bg-slate-950/90 border border-slate-800 text-sm text-white focus:outline-none focus:border-cyan-400 transition"
               />
             </div>
