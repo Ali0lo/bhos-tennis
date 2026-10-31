@@ -38,8 +38,6 @@ const FACULTIES = [
   'Business Administration',
   'Finance',
   'İdman Klubu',
-  'Riyaziyyat və Təbii Elmlər',
-  'İnformasiya Texnologiyaları',
 ];
 
 const FACULTY_TABS: { id: string; label: string }[] = [

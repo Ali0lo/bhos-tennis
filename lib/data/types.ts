@@ -393,17 +393,6 @@ const DEPARTMENT_CANONICAL_ALIASES: Record<string, string[]> = {
     'bədən tərbiyəsi və idman',
     'спортивный клуб',
   ],
-  'Riyaziyyat və Təbii Elmlər': [
-    'riyaziyyat və təbii elmlər',
-    'riyaziyyat ve tebii elmler',
-    'mathematics and natural sciences',
-  ],
-  'İnformasiya Texnologiyaları': [
-    'informasiya texnologiyaları',
-    'informasiya texnologiyalari',
-    'information technology',
-    'it',
-  ],
   'İnzibati Heyət / Dekanlıq': [
     'inzibati heyət / dekanlıq',
     'inzibati heyet / dekanliq',

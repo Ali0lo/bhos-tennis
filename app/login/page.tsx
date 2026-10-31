@@ -48,8 +48,6 @@ const FACULTIES: BHOSFaculty[] = [
 
 const STAFF_DEPARTMENTS: string[] = [
   'İdman Klubu',
-  'Riyaziyyat və Təbii Elmlər',
-  'İnformasiya Texnologiyaları',
   'Neft-Qaz Mühəndisliyi',
   'Kimya Mühəndisliyi',
   'Proseslərin Avtomatlaşdırılması',
