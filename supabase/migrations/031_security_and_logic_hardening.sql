@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS public.sanitize_text_sql(TEXT, INTEGER);
 CREATE OR REPLACE FUNCTION public.sanitize_text_sql(
   p_text TEXT,
   p_max_len INTEGER DEFAULT 160
@@ -27,6 +28,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.is_admin_or_coach(UUID);
 CREATE OR REPLACE FUNCTION public.is_admin_or_coach(p_user_id UUID DEFAULT auth.uid())
 RETURNS BOOLEAN
 LANGUAGE plpgsql
@@ -47,6 +49,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.validate_table_tennis_set_scores(TEXT, INTEGER, INTEGER);
 CREATE OR REPLACE FUNCTION public.validate_table_tennis_set_scores(
   p_set_scores TEXT,
   p_s1 INTEGER,
@@ -152,7 +155,7 @@ $$;
 UPDATE public.profiles
 SET
   full_name = CASE
-    WHEN btrim(COALESCE(full_name, '')) = '' THEN 'Oyunçu'
+    WHEN char_length(public.sanitize_text_sql(full_name, 80)) < 2 THEN 'Oyunçu'
     ELSE public.sanitize_text_sql(full_name, 80)
   END,
   current_elo = GREATEST(0, LEAST(999, COALESCE(current_elo, 100)));
@@ -164,7 +167,7 @@ BEGIN
   ) THEN
     ALTER TABLE public.profiles
       ADD CONSTRAINT profiles_elo_bounds_check
-      CHECK (current_elo >= 0 AND current_elo <= 999);
+      CHECK (current_elo >= 0 AND current_elo <= 999) NOT VALID;
   END IF;
 
   IF NOT EXISTS (
@@ -172,7 +175,7 @@ BEGIN
   ) THEN
     ALTER TABLE public.profiles
       ADD CONSTRAINT profiles_non_empty_name_check
-      CHECK (btrim(full_name) <> '');
+      CHECK (btrim(full_name) <> '') NOT VALID;
   END IF;
 
   IF NOT EXISTS (
@@ -180,7 +183,7 @@ BEGIN
   ) THEN
     ALTER TABLE public.matches
       ADD CONSTRAINT matches_different_players_check
-      CHECK (player1_id <> player2_id);
+      CHECK (player1_id <> player2_id) NOT VALID;
   END IF;
 END $$;
 
@@ -407,6 +410,8 @@ CREATE TRIGGER trg_guard_tournaments_security
   FOR EACH ROW
   EXECUTE FUNCTION public.guard_tournaments_security();
 
+DROP FUNCTION IF EXISTS public.approve_match_safely(UUID, UUID);
+DROP FUNCTION IF EXISTS public.approve_match_safely(UUID);
 CREATE OR REPLACE FUNCTION public.approve_match_safely(
   p_match_id UUID,
   p_approver_id UUID DEFAULT NULL
@@ -592,6 +597,7 @@ BEGIN
 END;
 $$;
 
+DROP FUNCTION IF EXISTS public.advance_tournament_bracket(UUID);
 CREATE OR REPLACE FUNCTION public.advance_tournament_bracket(p_match_id UUID)
 RETURNS JSONB
 LANGUAGE plpgsql
@@ -935,3 +941,4 @@ GRANT EXECUTE ON FUNCTION public.is_admin_or_coach(UUID) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.validate_table_tennis_set_scores(TEXT, INTEGER, INTEGER) TO anon, authenticated;
 GRANT EXECUTE ON FUNCTION public.approve_match_safely(UUID, UUID) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.advance_tournament_bracket(UUID) TO authenticated;
+
