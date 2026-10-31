@@ -534,7 +534,11 @@ export default function AdminDashboardPage() {
         ? 4
         : uniqueParticipants.length <= 8
         ? 8
-        : 16;
+        : uniqueParticipants.length <= 16
+        ? 16
+        : uniqueParticipants.length <= 32
+        ? 32
+        : 64;
 
     try {
       const created = store.createTournament({

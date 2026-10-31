@@ -8,7 +8,18 @@ import { getSupabaseClient } from '../lib/supabase/client';
 import { canAdvanceBracketMatch } from '../lib/tournament';
 import { parseSetScores, validateMatchSetSummary } from '../lib/elo';
 import { sanitizeTextInput } from '../lib/security/sanitize';
-import { Trophy, Award, Check, X, Loader2, Sparkles, Radio } from 'lucide-react';
+import {
+  Trophy,
+  Award,
+  Check,
+  X,
+  Loader2,
+  Sparkles,
+  Radio,
+  ChevronLeft,
+  ChevronRight,
+  Layers,
+} from 'lucide-react';
 
 interface BracketTreeProps {
   tournament: Tournament;
@@ -32,6 +43,8 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
   const submittingRef = useRef(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pulsingSlots, setPulsingSlots] = useState<Record<string, boolean>>({});
+  const [selectedStartRound, setSelectedStartRound] = useState<number>(0);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const prevSlotsRef = useRef<Record<string, { p1?: string; p2?: string }>>({});
   const initializedRef = useRef(false);
 
@@ -228,6 +241,18 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
     }
   };
 
+  const safeStartRound = Math.min(selectedStartRound, Math.max(0, rounds.length - 1));
+  const visibleRounds = rounds
+    .map((round, originalIndex) => ({ ...round, originalIndex }))
+    .slice(safeStartRound);
+  const isLargeBracket = (rounds[0]?.matches.length || 0) >= 8;
+
+  const handleHorizontalScroll = (direction: 'left' | 'right') => {
+    if (!scrollContainerRef.current) return;
+    const offset = direction === 'left' ? -320 : 320;
+    scrollContainerRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+  };
+
   return (
     <div className="space-y-5">
       {championProfile && (
@@ -255,15 +280,68 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
         </motion.div>
       )}
 
-      <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain pb-8 pt-4">
+      {rounds.length > 2 && (
+        <div className="flex flex-wrap items-center justify-between gap-3 p-2.5 rounded-2xl bg-[#131C2B]/80 border border-white/10">
+          <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
+              <Layers className="w-3.5 h-3.5 text-[#3B82F6]" />
+              <span>Mərhələ:</span>
+            </span>
+            {rounds.map((r, idx) => {
+              const active = safeStartRound === idx;
+              return (
+                <button
+                  key={r.name || `tab-${idx}`}
+                  type="button"
+                  onClick={() => setSelectedStartRound(idx)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition ${
+                    active
+                      ? 'bg-[#3B82F6] text-white shadow-md shadow-blue-500/20'
+                      : 'bg-[#0F1623] text-slate-400 hover:text-white border border-white/5'
+                  }`}
+                >
+                  {idx === 0 ? `Hamısı (${r.name})` : r.name}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="hidden sm:flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => handleHorizontalScroll('left')}
+              className="p-1.5 rounded-xl bg-[#0F1623] hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleHorizontalScroll('right')}
+              className="p-1.5 rounded-xl bg-[#0F1623] hover:bg-white/10 border border-white/10 text-slate-300 hover:text-white transition"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div
+        ref={scrollContainerRef}
+        className={`w-full min-w-0 overflow-x-auto overscroll-x-contain pb-8 pt-2 ${
+          isLargeBracket ? 'max-h-[82vh] overflow-y-auto overscroll-y-contain pr-2' : ''
+        }`}
+      >
         <div className="flex w-max min-w-[720px] items-stretch gap-10 sm:gap-14">
-        {rounds.map((round, rIndex) => {
+        {visibleRounds.map((round) => {
+          const rIndex = round.originalIndex;
           const isFinal = rIndex === rounds.length - 1;
           const matchCount = round.matches.length;
 
           return (
             <div key={round.name || `r-${rIndex}`} className="flex-1 flex flex-col min-w-[240px] max-w-[280px]">
-              <div className="text-center pb-3 mb-6 border-b border-white/10">
+              <div className="sticky top-0 z-20 bg-[#0F1623]/95 backdrop-blur-md text-center py-2.5 mb-6 border-b border-white/10 rounded-t-xl">
                 <span className="font-display font-black text-xs uppercase tracking-wider text-[#3B82F6]">
                   {round.name}
                 </span>

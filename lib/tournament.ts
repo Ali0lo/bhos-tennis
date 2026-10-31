@@ -14,39 +14,24 @@ export function isTournamentRosterLocked(status?: string | null): boolean {
 }
 
 export function getSeedingPairs(numPlayers: number): [number, number][] {
-  if (numPlayers === 2) {
-    return [[1, 2]];
-  }
-  if (numPlayers === 4) {
-    return [
-      [1, 4],
-      [2, 3],
-    ];
-  }
-  if (numPlayers === 8) {
-    return [
-      [1, 8],
-      [4, 5],
-      [2, 7],
-      [3, 6],
-    ];
-  }
-  if (numPlayers === 16) {
-    return [
-      [1, 16],
-      [8, 9],
-      [4, 13],
-      [5, 12],
-      [2, 15],
-      [7, 10],
-      [3, 14],
-      [6, 11],
-    ];
+  const targetSize = Math.max(2, Math.min(64, Math.pow(2, Math.ceil(Math.log2(Math.max(2, numPlayers))))));
+
+  let seeds: number[] = [1, 2];
+  let currentSize = 2;
+
+  while (currentSize < targetSize) {
+    currentSize *= 2;
+    const nextSeeds: number[] = [];
+    for (const s of seeds) {
+      nextSeeds.push(s);
+      nextSeeds.push(currentSize + 1 - s);
+    }
+    seeds = nextSeeds;
   }
 
   const pairs: [number, number][] = [];
-  for (let i = 0; i < numPlayers / 2; i++) {
-    pairs.push([i + 1, numPlayers - i]);
+  for (let i = 0; i < seeds.length; i += 2) {
+    pairs.push([seeds[i], seeds[i + 1]]);
   }
   return pairs;
 }
@@ -68,16 +53,23 @@ export function generateSingleEliminationBracket(
     return { rounds: [] };
   }
 
-  const sortedPlayers = [...uniquePlayers].sort((a, b) => b.current_elo - a.current_elo);
+  const sortedPlayers = [...uniquePlayers].slice(0, 64).sort((a, b) => b.current_elo - a.current_elo);
   const participantCount = Math.max(
     2,
-    Math.min(16, Math.pow(2, Math.ceil(Math.log2(sortedPlayers.length))))
+    Math.min(64, Math.pow(2, Math.ceil(Math.log2(sortedPlayers.length))))
   );
 
   const numRounds = Math.log2(participantCount);
   const rounds: { name: string; matches: BracketMatch[] }[] = [];
 
-  const roundNames = ['Final', 'Semifinals', 'Quarterfinals', 'Round of 16'];
+  const roundNames = [
+    'Final',
+    'Semifinals',
+    'Quarterfinals',
+    'Round of 16',
+    'Round of 32',
+    'Round of 64',
+  ];
   const seedPairs = getSeedingPairs(participantCount);
 
   for (let r = 0; r < numRounds; r++) {
