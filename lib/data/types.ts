@@ -27,6 +27,9 @@ export interface PlayerProfile {
   full_name: string;
   email: string;
   major_faculty: BHOSFaculty | string;
+  faculty?: string;
+  department?: string;
+  major?: string;
   admission_year?: number | null;
   user_type?: UserType | string;
   gender?: 'female' | 'male' | 'other';
@@ -214,3 +217,329 @@ export function formatDateTimeAz(dateStr?: string | null): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
+
+export const normalizeDepartment = (str?: string | null): string =>
+  str?.trim().toLowerCase().replace(/[\s_-]+/g, '') || '';
+
+export const foldDepartmentAscii = (str?: string | null): string =>
+  (str || '')
+    .trim()
+    .toLowerCase()
+    .replace(/i̇/g, 'i')
+    .replace(/ə/g, 'e')
+    .replace(/ü/g, 'u')
+    .replace(/ö/g, 'o')
+    .replace(/ğ/g, 'g')
+    .replace(/ı/g, 'i')
+    .replace(/ş/g, 's')
+    .replace(/ç/g, 'c')
+    .replace(/[\s_.\-–—/(),]+/g, '');
+
+const ALL_DEPARTMENT_TOKENS = new Set([
+  '',
+  'all',
+  'hamısı',
+  'hamisi',
+  'bütünfakültələr',
+  'butunfakulteler',
+  'bütünfakültələr/kafedralar',
+  'butunfakulteler/kafedralar',
+  'bütünfakültələrinəməkdaşları',
+]);
+
+export function isAllDepartmentsFilter(filterValue?: string | null): boolean {
+  if (!filterValue) return true;
+  const norm = normalizeDepartment(filterValue);
+  const folded = foldDepartmentAscii(filterValue);
+  return (
+    ALL_DEPARTMENT_TOKENS.has(norm) ||
+    ALL_DEPARTMENT_TOKENS.has(folded) ||
+    folded === 'all' ||
+    folded === 'hamisi'
+  );
+}
+
+const DEPARTMENT_CANONICAL_ALIASES: Record<string, string[]> = {
+  'Information Security': [
+    'information security',
+    'information_security',
+    'informationsecurity',
+    'infosec',
+    'is',
+    'informasiya təhlükəsizliyi',
+    'informasiya tehlukesizliyi',
+    'informasiya təhl.',
+    'informasiya təhl',
+    'informasiya tehl.',
+    'informasiya tehl',
+    'kibertəhlükəsizlik',
+    'kibertehlukesizlik',
+    'cybersecurity',
+    'cyber security',
+    'информационная безопасность',
+  ],
+  'Computer Engineering': [
+    'computer engineering',
+    'computer_engineering',
+    'computerengineering',
+    'compeng',
+    'ce',
+    'kompüter mühəndisliyi',
+    'komputer muhendisliyi',
+    'kompüter müh.',
+    'kompüter müh',
+    'komputer muh.',
+    'komputer muh',
+    'компьютерная инженерия',
+  ],
+  'Computer Science': [
+    'computer science',
+    'computer_science',
+    'computerscience',
+    'cs',
+    'kompüter elmləri',
+    'komputer elmleri',
+    'kompüter elm.',
+    'компьютерные науки',
+  ],
+  'Data Analytics': [
+    'data analytics',
+    'data_analytics',
+    'dataanalytics',
+    'data science',
+    'da',
+    'data analitikası',
+    'data analitikasi',
+    'verilənlərin analitikası',
+    'verilenlerin analitikasi',
+    'аналитика данных',
+  ],
+  'Chemical Engineering': [
+    'chemical engineering',
+    'chemical_engineering',
+    'chemicalengineering',
+    'chemeng',
+    'che',
+    'chem',
+    'kimya mühəndisliyi',
+    'kimya muhendisliyi',
+    'kimya müh.',
+    'kimya müh',
+    'kimya muh.',
+    'kimya muh',
+    'химическая инженерия',
+  ],
+  'Petroleum Engineering': [
+    'petroleum engineering',
+    'petroleum_engineering',
+    'petroleumengineering',
+    'oil and gas engineering',
+    'pete',
+    'pe',
+    'oge',
+    'neft-qaz mühəndisliyi',
+    'neft qaz mühəndisliyi',
+    'neft-qaz muhendisliyi',
+    'neft qaz muhendisliyi',
+    'neft-qaz müh.',
+    'neft-qaz müh',
+    'neft qaz muh.',
+    'neft qaz muh',
+    'нефтегазовая инженерия',
+  ],
+  'Process Automation': [
+    'process automation',
+    'process_automation',
+    'processautomation',
+    'process automation engineering',
+    'process_automation_engineering',
+    'processautomationengineering',
+    'pam',
+    'pae',
+    'pa',
+    'proseslərin avtomatlaşdırılması',
+    'proseslerin avtomatlasdirilmasi',
+    'proseslərin avtomatlaşdırılması mühəndisliyi',
+    'proseslerin avtomatlasdirilmasi muhendisliyi',
+    'proseslərin avtomatlaşdırılması müh.',
+    'proseslerin avtomatlasdirilmasi muh',
+    'автоматизация процессов',
+    'инженерия автоматизации процессов',
+  ],
+  'Business Administration': [
+    'business administration',
+    'business_administration',
+    'businessadministration',
+    'mba',
+    'bba',
+    'ba',
+    'biznesin idarə edilməsi',
+    'biznesin idare edilmesi',
+    'biznesin idarə olunması',
+    'управление бизнесом',
+  ],
+  Finance: [
+    'finance',
+    'fin',
+    'maliyyə',
+    'maliyye',
+    'финансы',
+  ],
+  'İdman Klubu': [
+    'idman klubu',
+    'i̇dman klubu',
+    'sports club',
+    'sport club',
+    'bədən tərbiyəsi və idman',
+    'спортивный клуб',
+  ],
+  'Riyaziyyat və Təbii Elmlər': [
+    'riyaziyyat və təbii elmlər',
+    'riyaziyyat ve tebii elmler',
+    'mathematics and natural sciences',
+  ],
+  'İnformasiya Texnologiyaları': [
+    'informasiya texnologiyaları',
+    'informasiya texnologiyalari',
+    'information technology',
+    'it',
+  ],
+  'İnzibati Heyət / Dekanlıq': [
+    'inzibati heyət / dekanlıq',
+    'inzibati heyet / dekanliq',
+    'inzibati heyət',
+    'dekanlıq',
+    'administration',
+    'dean office',
+  ],
+};
+
+const NORMALIZED_TO_CANONICAL = new Map<string, string>();
+Object.entries(DEPARTMENT_CANONICAL_ALIASES).forEach(([canonical, aliases]) => {
+  NORMALIZED_TO_CANONICAL.set(normalizeDepartment(canonical), canonical);
+  NORMALIZED_TO_CANONICAL.set(foldDepartmentAscii(canonical), canonical);
+  aliases.forEach((alias) => {
+    NORMALIZED_TO_CANONICAL.set(normalizeDepartment(alias), canonical);
+    NORMALIZED_TO_CANONICAL.set(foldDepartmentAscii(alias), canonical);
+  });
+});
+
+const DEFAULT_EMAIL_DEPARTMENT_MAP: Record<string, string> = {
+  'iftixar.coach@gmail.com': 'İdman Klubu',
+  'ali.iskandarli.std@bhos.edu.az': 'Computer Engineering',
+  'ali.iskandarli@bhos.edu.az': 'Computer Engineering',
+  'ali.abdulov.std@bhos.edu.az': 'Computer Engineering',
+  'ali.aghayev.std@bhos.edu.az': 'Process Automation Engineering',
+  'huseyn.muradzade.std@bhos.edu.az': 'Computer Engineering',
+  'fateh.mammadli.std@bhos.edu.az': 'Process Automation Engineering',
+  'rinad.evezzade.std@bhos.edu.az': 'Computer Engineering',
+  'anar.alakbarli.std@bhos.edu.az': 'Process Automation Engineering',
+  'nihat.ismayilzade.std@bhos.edu.az': 'Process Automation Engineering',
+};
+
+export function resolveCanonicalDepartment(value?: string | null): string {
+  if (!value || typeof value !== 'string') return '';
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+
+  const byNorm = NORMALIZED_TO_CANONICAL.get(normalizeDepartment(trimmed));
+  if (byNorm) return byNorm;
+
+  const byFolded = NORMALIZED_TO_CANONICAL.get(foldDepartmentAscii(trimmed));
+  if (byFolded) return byFolded;
+
+  const folded = foldDepartmentAscii(trimmed);
+  if (folded.includes('komputer') && folded.includes('muh')) return 'Computer Engineering';
+  if (folded.includes('computer') && folded.includes('eng')) return 'Computer Engineering';
+  if (folded.includes('informasiya') && folded.includes('tehl')) return 'Information Security';
+  if (folded.includes('information') && folded.includes('sec')) return 'Information Security';
+  if (folded.includes('proses') && folded.includes('avtomat')) return 'Process Automation';
+  if (folded.includes('process') && folded.includes('automat')) return 'Process Automation';
+  if (folded.includes('kimya') && folded.includes('muh')) return 'Chemical Engineering';
+  if (folded.includes('chemical') && folded.includes('eng')) return 'Chemical Engineering';
+  if (folded.includes('neft') && folded.includes('qaz')) return 'Petroleum Engineering';
+  if (folded.includes('petroleum') && folded.includes('eng')) return 'Petroleum Engineering';
+  if (folded.includes('biznes') && folded.includes('idare')) return 'Business Administration';
+  if (folded.includes('business') && folded.includes('admin')) return 'Business Administration';
+  if (folded.includes('komputer') && folded.includes('elm')) return 'Computer Science';
+  if (folded.includes('computer') && folded.includes('sci')) return 'Computer Science';
+  if (folded.includes('data') && folded.includes('anal')) return 'Data Analytics';
+  if (folded.includes('maliyye') || folded === 'finance') return 'Finance';
+  if (folded.includes('idman') && folded.includes('klub')) return 'İdman Klubu';
+
+  return trimmed;
+}
+
+export function getProfileDepartment(
+  profile?: (Partial<PlayerProfile> & Record<string, any>) | null
+): string {
+  if (!profile) return '';
+  const raw =
+    profile.major_faculty ||
+    profile.faculty ||
+    profile.department ||
+    profile.major ||
+    '';
+  if (typeof raw === 'string' && raw.trim()) {
+    return raw.trim();
+  }
+  const email = typeof profile.email === 'string' ? profile.email.trim().toLowerCase() : '';
+  if (email && DEFAULT_EMAIL_DEPARTMENT_MAP[email]) {
+    return DEFAULT_EMAIL_DEPARTMENT_MAP[email];
+  }
+  return '';
+}
+
+export function matchesDepartmentFilter(
+  profileOrDepartment:
+    | (Partial<PlayerProfile> & Record<string, any>)
+    | string
+    | null
+    | undefined,
+  selectedFilter?: string | null
+): boolean {
+  if (isAllDepartmentsFilter(selectedFilter)) {
+    return true;
+  }
+
+  const rawDept =
+    typeof profileOrDepartment === 'string'
+      ? profileOrDepartment.trim()
+      : getProfileDepartment(profileOrDepartment);
+
+  if (!rawDept) {
+    return false;
+  }
+
+  const canonicalProfile = resolveCanonicalDepartment(rawDept);
+  const canonicalFilter = resolveCanonicalDepartment(selectedFilter);
+
+  if (
+    canonicalProfile &&
+    canonicalFilter &&
+    normalizeDepartment(canonicalProfile) === normalizeDepartment(canonicalFilter)
+  ) {
+    return true;
+  }
+
+  const normProfile = normalizeDepartment(rawDept);
+  const normFilter = normalizeDepartment(selectedFilter);
+  if (!normFilter) return true;
+  if (normProfile === normFilter) return true;
+  if (normFilter.length >= 3 && (normProfile.includes(normFilter) || normFilter.includes(normProfile))) {
+    return true;
+  }
+
+  const foldedProfile = foldDepartmentAscii(rawDept);
+  const foldedFilter = foldDepartmentAscii(selectedFilter);
+  if (foldedProfile === foldedFilter) return true;
+  if (
+    foldedFilter.length >= 3 &&
+    (foldedProfile.includes(foldedFilter) || foldedFilter.includes(foldedProfile))
+  ) {
+    return true;
+  }
+
+  return false;
+}
+

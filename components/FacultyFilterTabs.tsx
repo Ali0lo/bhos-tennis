@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
+import { isAllDepartmentsFilter, matchesDepartmentFilter } from '../lib/data/types';
 
 export interface FacultyTabOption {
   id: string;
@@ -22,7 +23,12 @@ export default function FacultyFilterTabs({
   return (
     <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
       {tabs.map((tab) => {
-        const isActive = selectedFaculty === tab.id;
+        const isActive =
+          isAllDepartmentsFilter(selectedFaculty) && isAllDepartmentsFilter(tab.id)
+            ? true
+            : !isAllDepartmentsFilter(selectedFaculty) &&
+              !isAllDepartmentsFilter(tab.id) &&
+              matchesDepartmentFilter(tab.id, selectedFaculty);
         return (
           <button
             key={tab.id}

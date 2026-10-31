@@ -3,7 +3,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PlayerProfile } from '../lib/data/types';
+import {
+  PlayerProfile,
+  normalizeDepartment,
+  foldDepartmentAscii,
+  getProfileDepartment,
+  resolveCanonicalDepartment,
+  matchesDepartmentFilter,
+  isAllDepartmentsFilter,
+} from '../lib/data/types';
 import AnimatedCounter from './AnimatedCounter';
 import {
   Crown,
@@ -15,20 +23,42 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+export {
+  normalizeDepartment,
+  foldDepartmentAscii,
+  getProfileDepartment,
+  resolveCanonicalDepartment,
+  matchesDepartmentFilter,
+  isAllDepartmentsFilter,
+};
+
+export const normalize = (str?: string | null): string =>
+  str?.toLowerCase().replace(/[\s_-]+/g, '') || '';
+
 interface LeaderboardTableProps {
   players: PlayerProfile[];
   currentUser?: PlayerProfile | null;
   defaultPageSize?: 25 | 50;
   enablePagination?: boolean;
+  departmentFilter?: string;
 }
 
 export function isStaffMember(player: PlayerProfile): boolean {
-  return (
+  if (
     player.user_type === 'teacher' ||
     player.user_type === 'staff' ||
-    player.role === 'coach' ||
-    !player.admission_year
-  );
+    player.role === 'coach'
+  ) {
+    return true;
+  }
+  if (player.user_type === 'student') {
+    return false;
+  }
+  const dept = getProfileDepartment(player);
+  if (resolveCanonicalDepartment(dept) === 'İdman Klubu') {
+    return true;
+  }
+  return false;
 }
 
 const ROW_SPRING = {
@@ -42,27 +72,41 @@ export default function LeaderboardTable({
   currentUser,
   defaultPageSize = 25,
   enablePagination = true,
+  departmentFilter,
 }: LeaderboardTableProps) {
   const [pageSize, setPageSize] = useState<25 | 50>(defaultPageSize);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
+  const departmentFilteredPlayers = useMemo(() => {
+    if (!departmentFilter || isAllDepartmentsFilter(departmentFilter)) {
+      return players;
+    }
+    return players.filter((p) => matchesDepartmentFilter(p, departmentFilter));
+  }, [players, departmentFilter]);
+
   const filterSignature = useMemo(
-    () => `${players.length}:${players[0]?.id ?? ''}:${players[players.length - 1]?.id ?? ''}`,
-    [players]
+    () =>
+      `${departmentFilter ?? 'ALL'}:${departmentFilteredPlayers.length}:${departmentFilteredPlayers
+        .map((p) => p.id)
+        .join(',')}`,
+    [departmentFilteredPlayers, departmentFilter]
   );
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [filterSignature, pageSize]);
+  }, [filterSignature, departmentFilter, pageSize]);
 
-  const totalPlayers = players.length;
+  const totalPlayers = departmentFilteredPlayers.length;
   const totalPages = enablePagination ? Math.max(1, Math.ceil(totalPlayers / pageSize)) : 1;
   const safePage = Math.min(currentPage, totalPages);
   const startIndex = enablePagination ? (safePage - 1) * pageSize : 0;
   const endIndex = enablePagination ? Math.min(startIndex + pageSize, totalPlayers) : totalPlayers;
   const displayedPlayers = useMemo(
-    () => (enablePagination ? players.slice(startIndex, endIndex) : players),
-    [players, enablePagination, startIndex, endIndex]
+    () =>
+      enablePagination
+        ? departmentFilteredPlayers.slice(startIndex, endIndex)
+        : departmentFilteredPlayers,
+    [departmentFilteredPlayers, enablePagination, startIndex, endIndex]
   );
 
   const pageNumbers = useMemo(() => {
@@ -110,9 +154,11 @@ export default function LeaderboardTable({
                 totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
               const rankChange = player.rank_change ?? 0;
               const staff = isStaffMember(player);
+              const departmentLabel = getProfileDepartment(player);
+              const yearSuffix = player.admission_year ? ` • ${player.admission_year}` : '';
               const facultySubtitle = staff
-                ? `${player.major_faculty || 'İdman Klubu'} • Müəllim`
-                : `${player.major_faculty || 'Mühəndislik'} • ${player.admission_year}`;
+                ? `${departmentLabel || 'İdman Klubu'} • Müəllim`
+                : `${departmentLabel || 'Mühəndislik'}${yearSuffix}`;
 
               return (
                 <motion.tr

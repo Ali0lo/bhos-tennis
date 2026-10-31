@@ -1,6 +1,15 @@
 'use client';
 
-import { PlayerProfile, MatchRecord, Tournament, TableReservation, UserRole, isProfilePending } from './types';
+import {
+  PlayerProfile,
+  MatchRecord,
+  Tournament,
+  TableReservation,
+  UserRole,
+  isProfilePending,
+  getProfileDepartment,
+  resolveCanonicalDepartment,
+} from './types';
 import { INITIAL_PROFILES, INITIAL_MATCHES, INITIAL_TOURNAMENTS, INITIAL_RESERVATIONS } from './mockData';
 import { calculateMatchElo, parseSetScores, validateMatchSetSummary } from '../elo';
 import {
@@ -25,7 +34,7 @@ const STORAGE_KEYS = {
   CURRENT_USER_ID: 'bhos_tt_active_user_id_v8',
 };
 
-const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v2';
+const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v3';
 const SESSION_RECENT_MATCHES_KEY = 'bhos_tt_recent_matches';
 const LEADERBOARD_TTL_MS = 60_000;
 
@@ -278,7 +287,7 @@ export class BHOSDataStore {
       try {
         let viewQuery = supabase
           .from('leaderboard_standings')
-          .select('id, full_name, faculty, current_elo, avatar_url, origin, total_matches, wins, win_rate')
+          .select('*')
           .order('current_elo', { ascending: false });
 
         if (limit) {
@@ -289,43 +298,105 @@ export class BHOSDataStore {
 
         if (!error && data && data.length > 0) {
           const existingById = new Map(this.profiles.map((p) => [p.id, p]));
+          const existingByEmail = new Map(
+            this.profiles
+              .filter((p) => Boolean(p.email))
+              .map((p) => [p.email.trim().toLowerCase(), p])
+          );
+          const existingByName = new Map(
+            this.profiles
+              .filter((p) => Boolean(p.full_name))
+              .map((p) => [p.full_name.trim().toLowerCase(), p])
+          );
+          const seedByEmail = new Map(
+            INITIAL_PROFILES.filter((p) => Boolean(p.email)).map((p) => [
+              p.email.trim().toLowerCase(),
+              p,
+            ])
+          );
+          const seedByName = new Map(
+            INITIAL_PROFILES.filter((p) => Boolean(p.full_name)).map((p) => [
+              p.full_name.trim().toLowerCase(),
+              p,
+            ])
+          );
+
           const mapped: PlayerProfile[] = data.map((row: any, idx: number) => {
-            const prev = existingById.get(row.id);
-            const totalMatches = Number(row.total_matches ?? prev?.matches_played ?? 0);
+            const rowEmail = typeof row.email === 'string' ? row.email.trim().toLowerCase() : '';
+            const rowName =
+              typeof row.full_name === 'string' ? row.full_name.trim().toLowerCase() : '';
+            const prev =
+              existingById.get(row.id) ||
+              (rowEmail ? existingByEmail.get(rowEmail) : undefined) ||
+              (rowName ? existingByName.get(rowName) : undefined);
+            const seed =
+              (rowEmail ? seedByEmail.get(rowEmail) : undefined) ||
+              (rowName ? seedByName.get(rowName) : undefined);
+
+            const totalMatches = Number(
+              row.total_matches ?? row.matches_played ?? prev?.matches_played ?? 0
+            );
             const wins = Number(row.wins ?? prev?.wins ?? 0);
-            const losses = Math.max(0, totalMatches - wins);
+            const losses = Number(row.losses ?? Math.max(0, totalMatches - wins));
+            const rawDept =
+              getProfileDepartment(row) ||
+              getProfileDepartment(prev) ||
+              getProfileDepartment(seed) ||
+              'Computer Engineering';
+            const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
 
             return {
               id: row.id,
               full_name: row.full_name,
-              email: prev?.email || '',
-              major_faculty: row.faculty || prev?.major_faculty || 'Computer Engineering',
-              admission_year: prev?.admission_year ?? 2024,
-              user_type: prev?.user_type || (row.full_name?.includes('İftixar') ? 'staff' : 'student'),
-              gender: prev?.gender || 'male',
+              email: row.email || prev?.email || seed?.email || '',
+              major_faculty: canonicalDept,
+              faculty: canonicalDept,
+              department: canonicalDept,
+              admission_year:
+                row.admission_year !== undefined
+                  ? row.admission_year
+                  : prev?.admission_year !== undefined
+                  ? prev.admission_year
+                  : seed?.admission_year ?? 2024,
+              user_type:
+                row.user_type ||
+                prev?.user_type ||
+                seed?.user_type ||
+                (row.full_name?.includes('İftixar') ? 'staff' : 'student'),
+              gender: row.gender || prev?.gender || seed?.gender || 'male',
               role:
+                row.role ||
                 prev?.role ||
+                seed?.role ||
                 (row.full_name?.includes('İftixar')
                   ? 'coach'
                   : row.full_name?.includes('İsgəndərli')
                   ? 'president'
                   : 'player'),
-              playing_level: prev?.playing_level || 'Advanced',
-              playing_style: prev?.playing_style || 'Shakehand Attack',
-              blade_equipment: prev?.blade_equipment || 'Butterfly Viscaria',
-              forehand_rubber: prev?.forehand_rubber || 'Tenergy 05',
-              backhand_rubber: prev?.backhand_rubber || 'Dignics 09C',
+              playing_level:
+                row.playing_level || prev?.playing_level || seed?.playing_level || 'Advanced',
+              playing_style:
+                row.playing_style || prev?.playing_style || seed?.playing_style || 'Shakehand Attack',
+              blade_equipment:
+                row.blade_equipment ||
+                prev?.blade_equipment ||
+                seed?.blade_equipment ||
+                'Butterfly Viscaria',
+              forehand_rubber:
+                row.forehand_rubber || prev?.forehand_rubber || seed?.forehand_rubber || 'Tenergy 05',
+              backhand_rubber:
+                row.backhand_rubber || prev?.backhand_rubber || seed?.backhand_rubber || 'Dignics 09C',
               current_elo: Number(row.current_elo ?? 0),
               matches_played: totalMatches,
               wins,
               losses,
               status: 'approved',
-              origin: row.origin || prev?.origin || 'Qeydiyyat',
+              origin: row.origin || prev?.origin || seed?.origin || 'Qeydiyyat',
               is_verified: true,
               is_active: true,
               avatar_url: normalizeAvatarUrl(row.avatar_url || prev?.avatar_url),
               rank: idx + 1,
-              created_at: prev?.created_at || new Date().toISOString(),
+              created_at: row.created_at || prev?.created_at || new Date().toISOString(),
             };
           });
 
@@ -366,10 +437,17 @@ export class BHOSDataStore {
 
         const { data: fallbackData, error: fallbackError } = await fallbackQuery;
         if (!fallbackError && fallbackData && fallbackData.length > 0) {
-          const normalized = (fallbackData as PlayerProfile[]).map((p) => ({
-            ...p,
-            avatar_url: normalizeAvatarUrl(p.avatar_url),
-          }));
+          const normalized = (fallbackData as PlayerProfile[]).map((p) => {
+            const rawDept = getProfileDepartment(p) || 'Computer Engineering';
+            const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
+            return {
+              ...p,
+              major_faculty: canonicalDept,
+              faculty: canonicalDept,
+              department: canonicalDept,
+              avatar_url: normalizeAvatarUrl(p.avatar_url),
+            };
+          });
 
           const verified = normalized
             .filter((p) => !isProfilePending(p))
@@ -426,10 +504,17 @@ export class BHOSDataStore {
       }
 
       if (data && data.length > 0) {
-        this.profiles = (data as PlayerProfile[]).map((p) => ({
-          ...p,
-          avatar_url: normalizeAvatarUrl(p.avatar_url),
-        }));
+        this.profiles = (data as PlayerProfile[]).map((p) => {
+          const rawDept = getProfileDepartment(p) || 'Computer Engineering';
+          const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
+          return {
+            ...p,
+            major_faculty: canonicalDept,
+            faculty: canonicalDept,
+            department: canonicalDept,
+            avatar_url: normalizeAvatarUrl(p.avatar_url),
+          };
+        });
         this.recalculateRanks();
         setStored(STORAGE_KEYS.PROFILES, this.profiles);
 

@@ -7,7 +7,11 @@ import { BHOSDataStore } from '../../lib/data/store';
 import { PlayerProfile } from '../../lib/data/types';
 import SmoothReveal from '../../components/SmoothReveal';
 import CourtBackground from '../../components/CourtBackground';
-import LeaderboardTable, { isStaffMember } from '../../components/LeaderboardTable';
+import LeaderboardTable, {
+  isStaffMember,
+  getProfileDepartment,
+  matchesDepartmentFilter,
+} from '../../components/LeaderboardTable';
 import LeaderboardSkeleton from '../../components/LeaderboardSkeleton';
 import AnimatedCounter from '../../components/AnimatedCounter';
 import HoloCard from '../../components/HoloCard';
@@ -110,16 +114,15 @@ export default function LeaderboardPage() {
   const filteredProfiles = useMemo(() => {
     return profiles.filter((p) => {
       const q = searchQuery.trim().toLowerCase();
+      const dept = getProfileDepartment(p);
       const matchesSearch =
         !q ||
         p.full_name.toLowerCase().includes(q) ||
-        (p.major_faculty && p.major_faculty.toLowerCase().includes(q)) ||
+        (dept && dept.toLowerCase().includes(q)) ||
+        matchesDepartmentFilter(p, q) ||
         (p.blade_equipment && p.blade_equipment.toLowerCase().includes(q));
 
-      const matchesFaculty =
-        selectedFaculty === 'Hamısı' ||
-        (p.major_faculty &&
-          p.major_faculty.toLowerCase().includes(selectedFaculty.toLowerCase()));
+      const matchesFaculty = matchesDepartmentFilter(p, selectedFaculty);
 
       const matchesGender =
         genderFilter === 'ALL' ||
@@ -382,7 +385,11 @@ export default function LeaderboardPage() {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.2 }}
             >
-              <LeaderboardTable players={filteredProfiles} currentUser={currentUser} />
+              <LeaderboardTable
+                players={filteredProfiles}
+                currentUser={currentUser}
+                departmentFilter={selectedFaculty}
+              />
             </motion.div>
           )}
         </div>
