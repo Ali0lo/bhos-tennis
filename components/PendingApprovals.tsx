@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { BHOSDataStore } from '../lib/data/store';
 import { MatchRecord, PlayerProfile } from '../lib/data/types';
 import { calculateEloDelta, getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
+import { validateMatchSetSummary } from '../lib/elo';
 import { Check, X, ShieldAlert, Clock, Loader2, CheckCircle2 } from 'lucide-react';
 
 interface PendingApprovalsProps {
@@ -17,6 +18,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
   const [pendingMatches, setPendingMatches] = useState<MatchRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const processingRef = useRef<string | null>(null);
   const [feedback, setFeedback] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const fetchCurrentUser = useCallback(async () => {
@@ -134,6 +136,39 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
   }, [fetchCurrentUser, fetchPendingMatches]);
 
   const handleConfirm = async (match: MatchRecord) => {
+    if (processingId || processingRef.current) return;
+    if (!currentUser) return;
+
+    const isAdminOrCoach = currentUser.role === 'president' || currentUser.role === 'coach';
+    const isParticipant =
+      currentUser.id === match.player1_id || currentUser.id === match.player2_id;
+
+    if (!isAdminOrCoach && (!isParticipant || currentUser.id === match.logged_by)) {
+      setFeedback({
+        type: 'error',
+        message: 'Yalnız qarşı tərəf və ya klub rəhbərliyi matçı təsdiqləyə bilər.',
+      });
+      return;
+    }
+
+    if (match.player1_id === match.player2_id) {
+      setFeedback({
+        type: 'error',
+        message: 'Etibarsız matç: oyunçu özü ilə oynaya bilməz.',
+      });
+      return;
+    }
+
+    const scoreCheck = validateMatchSetSummary(match.player1_score, match.player2_score);
+    if (!scoreCheck.isValid) {
+      setFeedback({
+        type: 'error',
+        message: scoreCheck.errorMessage || 'Matç set hesabı qaydalara uyğun deyil.',
+      });
+      return;
+    }
+
+    processingRef.current = match.id;
     setProcessingId(match.id);
     setFeedback(null);
     const supabase = getSupabaseClient();
@@ -177,6 +212,20 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       const p2After = Math.min(MAX_ELO, Math.max(MIN_ELO, p1Won ? p2Elo - delta : p2Elo + delta));
       const winnerId = p1Won ? match.player1_id : match.player2_id;
 
+      let handledByServerRpc = false;
+
+      if (supabase) {
+        const { data: rpcApproved, error: rpcError } = await supabase.rpc('approve_match_safely', {
+          p_match_id: match.id,
+          p_approver_id: currentUser.id,
+          p_k_factor: 32,
+        });
+
+        if (!rpcError && rpcApproved === true) {
+          handledByServerRpc = true;
+        }
+      }
+
       store.confirmMatch(match.id, {
         tournament_id: match.tournament_id,
         round_number: match.round_number,
@@ -197,55 +246,64 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
         status: 'confirmed',
       });
 
-      if (match.player1_id) {
-        store.updateProfile(match.player1_id, {
-          current_elo: p1After,
-          matches_played: ((p1Profile?.matches_played || 0) + 1),
-          wins: ((p1Profile?.wins || 0) + 1),
-        });
-      }
-      if (match.player2_id) {
-        store.updateProfile(match.player2_id, {
-          current_elo: p2After,
-          matches_played: ((p2Profile?.matches_played || 0) + 1),
-          losses: ((p2Profile?.losses || 0) + 1),
-        });
+      if (!handledByServerRpc) {
+        if (match.player1_id) {
+          store.updateProfile(match.player1_id, {
+            current_elo: p1After,
+            matches_played: ((p1Profile?.matches_played || 0) + 1),
+            wins: ((p1Profile?.wins || 0) + (p1Won ? 1 : 0)),
+            losses: ((p1Profile?.losses || 0) + (p1Won ? 0 : 1)),
+          });
+        }
+        if (match.player2_id) {
+          store.updateProfile(match.player2_id, {
+            current_elo: p2After,
+            matches_played: ((p2Profile?.matches_played || 0) + 1),
+            wins: ((p2Profile?.wins || 0) + (p1Won ? 0 : 1)),
+            losses: ((p2Profile?.losses || 0) + (p1Won ? 1 : 0)),
+          });
+        }
       }
 
       if (supabase) {
-        await supabase
-          .from('matches')
-          .update({
-            winner_id: winnerId,
-            player1_elo_before: p1Elo,
-            player2_elo_before: p2Elo,
-            player1_elo_after: p1After,
-            player2_elo_after: p2After,
-            elo_delta: delta,
-            status: 'confirmed',
-          })
-          .eq('id', match.id);
-
-        if (match.player1_id) {
+        if (!handledByServerRpc) {
           await supabase
-            .from('profiles')
+            .from('matches')
             .update({
-              current_elo: p1After,
-              matches_played: ((p1Profile?.matches_played || 0) + 1),
-              wins: ((p1Profile?.wins || 0) + 1),
+              winner_id: winnerId,
+              player1_elo_before: p1Elo,
+              player2_elo_before: p2Elo,
+              player1_elo_after: p1After,
+              player2_elo_after: p2After,
+              elo_delta: delta,
+              status: 'confirmed',
             })
-            .eq('id', match.player1_id);
-        }
+            .eq('id', match.id)
+            .eq('status', 'pending');
 
-        if (match.player2_id) {
-          await supabase
-            .from('profiles')
-            .update({
-              current_elo: p2After,
-              matches_played: ((p2Profile?.matches_played || 0) + 1),
-              losses: ((p2Profile?.losses || 0) + 1),
-            })
-            .eq('id', match.player2_id);
+          if (match.player1_id) {
+            await supabase
+              .from('profiles')
+              .update({
+                current_elo: p1After,
+                matches_played: ((p1Profile?.matches_played || 0) + 1),
+                wins: ((p1Profile?.wins || 0) + (p1Won ? 1 : 0)),
+                losses: ((p1Profile?.losses || 0) + (p1Won ? 0 : 1)),
+              })
+              .eq('id', match.player1_id);
+          }
+
+          if (match.player2_id) {
+            await supabase
+              .from('profiles')
+              .update({
+                current_elo: p2After,
+                matches_played: ((p2Profile?.matches_played || 0) + 1),
+                wins: ((p2Profile?.wins || 0) + (p1Won ? 0 : 1)),
+                losses: ((p2Profile?.losses || 0) + (p1Won ? 1 : 0)),
+              })
+              .eq('id', match.player2_id);
+          }
         }
 
         await Promise.allSettled([
@@ -268,11 +326,14 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
         message: err.message || 'Oyunu təsdiqləmək mümkün olmadı.',
       });
     } finally {
+      processingRef.current = null;
       setProcessingId(null);
     }
   };
 
   const handleRejectMatch = async (matchId: string) => {
+    if (processingId || processingRef.current) return;
+    processingRef.current = matchId;
     setProcessingId(matchId);
     setFeedback(null);
     const supabase = getSupabaseClient();
@@ -284,8 +345,9 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       if (supabase) {
         const { error } = await supabase
           .from('matches')
-          .update({ status: 'rejected' })
-          .eq('id', matchId);
+          .update({ status: 'rejected', updated_at: new Date().toISOString() })
+          .eq('id', matchId)
+          .eq('status', 'pending');
 
         if (error) throw error;
 
@@ -294,6 +356,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
 
       if (typeof window !== 'undefined') {
         sessionStorage.removeItem('bhos_tt_leaderboard_cache_v1');
+        sessionStorage.removeItem('bhos_tt_leaderboard_cache_v2');
         sessionStorage.removeItem('bhos_tt_recent_matches');
       }
 
@@ -313,6 +376,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
         message: 'Xəta baş verdi: Matç rədd edilə bilmədi.',
       });
     } finally {
+      processingRef.current = null;
       setProcessingId(null);
     }
   };

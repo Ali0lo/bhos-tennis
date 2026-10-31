@@ -55,6 +55,52 @@ export function calculateWinProbability(ratingA: number, ratingB: number): numbe
   return 1 / (1 + Math.pow(10, exponent));
 }
 
+export function validateMatchSetSummary(
+  scoreA: number,
+  scoreB: number
+): {
+  isValid: boolean;
+  winnerSets: number;
+  loserSets: number;
+  errorMessage?: string;
+} {
+  if (!Number.isInteger(scoreA) || !Number.isInteger(scoreB) || scoreA < 0 || scoreB < 0) {
+    return {
+      isValid: false,
+      winnerSets: 0,
+      loserSets: 0,
+      errorMessage: 'Set hesabları tam və müsbət rəqəm olmalıdır.',
+    };
+  }
+
+  if (scoreA === scoreB) {
+    return {
+      isValid: false,
+      winnerSets: scoreA,
+      loserSets: scoreB,
+      errorMessage: 'Matç hesabı bərabər ola bilməz.',
+    };
+  }
+
+  const winnerSets = Math.max(scoreA, scoreB);
+  const loserSets = Math.min(scoreA, scoreB);
+
+  if (winnerSets < 2 || winnerSets > 4 || loserSets >= winnerSets) {
+    return {
+      isValid: false,
+      winnerSets,
+      loserSets,
+      errorMessage: 'Etibarlı matç formatı seçin: Best-of-3 (2-0, 2-1), Best-of-5 (3-0, 3-1, 3-2) və ya Best-of-7 (4-0, 4-1, 4-2, 4-3).',
+    };
+  }
+
+  return {
+    isValid: true,
+    winnerSets,
+    loserSets,
+  };
+}
+
 export function calculateMatchElo(input: EloCalculationInput): EloCalculationResult {
   const {
     player1Elo,
@@ -74,7 +120,7 @@ export function calculateMatchElo(input: EloCalculationInput): EloCalculationRes
   const p2Sets = player2SetsWon ?? (player1Won ? 0 : 3);
   const setMultiplier = getSetDominanceMultiplier(p1Sets, p2Sets);
 
-  let rawDelta = calculateEloDelta({
+  const rawDelta = calculateEloDelta({
     playerElo: safeP1Elo,
     opponentElo: safeP2Elo,
     playerScore: p1Sets,
@@ -99,7 +145,11 @@ export function calculateMatchElo(input: EloCalculationInput): EloCalculationRes
   };
 }
 
-export function parseSetScores(setScoresString: string): {
+export function parseSetScores(
+  setScoresString: string,
+  expectedP1Sets?: number,
+  expectedP2Sets?: number
+): {
   player1Games: number;
   player2Games: number;
   sets: { p1: number; p2: number }[];
@@ -108,27 +158,59 @@ export function parseSetScores(setScoresString: string): {
 } {
   const trimmed = setScoresString.trim();
   if (!trimmed) {
-    return { player1Games: 0, player2Games: 0, sets: [], isValid: false, errorMessage: 'Scores cannot be empty' };
+    return {
+      player1Games: 0,
+      player2Games: 0,
+      sets: [],
+      isValid: false,
+      errorMessage: 'Set xalları boş ola bilməz.',
+    };
   }
 
-  const parts = trimmed.split(',').map((s) => s.trim()).filter(Boolean);
+  const parts = trimmed
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (parts.length < 2 || parts.length > 7) {
+    return {
+      player1Games: 0,
+      player2Games: 0,
+      sets: [],
+      isValid: false,
+      errorMessage: 'Matç ən azı 2, ən çoxu 7 setdən ibarət ola bilər.',
+    };
+  }
+
   let p1Wins = 0;
   let p2Wins = 0;
   const sets: { p1: number; p2: number }[] = [];
 
   for (const part of parts) {
-    const tokens = part.split(/[-:]/).map((t) => parseInt(t.trim(), 10));
-    if (tokens.length !== 2 || isNaN(tokens[0]) || isNaN(tokens[1])) {
+    const rawTokens = part.split(/[-:]/).map((t) => t.trim());
+    if (rawTokens.length !== 2 || !/^\d+$/.test(rawTokens[0]) || !/^\d+$/.test(rawTokens[1])) {
       return {
         player1Games: 0,
         player2Games: 0,
         sets: [],
         isValid: false,
-        errorMessage: `Invalid format in set: "${part}". Expected format: 11-9`,
+        errorMessage: `Yanlış set formatı: "${part}". Nümunə: 11-9, 12-10`,
       };
     }
 
-    const [s1, s2] = tokens;
+    const s1 = parseInt(rawTokens[0], 10);
+    const s2 = parseInt(rawTokens[1], 10);
+
+    if (s1 < 0 || s2 < 0 || s1 > 50 || s2 > 50 || s1 === s2) {
+      return {
+        player1Games: 0,
+        player2Games: 0,
+        sets: [],
+        isValid: false,
+        errorMessage: `Set "${part}" bərabər və ya etibarsız hesabla bitə bilməz.`,
+      };
+    }
+
     const maxScore = Math.max(s1, s2);
     const diff = Math.abs(s1 - s2);
 
@@ -138,7 +220,17 @@ export function parseSetScores(setScoresString: string): {
         player2Games: 0,
         sets: [],
         isValid: false,
-        errorMessage: `Set "${part}" must have a winner with at least 11 points and 2-point difference.`,
+        errorMessage: `Set "${part}" qalibi ən azı 11 xala çatmalı və ən azı 2 xal fərqlə qalib gəlməlidir (məs. 11-9, 12-10).`,
+      };
+    }
+
+    if (maxScore > 11 && diff !== 2) {
+      return {
+        player1Games: 0,
+        player2Games: 0,
+        sets: [],
+        isValid: false,
+        errorMessage: `Set "${part}" 10-10 bərabərlikdən (deuce) sonra yalnız 2 xal fərqlə bitə bilər (məs. 12-10, 14-12).`,
       };
     }
 
@@ -148,10 +240,35 @@ export function parseSetScores(setScoresString: string): {
     sets.push({ p1: s1, p2: s2 });
   }
 
+  const summaryValidation = validateMatchSetSummary(p1Wins, p2Wins);
+  if (!summaryValidation.isValid) {
+    return {
+      player1Games: 0,
+      player2Games: 0,
+      sets: [],
+      isValid: false,
+      errorMessage: summaryValidation.errorMessage,
+    };
+  }
+
+  if (expectedP1Sets !== undefined && expectedP2Sets !== undefined) {
+    const exactMatch = p1Wins === expectedP1Sets && p2Wins === expectedP2Sets;
+    const swappedMatch = p1Wins === expectedP2Sets && p2Wins === expectedP1Sets;
+    if (!exactMatch && !swappedMatch) {
+      return {
+        player1Games: p1Wins,
+        player2Games: p2Wins,
+        sets,
+        isValid: false,
+        errorMessage: `Daxil edilən set detalları (${p1Wins}-${p2Wins}) seçilmiş ümumi set hesabı (${expectedP1Sets}-${expectedP2Sets}) ilə uyğun gəlmir.`,
+      };
+    }
+  }
+
   return {
     player1Games: p1Wins,
     player2Games: p2Wins,
     sets,
-    isValid: sets.length > 0,
+    isValid: true,
   };
 }

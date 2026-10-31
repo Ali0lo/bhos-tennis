@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { PlayerProfile, PlayingStyle, PlayingLevel, BHOSFaculty } from '../lib/data/types';
 import { BHOSDataStore } from '../lib/data/store';
+import { sanitizeTextInput, sanitizeSafeAvatarUrl } from '../lib/security/sanitize';
 import { getSupabaseClient } from '../lib/supabase/client';
 
 interface EditProfileModalProps {
@@ -131,6 +132,7 @@ export default function EditProfileModal({
 
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const savingLockRef = useRef(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -230,7 +232,13 @@ export default function EditProfileModal({
 
   const handleApplyUrl = () => {
     if (!urlInput.trim()) return;
-    setAvatarUrl(urlInput.trim());
+    const safeUrl = sanitizeSafeAvatarUrl(urlInput);
+    if (!safeUrl) {
+      setErrorMsg('Yalnız təhlükəsiz HTTPS/HTTP şəkil linkləri qəbul edilir.');
+      return;
+    }
+    setErrorMsg(null);
+    setAvatarUrl(safeUrl);
     setUrlInput('');
   };
 
@@ -240,18 +248,25 @@ export default function EditProfileModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (saving || savingLockRef.current) return;
+    savingLockRef.current = true;
     setSaving(true);
     setErrorMsg(null);
 
     try {
+      const safeAvatar = avatarUrl ? sanitizeSafeAvatarUrl(avatarUrl) : undefined;
+      if (avatarUrl && !safeAvatar) {
+        throw new Error('Profil şəkli linki təhlükəsizlik tələblərinə uyğun deyil.');
+      }
+
       const updates: Partial<PlayerProfile> = {
-        avatar_url: avatarUrl || undefined,
-        playing_style: playingStyle,
-        blade_equipment: bladeEquipment.trim() || 'Standard Club Racket',
-        forehand_rubber: forehandRubber.trim() || 'Standard Red',
-        backhand_rubber: backhandRubber.trim() || 'Standard Black',
+        avatar_url: safeAvatar || undefined,
+        playing_style: sanitizeTextInput(playingStyle, 60) || 'Shakehand Offensive',
+        blade_equipment: sanitizeTextInput(bladeEquipment, 80) || 'Standard Club Racket',
+        forehand_rubber: sanitizeTextInput(forehandRubber, 80) || 'Standard Red',
+        backhand_rubber: sanitizeTextInput(backhandRubber, 80) || 'Standard Black',
         playing_level: playingLevel,
-        major_faculty: majorFaculty,
+        major_faculty: sanitizeTextInput(majorFaculty, 80) || 'Computer Engineering',
         admission_year: admissionYear,
       };
 
@@ -262,12 +277,13 @@ export default function EditProfileModal({
       setErrorMsg(err?.message || 'Yadda saxlanarkən xəta baş verdi.');
     } finally {
       setSaving(false);
+      savingLockRef.current = false;
     }
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-fadeIn">
-      <div className="relative w-full max-w-2xl bg-[#0F1623] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+    <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-black/80 backdrop-blur-md animate-fadeIn overflow-y-auto overscroll-contain">
+      <div className="relative w-full max-w-2xl bg-[#0F1623] border border-white/10 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]">
         <div className="flex items-center justify-between px-6 py-5 border-b border-white/10 bg-[#131C2B]/80">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-[#3B82F6]/15 border border-[#3B82F6]/30 flex items-center justify-center text-[#3B82F6]">
@@ -291,7 +307,7 @@ export default function EditProfileModal({
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
+        <form onSubmit={handleSubmit} className="flex-1 min-h-0 overflow-y-auto p-4 sm:p-6 space-y-6">
           {errorMsg && (
             <div className="p-3.5 rounded-xl bg-red-500/10 border border-red-500/20 text-xs font-semibold text-red-400">
               {errorMsg}

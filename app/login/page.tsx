@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { BHOSDataStore } from '../../lib/data/store';
 import { PlayerProfile, UserRole, BHOSFaculty, PlayingLevel, isProfilePending, isDefaultMember } from '../../lib/data/types';
+import { sanitizePlayerName, sanitizeTextInput } from '../../lib/security/sanitize';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { useTranslation } from '../../lib/i18n';
 import SmoothReveal from '../../components/SmoothReveal';
@@ -75,6 +76,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const submittingLockRef = useRef(false);
 
   useEffect(() => {
     const update = () => {
@@ -113,12 +115,15 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (loading) return;
+    if (loading || submittingLockRef.current) return;
+    submittingLockRef.current = true;
     setErrorMsg(null);
     setSuccessMsg(null);
     setLoading(true);
 
     const cleanEmail = email.trim().toLowerCase();
+    const cleanFullName = sanitizePlayerName(fullName, 80);
+    const cleanMajor = sanitizeTextInput(major, 80) || 'Computer Engineering';
     const supabase = getSupabaseClient();
 
     try {
@@ -161,9 +166,11 @@ export default function LoginPage() {
             if (!linked) {
               const newProfile: PlayerProfile = {
                 id: data.user.id,
-                full_name: meta.full_name || cleanEmail.split('@')[0],
+                full_name: sanitizePlayerName(meta.full_name || cleanEmail.split('@')[0], 80) || 'Oyunçu',
                 email: cleanEmail,
-                major_faculty: meta.major_faculty || (isCoach ? 'İdman Klubu' : 'Computer Engineering'),
+                major_faculty:
+                  sanitizeTextInput(meta.major_faculty, 80) ||
+                  (isCoach ? 'İdman Klubu' : 'Computer Engineering'),
                 admission_year:
                   metaUserType === 'teacher' || metaUserType === 'staff'
                     ? null
@@ -206,8 +213,8 @@ export default function LoginPage() {
           return;
         }
       } else {
-        if (!fullName.trim() || !cleanEmail || !password) {
-          throw new Error('Zəhmət olmasa bütün tələb olunan xanaları doldurun.');
+        if (!cleanFullName || cleanFullName.length < 2 || !cleanEmail || !password) {
+          throw new Error('Zəhmət olmasa ad, soyad (ən azı 2 hərf), e-poçt və şifrənizi düzgün daxil edin.');
         }
 
         const isTeacher = userType === 'teacher';
@@ -248,8 +255,8 @@ export default function LoginPage() {
             password,
             options: {
               data: {
-                full_name: fullName.trim(),
-                major_faculty: major,
+                full_name: cleanFullName,
+                major_faculty: cleanMajor,
                 admission_year: resolvedAdmissionYear,
                 user_type: resolvedUserType,
                 role: resolvedRole,
@@ -282,9 +289,9 @@ export default function LoginPage() {
           const userId = data.user?.id || `p-${Date.now()}`;
           const newProfile: PlayerProfile = {
             id: userId,
-            full_name: fullName.trim(),
+            full_name: cleanFullName,
             email: cleanEmail,
-            major_faculty: major,
+            major_faculty: cleanMajor,
             admission_year: resolvedAdmissionYear,
             user_type: resolvedUserType,
             gender,
@@ -378,9 +385,9 @@ export default function LoginPage() {
         } else {
           const newProfile: PlayerProfile = {
             id: `p-${Date.now()}`,
-            full_name: fullName.trim(),
+            full_name: cleanFullName,
             email: cleanEmail,
-            major_faculty: major,
+            major_faculty: cleanMajor,
             admission_year: resolvedAdmissionYear,
             user_type: resolvedUserType,
             gender,
@@ -414,6 +421,7 @@ export default function LoginPage() {
       setErrorMsg(err.message || t('auth.error'));
     } finally {
       setLoading(false);
+      submittingLockRef.current = false;
     }
   };
 

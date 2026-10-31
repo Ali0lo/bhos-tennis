@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { BHOSDataStore } from '../lib/data/store';
 import { PlayerProfile, isProfilePending } from '../lib/data/types';
 import { calculateEloDelta, getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
+import { parseSetScores, validateMatchSetSummary } from '../lib/elo';
+import { sanitizeTextInput } from '../lib/security/sanitize';
 import AthleteCombobox from './AthleteCombobox';
 import {
   Swords,
@@ -80,7 +82,7 @@ const LOSS_PRESETS: Array<[number, number]> = [
   [2, 3],
 ];
 
-const MAX_SETS = 7;
+const MAX_SETS = 4;
 
 function isApprovedAthlete(p: PlayerProfile): boolean {
   return p.is_verified !== false && !isProfilePending(p);
@@ -140,6 +142,8 @@ export default function MatchLogger({
   const [detailedScores, setDetailedScores] = useState<string>('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const submittingLockRef = useRef(false);
+  const lastSubmissionRef = useRef<{ signature: string; timestamp: number } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<{
     message: string;
@@ -243,13 +247,21 @@ export default function MatchLogger({
     return players.find((p) => p.id === opponentId);
   }, [isAdminOrCoach, players, adminP2Id, opponentId]);
 
-  const scoresValid = scoreA !== scoreB && Math.max(scoreA, scoreB) > 0;
+  const setValidation = useMemo(() => validateMatchSetSummary(scoreA, scoreB), [scoreA, scoreB]);
+  const scoresValid = setValidation.isValid;
   const aWins = scoreA > scoreB;
 
   const effectiveWinner = scoresValid ? (aWins ? sideA : sideB) : undefined;
   const effectiveLoser = scoresValid ? (aWins ? sideB : sideA) : undefined;
   const setsWon = Math.max(scoreA, scoreB);
   const setsLost = Math.min(scoreA, scoreB);
+
+  const detailedScoreValidation = useMemo(() => {
+    const clean = sanitizeTextInput(detailedScores, 120);
+    if (!clean) return { isValid: true, errorMessage: undefined as string | undefined };
+    if (!scoresValid) return parseSetScores(clean);
+    return parseSetScores(clean, scoreA, scoreB);
+  }, [detailedScores, scoresValid, scoreA, scoreB]);
 
   const eloPreview = useMemo(() => {
     if (!effectiveWinner || !effectiveLoser || effectiveWinner.id === effectiveLoser.id) return null;
@@ -272,6 +284,7 @@ export default function MatchLogger({
   const canSubmit =
     Boolean(sideA && sideB && sideA.id !== sideB.id) &&
     scoresValid &&
+    detailedScoreValidation.isValid &&
     !isSubmitting &&
     !loadingPlayers &&
     !isPendingApproval;
@@ -283,7 +296,7 @@ export default function MatchLogger({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isSubmitting || submittingLockRef.current) return;
     setErrorMessage(null);
 
     if (!currentUser) {
@@ -309,8 +322,19 @@ export default function MatchLogger({
     }
 
     if (!scoresValid || !effectiveWinner || !effectiveLoser) {
-      setErrorMessage('Etibarlı set hesabı seçin (bərabər hesab ola bilməz).');
+      setErrorMessage(
+        setValidation.errorMessage || 'Etibarlı set hesabı seçin (2-0, 2-1, 3-0, 3-1, 3-2, 4-0, 4-1, 4-2, 4-3).'
+      );
       return;
+    }
+
+    const cleanDetailed = sanitizeTextInput(detailedScores, 120);
+    if (cleanDetailed) {
+      const parsedCheck = parseSetScores(cleanDetailed, scoreA, scoreB);
+      if (!parsedCheck.isValid) {
+        setErrorMessage(parsedCheck.errorMessage || 'Set detalları masaüstü tennis qaydalarına uyğun deyil.');
+        return;
+      }
     }
 
     if (!isAdminOrCoach && effectiveWinner.id !== currentUser.id && effectiveLoser.id !== currentUser.id) {
@@ -318,6 +342,18 @@ export default function MatchLogger({
       return;
     }
 
+    const submissionSig = `${effectiveWinner.id}:${effectiveLoser.id}:${setsWon}-${setsLost}:${cleanDetailed}`;
+    const nowMs = Date.now();
+    if (
+      lastSubmissionRef.current &&
+      lastSubmissionRef.current.signature === submissionSig &&
+      nowMs - lastSubmissionRef.current.timestamp < 15_000
+    ) {
+      setErrorMessage('Bu matç nəticəsi artıq göndərilib. Təkrar göndərişin qarşısı alındı.');
+      return;
+    }
+
+    submittingLockRef.current = true;
     setIsSubmitting(true);
 
     try {
@@ -326,11 +362,26 @@ export default function MatchLogger({
         throw new Error('Supabase bağlantısı mövcud deyil.');
       }
 
+      const { data: authData } = await supabase.auth.getUser();
+      const authUser = authData?.user;
+      if (authUser && !isAdminOrCoach) {
+        const authEmail = authUser.email ? authUser.email.toLowerCase() : '';
+        const isParticipantById =
+          authUser.id === effectiveWinner.id || authUser.id === effectiveLoser.id;
+        const isParticipantByEmail =
+          Boolean(authEmail) &&
+          (authEmail === effectiveWinner.email?.toLowerCase() ||
+            authEmail === effectiveLoser.email?.toLowerCase());
+        if (!isParticipantById && !isParticipantByEmail) {
+          throw new Error('Sessiya təsdiqi uğursuz oldu: yalnız iştirak etdiyiniz matçı qeyd edə bilərsiniz.');
+        }
+      }
+
       const matchId = typeof crypto !== 'undefined' && crypto.randomUUID
         ? crypto.randomUUID()
         : `m-${Date.now()}`;
 
-      const finalSetScores = detailedScores.trim() || `${setsWon}-${setsLost}`;
+      const finalSetScores = cleanDetailed || `${setsWon}-${setsLost}`;
 
       if (isAdminOrCoach) {
         const { delta, p1After, p2After } = calculateStandardElo(
@@ -341,7 +392,7 @@ export default function MatchLogger({
           setsLost
         );
 
-        const { error: matchInsertError } = await supabase.from('matches').insert([
+        const { error: pendingInsertError } = await supabase.from('matches').insert([
           {
             id: matchId,
             player1_id: effectiveWinner.id,
@@ -355,39 +406,57 @@ export default function MatchLogger({
             set_scores: finalSetScores,
             player1_elo_before: effectiveWinner.current_elo,
             player2_elo_before: effectiveLoser.current_elo,
-            player1_elo_after: p1After,
-            player2_elo_after: p2After,
-            elo_delta: delta,
+            player1_elo_after: effectiveWinner.current_elo,
+            player2_elo_after: effectiveLoser.current_elo,
+            elo_delta: 0,
             winner_id: effectiveWinner.id,
-            status: 'confirmed',
+            status: 'pending',
             match_date: new Date().toISOString(),
           },
         ]);
 
-        if (matchInsertError) throw matchInsertError;
+        if (pendingInsertError) throw pendingInsertError;
 
-        const { error: winnerError } = await supabase
-          .from('profiles')
-          .update({
-            current_elo: p1After,
-            matches_played: (effectiveWinner.matches_played || 0) + 1,
-            wins: (effectiveWinner.wins || 0) + 1,
-          })
-          .eq('id', effectiveWinner.id);
+        const { data: rpcApproved, error: rpcError } = await supabase.rpc('approve_match_safely', {
+          p_match_id: matchId,
+          p_approver_id: currentUser.id,
+          p_k_factor: 32,
+        });
 
-        if (winnerError) throw winnerError;
+        if (rpcError || !rpcApproved) {
+          await supabase
+            .from('matches')
+            .update({
+              winner_id: effectiveWinner.id,
+              player1_elo_before: effectiveWinner.current_elo,
+              player2_elo_before: effectiveLoser.current_elo,
+              player1_elo_after: p1After,
+              player2_elo_after: p2After,
+              elo_delta: delta,
+              status: 'confirmed',
+            })
+            .eq('id', matchId);
 
-        const { error: loserError } = await supabase
-          .from('profiles')
-          .update({
-            current_elo: p2After,
-            matches_played: (effectiveLoser.matches_played || 0) + 1,
-            losses: (effectiveLoser.losses || 0) + 1,
-          })
-          .eq('id', effectiveLoser.id);
+          await supabase
+            .from('profiles')
+            .update({
+              current_elo: p1After,
+              matches_played: (effectiveWinner.matches_played || 0) + 1,
+              wins: (effectiveWinner.wins || 0) + 1,
+            })
+            .eq('id', effectiveWinner.id);
 
-        if (loserError) throw loserError;
+          await supabase
+            .from('profiles')
+            .update({
+              current_elo: p2After,
+              matches_played: (effectiveLoser.matches_played || 0) + 1,
+              losses: (effectiveLoser.losses || 0) + 1,
+            })
+            .eq('id', effectiveLoser.id);
+        }
 
+        lastSubmissionRef.current = { signature: submissionSig, timestamp: Date.now() };
         store.clearMatchAndPlayerCaches();
         await Promise.allSettled([
           store.fetchProfilesFromCloud(),
@@ -427,6 +496,7 @@ export default function MatchLogger({
 
         if (matchInsertError) throw matchInsertError;
 
+        lastSubmissionRef.current = { signature: submissionSig, timestamp: Date.now() };
         await store.fetchMatchesFromCloud();
 
         setSuccessToast({
@@ -450,6 +520,7 @@ export default function MatchLogger({
     } catch (err: any) {
       setErrorMessage(err.message || 'Matç qeyd edilərkən xəta baş verdi.');
     } finally {
+      submittingLockRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -626,8 +697,10 @@ export default function MatchLogger({
             <ScoreStepper label={labelB} value={scoreB} onChange={setScoreB} />
           </div>
 
-          {scoreA === scoreB && Math.max(scoreA, scoreB) > 0 && (
-            <p className="text-[11px] text-amber-300">Hesab bərabər ola bilməz.</p>
+          {(scoreA > 0 || scoreB > 0) && !scoresValid && (
+            <p className="text-[11px] text-amber-300">
+              {setValidation.errorMessage || 'Etibarlı set hesabı seçin (2-0, 2-1, 3-0, 3-1, 3-2, 4-0, 4-1, 4-2, 4-3).'}
+            </p>
           )}
         </div>
 
@@ -637,11 +710,17 @@ export default function MatchLogger({
           </label>
           <input
             type="text"
+            maxLength={120}
             placeholder="məs. 11-9, 8-11, 11-6, 12-10"
             value={detailedScores}
             onChange={(e) => setDetailedScores(e.target.value)}
             className="w-full px-3.5 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-[#3B82F6]"
           />
+          {detailedScores.trim() && !detailedScoreValidation.isValid && (
+            <p className="mt-1.5 text-[11px] text-amber-300">
+              {detailedScoreValidation.errorMessage}
+            </p>
+          )}
         </div>
 
         <AnimatePresence mode="wait">

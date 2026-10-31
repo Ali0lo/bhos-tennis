@@ -5,6 +5,9 @@ import { motion } from 'framer-motion';
 import { Tournament, BracketMatch } from '../lib/data/types';
 import { BHOSDataStore } from '../lib/data/store';
 import { getSupabaseClient } from '../lib/supabase/client';
+import { canAdvanceBracketMatch } from '../lib/tournament';
+import { parseSetScores, validateMatchSetSummary } from '../lib/elo';
+import { sanitizeTextInput } from '../lib/security/sanitize';
 import { Trophy, Award, Check, X, Loader2, Sparkles, Radio } from 'lucide-react';
 
 interface BracketTreeProps {
@@ -26,6 +29,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
   const [p2Games, setP2Games] = useState<number>(0);
   const [setScores, setSetScores] = useState<string>('11-8, 11-9, 11-7');
   const [submitting, setSubmitting] = useState(false);
+  const submittingRef = useRef(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pulsingSlots, setPulsingSlots] = useState<Record<string, boolean>>({});
   const prevSlotsRef = useRef<Record<string, { p1?: string; p2?: string }>>({});
@@ -99,7 +103,11 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
       : null;
 
   const handleOpenScoreModal = (roundIndex: number, matchIndex: number, match: BracketMatch) => {
-    if (!isAdmin || !match.player1 || !match.player2) return;
+    if (!isAdmin || !match.player1 || !match.player2 || match.is_bye) return;
+    if (tournament.bracket_data) {
+      const check = canAdvanceBracketMatch(tournament.bracket_data, roundIndex, matchIndex);
+      if (!check.allowed) return;
+    }
     setActiveMatchModal({ roundIndex, matchIndex, match });
     setSelectedWinnerId(match.winner_id || match.player1.id);
     if (match.player1_score !== undefined && match.player2_score !== undefined) {
@@ -125,7 +133,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
 
   const handleSaveScore = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!activeMatchModal) return;
+    if (!activeMatchModal || submitting || submittingRef.current) return;
 
     const { roundIndex, matchIndex, match } = activeMatchModal;
     if (!match.player1 || !match.player2) {
@@ -133,11 +141,41 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
       return;
     }
 
-    if (!selectedWinnerId) {
-      setErrorMsg('Please select the winning player');
+    if (match.player1.id === match.player2.id) {
+      setErrorMsg('A player cannot play against themselves');
       return;
     }
 
+    if (!selectedWinnerId || (selectedWinnerId !== match.player1.id && selectedWinnerId !== match.player2.id)) {
+      setErrorMsg('Please select a valid winning player');
+      return;
+    }
+
+    const summaryValidation = validateMatchSetSummary(p1Games, p2Games);
+    if (!summaryValidation.isValid) {
+      setErrorMsg(summaryValidation.errorMessage || 'Invalid match set scores');
+      return;
+    }
+
+    const p1WonBySets = p1Games > p2Games;
+    if ((selectedWinnerId === match.player1.id && !p1WonBySets) || (selectedWinnerId === match.player2.id && p1WonBySets)) {
+      setErrorMsg('Selected winner must have the higher set count');
+      return;
+    }
+
+    const cleanSetScores = sanitizeTextInput(setScores, 120);
+    if (!cleanSetScores) {
+      setErrorMsg('Detailed set scores are required');
+      return;
+    }
+
+    const parsedSets = parseSetScores(cleanSetScores, p1Games, p2Games);
+    if (!parsedSets.isValid) {
+      setErrorMsg(parsedSets.errorMessage || 'Invalid table tennis game scores');
+      return;
+    }
+
+    submittingRef.current = true;
     setSubmitting(true);
     setErrorMsg(null);
 
@@ -150,7 +188,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
         {
           p1Score: p1Games,
           p2Score: p2Games,
-          setScores,
+          setScores: cleanSetScores,
         }
       );
 
@@ -185,6 +223,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
     } catch (err: any) {
       setErrorMsg(err.message || 'Failed to update bracket match');
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -216,7 +255,8 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
         </motion.div>
       )}
 
-      <div className="overflow-x-auto pb-8 pt-4 flex items-stretch gap-10 sm:gap-14 min-w-[720px]">
+      <div className="w-full min-w-0 overflow-x-auto overscroll-x-contain pb-8 pt-4">
+        <div className="flex w-max min-w-[720px] items-stretch gap-10 sm:gap-14">
         {rounds.map((round, rIndex) => {
           const isFinal = rIndex === rounds.length - 1;
           const matchCount = round.matches.length;
@@ -241,7 +281,11 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                     Boolean(match.player1 && match.player2);
                   const p1Won = isCompleted && Boolean(match.winner_id && match.winner_id === match.player1?.id);
                   const p2Won = isCompleted && Boolean(match.winner_id && match.winner_id === match.player2?.id);
-                  const isClickable = Boolean(isAdmin && match.player1 && match.player2);
+                  const canAdvanceNode =
+                    tournament.bracket_data
+                      ? canAdvanceBracketMatch(tournament.bracket_data, rIndex, mIndex).allowed
+                      : false;
+                  const isClickable = Boolean(isAdmin && match.player1 && match.player2 && !match.is_bye && canAdvanceNode);
 
                   const isEven = mIndex % 2 === 0;
                   const pairHasWinner = isCompleted;
@@ -341,10 +385,10 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                             <div className="flex items-center justify-between p-2 rounded-xl text-xs border border-dashed border-white/10 bg-white/[0.01] opacity-55">
                               <div className="flex items-center gap-2 min-w-0 pr-2">
                                 <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-mono uppercase tracking-wider text-slate-500">
-                                  TBD
+                                  {match.is_bye ? 'BYE' : 'TBD'}
                                 </span>
                                 <span className="text-slate-600 font-mono tracking-widest text-[11px]">
-                                  — — — —
+                                  {match.is_bye ? 'Avto-keçid' : '— — — —'}
                                 </span>
                               </div>
                               <span className="font-mono text-slate-600 text-xs">--</span>
@@ -397,10 +441,10 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                             <div className="flex items-center justify-between p-2 rounded-xl text-xs border border-dashed border-white/10 bg-white/[0.01] opacity-55">
                               <div className="flex items-center gap-2 min-w-0 pr-2">
                                 <span className="px-1.5 py-0.5 rounded bg-white/5 border border-white/10 text-[9px] font-mono uppercase tracking-wider text-slate-500">
-                                  TBD
+                                  {match.is_bye ? 'BYE' : 'TBD'}
                                 </span>
                                 <span className="text-slate-600 font-mono tracking-widest text-[11px]">
-                                  — — — —
+                                  {match.is_bye ? 'Avto-keçid' : '— — — —'}
                                 </span>
                               </div>
                               <span className="font-mono text-slate-600 text-xs">--</span>
@@ -482,6 +526,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
             </div>
           );
         })}
+        </div>
       </div>
 
       {activeMatchModal && activeMatchModal.match.player1 && activeMatchModal.match.player2 && (

@@ -13,6 +13,11 @@ import {
   formatDateTimeAz,
 } from '../../lib/data/types';
 import { getSupabaseClient } from '../../lib/supabase/client';
+import {
+  sanitizePlayerName,
+  sanitizeTextInput,
+  sanitizeMultilineText,
+} from '../../lib/security/sanitize';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
 import PendingVerificationQueue from '../../components/PendingVerificationQueue';
@@ -355,9 +360,9 @@ export default function AdminDashboardPage() {
   };
 
   const handleSavePlayerName = async (playerId: string) => {
-    const trimmed = editPlayerName.trim();
-    if (!trimmed) {
-      showToast('Zəhmət olmasa adı daxil edin.');
+    const trimmed = sanitizePlayerName(editPlayerName, 80);
+    if (!trimmed || trimmed.length < 2) {
+      showToast('Zəhmət olmasa adı düzgün daxil edin (ən azı 2 hərf).');
       return;
     }
     try {
@@ -454,14 +459,19 @@ export default function AdminDashboardPage() {
 
   const handleAddMemberSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newFullName.trim() || !newEmail.trim()) return;
+    const cleanFullName = sanitizePlayerName(newFullName, 80);
+    const cleanEmail = newEmail.trim().toLowerCase();
+    if (!cleanFullName || cleanFullName.length < 2 || !cleanEmail) {
+      showToast('Zəhmət olmasa ad (ən azı 2 hərf) və e-poçt daxil edin.');
+      return;
+    }
 
     const isStaff = newUserType === 'teacher';
     const createdProfile: PlayerProfile = {
       id: `p-${Date.now()}`,
-      full_name: newFullName.trim(),
-      email: newEmail.trim().toLowerCase(),
-      major_faculty: newMajor,
+      full_name: cleanFullName,
+      email: cleanEmail,
+      major_faculty: sanitizeTextInput(newMajor, 80) || 'Computer Engineering',
       admission_year: isStaff ? null : Number(newAdmissionYear),
       user_type: isStaff ? 'teacher' : 'student',
       gender: newGender,
@@ -471,7 +481,7 @@ export default function AdminDashboardPage() {
       blade_equipment: 'Standard Club Racket',
       forehand_rubber: 'Standard Red',
       backhand_rubber: 'Standard Black',
-      current_elo: Math.max(0, Number(newInitialElo) || 0),
+      current_elo: Math.min(999, Math.max(0, Math.round(Number(newInitialElo) || 0))),
       matches_played: 0,
       wins: 0,
       losses: 0,
@@ -502,29 +512,48 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     setFormError(null);
 
-    if (!tTitle.trim()) {
-      setFormError('Zəhmət olmasa turnirin adını daxil edin.');
-      return;
-    }
-    if (selectedParticipants.length < 2) {
-      setFormError('Olimpiya səbəti yaratmaq üçün ən azı 2 iştirakçı seçin.');
+    const cleanTitle = sanitizeTextInput(tTitle, 100);
+    if (!cleanTitle || cleanTitle.length < 2) {
+      setFormError('Zəhmət olmasa turnirin adını daxil edin (ən azı 2 hərf).');
       return;
     }
 
-    const created = store.createTournament({
-      title: tTitle.trim(),
-      description: tDesc.trim() || 'Rəsmi BANM Stolüstü Tennis Klubu turniri.',
-      custom_rules: tRules,
-      format: 'single_elimination',
-      max_participants: selectedParticipants.length <= 4 ? 4 : 8,
-      start_date: new Date(tStartDate).toISOString(),
-      created_by: currentUser?.id || 'p-1',
-      participant_ids: selectedParticipants,
-    });
+    const uniqueParticipants = Array.from(new Set(selectedParticipants.filter(Boolean)));
+    if (uniqueParticipants.length < 2) {
+      setFormError('Olimpiya səbəti yaratmaq üçün ən azı 2 fərqli iştirakçı seçin.');
+      return;
+    }
 
-    setTTitle('');
-    setTDesc('');
-    showToast(`"${created.title}" turniri rəsmi səbətlə yaradıldı!`);
+    const cleanDesc =
+      sanitizeMultilineText(tDesc, 600) || 'Rəsmi BANM Stolüstü Tennis Klubu turniri.';
+    const cleanRules = sanitizeMultilineText(tRules, 1500);
+    const maxParticipants =
+      uniqueParticipants.length <= 2
+        ? 2
+        : uniqueParticipants.length <= 4
+        ? 4
+        : uniqueParticipants.length <= 8
+        ? 8
+        : 16;
+
+    try {
+      const created = store.createTournament({
+        title: cleanTitle,
+        description: cleanDesc,
+        custom_rules: cleanRules,
+        format: 'single_elimination',
+        max_participants: maxParticipants,
+        start_date: new Date(tStartDate).toISOString(),
+        created_by: currentUser?.id || 'p-1',
+        participant_ids: uniqueParticipants,
+      });
+
+      setTTitle('');
+      setTDesc('');
+      showToast(`"${created.title}" turniri rəsmi səbətlə yaradıldı!`);
+    } catch (err: any) {
+      setFormError(err.message || 'Turnir yaradılarkən xəta baş verdi.');
+    }
   };
 
   const handleResetDemo = () => {

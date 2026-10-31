@@ -2,8 +2,19 @@
 
 import { PlayerProfile, MatchRecord, Tournament, TableReservation, UserRole, isProfilePending } from './types';
 import { INITIAL_PROFILES, INITIAL_MATCHES, INITIAL_TOURNAMENTS, INITIAL_RESERVATIONS } from './mockData';
-import { calculateMatchElo, parseSetScores } from '../elo';
-import { advanceBracketWinner, findBracketNodeForMatch, generateSingleEliminationBracket } from '../tournament';
+import { calculateMatchElo, parseSetScores, validateMatchSetSummary } from '../elo';
+import {
+  advanceBracketWinner,
+  findBracketNodeForMatch,
+  generateSingleEliminationBracket,
+  isTournamentRosterLocked,
+} from '../tournament';
+import {
+  sanitizePlayerName,
+  sanitizeTextInput,
+  sanitizeMultilineText,
+  sanitizeSafeAvatarUrl,
+} from '../security/sanitize';
 import { getSupabaseClient } from '../supabase/client';
 
 const STORAGE_KEYS = {
@@ -793,20 +804,88 @@ export class BHOSDataStore {
   }
 
   public addProfile(profile: PlayerProfile): void {
-    const exists = this.profiles.some((p) => p.id === profile.id);
+    const cleanName = sanitizePlayerName(profile.full_name, 80) || 'Oyunçu';
+    const sanitizedProfile: PlayerProfile = {
+      ...profile,
+      full_name: cleanName,
+      major_faculty: sanitizeTextInput(profile.major_faculty, 80) || 'Computer Engineering',
+      playing_style: sanitizeTextInput(profile.playing_style, 60) || 'Shakehand All-round',
+      blade_equipment: sanitizeTextInput(profile.blade_equipment, 80) || 'Standard Club Racket',
+      forehand_rubber: sanitizeTextInput(profile.forehand_rubber, 80) || 'Standard Red',
+      backhand_rubber: sanitizeTextInput(profile.backhand_rubber, 80) || 'Standard Black',
+      avatar_url: normalizeAvatarUrl(sanitizeSafeAvatarUrl(profile.avatar_url)),
+      current_elo: Math.min(999, Math.max(0, Math.round(Number(profile.current_elo) || 0))),
+    };
+
+    const exists = this.profiles.some((p) => p.id === sanitizedProfile.id);
     if (!exists) {
-      this.profiles.push(profile);
+      this.profiles.push(sanitizedProfile);
       this.recalculateRanks();
       this.saveLocal();
     }
   }
 
   public updateProfile(id: string, updates: Partial<PlayerProfile>): PlayerProfile {
+    const caller = this.getCurrentUser();
+    const isAdminCaller = !caller || caller.role === 'president' || caller.role === 'coach';
+
+    if (!isAdminCaller && caller && caller.id !== id) {
+      throw new Error('Başqa istifadəçinin profilini redaktə etmək icazəniz yoxdur.');
+    }
+
+    const safeUpdates: Partial<PlayerProfile> = { ...updates };
+
+    if (!isAdminCaller) {
+      delete safeUpdates.role;
+      delete safeUpdates.current_elo;
+      delete safeUpdates.is_verified;
+      delete safeUpdates.status;
+      delete safeUpdates.wins;
+      delete safeUpdates.losses;
+      delete safeUpdates.matches_played;
+      delete safeUpdates.origin;
+    }
+
+    if (safeUpdates.full_name !== undefined) {
+      const cleanedName = sanitizePlayerName(safeUpdates.full_name, 80);
+      if (!cleanedName || cleanedName.length < 2) {
+        throw new Error('Ad və soyad ən azı 2 simvoldan ibarət olmalıdır.');
+      }
+      safeUpdates.full_name = cleanedName;
+    }
+
+    if (safeUpdates.major_faculty !== undefined) {
+      safeUpdates.major_faculty =
+        sanitizeTextInput(safeUpdates.major_faculty, 80) || 'Computer Engineering';
+    }
+    if (safeUpdates.playing_style !== undefined) {
+      safeUpdates.playing_style =
+        sanitizeTextInput(safeUpdates.playing_style, 60) || 'Shakehand Offensive';
+    }
+    if (safeUpdates.blade_equipment !== undefined) {
+      safeUpdates.blade_equipment =
+        sanitizeTextInput(safeUpdates.blade_equipment, 80) || 'Standard Club Racket';
+    }
+    if (safeUpdates.forehand_rubber !== undefined) {
+      safeUpdates.forehand_rubber =
+        sanitizeTextInput(safeUpdates.forehand_rubber, 80) || 'Standard Red';
+    }
+    if (safeUpdates.backhand_rubber !== undefined) {
+      safeUpdates.backhand_rubber =
+        sanitizeTextInput(safeUpdates.backhand_rubber, 80) || 'Standard Black';
+    }
+    if (safeUpdates.avatar_url !== undefined) {
+      safeUpdates.avatar_url = normalizeAvatarUrl(sanitizeSafeAvatarUrl(safeUpdates.avatar_url));
+    }
+    if (safeUpdates.current_elo !== undefined) {
+      safeUpdates.current_elo = Math.min(999, Math.max(0, Math.round(Number(safeUpdates.current_elo) || 0)));
+    }
+
     let index = this.profiles.findIndex((p) => p.id === id);
     if (index === -1) {
       const fallback: PlayerProfile = {
         id,
-        full_name: 'Unknown',
+        full_name: safeUpdates.full_name || 'Unknown',
         email: '',
         major_faculty: 'Computer Engineering',
         admission_year: 2024,
@@ -825,18 +904,18 @@ export class BHOSDataStore {
         is_verified: true,
         is_active: true,
         created_at: new Date().toISOString(),
-        ...updates,
+        ...safeUpdates,
       };
       this.profiles.push(fallback);
       index = this.profiles.length - 1;
     }
 
-    this.profiles[index] = { ...this.profiles[index], ...updates };
+    this.profiles[index] = { ...this.profiles[index], ...safeUpdates };
     if (this.currentUser && (this.currentUser.id === id || this.currentUser.email === this.profiles[index].email)) {
       this.currentUser = this.profiles[index];
     }
-    if (updates.full_name) {
-      const newName = updates.full_name;
+    if (safeUpdates.full_name) {
+      const newName = safeUpdates.full_name;
       this.matches.forEach((m) => {
         if (m.player1_id === id) m.player1_name = newName;
         if (m.player2_id === id) m.player2_name = newName;
@@ -852,7 +931,7 @@ export class BHOSDataStore {
       if (isUuid) {
         supabase
           .from('profiles')
-          .update(updates)
+          .update(safeUpdates)
           .eq('id', id)
           .then(({ error }) => {
             if (error) console.warn('[BHOS Store] Supabase updateProfile failed:', error.message);
@@ -860,16 +939,16 @@ export class BHOSDataStore {
       } else if (this.profiles[index].email) {
         supabase
           .from('profiles')
-          .update(updates)
+          .update(safeUpdates)
           .eq('email', this.profiles[index].email)
           .then(({ error }) => {
             if (error) console.warn('[BHOS Store] Supabase updateProfile by email failed:', error.message);
           });
       }
-      if (updates.full_name) {
-        supabase.from('matches').update({ player1_name: updates.full_name }).eq('player1_id', id).then();
-        supabase.from('matches').update({ player2_name: updates.full_name }).eq('player2_id', id).then();
-        supabase.from('matches').update({ logged_by_name: updates.full_name }).eq('logged_by', id).then();
+      if (safeUpdates.full_name) {
+        supabase.from('matches').update({ player1_name: safeUpdates.full_name }).eq('player1_id', id).then();
+        supabase.from('matches').update({ player2_name: safeUpdates.full_name }).eq('player2_id', id).then();
+        supabase.from('matches').update({ logged_by_name: safeUpdates.full_name }).eq('logged_by', id).then();
       }
     }
 
@@ -877,6 +956,11 @@ export class BHOSDataStore {
   }
 
   public overrideElo(id: string, newElo: number, note?: string): PlayerProfile {
+    const caller = this.getCurrentUser();
+    if (caller && caller.role !== 'president' && caller.role !== 'coach') {
+      throw new Error('ELO xallarına yalnız Prezident və ya Məşqçi düzəliş edə bilər.');
+    }
+
     const profile = this.getProfile(id);
     if (!profile) throw new Error(`Profile ${id} not found`);
 
@@ -899,6 +983,11 @@ export class BHOSDataStore {
   }
 
   public updateUserRole(id: string, role: UserRole): PlayerProfile {
+    const caller = this.getCurrentUser();
+    if (caller && caller.role !== 'president' && caller.role !== 'coach') {
+      throw new Error('İstifadəçi rolunu yalnız Prezident və ya Məşqçi dəyişə bilər.');
+    }
+
     const profile = this.getProfile(id);
     if (!profile) throw new Error(`Profile ${id} not found`);
 
@@ -921,6 +1010,10 @@ export class BHOSDataStore {
   }
 
   public async deleteProfile(id: string): Promise<boolean> {
+    const caller = this.getCurrentUser();
+    if (caller && caller.role !== 'president' && caller.role !== 'coach') {
+      throw new Error('Üzvü yalnız Prezident və ya Məşqçi silə bilər.');
+    }
     const index = this.profiles.findIndex((p) => p.id === id);
     if (index !== -1) {
       this.profiles.splice(index, 1);
@@ -1165,6 +1258,18 @@ export class BHOSDataStore {
   }
 
   public async deleteMatch(matchId: string): Promise<boolean> {
+    const caller = this.getCurrentUser();
+    const isAdminCaller = !caller || caller.role === 'president' || caller.role === 'coach';
+
+    const existing = this.matches.find((m) => m.id === matchId);
+    if (
+      existing &&
+      !isAdminCaller &&
+      (existing.status === 'confirmed' || existing.status === 'approved' || existing.status === 'voided')
+    ) {
+      throw new Error('Təsdiqlənmiş rəsmi matçlar yalnız Prezident və ya Məşqçi tərəfindən silinə bilər.');
+    }
+
     const idx = this.matches.findIndex((m) => m.id === matchId);
     if (idx !== -1) {
       this.matches.splice(idx, 1);
@@ -1204,6 +1309,12 @@ export class BHOSDataStore {
 
   public async deleteMatches(matchIds: string[]): Promise<boolean> {
     if (!matchIds || matchIds.length === 0) return true;
+    const caller = this.getCurrentUser();
+    const isAdminCaller = !caller || caller.role === 'president' || caller.role === 'coach';
+    if (!isAdminCaller) {
+      throw new Error('Kütləvi matç silinməsi yalnız Prezident və ya Məşqçi tərəfindən icra oluna bilər.');
+    }
+
     const idSet = new Set(matchIds);
 
     this.matches = this.matches.filter((m) => !idSet.has(m.id));
@@ -1253,9 +1364,47 @@ export class BHOSDataStore {
     if (idx === -1) return null;
 
     const current = this.matches[idx];
+    const caller = this.getCurrentUser();
+    const isAdminCaller = !caller || caller.role === 'president' || caller.role === 'coach';
+
+    if (
+      !isAdminCaller &&
+      (current.status === 'confirmed' || current.status === 'approved' || current.status === 'voided')
+    ) {
+      throw new Error('Təsdiqlənmiş matç üzərində dəyişiklik etmək qadağandır.');
+    }
+
+    const nextP1Score = updates.player1_score ?? current.player1_score;
+    const nextP2Score = updates.player2_score ?? current.player2_score;
+    const setCheck = validateMatchSetSummary(nextP1Score, nextP2Score);
+    if (!setCheck.isValid) {
+      throw new Error(setCheck.errorMessage || 'Set hesabı qaydalara uyğun deyil.');
+    }
+
+    const nextSetScores =
+      updates.set_scores !== undefined
+        ? sanitizeTextInput(updates.set_scores, 80)
+        : current.set_scores;
+
+    if (nextSetScores && nextSetScores.trim()) {
+      const parsedSets = parseSetScores(nextSetScores, nextP1Score, nextP2Score);
+      if (!parsedSets.isValid) {
+        throw new Error(parsedSets.errorMessage || 'Set xalları qaydalara uyğun deyil.');
+      }
+    }
+
+    const safeTournamentTitle =
+      updates.tournament_title !== undefined
+        ? sanitizeTextInput(updates.tournament_title || '', 100) || undefined
+        : current.tournament_title;
+
     const updated: MatchRecord = {
       ...current,
       ...updates,
+      player1_score: nextP1Score,
+      player2_score: nextP2Score,
+      set_scores: nextSetScores || '',
+      tournament_title: safeTournamentTitle,
       id: matchId,
     };
 
@@ -1270,12 +1419,12 @@ export class BHOSDataStore {
     if (supabase) {
       try {
         const payload: Record<string, any> = {};
-        if (updates.player1_score !== undefined) payload.player1_score = updates.player1_score;
-        if (updates.player2_score !== undefined) payload.player2_score = updates.player2_score;
-        if (updates.set_scores !== undefined) payload.set_scores = updates.set_scores;
+        if (updates.player1_score !== undefined) payload.player1_score = nextP1Score;
+        if (updates.player2_score !== undefined) payload.player2_score = nextP2Score;
+        if (updates.set_scores !== undefined) payload.set_scores = nextSetScores;
         if (updates.status !== undefined) payload.status = updates.status;
         if (updates.match_date !== undefined) payload.match_date = updates.match_date;
-        if (updates.tournament_title !== undefined) payload.tournament_title = updates.tournament_title;
+        if (updates.tournament_title !== undefined) payload.tournament_title = safeTournamentTitle;
         if (updates.elo_delta !== undefined) payload.elo_delta = updates.elo_delta;
 
         const { error } = await supabase
@@ -1305,14 +1454,31 @@ export class BHOSDataStore {
   }): MatchRecord {
     const p1 = this.getProfile(input.player1Id);
     const p2 = this.getProfile(input.player2Id);
-    const loggedBy = this.getProfile(input.loggedById);
+    const loggedBy = this.getProfile(input.loggedById) || this.getCurrentUser();
 
-    if (!p1 || !p2) throw new Error('Both players must exist');
-    if (p1.id === p2.id) throw new Error('Players cannot play against themselves');
+    if (!p1 || !p2) throw new Error('Hər iki oyunçu profili mövcud olmalıdır.');
+    if (p1.id === p2.id) throw new Error('Oyunçu özünə qarşı matç qeyd edə bilməz.');
 
-    const parsed = parseSetScores(input.setScores);
+    const actorId = loggedBy?.id || input.loggedById;
+    const isAdminActor =
+      input.loggedById === 'system' ||
+      loggedBy?.role === 'president' ||
+      loggedBy?.role === 'coach';
+    const isParticipant = actorId === p1.id || actorId === p2.id;
+
+    if (!isParticipant && !isAdminActor) {
+      throw new Error('Yalnız matçın iştirakçıları və ya klub rəhbərliyi matç qeyd edə bilər.');
+    }
+
+    const sanitizedSetScores = sanitizeTextInput(input.setScores, 80);
+    const parsed = parseSetScores(sanitizedSetScores);
     if (!parsed.isValid) {
-      throw new Error(parsed.errorMessage || 'Invalid set scores');
+      throw new Error(parsed.errorMessage || 'Set xalları stolüstü tennis qaydalarına uyğun deyil.');
+    }
+
+    const summaryValidation = validateMatchSetSummary(parsed.player1Games, parsed.player2Games);
+    if (!summaryValidation.isValid) {
+      throw new Error(summaryValidation.errorMessage || 'Ümumi set hesabı yanlışdır.');
     }
 
     const p1Won = parsed.player1Games > parsed.player2Games;
@@ -1329,12 +1495,12 @@ export class BHOSDataStore {
       player2SetsWon: parsed.player2Games,
     });
 
-    p1.current_elo = eloResult.player1EloAfter;
+    p1.current_elo = Math.min(999, Math.max(0, eloResult.player1EloAfter));
     p1.matches_played += 1;
     if (p1Won) p1.wins += 1;
     else p1.losses += 1;
 
-    p2.current_elo = eloResult.player2EloAfter;
+    p2.current_elo = Math.min(999, Math.max(0, eloResult.player2EloAfter));
     p2.matches_played += 1;
     if (!p1Won) p2.wins += 1;
     else p2.losses += 1;
@@ -1357,11 +1523,11 @@ export class BHOSDataStore {
       logged_by_name: loggedBy?.full_name || 'Club Official',
       player1_score: parsed.player1Games,
       player2_score: parsed.player2Games,
-      set_scores: input.setScores,
+      set_scores: sanitizedSetScores,
       player1_elo_before: eloResult.player1EloBefore,
       player2_elo_before: eloResult.player2EloBefore,
-      player1_elo_after: eloResult.player1EloAfter,
-      player2_elo_after: eloResult.player2EloAfter,
+      player1_elo_after: p1.current_elo,
+      player2_elo_after: p2.current_elo,
       elo_delta: eloResult.winnerGained,
       status: 'confirmed',
       match_date: new Date().toISOString(),
@@ -1426,13 +1592,24 @@ export class BHOSDataStore {
     created_by: string;
     participant_ids?: string[];
   }): Tournament {
-    const slug = input.title
+    const cleanTitle = sanitizeTextInput(input.title, 100);
+    if (!cleanTitle || cleanTitle.length < 2) {
+      throw new Error('Turnirin adı ən azı 2 simvoldan ibarət olmalıdır.');
+    }
+
+    const cleanDescription =
+      sanitizeMultilineText(input.description, 600) ||
+      'Rəsmi BANM Stolüstü Tennis Klubu turniri.';
+    const cleanRules = sanitizeMultilineText(input.custom_rules, 1500);
+
+    const slug = cleanTitle
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
       .replace(/(^-|-$)/g, '');
 
     const id = `tourn-${Date.now()}`;
-    const selectedPlayers = (input.participant_ids || [])
+    const uniqueParticipantIds = Array.from(new Set((input.participant_ids || []).filter(Boolean)));
+    const selectedPlayers = uniqueParticipantIds
       .map((pid) => this.getProfile(pid))
       .filter((p): p is PlayerProfile => Boolean(p));
 
@@ -1443,17 +1620,17 @@ export class BHOSDataStore {
 
     const newTournament: Tournament = {
       id,
-      title: input.title,
+      title: cleanTitle,
       slug,
-      description: input.description,
-      custom_rules: input.custom_rules,
+      description: cleanDescription,
+      custom_rules: cleanRules,
       format: input.format,
       max_participants: input.max_participants,
       status: 'upcoming',
       start_date: input.start_date,
       end_date: input.end_date,
       created_by: input.created_by,
-      participants: input.participant_ids || [],
+      participants: uniqueParticipantIds,
       bracket_data,
       created_at: new Date().toISOString(),
     };
@@ -1472,6 +1649,50 @@ export class BHOSDataStore {
     }
 
     return newTournament;
+  }
+
+  public updateTournamentParticipants(tournamentId: string, participantIds: string[]): Tournament {
+    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+    if (!tournament) {
+      throw new Error('Turnir tapılmadı.');
+    }
+
+    if (isTournamentRosterLocked(tournament.status)) {
+      throw new Error(
+        'Turnir artıq aktivdir və ya başa çatıb. Başlamış turnirin iştirakçı siyahısı dəyişdirilə bilməz.'
+      );
+    }
+
+    const uniqueIds = Array.from(new Set(participantIds.filter(Boolean)));
+    if (uniqueIds.length < 2) {
+      throw new Error('Olimpiya səbəti üçün ən azı 2 fərqli iştirakçı seçilməlidir.');
+    }
+
+    const selectedPlayers = uniqueIds
+      .map((pid) => this.getProfile(pid))
+      .filter((p): p is PlayerProfile => Boolean(p));
+
+    tournament.participants = uniqueIds;
+    tournament.bracket_data = generateSingleEliminationBracket(selectedPlayers, tournament.id);
+    this.saveLocal();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('tournaments')
+        .update({
+          participants: tournament.participants,
+          bracket_data: tournament.bracket_data,
+        })
+        .eq('id', tournamentId)
+        .then(({ error }) => {
+          if (error) {
+            console.warn('[BHOS Store] Supabase updateTournamentParticipants failed:', error.message);
+          }
+        });
+    }
+
+    return tournament;
   }
 
   public updateTournamentBracketMatch(
@@ -1577,18 +1798,20 @@ export class BHOSDataStore {
       );
     }
 
+    const safeNotes = input.notes ? sanitizeTextInput(input.notes, 200) : undefined;
+
     const newRes: TableReservation = {
       id: `res-${Date.now()}`,
       table_number: input.table_number,
       reserved_by: input.reserved_by,
-      reserved_by_name: user?.full_name || 'Member',
+      reserved_by_name: sanitizePlayerName(user?.full_name || 'Member', 80),
       reserved_by_role: user?.role || 'player',
       slot_date: input.slot_date,
       start_time: input.start_time,
       end_time: input.end_time,
       purpose: input.purpose,
       status: 'confirmed',
-      notes: input.notes,
+      notes: safeNotes,
       created_at: new Date().toISOString(),
     };
 
