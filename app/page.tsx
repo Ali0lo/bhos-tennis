@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 import { BHOSDataStore, isApprovedMatch, getPlayerHref } from '../lib/data/store';
 import { PlayerProfile, MatchRecord, Tournament, canAccessAdminPanel } from '../lib/data/types';
 import { useTranslation, useTranslations } from '../lib/i18n';
@@ -110,6 +111,48 @@ export default function HomePage() {
   const top3 = profiles.slice(0, 3);
   const top5 = profiles.slice(0, 5);
   const recentMatches = matches.slice(0, 5);
+  const tickerMatches = useMemo(() => {
+    const list = matches.slice(0, 8);
+    return list.length > 0 ? [...list, ...list] : [];
+  }, [matches]);
+
+  const getActiveWinStreak = (player?: PlayerProfile): number => {
+    if (!player) return 0;
+    const playerMatches = matches
+      .filter(
+        (m) =>
+          m.player1_id === player.id ||
+          m.player2_id === player.id ||
+          (player.full_name &&
+            (m.player1_name?.trim().toLowerCase() === player.full_name.trim().toLowerCase() ||
+              m.player2_name?.trim().toLowerCase() === player.full_name.trim().toLowerCase()))
+      )
+      .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime());
+
+    if (playerMatches.length === 0) {
+      return player.losses === 0 && player.wins >= 3 ? player.wins : 0;
+    }
+
+    let streak = 0;
+    for (const m of playerMatches) {
+      const isP1 =
+        m.player1_id === player.id ||
+        (player.full_name &&
+          m.player1_name?.trim().toLowerCase() === player.full_name.trim().toLowerCase());
+      const myScore = isP1 ? m.player1_score : m.player2_score;
+      const opScore = isP1 ? m.player2_score : m.player1_score;
+      const won = m.winner_id ? m.winner_id === player.id : myScore > opScore;
+      if (won) {
+        streak += 1;
+      } else {
+        break;
+      }
+    }
+    if (streak < 3 && player.losses === 0 && player.wins >= 3) {
+      return player.wins;
+    }
+    return streak;
+  };
 
   const translateFaculty = (faculty?: string) => {
     if (!faculty) return 'BHOS';
@@ -152,6 +195,58 @@ export default function HomePage() {
           </div>
         </div>
       </SmoothReveal>
+
+      {tickerMatches.length > 0 && (
+        <SmoothReveal delay={0.02}>
+          <div className="ticker-viewport relative flex items-center rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden shadow-sm">
+            <div className="shrink-0 z-10 flex items-center gap-2 px-3.5 py-2.5 bg-slate-950 border-r border-slate-800">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600" />
+              </span>
+              <span className="text-[11px] font-display font-extrabold uppercase tracking-wider text-white whitespace-nowrap">
+                Canlı Nəticələr
+              </span>
+            </div>
+
+            <div className="relative flex-1 overflow-hidden py-2">
+              <div className="animate-broadcast-ticker items-center gap-4 px-3">
+                {tickerMatches.map((m, idx) => {
+                  const p1Won = m.player1_score > m.player2_score;
+                  const winnerName = p1Won ? m.player1_name : m.player2_name;
+                  const loserName = p1Won ? m.player2_name : m.player1_name;
+                  const winScore = p1Won ? m.player1_score : m.player2_score;
+                  const loseScore = p1Won ? m.player2_score : m.player1_score;
+                  const delta = Math.abs(Math.round(Number(m.elo_delta) || 0));
+
+                  return (
+                    <Link
+                      key={`${m.id}-${idx}`}
+                      href="/matches"
+                      className="inline-flex items-center gap-2.5 px-3 py-1 rounded-xl bg-slate-950/90 border border-slate-800 hover:border-blue-600/50 transition text-xs shrink-0"
+                    >
+                      <span className="font-semibold text-white whitespace-nowrap">
+                        {winnerName}
+                      </span>
+                      <span className="px-1.5 py-0.5 rounded-md bg-blue-700/20 border border-blue-700/40 font-mono font-bold text-[11px] text-blue-400">
+                        {winScore}:{loseScore}
+                      </span>
+                      <span className="text-slate-400 whitespace-nowrap">
+                        {loserName}
+                      </span>
+                      {delta > 0 && (
+                        <span className="font-mono text-[11px] font-bold text-emerald-500">
+                          +{delta} ELO
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </SmoothReveal>
+      )}
 
       <SmoothReveal delay={0.03}>
         <section className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-lg min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
@@ -206,38 +301,42 @@ export default function HomePage() {
               <MagneticButton>
                 <Link
                   href={currentUser ? '/log-match' : '/login'}
-                  className="px-6 py-3 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition flex items-center gap-2"
+                  className="group px-6 py-3 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition flex items-center gap-2"
                 >
                   <UserPlus className="w-4 h-4" />
                   <span>{t('cta_join')}</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
               </MagneticButton>
 
               <MagneticButton>
                 <Link
                   href="/leaderboard"
-                  className="px-6 py-3 rounded-full bg-blue-700 hover:bg-blue-600 text-white font-display font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition flex items-center gap-2"
+                  className="group px-6 py-3 rounded-full bg-blue-700 hover:bg-blue-600 text-white font-display font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition flex items-center gap-2"
                 >
                   <Trophy className="w-4 h-4" />
                   <span>{t('cta_view_leaderboard')}</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
               </MagneticButton>
 
               <Link
                 href="/tables"
-                className="px-6 py-3 rounded-full border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
+                className="group px-6 py-3 rounded-full border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
               >
                 <TableIcon className="w-4 h-4 text-rose-400" />
                 <span>{rootT('hero.hall_tables_btn')}</span>
+                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
 
               {canAccessAdminPanel(currentUser) && (
                 <button
                   onClick={() => setShowMatchModal(true)}
-                  className="px-5 py-3 rounded-full border border-rose-600/40 bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
+                  className="group px-5 py-3 rounded-full border border-rose-600/40 bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
                 >
                   <Zap className="w-4 h-4" />
                   <span>{rootT('nav.log_match')}</span>
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                 </button>
               )}
             </SmoothRevealItem>
@@ -249,7 +348,7 @@ export default function HomePage() {
                 {t('hero_stats.players')}
               </span>
               <div className="text-xl sm:text-2xl font-mono font-black text-white flex items-baseline gap-1.5">
-                <NumberTicker value={totalPlayersCount} />
+                <NumberTicker value={totalPlayersCount} startValue={0} durationMs={850} />
                 <span className="text-xs font-sans text-slate-400">{rootT('hero.players_count')}</span>
               </div>
             </div>
@@ -258,7 +357,7 @@ export default function HomePage() {
                 {t('hero_stats.matches')}
               </span>
               <div className="text-xl sm:text-2xl font-mono font-black text-blue-400 flex items-baseline gap-1.5">
-                <NumberTicker value={matches.length} />
+                <NumberTicker value={matches.length} startValue={0} durationMs={850} />
                 <span className="text-xs font-sans text-slate-400">{rootT('hero.official_count')}</span>
               </div>
             </div>
@@ -275,7 +374,11 @@ export default function HomePage() {
                 {rootT('hero.stats_leader')}
               </span>
               <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 flex items-baseline gap-1">
-                <NumberTicker value={top3[0]?.current_elo ?? 999} />
+                <NumberTicker
+                  value={top3[0]?.current_elo ?? 999}
+                  startValue={Math.min(500, top3[0]?.current_elo ?? 500)}
+                  durationMs={850}
+                />
                 <span className="text-xs font-sans text-slate-400">ELO</span>
               </div>
             </div>
@@ -306,107 +409,246 @@ export default function HomePage() {
             </div>
             <Link
               href="/leaderboard"
-              className="text-xs font-semibold text-blue-400 hover:underline flex items-center gap-1 self-start sm:self-auto"
+              className="group text-xs font-semibold text-blue-400 hover:underline flex items-center gap-1 self-start sm:self-auto"
             >
               <span>{t('sections.view_all_leaderboard')} ({totalPlayersCount})</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-            {top3[1] && (
-              <HoloCard className="order-2 md:order-1 rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative group hover:border-slate-700 transition">
-                <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow-sm z-30">
-                  2
-                </div>
-                <div className="pt-2 relative z-10">
-                  <Link
-                    href={getPlayerHref(top3[1].id)}
-                    className="font-display font-bold text-base text-white hover:text-blue-400 transition"
-                  >
-                    {top3[1].full_name}
-                  </Link>
-                  <p className="text-xs text-slate-400">{translateFaculty(top3[1].major_faculty)}</p>
-                  <div className="mt-4 flex items-baseline justify-between">
-                    <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
-                      <NumberTicker value={top3[1].current_elo} />
-                      <span className="text-xs text-slate-400 font-sans">ELO</span>
-                    </div>
-                    <span className="text-xs text-emerald-500 font-semibold">
-                      {Math.round((top3[1].wins / (top3[1].matches_played || 1)) * 100)}% {t('table_headers.win_rate')}
-                    </span>
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
-                    <span>{t('table_headers.matches')}: {top3[1].matches_played}</span>
-                    <span>{top3[1].wins}W - {top3[1].losses}L</span>
-                  </div>
-                </div>
-              </HoloCard>
-            )}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
+            {top3[1] && (() => {
+              const leaderElo = top3[0]?.current_elo ?? top3[1].current_elo;
+              const gapToLeader = Math.max(1, leaderElo - top3[1].current_elo);
+              const progressPct = Math.min(
+                96,
+                Math.max(15, Math.round((top3[1].current_elo / Math.max(1, leaderElo)) * 100))
+              );
+              const streak2 = getActiveWinStreak(top3[1]);
 
-            {top3[0] && (
-              <HoloCard className="order-1 md:order-2 rounded-3xl border-2 border-amber-500/80 bg-slate-900 p-7 shadow-md relative group hover:border-amber-400 transition md:-translate-y-3">
-                <div className="w-12 h-12 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-sm z-30">
-                  1
-                </div>
-                <div className="pt-4 text-center relative z-10">
-                  <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-amber-500/30">
-                    {rootT(`roles.${top3[0].role}`)} • #1
-                  </div>
-                  <Link
-                    href={getPlayerHref(top3[0].id)}
-                    className="block font-display font-black text-xl text-white hover:text-blue-400 transition"
-                  >
-                    {top3[0].full_name}
-                  </Link>
-                  <p className="text-xs text-slate-400">{translateFaculty(top3[0].major_faculty)}</p>
-                  <div className="mt-4 font-mono text-3xl font-black text-amber-400 flex items-baseline justify-center gap-1">
-                    <NumberTicker value={top3[0].current_elo} />
-                    <span className="text-xs text-slate-300 font-sans">ELO</span>
-                  </div>
-                  <div className="mt-2 text-xs text-emerald-500 font-semibold">
-                    {Math.round((top3[0].wins / (top3[0].matches_played || 1)) * 100)}% {t('table_headers.win_rate')} ({top3[0].wins}W - {top3[0].losses}L)
-                  </div>
-                  <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-center">
-                    <span>
-                      {top3[0].user_type === 'teacher' || top3[0].user_type === 'staff' || top3[0].role === 'coach' || !top3[0].admission_year
-                        ? rootT('roles.staff_badge')
-                        : `${top3[0].admission_year} ${rootT('roles.admission_suffix')}`}
-                    </span>
-                  </div>
-                </div>
-              </HoloCard>
-            )}
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 36, scale: 0.94 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.18 }}
+                  className="order-2 md:order-1 flex flex-col items-center"
+                >
+                  <div className="w-full animate-podium-second">
+                    <HoloCard className="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-sm relative group hover:border-blue-600/70 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 will-change-transform">
+                      <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow-sm z-30">
+                        2
+                      </div>
+                      <div className="pt-2 relative z-10">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <Link
+                              href={getPlayerHref(top3[1].id)}
+                              className="font-display font-bold text-base text-white hover:text-blue-400 transition"
+                            >
+                              {top3[1].full_name}
+                            </Link>
+                            <p className="text-xs text-slate-400">{translateFaculty(top3[1].major_faculty)}</p>
+                          </div>
+                          {streak2 >= 3 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600/15 border border-rose-600/40 text-rose-400 text-[10px] font-bold animate-pulse shrink-0">
+                              <span>🔥 {streak2} Qələbə Seriyası</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-4 flex items-baseline justify-between">
+                          <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
+                            <NumberTicker
+                              value={top3[1].current_elo}
+                              startValue={Math.min(500, top3[1].current_elo)}
+                              durationMs={850}
+                            />
+                            <span className="text-xs text-slate-400 font-sans">ELO</span>
+                          </div>
+                          <span className="text-xs text-emerald-500 font-semibold">
+                            {Math.round((top3[1].wins / (top3[1].matches_played || 1)) * 100)}% {t('table_headers.win_rate')}
+                          </span>
+                        </div>
 
-            {top3[2] && (
-              <HoloCard className="order-3 rounded-3xl border border-amber-800/80 bg-slate-900 p-6 shadow-sm relative group hover:border-amber-700 transition">
-                <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow-sm z-30">
-                  3
-                </div>
-                <div className="pt-2 relative z-10">
-                  <Link
-                    href={getPlayerHref(top3[2].id)}
-                    className="font-display font-bold text-base text-white hover:text-blue-400 transition"
-                  >
-                    {top3[2].full_name}
-                  </Link>
-                  <p className="text-xs text-slate-400">{translateFaculty(top3[2].major_faculty)}</p>
-                  <div className="mt-4 flex items-baseline justify-between">
-                    <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
-                      <NumberTicker value={top3[2].current_elo} />
-                      <span className="text-xs text-slate-400 font-sans">ELO</span>
-                    </div>
-                    <span className="text-xs text-emerald-500 font-semibold">
-                      {Math.round((top3[2].wins / (top3[2].matches_played || 1)) * 100)}% {t('table_headers.win_rate')}
-                    </span>
+                        <div className="mt-3 space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-mono">
+                            <span className="text-slate-400">Liderə {gapToLeader} ELO qalıb</span>
+                            <span className="text-blue-400 font-bold">{progressPct}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-slate-950 border border-slate-800 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${progressPct}%` }}
+                              transition={{ duration: 0.9, delay: 0.35, ease: 'easeOut' }}
+                              className="h-full rounded-full bg-blue-600"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
+                          <span>{t('table_headers.matches')}: {top3[1].matches_played}</span>
+                          <span>{top3[1].wins}W - {top3[1].losses}L</span>
+                        </div>
+                      </div>
+                    </HoloCard>
                   </div>
-                  <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
-                    <span>{t('table_headers.matches')}: {top3[2].matches_played}</span>
-                    <span>{top3[2].wins}W - {top3[2].losses}L</span>
+                  <div
+                    aria-hidden="true"
+                    className="w-3/4 h-3 mt-3 rounded-full bg-slate-950/90 blur-md animate-shadow-second pointer-events-none"
+                  />
+                </motion.div>
+              );
+            })()}
+
+            {top3[0] && (() => {
+              const streak1 = getActiveWinStreak(top3[0]);
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 44, scale: 0.92 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 250, damping: 18, delay: 0.32 }}
+                  className="order-1 md:order-2 flex flex-col items-center md:-translate-y-3"
+                >
+                  <div className="w-full animate-podium-champion">
+                    <HoloCard className="rounded-3xl border-2 border-amber-500/80 bg-slate-900 p-7 shadow-md relative group hover:border-amber-400 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 will-change-transform">
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 rounded-3xl overflow-hidden z-10"
+                      >
+                        <div className="animate-champion-shimmer absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-amber-400/15 to-transparent" />
+                      </div>
+
+                      <div className="w-12 h-12 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-sm z-30">
+                        <span className="animate-crown-bob text-base leading-none mr-0.5">👑</span>
+                        <span>1</span>
+                      </div>
+                      <div className="pt-4 text-center relative z-20">
+                        <div className="flex flex-wrap items-center justify-center gap-1.5 mb-2">
+                          <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider border border-amber-500/30">
+                            {rootT(`roles.${top3[0].role}`)} • #1
+                          </div>
+                          {streak1 >= 3 && (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600/15 border border-rose-600/40 text-rose-400 text-[10px] font-bold animate-pulse">
+                              <span>🔥 {streak1} Qələbə Seriyası</span>
+                            </span>
+                          )}
+                        </div>
+                        <Link
+                          href={getPlayerHref(top3[0].id)}
+                          className="block font-display font-black text-xl text-white hover:text-blue-400 transition"
+                        >
+                          {top3[0].full_name}
+                        </Link>
+                        <p className="text-xs text-slate-400">{translateFaculty(top3[0].major_faculty)}</p>
+                        <div className="mt-4 font-mono text-3xl font-black text-amber-400 flex items-baseline justify-center gap-1">
+                          <NumberTicker
+                            value={top3[0].current_elo}
+                            startValue={Math.min(500, top3[0].current_elo)}
+                            durationMs={850}
+                          />
+                          <span className="text-xs text-slate-300 font-sans">ELO</span>
+                        </div>
+                        <div className="mt-2 text-xs text-emerald-500 font-semibold">
+                          {Math.round((top3[0].wins / (top3[0].matches_played || 1)) * 100)}% {t('table_headers.win_rate')} ({top3[0].wins}W - {top3[0].losses}L)
+                        </div>
+                        <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-center">
+                          <span>
+                            {top3[0].user_type === 'teacher' || top3[0].user_type === 'staff' || top3[0].role === 'coach' || !top3[0].admission_year
+                              ? rootT('roles.staff_badge')
+                              : `${top3[0].admission_year} ${rootT('roles.admission_suffix')}`}
+                          </span>
+                        </div>
+                      </div>
+                    </HoloCard>
                   </div>
-                </div>
-              </HoloCard>
-            )}
+                  <div
+                    aria-hidden="true"
+                    className="w-4/5 h-3.5 mt-3.5 rounded-full bg-amber-500/20 blur-md animate-shadow-champion pointer-events-none"
+                  />
+                </motion.div>
+              );
+            })()}
+
+            {top3[2] && (() => {
+              const leaderElo = top3[0]?.current_elo ?? top3[2].current_elo;
+              const gapToLeader = Math.max(1, leaderElo - top3[2].current_elo);
+              const progressPct = Math.min(
+                95,
+                Math.max(12, Math.round((top3[2].current_elo / Math.max(1, leaderElo)) * 100))
+              );
+              const streak3 = getActiveWinStreak(top3[2]);
+
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 36, scale: 0.94 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.05 }}
+                  className="order-3 flex flex-col items-center"
+                >
+                  <div className="w-full animate-podium-third">
+                    <HoloCard className="rounded-3xl border border-amber-800/80 bg-slate-900 p-6 shadow-sm relative group hover:border-amber-500/80 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 will-change-transform">
+                      <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow-sm z-30">
+                        3
+                      </div>
+                      <div className="pt-2 relative z-10">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <Link
+                              href={getPlayerHref(top3[2].id)}
+                              className="font-display font-bold text-base text-white hover:text-blue-400 transition"
+                            >
+                              {top3[2].full_name}
+                            </Link>
+                            <p className="text-xs text-slate-400">{translateFaculty(top3[2].major_faculty)}</p>
+                          </div>
+                          {streak3 >= 3 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600/15 border border-rose-600/40 text-rose-400 text-[10px] font-bold animate-pulse shrink-0">
+                              <span>🔥 {streak3} Qələbə Seriyası</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-4 flex items-baseline justify-between">
+                          <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
+                            <NumberTicker
+                              value={top3[2].current_elo}
+                              startValue={Math.min(500, top3[2].current_elo)}
+                              durationMs={850}
+                            />
+                            <span className="text-xs text-slate-400 font-sans">ELO</span>
+                          </div>
+                          <span className="text-xs text-emerald-500 font-semibold">
+                            {Math.round((top3[2].wins / (top3[2].matches_played || 1)) * 100)}% {t('table_headers.win_rate')}
+                          </span>
+                        </div>
+
+                        <div className="mt-3 space-y-1.5">
+                          <div className="flex items-center justify-between text-[10px] font-mono">
+                            <span className="text-slate-400">Liderə {gapToLeader} ELO qalıb</span>
+                            <span className="text-amber-400 font-bold">{progressPct}%</span>
+                          </div>
+                          <div className="h-1.5 w-full rounded-full bg-slate-950 border border-slate-800 overflow-hidden">
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${progressPct}%` }}
+                              transition={{ duration: 0.9, delay: 0.25, ease: 'easeOut' }}
+                              className="h-full rounded-full bg-amber-500"
+                            />
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
+                          <span>{t('table_headers.matches')}: {top3[2].matches_played}</span>
+                          <span>{top3[2].wins}W - {top3[2].losses}L</span>
+                        </div>
+                      </div>
+                    </HoloCard>
+                  </div>
+                  <div
+                    aria-hidden="true"
+                    className="w-3/4 h-3 mt-3 rounded-full bg-slate-950/90 blur-md animate-shadow-third pointer-events-none"
+                  />
+                </motion.div>
+              );
+            })()}
           </div>
 
           {top5.length === 0 ? (
@@ -464,10 +706,10 @@ export default function HomePage() {
               <div className="px-4 py-3 border-t border-slate-800 bg-slate-950/60 flex justify-end">
                 <Link
                   href="/leaderboard"
-                  className="text-xs font-semibold text-blue-400 hover:underline inline-flex items-center gap-1"
+                  className="group text-xs font-semibold text-blue-400 hover:underline inline-flex items-center gap-1"
                 >
                   <span>{t('sections.view_all_leaderboard')}</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
               </div>
             </div>
@@ -488,10 +730,10 @@ export default function HomePage() {
             </h3>
             <Link
               href="/matches"
-              className="text-xs text-blue-400 hover:underline flex items-center gap-1"
+              className="group text-xs text-blue-400 hover:underline flex items-center gap-1"
             >
               <span>{rootT('home_recent.view_all')}</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
           </div>
 
@@ -512,7 +754,7 @@ export default function HomePage() {
                 return (
                   <div
                     key={m.id}
-                    className="p-4 rounded-2xl border border-slate-800 bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-700 transition shadow-sm"
+                    className="p-4 rounded-2xl border border-slate-800 bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-blue-600/60 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 shadow-sm will-change-transform"
                   >
                     <div className="flex items-center gap-4">
                       <div className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 font-mono font-black text-lg text-white">

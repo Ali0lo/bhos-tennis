@@ -59,3 +59,124 @@ main {
 .animate-shimmer {
   animation: shimmer 3s linear infinite;
 }
+
+@keyframes podium-float-champion {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0);
+  }
+}
+
+@keyframes podium-float-runner {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes podium-floor-shadow {
+  0%,
+  100% {
+    transform: scaleX(1) scaleY(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scaleX(0.74) scaleY(0.82);
+    opacity: 0.22;
+  }
+}
+
+@keyframes crown-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-6deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(6deg);
+  }
+}
+
+@keyframes champion-border-shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-24deg);
+  }
+  40%,
+  100% {
+    transform: translateX(250%) skewX(-24deg);
+  }
+}
+
+@keyframes broadcast-ticker {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-podium-champion {
+  animation: podium-float-champion 3.4s ease-in-out infinite;
+  animation-delay: 0s;
+  will-change: transform;
+}
+
+.animate-podium-second {
+  animation: podium-float-runner 3.4s ease-in-out infinite;
+  animation-delay: 0.6s;
+  will-change: transform;
+}
+
+.animate-podium-third {
+  animation: podium-float-runner 3.4s ease-in-out infinite;
+  animation-delay: 1.2s;
+  will-change: transform;
+}
+
+.animate-shadow-champion {
+  animation: podium-floor-shadow 3.4s ease-in-out infinite;
+  animation-delay: 0s;
+  will-change: transform, opacity;
+}
+
+.animate-shadow-second {
+  animation: podium-floor-shadow 3.4s ease-in-out infinite;
+  animation-delay: 0.6s;
+  will-change: transform, opacity;
+}
+
+.animate-shadow-third {
+  animation: podium-floor-shadow 3.4s ease-in-out infinite;
+  animation-delay: 1.2s;
+  will-change: transform, opacity;
+}
+
+.animate-crown-bob {
+  display: inline-block;
+  animation: crown-bob 2.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-champion-shimmer {
+  animation: champion-border-shimmer 4.2s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-broadcast-ticker {
+  display: flex;
+  width: max-content;
+  animation: broadcast-ticker 32s linear infinite;
+  will-change: transform;
+}
+
+.ticker-viewport:hover .animate-broadcast-ticker,
+.ticker-viewport:active .animate-broadcast-ticker,
+.ticker-viewport:focus-within .animate-broadcast-ticker {
+  animation-play-state: paused;
+}
