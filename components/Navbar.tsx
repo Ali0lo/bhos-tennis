@@ -55,6 +55,7 @@ export default function Navbar() {
     { href: '/matches', label: t('nav.my_matches') || 'Oyunlarım', showBadge: true },
     { href: '/tournaments', label: t('nav.tournaments') || 'Turnirlər' },
     { href: '/tables', label: t('nav.tables') || 'Zal Qaydaları' },
+    { href: '/minigame', label: '🏓 Mini-Oyun' },
     { href: '/#about', label: t('nav.about') || 'Haqqında' },
   ];
 

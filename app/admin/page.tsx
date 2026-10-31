@@ -23,6 +23,11 @@ import {
   ALLOWED_EMAIL_ERROR,
 } from '../../lib/security/sanitize';
 import { useTranslation } from '../../lib/i18n';
+import {
+  ACHIEVEMENT_BADGES,
+  AchievementBadgeId,
+  evaluatePlayerAchievements,
+} from '../../lib/types/achievements';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
 import PendingVerificationQueue from '../../components/PendingVerificationQueue';
 import PendingApprovals from '../../components/PendingApprovals';
@@ -48,6 +53,7 @@ import {
   Ban,
   Loader2,
   Crown,
+  Award,
 } from 'lucide-react';
 
 const FACULTIES: BHOSFaculty[] = [
@@ -100,6 +106,10 @@ export default function AdminDashboardPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [togglingFoundingId, setTogglingFoundingId] = useState<string | null>(null);
   const [togglingPresidentId, setTogglingPresidentId] = useState<string | null>(null);
+  const [badgeModalPlayer, setBadgeModalPlayer] = useState<PlayerProfile | null>(null);
+  const [playerBadgesMap, setPlayerBadgesMap] = useState<Record<string, string>>({});
+  const [isLoadingBadges, setIsLoadingBadges] = useState<boolean>(false);
+  const [togglingBadgeId, setTogglingBadgeId] = useState<AchievementBadgeId | null>(null);
   const [editingPlayerId, setEditingPlayerId] = useState<string | null>(null);
   const [editPlayerName, setEditPlayerName] = useState<string>('');
   const [memberFilter, setMemberFilter] = useState<'all' | 'registered' | 'default' | 'pending'>('all');
@@ -458,6 +468,108 @@ export default function AdminDashboardPage() {
       showToast(err.message || 'Xəta baş verdi.');
     } finally {
       setTogglingFoundingId(null);
+    }
+  };
+
+  const handleOpenBadgeModal = async (player: PlayerProfile) => {
+    setBadgeModalPlayer(player);
+    setPlayerBadgesMap({});
+    setIsLoadingBadges(true);
+    try {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        const { data } = await supabase
+          .from('profile_achievements')
+          .select('badge_id, unlocked_at')
+          .eq('profile_id', player.id);
+        if (Array.isArray(data)) {
+          const map: Record<string, string> = {};
+          data.forEach((row: any) => {
+            if (row?.badge_id) {
+              map[row.badge_id] = row.unlocked_at || new Date().toISOString();
+            }
+          });
+          setPlayerBadgesMap(map);
+        }
+      }
+    } catch {
+    } finally {
+      setIsLoadingBadges(false);
+    }
+  };
+
+  const handleTogglePlayerBadge = async (
+    player: PlayerProfile,
+    badgeId: AchievementBadgeId,
+    currentlyUnlocked: boolean
+  ) => {
+    setTogglingBadgeId(badgeId);
+    try {
+      const supabase = getSupabaseClient();
+      const nowIso = new Date().toISOString();
+
+      if (supabase) {
+        if (!currentlyUnlocked) {
+          await supabase.from('profile_achievements').upsert(
+            [
+              {
+                profile_id: player.id,
+                badge_id: badgeId,
+                unlocked_at: nowIso,
+              },
+            ],
+            { onConflict: 'profile_id,badge_id' }
+          );
+        } else {
+          await supabase
+            .from('profile_achievements')
+            .delete()
+            .eq('profile_id', player.id)
+            .eq('badge_id', badgeId);
+        }
+
+        if (badgeId === 'founding_member') {
+          const nextOrigin: 'İlkin Heyət' | 'Qeydiyyat' = !currentlyUnlocked
+            ? 'İlkin Heyət'
+            : 'Qeydiyyat';
+          await supabase
+            .from('profiles')
+            .update({ origin: nextOrigin })
+            .eq('id', player.id);
+          store.updateProfile(player.id, { origin: nextOrigin });
+          setBadgeModalPlayer((prev) =>
+            prev && prev.id === player.id ? { ...prev, origin: nextOrigin } : prev
+          );
+        }
+      }
+
+      setPlayerBadgesMap((prev) => {
+        const next = { ...prev };
+        if (!currentlyUnlocked) {
+          next[badgeId] = nowIso;
+        } else {
+          delete next[badgeId];
+        }
+        return next;
+      });
+
+      if (typeof window !== 'undefined') {
+        try {
+          sessionStorage.removeItem(`bhos_player_${player.id}`);
+        } catch {}
+      }
+
+      const badgeDef = ACHIEVEMENT_BADGES.find((b) => b.id === badgeId);
+      const badgeTitle = badgeDef ? `${badgeDef.emoji} ${badgeDef.titleAz}` : badgeId;
+      showToast(
+        !currentlyUnlocked
+          ? `"${player.full_name}" üçün ${badgeTitle} nişanı verildi!`
+          : `"${player.full_name}" üçün ${badgeTitle} nişanı ləğv edildi.`
+      );
+    } catch (err: any) {
+      showToast(err.message || 'Nişan yenilənərkən xəta baş verdi.');
+    } finally {
+      setTogglingBadgeId(null);
     }
   };
 
@@ -1164,6 +1276,15 @@ export default function AdminDashboardPage() {
                                   <div className="flex items-center justify-end gap-2">
                                     <button
                                       type="button"
+                                      onClick={() => handleOpenBadgeModal(p)}
+                                      title="Bütün 12 Nişanı İdarə Et"
+                                      className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-amber-400 border border-amber-500/30 text-[11px] font-semibold transition"
+                                    >
+                                      <Award className="w-3.5 h-3.5" />
+                                      <span className="hidden xl:inline">Nişanlar</span>
+                                    </button>
+                                    <button
+                                      type="button"
                                       onClick={() => handleToggleFoundingMember(p)}
                                       disabled={togglingFoundingId === p.id}
                                       title={
@@ -1779,6 +1900,140 @@ export default function AdminDashboardPage() {
                   </button>
                 </div>
               </form>
+            </div>
+          </div>
+        )}
+
+        {badgeModalPlayer && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+            <div className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl space-y-5 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <Award className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-display font-bold text-white">
+                      Nişanların İdarə Edilməsi ({ACHIEVEMENT_BADGES.length} Nişan)
+                    </h3>
+                    <p className="text-xs text-slate-400">
+                      Oyunçu: <span className="text-white font-semibold">{badgeModalPlayer.full_name}</span>
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setBadgeModalPlayer(null)}
+                  className="p-2 rounded-lg bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {isLoadingBadges ? (
+                <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-400 text-xs">
+                  <Loader2 className="w-6 h-6 animate-spin text-blue-500" />
+                  <span>Oyunçu nişanları yüklənir...</span>
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {(() => {
+                    const playerMatches = matchesList.filter(
+                      (m) =>
+                        m.player1_id === badgeModalPlayer.id ||
+                        m.player2_id === badgeModalPlayer.id
+                    );
+                    const evaluated = evaluatePlayerAchievements(
+                      badgeModalPlayer,
+                      playerMatches,
+                      playerBadgesMap,
+                      profiles,
+                      store.getTournaments()
+                    );
+
+                    return evaluated.map((badge) => {
+                      const hasDbGrant = Boolean(playerBadgesMap[badge.id]);
+                      const isUnlocked =
+                        badge.id === 'founding_member'
+                          ? badge.unlocked
+                          : hasDbGrant || badge.unlocked;
+
+                      const tierBorderClass =
+                        badge.accentColor === 'gold'
+                          ? 'border-amber-500/60 bg-slate-950 text-amber-400'
+                          : badge.accentColor === 'crimson'
+                          ? 'border-rose-600/60 bg-slate-950 text-rose-400'
+                          : 'border-blue-700/60 bg-slate-950 text-blue-400';
+
+                      return (
+                        <div
+                          key={badge.id}
+                          className={`rounded-xl p-3.5 border flex items-center justify-between gap-3 transition ${
+                            isUnlocked
+                              ? tierBorderClass
+                              : 'border-slate-800 bg-slate-950/60 text-slate-400'
+                          }`}
+                        >
+                          <div className="flex items-center gap-3 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-center text-lg shrink-0">
+                              <span>{badge.emoji}</span>
+                            </div>
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-xs font-display font-bold text-white truncate">
+                                  {badge.titleAz}
+                                </span>
+                                <span
+                                  className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border ${
+                                    badge.accentColor === 'gold'
+                                      ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                      : badge.accentColor === 'crimson'
+                                      ? 'bg-rose-600/15 text-rose-400 border-rose-600/30'
+                                      : 'bg-blue-700/15 text-blue-400 border-blue-700/40'
+                                  }`}
+                                >
+                                  {badge.tierLabelAz}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-400 truncate mt-0.5">
+                                {badge.descriptionAz}
+                              </p>
+                            </div>
+                          </div>
+
+                          <button
+                            type="button"
+                            disabled={togglingBadgeId === badge.id}
+                            onClick={() =>
+                              handleTogglePlayerBadge(
+                                badgeModalPlayer,
+                                badge.id,
+                                hasDbGrant ||
+                                  (badge.id === 'founding_member' && badge.unlocked)
+                              )
+                            }
+                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold border shrink-0 transition ${
+                              hasDbGrant ||
+                              (badge.id === 'founding_member' && badge.unlocked)
+                                ? 'bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 border-rose-600/40'
+                                : 'bg-blue-700 hover:bg-blue-600 text-white border-blue-600'
+                            }`}
+                          >
+                            {togglingBadgeId === badge.id ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : hasDbGrant ||
+                              (badge.id === 'founding_member' && badge.unlocked) ? (
+                              'Ləğv et'
+                            ) : (
+                              '+ Ver'
+                            )}
+                          </button>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              )}
             </div>
           </div>
         )}

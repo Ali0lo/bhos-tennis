@@ -297,8 +297,14 @@ export default function PlayerProfilePage() {
 
   const achievements = useMemo(() => {
     if (!profile) return [];
-    return evaluatePlayerAchievements(profile, validMatches, dbAchievements);
-  }, [profile, validMatches, dbAchievements]);
+    return evaluatePlayerAchievements(
+      profile,
+      validMatches,
+      dbAchievements,
+      roster,
+      store.getTournaments()
+    );
+  }, [profile, validMatches, dbAchievements, roster, store]);
 
   const unlockedCount = useMemo(() => {
     return achievements.filter((a) => a.unlocked).length;
@@ -775,10 +781,10 @@ export default function PlayerProfilePage() {
       </SmoothReveal>
 
       <SmoothReveal delay={0.11}>
-        <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-6 shadow-xl space-y-4">
+        <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg bg-[#EAB308]/15 border border-[#EAB308]/30 flex items-center justify-center text-[#EAB308]">
+              <div className="w-8 h-8 rounded-lg bg-amber-500/15 border border-amber-500/30 flex items-center justify-center text-amber-400">
                 <Award className="w-4 h-4" />
               </div>
               <div>
@@ -790,79 +796,141 @@ export default function PlayerProfilePage() {
                 </p>
               </div>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-[#131C2B] text-[#EAB308] border border-[#EAB308]/30">
-              {unlockedCount} / {achievements.length} Aktiv
+            <span className="px-2.5 py-1 rounded-full text-xs font-mono font-bold bg-slate-950 text-amber-400 border border-amber-500/30">
+              {unlockedCount} / {achievements.length || 12} Aktiv
             </span>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {achievements.map((badge) => {
-              const isGold = badge.accentColor === 'gold';
-              const unlockedBorder = isGold
-                ? 'border-amber-500/40 shadow-sm bg-slate-900'
-                : 'border-blue-600/40 shadow-sm bg-slate-900';
+              const tierCardClass =
+                badge.accentColor === 'gold'
+                  ? 'border-amber-500/70 bg-slate-900 text-amber-400 shadow-sm'
+                  : badge.accentColor === 'crimson'
+                  ? 'border-rose-600/60 bg-slate-900 text-rose-400 shadow-sm'
+                  : 'border-blue-700/60 bg-slate-900 text-blue-400 shadow-sm';
+
+              const tierIconBoxClass =
+                badge.accentColor === 'gold'
+                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
+                  : badge.accentColor === 'crimson'
+                  ? 'bg-rose-600/15 border-rose-600/40 text-rose-400'
+                  : 'bg-blue-700/15 border-blue-700/40 text-blue-400';
+
+              const tierStatusPillClass =
+                badge.accentColor === 'gold'
+                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
+                  : badge.accentColor === 'crimson'
+                  ? 'bg-rose-600/15 text-rose-400 border border-rose-600/30'
+                  : 'bg-blue-700/15 text-blue-400 border border-blue-700/40';
+
+              const tierProgressFillClass =
+                badge.accentColor === 'gold'
+                  ? 'bg-amber-500'
+                  : badge.accentColor === 'crimson'
+                  ? 'bg-rose-600'
+                  : 'bg-blue-600';
+
+              const progressPct = badge.progress
+                ? Math.min(
+                    100,
+                    Math.max(
+                      0,
+                      Math.round((badge.progress.current / badge.progress.target) * 100)
+                    )
+                  )
+                : 0;
 
               return (
                 <div
                   key={badge.id}
                   title={`Şərt: ${badge.descriptionAz}`}
-                  className={`group relative rounded-xl p-4 border transition-all duration-200 ${
+                  className={`group relative rounded-xl p-4 border transition-all duration-200 flex flex-col justify-between ${
                     badge.unlocked
-                      ? unlockedBorder
-                      : 'border-slate-800 bg-slate-950 opacity-60 hover:opacity-85'
+                      ? tierCardClass
+                      : 'border-slate-800 bg-slate-950 text-slate-400 opacity-75 hover:opacity-95'
                   }`}
                 >
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 border ${
-                          badge.unlocked
-                            ? isGold
-                              ? 'bg-amber-500/15 border-amber-500/40 shadow-sm'
-                              : 'bg-blue-700/15 border-blue-600/40 shadow-sm'
-                            : 'bg-slate-900 border-slate-800 grayscale'
-                        }`}
-                      >
-                        <span>{badge.emoji}</span>
+                  <div>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`w-11 h-11 rounded-xl flex items-center justify-center text-xl shrink-0 border ${
+                            badge.unlocked
+                              ? tierIconBoxClass
+                              : 'bg-slate-900 border-slate-800 grayscale'
+                          }`}
+                        >
+                          <span>{badge.emoji}</span>
+                        </div>
+
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <h4 className="text-sm font-display font-bold text-white truncate">
+                              {badge.titleAz}
+                            </h4>
+                          </div>
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[10px] uppercase tracking-wider font-mono text-slate-400 truncate">
+                              {badge.titleEn}
+                            </span>
+                            <span className="text-slate-700">•</span>
+                            <span
+                              className={`text-[9px] uppercase tracking-wider font-bold ${
+                                badge.accentColor === 'gold'
+                                  ? 'text-amber-400'
+                                  : badge.accentColor === 'crimson'
+                                  ? 'text-rose-400'
+                                  : 'text-blue-400'
+                              }`}
+                            >
+                              {badge.tierLabelAz}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <h4 className="text-sm font-display font-bold text-white truncate">
-                            {badge.titleAz}
-                          </h4>
-                        </div>
-                        <span className="text-[10px] uppercase tracking-wider font-mono text-slate-400 block">
-                          {badge.titleEn}
+                      {badge.unlocked ? (
+                        <span
+                          className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${tierStatusPillClass}`}
+                        >
+                          <CheckCircle2 className="w-3 h-3" />
+                          Qazanılıb
                         </span>
-                      </div>
+                      ) : (
+                        <span
+                          title={badge.descriptionAz}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-900 text-slate-400 border border-slate-800 shrink-0"
+                        >
+                          <Lock className="w-3 h-3 text-slate-400" />
+                          Kilidli
+                        </span>
+                      )}
                     </div>
 
-                    {badge.unlocked ? (
-                      <span
-                        className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${
-                          isGold
-                            ? 'bg-[#EAB308]/15 text-[#EAB308] border border-[#EAB308]/30'
-                            : 'bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30'
-                        }`}
-                      >
-                        <CheckCircle2 className="w-3 h-3" />
-                        Qazanılıb
-                      </span>
-                    ) : (
-                      <span
-                        title={badge.descriptionAz}
-                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-white/5 text-slate-400 border border-white/10 shrink-0"
-                      >
-                        <Lock className="w-3 h-3 text-slate-400" />
-                        Kilidli
-                      </span>
-                    )}
+                    <p className="text-xs text-slate-300 mt-3 leading-relaxed">
+                      {badge.descriptionAz}
+                    </p>
                   </div>
 
-                  <p className="text-xs text-slate-300 mt-3 leading-relaxed">
-                    {badge.descriptionAz}
-                  </p>
+                  {!badge.unlocked && badge.progress && (
+                    <div className="mt-3.5 pt-2.5 border-t border-slate-800/80 space-y-1.5">
+                      <div className="flex items-center justify-between text-[10px] font-mono">
+                        <span className="text-slate-400 uppercase tracking-wider">
+                          İrəliləyiş
+                        </span>
+                        <span className="font-bold text-slate-200">
+                          {badge.progress.current} / {badge.progress.target}
+                        </span>
+                      </div>
+                      <div className="w-full h-1.5 rounded-full bg-slate-900 border border-slate-800 overflow-hidden">
+                        <div
+                          className={`h-full rounded-full transition-all duration-300 ${tierProgressFillClass}`}
+                          style={{ width: `${progressPct}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               );
             })}
