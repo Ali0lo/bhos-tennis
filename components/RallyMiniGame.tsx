@@ -500,7 +500,7 @@ export default function RallyMiniGame() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-700/15 border border-blue-700/40 text-blue-400 text-[10px] font-bold uppercase tracking-wider mb-1">
-            <span>🏓 BHOS Arcade</span>
+            <span>BHOS Arcade</span>
           </div>
           <h2 className="text-lg font-display font-bold text-white">
             Masaüstü Ralli
@@ -588,7 +588,7 @@ export default function RallyMiniGame() {
         {gameState !== 'playing' && (
           <div className="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-6 text-center">
             <div className="w-12 h-12 rounded-2xl bg-blue-700/20 border border-blue-600/40 flex items-center justify-center text-2xl mb-3">
-              <span>🏓</span>
+              
             </div>
 
             {gameState === 'gameover' ? (
