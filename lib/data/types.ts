@@ -118,6 +118,35 @@ export interface BracketMatch {
   status: 'pending' | 'waiting' | 'ready' | 'scheduled' | 'completed' | 'approved';
 }
 
+export interface GroupMatch {
+  id: string;
+  groupId: string;
+  player1: PlayerProfile;
+  player2: PlayerProfile;
+  player1_score?: number;
+  player2_score?: number;
+  set_scores?: string;
+  winner_id?: string;
+  status: 'pending' | 'ready' | 'completed';
+}
+
+export interface TournamentGroup {
+  id: string;
+  name: string;
+  players: PlayerProfile[];
+  matches: GroupMatch[];
+}
+
+export interface TournamentSettingsConfig {
+  group_size: number;
+  group_size_label?: string;
+  advance_per_group: number;
+  location?: string;
+  registration_url?: string;
+  allowed_admission_year?: number | null;
+  best_of_sets?: number;
+}
+
 export interface Tournament {
   id: string;
   title: string;
@@ -131,11 +160,18 @@ export interface Tournament {
   end_date?: string;
   created_by: string | null;
   winner_id?: string | null;
+  group_size?: number;
+  advance_per_group?: number;
+  location?: string;
+  registration_url?: string;
+  allowed_admission_year?: number | null;
   bracket_data?: {
     rounds: {
       name: string;
       matches: BracketMatch[];
     }[];
+    groups?: TournamentGroup[];
+    settings?: TournamentSettingsConfig;
   };
   participants?: string[];
   created_at: string;

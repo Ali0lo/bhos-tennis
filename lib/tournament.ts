@@ -1,4 +1,4 @@
-import { BracketMatch, PlayerProfile, Tournament } from './data/types';
+import { BracketMatch, GroupMatch, PlayerProfile, Tournament, TournamentGroup } from './data/types';
 import { parseSetScores, validateMatchSetSummary } from './elo';
 
 export function isTournamentRosterLocked(status?: string | null): boolean {
@@ -353,4 +353,155 @@ export function findBracketNodeForMatch(
   }
 
   return null;
+}
+
+export interface GroupStandingRow {
+  player: PlayerProfile;
+  played: number;
+  wins: number;
+  losses: number;
+  setsWon: number;
+  setsLost: number;
+  setDiff: number;
+  points: number;
+}
+
+export function generateTournamentGroups(
+  players: PlayerProfile[],
+  tournamentId: string,
+  targetGroupSize = 4
+): TournamentGroup[] {
+  const seenIds = new Set<string>();
+  const uniquePlayers: PlayerProfile[] = [];
+  for (const p of players || []) {
+    if (p && p.id && !seenIds.has(p.id)) {
+      seenIds.add(p.id);
+      uniquePlayers.push(p);
+    }
+  }
+
+  if (uniquePlayers.length === 0) {
+    return [];
+  }
+
+  const clampedGroupSize = Math.max(3, Math.min(8, targetGroupSize || 4));
+  const sortedPlayers = [...uniquePlayers].sort((a, b) => b.current_elo - a.current_elo);
+  const numGroups = Math.max(1, Math.floor(sortedPlayers.length / clampedGroupSize));
+  const groupBuckets: PlayerProfile[][] = Array.from({ length: numGroups }, () => []);
+
+  sortedPlayers.forEach((player, idx) => {
+    const cycle = Math.floor(idx / numGroups);
+    const posInCycle = idx % numGroups;
+    const bucketIdx = cycle % 2 === 0 ? posInCycle : numGroups - 1 - posInCycle;
+    groupBuckets[bucketIdx].push(player);
+  });
+
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  return groupBuckets.map((bucketPlayers, gIdx) => {
+    const letter = letters[gIdx] || String(gIdx + 1);
+    const groupId = `g-${tournamentId}-${letter.toLowerCase()}`;
+    const matches: GroupMatch[] = [];
+    let matchCounter = 0;
+
+    for (let i = 0; i < bucketPlayers.length; i++) {
+      for (let j = i + 1; j < bucketPlayers.length; j++) {
+        matches.push({
+          id: `${groupId}-m${matchCounter++}`,
+          groupId,
+          player1: bucketPlayers[i],
+          player2: bucketPlayers[j],
+          status: 'ready',
+        });
+      }
+    }
+
+    return {
+      id: groupId,
+      name: `Qrup ${letter}`,
+      players: bucketPlayers,
+      matches,
+    };
+  });
+}
+
+export function computeGroupStandings(group: TournamentGroup): GroupStandingRow[] {
+  const map = new Map<string, GroupStandingRow>();
+  for (const p of group.players || []) {
+    map.set(p.id, {
+      player: p,
+      played: 0,
+      wins: 0,
+      losses: 0,
+      setsWon: 0,
+      setsLost: 0,
+      setDiff: 0,
+      points: 0,
+    });
+  }
+
+  for (const m of group.matches || []) {
+    if (
+      m.status === 'completed' &&
+      typeof m.player1_score === 'number' &&
+      typeof m.player2_score === 'number' &&
+      m.player1_score !== m.player2_score
+    ) {
+      const row1 = map.get(m.player1.id);
+      const row2 = map.get(m.player2.id);
+      const p1Won = m.player1_score > m.player2_score;
+
+      if (row1) {
+        row1.played += 1;
+        row1.setsWon += m.player1_score;
+        row1.setsLost += m.player2_score;
+        row1.setDiff = row1.setsWon - row1.setsLost;
+        if (p1Won) {
+          row1.wins += 1;
+          row1.points += 2;
+        } else {
+          row1.losses += 1;
+          row1.points += 1;
+        }
+      }
+
+      if (row2) {
+        row2.played += 1;
+        row2.setsWon += m.player2_score;
+        row2.setsLost += m.player1_score;
+        row2.setDiff = row2.setsWon - row2.setsLost;
+        if (!p1Won) {
+          row2.wins += 1;
+          row2.points += 2;
+        } else {
+          row2.losses += 1;
+          row2.points += 1;
+        }
+      }
+    }
+  }
+
+  return Array.from(map.values()).sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.wins !== a.wins) return b.wins - a.wins;
+    if (b.setDiff !== a.setDiff) return b.setDiff - a.setDiff;
+    if (b.setsWon !== a.setsWon) return b.setsWon - a.setsWon;
+    return b.player.current_elo - a.player.current_elo;
+  });
+}
+
+export function getQualifiedPlayersFromGroups(
+  groups: TournamentGroup[],
+  advancePerGroup = 2
+): PlayerProfile[] {
+  const qualified: PlayerProfile[] = [];
+  const cap = Math.max(1, advancePerGroup || 2);
+
+  for (const group of groups || []) {
+    const standings = computeGroupStandings(group);
+    standings.slice(0, cap).forEach((row) => {
+      qualified.push(row.player);
+    });
+  }
+
+  return qualified;
 }

@@ -16,6 +16,8 @@ import {
   advanceBracketWinner,
   findBracketNodeForMatch,
   generateSingleEliminationBracket,
+  generateTournamentGroups,
+  getQualifiedPlayersFromGroups,
   isTournamentRosterLocked,
 } from '../tournament';
 import {
@@ -1769,6 +1771,11 @@ export class BHOSDataStore {
     end_date?: string;
     created_by: string;
     participant_ids?: string[];
+    group_size?: number;
+    advance_per_group?: number;
+    location?: string;
+    allowed_admission_year?: number;
+    registration_url?: string;
   }): Tournament {
     const cleanTitle = sanitizeTextInput(input.title, 100);
     if (!cleanTitle || cleanTitle.length < 2) {
@@ -1790,10 +1797,28 @@ export class BHOSDataStore {
       .map((pid) => this.getProfile(pid))
       .filter((p): p is PlayerProfile => Boolean(p));
 
-    const bracket_data =
+    let bracket_data =
       selectedPlayers.length >= 2
         ? generateSingleEliminationBracket(selectedPlayers, id)
         : undefined;
+
+    const groupSize = input.group_size || 4;
+    const advancePerGroup = input.advance_per_group || 2;
+
+    if (input.format === 'groups_and_knockout' && selectedPlayers.length >= 2) {
+      const groups = generateTournamentGroups(selectedPlayers, id, groupSize);
+      bracket_data = {
+        ...(bracket_data || { rounds: [] }),
+        groups,
+        settings: {
+          group_size: groupSize,
+          advance_per_group: advancePerGroup,
+          location: input.location,
+          allowed_admission_year: input.allowed_admission_year,
+          registration_url: input.registration_url,
+        },
+      };
+    }
 
     const newTournament: Tournament = {
       id,
@@ -1802,6 +1827,11 @@ export class BHOSDataStore {
       description: cleanDescription,
       custom_rules: cleanRules,
       format: input.format,
+      group_size: input.group_size,
+      advance_per_group: input.advance_per_group,
+      location: input.location,
+      allowed_admission_year: input.allowed_admission_year,
+      registration_url: input.registration_url,
       max_participants: input.max_participants,
       status: 'upcoming',
       start_date: input.start_date,
@@ -1933,6 +1963,208 @@ export class BHOSDataStore {
         });
     }
 
+    return tournament;
+  }
+
+  public updateTournamentSettings(
+    tournamentId: string,
+    updates: Partial<Tournament>
+  ): Tournament {
+    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+    if (!tournament) {
+      throw new Error('Turnir tapılmadı.');
+    }
+
+    if (updates.title !== undefined) {
+      const cleanTitle = sanitizeTextInput(updates.title, 100);
+      if (cleanTitle) {
+        tournament.title = cleanTitle;
+      }
+    }
+    if (updates.description !== undefined) {
+      tournament.description = sanitizeMultilineText(updates.description, 600);
+    }
+    if (updates.custom_rules !== undefined) {
+      tournament.custom_rules = sanitizeMultilineText(updates.custom_rules, 2000);
+    }
+    if (updates.format !== undefined) {
+      tournament.format = updates.format;
+    }
+    if (updates.status !== undefined) {
+      tournament.status = updates.status;
+    }
+    if (updates.start_date !== undefined) {
+      tournament.start_date = updates.start_date;
+    }
+    if (updates.end_date !== undefined) {
+      tournament.end_date = updates.end_date;
+    }
+    if (updates.max_participants !== undefined) {
+      tournament.max_participants = Math.max(2, Math.min(128, updates.max_participants));
+    }
+    if (updates.group_size !== undefined) {
+      tournament.group_size = updates.group_size;
+    }
+    if (updates.advance_per_group !== undefined) {
+      tournament.advance_per_group = updates.advance_per_group;
+    }
+    if (updates.location !== undefined) {
+      tournament.location = sanitizeTextInput(updates.location, 100);
+    }
+    if (updates.registration_url !== undefined) {
+      tournament.registration_url = updates.registration_url
+        ? sanitizeTextInput(updates.registration_url, 300)
+        : undefined;
+    }
+    if (updates.allowed_admission_year !== undefined) {
+      tournament.allowed_admission_year = updates.allowed_admission_year;
+    }
+    if (updates.bracket_data !== undefined) {
+      tournament.bracket_data = updates.bracket_data;
+    }
+    if (updates.participants !== undefined) {
+      tournament.participants = updates.participants;
+    }
+
+    this.saveLocal();
+    this.notify();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('tournaments')
+        .update({
+          title: tournament.title,
+          description: tournament.description,
+          custom_rules: tournament.custom_rules,
+          format: tournament.format,
+          status: tournament.status,
+          start_date: tournament.start_date,
+          end_date: tournament.end_date,
+          max_participants: tournament.max_participants,
+          bracket_data: tournament.bracket_data,
+          participants: tournament.participants,
+        })
+        .eq('id', tournamentId)
+        .then(({ error }) => {
+          if (error) console.warn('[BHOS Store] Supabase updateTournamentSettings failed:', error.message);
+        });
+    }
+
+    return tournament;
+  }
+
+  public generateTournamentGroupsAction(
+    tournamentId: string,
+    groupSize = 4,
+    advancePerGroup = 2
+  ): Tournament {
+    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+    if (!tournament) throw new Error('Turnir tapılmadı.');
+
+    const participantIds = tournament.participants || [];
+    let players = participantIds
+      .map((pid) => this.getProfile(pid))
+      .filter((p): p is PlayerProfile => Boolean(p));
+
+    if (players.length < 3) {
+      const activeProfiles = this.getVerifiedProfiles();
+      const eligible = tournament.allowed_admission_year
+        ? activeProfiles.filter((p) => p.admission_year === tournament.allowed_admission_year)
+        : activeProfiles;
+      if (eligible.length >= 3) {
+        players = eligible;
+        tournament.participants = eligible.map((p) => p.id);
+      }
+    }
+
+    if (players.length < 3) {
+      throw new Error('Qrup mərhələsi üçün ən azı 3 oyunçu lazımdır.');
+    }
+
+    const groups = generateTournamentGroups(players, tournament.id, groupSize);
+    tournament.group_size = groupSize;
+    tournament.advance_per_group = advancePerGroup;
+    tournament.format = 'groups_and_knockout';
+    tournament.bracket_data = {
+      ...(tournament.bracket_data || { rounds: [] }),
+      groups,
+      settings: {
+        ...(tournament.bracket_data?.settings || {}),
+        group_size: groupSize,
+        group_size_label: `${groupSize} nəfər`,
+        advance_per_group: advancePerGroup,
+        location: tournament.location,
+        registration_url: tournament.registration_url,
+        allowed_admission_year: tournament.allowed_admission_year,
+      },
+    };
+
+    this.saveLocal();
+    this.notify();
+    return tournament;
+  }
+
+  public updateGroupMatchScore(
+    tournamentId: string,
+    groupId: string,
+    matchId: string,
+    p1Score: number,
+    p2Score: number,
+    setScores?: string
+  ): Tournament {
+    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+    if (!tournament || !tournament.bracket_data?.groups) {
+      throw new Error('Turnir və ya qruplar tapılmadı.');
+    }
+
+    const group = tournament.bracket_data.groups.find((g) => g.id === groupId);
+    if (!group) throw new Error('Qrup tapılmadı.');
+
+    const match = group.matches.find((m) => m.id === matchId);
+    if (!match) throw new Error('Oyun tapılmadı.');
+
+    match.player1_score = p1Score;
+    match.player2_score = p2Score;
+    match.set_scores = setScores || `${p1Score}-${p2Score}`;
+    match.winner_id = p1Score > p2Score ? match.player1.id : match.player2.id;
+    match.status = 'completed';
+
+    if (tournament.status === 'upcoming') {
+      tournament.status = 'ongoing';
+    }
+
+    this.saveLocal();
+    this.notify();
+    return tournament;
+  }
+
+  public advanceGroupWinnersToPlayoffs(tournamentId: string): Tournament {
+    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+    if (!tournament || !tournament.bracket_data?.groups) {
+      throw new Error('Turnir və ya qrup mərhələsi tapılmadı.');
+    }
+
+    const advancePerGroup =
+      tournament.advance_per_group ||
+      tournament.bracket_data.settings?.advance_per_group ||
+      2;
+    const qualified = getQualifiedPlayersFromGroups(
+      tournament.bracket_data.groups,
+      advancePerGroup
+    );
+
+    if (qualified.length < 2) {
+      throw new Error(
+        'Pley-off səbəti yaratmaq üçün qruplardan ən azı 2 qalib çıxmalıdır.'
+      );
+    }
+
+    const playoffBracket = generateSingleEliminationBracket(qualified, tournament.id);
+    tournament.bracket_data.rounds = playoffBracket.rounds;
+
+    this.saveLocal();
+    this.notify();
     return tournament;
   }
 

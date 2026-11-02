@@ -1,5 +1,5 @@
 import { PlayerProfile, MatchRecord, Tournament, TableReservation } from './types';
-import { generateSingleEliminationBracket } from '../tournament';
+import { generateSingleEliminationBracket, generateTournamentGroups } from '../tournament';
 
 export const INITIAL_PROFILES: PlayerProfile[] = [
   {
@@ -205,6 +205,44 @@ export const INITIAL_PROFILES: PlayerProfile[] = [
 export const INITIAL_MATCHES: MatchRecord[] = [];
 
 export const INITIAL_TOURNAMENTS: Tournament[] = [
+  {
+    id: 'tourn-foundation-2026',
+    title: 'Foundation Tələbələri Üçün Stolüstü Tennis Turniri',
+    slug: 'foundation-kuboku-2026',
+    description:
+      'Bibiheybət kampusunda 2026-cı il qəbul (Foundation) tələbələri üçün keçirilən rəsmi stolüstü tennis turniri. İlk mərhələdə 4–5 nəfərlik qruplarda dairəvi oyunlar keçirilir və hər qrupdan ən yaxşı 2 oyunçu Pley-off mərhələsinə yüksəlir.',
+    custom_rules: `### Turnir Formatı və Qaydalar
+- **Mərhələ 1 (Qrup Mərhələsi):** Hər qrupda 4–5 oyunçu dairəvi sistemlə (Round-Robin) mübarizə aparır.
+- **Pley-offa Yüksəliş:** Hər qrupdan ilk 2 yeri tutan oyunçu Olimpiya (Pley-off) mərhələsinə vəsiqə qazanır.
+- **İştirak Şərti:** Yalnız 2026-cı il qəbul BANM Foundation (Hazırlıq kursu) tələbələri iştirak edə bilər.
+- **Oyun Qaydaları:** Qrup oyunları 3 setdən (Best of 3), Pley-off və Final oyunları 5 setdən (Best of 5) ibarətdir.`,
+    format: 'groups_and_knockout',
+    max_participants: 20,
+    group_size: 4,
+    advance_per_group: 2,
+    location: 'Bibiheybət Kampusu',
+    registration_url: 'https://forms.gle/ULNedGr1LFzyafRe9',
+    allowed_admission_year: 2026,
+    status: 'upcoming',
+    start_date: '2026-11-07T14:00:00+04:00',
+    end_date: '2026-11-07T19:00:00+04:00',
+    created_by: 'p-1',
+    participants: [],
+    bracket_data: {
+      rounds: [],
+      groups: [],
+      settings: {
+        group_size: 4,
+        group_size_label: '4–5 nəfər',
+        advance_per_group: 2,
+        location: 'Bibiheybət Kampusu',
+        registration_url: 'https://forms.gle/ULNedGr1LFzyafRe9',
+        allowed_admission_year: 2026,
+        best_of_sets: 3,
+      },
+    },
+    created_at: '2026-11-01T10:00:00Z',
+  },
   {
     id: 'tourn-1',
     title: 'BHOS Autumn Open Championship 2026',

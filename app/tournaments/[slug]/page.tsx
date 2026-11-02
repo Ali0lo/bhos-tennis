@@ -8,6 +8,8 @@ import { BHOSDataStore, getPlayerHref } from '../../../lib/data/store';
 import { Tournament, PlayerProfile } from '../../../lib/data/types';
 import SmoothReveal from '../../../components/SmoothReveal';
 import BracketTree from '../../../components/BracketTree';
+import TournamentGroupsStage from '../../../components/TournamentGroupsStage';
+import EditTournamentModal from '../../../components/EditTournamentModal';
 import { 
   Trophy, 
   ArrowLeft, 
@@ -16,7 +18,10 @@ import {
   FileText, 
   Award, 
   ShieldCheck,
-  Loader2
+  Loader2,
+  Settings,
+  MapPin,
+  ExternalLink,
 } from 'lucide-react';
 
 export default function TournamentDetailPage() {
@@ -30,6 +35,7 @@ export default function TournamentDetailPage() {
   const [participants, setParticipants] = useState<PlayerProfile[]>([]);
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [loading, setLoading] = useState(true);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const loadData = useCallback(async (silent: boolean = false) => {
     if (!slug) return;
@@ -164,33 +170,55 @@ export default function TournamentDetailPage() {
 
   const formatStatus = (status?: string) => {
     if (status === 'ongoing' || status === 'In Progress' || status === 'in_progress') {
-      return { label: 'In Progress', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
+      return { label: 'Davam edir', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
     }
     if (status === 'completed' || status === 'Completed') {
-      return { label: 'Completed', color: 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30' };
+      return { label: 'Başa çatıb', color: 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30' };
     }
-    return { label: 'Upcoming', color: 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30' };
+    return { label: 'Gözləyir', color: 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30' };
+  };
+
+  const formatLabel = (fmt?: string) => {
+    if (fmt === 'groups_and_knockout') return 'Qrup Mərhələsi + Pley-off';
+    if (fmt === 'round_robin') return 'Dairəvi Sistem (Round Robin)';
+    return 'Single Elimination';
   };
 
   const statusConfig = formatStatus(tournament.status);
   const participantCount = participants.length > 0 ? participants.length : (tournament.max_participants || 8);
+  const isGroupStage =
+    tournament.format === 'groups_and_knockout' ||
+    Boolean(tournament.bracket_data?.groups && tournament.bracket_data.groups.length > 0);
+  const hasPlayoffRounds = Boolean(
+    tournament.bracket_data?.rounds && tournament.bracket_data.rounds.length > 0
+  );
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-16">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <button
           onClick={() => router.push('/tournaments')}
-          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition px-3 py-1.5 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10"
+          className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition px-3 py-1.5 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 self-start"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to Tournaments</span>
+          <span>Turnirlər Siyahısına Qayıt</span>
         </button>
 
         {isAdmin && (
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30 text-xs font-bold font-mono">
-            <ShieldCheck className="w-3.5 h-3.5" />
-            <span>Admin Bracket Controls Active</span>
-          </span>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => setShowEditModal(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition shadow-sm active:scale-95"
+            >
+              <Settings className="w-3.5 h-3.5" />
+              <span>Tənzimləmələri Redaktə Et</span>
+            </button>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30 text-xs font-bold font-mono">
+              <ShieldCheck className="w-3.5 h-3.5" />
+              <span>Admin Nəzarəti Aktiv</span>
+            </span>
+          </div>
         )}
       </div>
 
@@ -203,9 +231,14 @@ export default function TournamentDetailPage() {
               <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border ${statusConfig.color}`}>
                 {statusConfig.label}
               </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-white/5 text-slate-300 border border-white/10">
-                Single Elimination
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-blue-700/20 text-blue-300 border border-blue-600/30">
+                {formatLabel(tournament.format)}
               </span>
+              {tournament.format === 'groups_and_knockout' && (
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">
+                  {tournament.group_size || 4} nəfərlik qruplar • Top {tournament.advance_per_group || 2} pley-offa
+                </span>
+              )}
             </div>
 
             <h1 className="text-2xl sm:text-4xl font-display font-black text-white tracking-tight">
@@ -221,16 +254,48 @@ export default function TournamentDetailPage() {
             <div className="pt-2 flex items-center gap-6 text-xs text-slate-400 font-mono flex-wrap">
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-[#3B82F6]" />
-                <span>Starts: {new Date(tournament.start_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                <span>
+                  Başlama: {new Date(tournament.start_date).toLocaleDateString('az-AZ', { month: 'short', day: 'numeric', year: 'numeric' })}{' '}
+                  {new Date(tournament.start_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
               </span>
+              {tournament.location && (
+                <span className="flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-rose-500" />
+                  <span>Məkan: {tournament.location}</span>
+                </span>
+              )}
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-[#3B82F6]" />
-                <span>Field: {participantCount} Players</span>
+                <span>İştirakçılar: {participantCount} Oyunçu</span>
               </span>
+              {tournament.registration_url && (
+                <a
+                  href={tournament.registration_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-rose-400 hover:text-rose-300 hover:underline"
+                >
+                  <span>Qeydiyyat Formu</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+              )}
             </div>
           </div>
         </div>
       </SmoothReveal>
+
+      {isGroupStage && (
+        <SmoothReveal delay={0.08}>
+          <div className="rounded-3xl border border-white/10 bg-[#0F1623] p-6 sm:p-8 shadow-2xl space-y-6">
+            <TournamentGroupsStage
+              tournament={tournament}
+              isAdmin={Boolean(isAdmin)}
+              onUpdate={() => loadData(true)}
+            />
+          </div>
+        </SmoothReveal>
+      )}
 
       <SmoothReveal delay={0.1}>
         <div className="rounded-3xl border border-white/10 bg-[#0F1623] p-6 sm:p-8 shadow-2xl space-y-6">
@@ -241,22 +306,41 @@ export default function TournamentDetailPage() {
               </div>
               <div>
                 <h2 className="text-lg font-display font-black text-white">
-                  Championship Bracket Draw
+                  {isGroupStage ? 'Pley-off (Olimpiya) Mərhələsi' : 'Çempionat Səbəti (Bracket Draw)'}
                 </h2>
                 <p className="text-xs text-slate-400">
-                  Visual single-elimination tournament tree with live match results and winner progression
+                  {isGroupStage
+                    ? 'Qrup mərhələsinin ilk 2 yer sahibləri arasında Olimpiya sistemi üzrə final oyunları'
+                    : 'Olimpiya sistemi üzrə turnir ağacı və canlı oyun nəticələri'}
                 </p>
               </div>
             </div>
 
-            {isAdmin && (
+            {isAdmin && hasPlayoffRounds && (
               <span className="text-[11px] text-slate-400 font-mono hidden sm:inline-block">
-                Click any match to log game sets
+                Nəticə daxil etmək üçün oyuna klikləyin
               </span>
             )}
           </div>
 
-          <BracketTree tournament={tournament} onUpdate={() => loadData(true)} isAdmin={isAdmin} />
+          {hasPlayoffRounds ? (
+            <BracketTree tournament={tournament} onUpdate={() => loadData(true)} isAdmin={isAdmin} />
+          ) : isGroupStage ? (
+            <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
+              <p className="text-sm font-semibold text-white">
+                Pley-off səbəti qrup mərhələsindən sonra formalaşacaq
+              </p>
+              <p className="text-xs text-slate-400 max-w-md mx-auto">
+                Hər qrupdan ən yaxşı {tournament.advance_per_group || 2} oyunçu qrup oyunları tamamlandıqdan sonra avtomatik pley-off mərhələsinə keçəcək.
+              </p>
+            </div>
+          ) : (
+            <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
+              <p className="text-sm font-semibold text-white">
+                Səbət hələ formalaşdırılmayıb
+              </p>
+            </div>
+          )}
         </div>
       </SmoothReveal>
 
@@ -325,6 +409,14 @@ export default function TournamentDetailPage() {
           </SmoothReveal>
         </div>
       </div>
+
+      {showEditModal && tournament && (
+        <EditTournamentModal
+          tournament={tournament}
+          onClose={() => setShowEditModal(false)}
+          onSaved={() => loadData(true)}
+        />
+      )}
     </div>
   );
 }
