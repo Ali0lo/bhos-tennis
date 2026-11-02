@@ -5,10 +5,10 @@ import { X, ExternalLink, ShieldAlert, Lock, CheckCircle2 } from 'lucide-react';
 import { BHOSDataStore } from '../lib/data/store';
 import { PlayerProfile } from '../lib/data/types';
 
-const TARGET_DATE_ISO = '2026-11-07T10:00:00+04:00';
+const TARGET_DATE_ISO = '2026-11-07T14:00:00+04:00';
 const DISMISS_STORAGE_KEY = 'bhos_foundation_tournament_banner_dismissed_v1';
 const REGISTRATION_URL = 'https://forms.gle/ULNedGr1LFzyafRe9';
-const MIN_FOUNDATION_ADMISSION_YEAR = 2025;
+const FOUNDATION_ADMISSION_YEAR = 2026;
 
 interface CountdownTime {
   days: number;
@@ -40,7 +40,7 @@ function isNonFoundationProfile(user: PlayerProfile | null): boolean {
   if (user.user_type === 'teacher' || user.user_type === 'staff' || user.role === 'coach') {
     return true;
   }
-  if (typeof user.admission_year === 'number' && user.admission_year < MIN_FOUNDATION_ADMISSION_YEAR) {
+  if (user.admission_year !== FOUNDATION_ADMISSION_YEAR) {
     return true;
   }
   return false;
@@ -145,7 +145,7 @@ export default function FoundationTournamentBanner() {
             </span>
 
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-700/20 border border-blue-600/40 text-blue-300 text-[11px] font-bold">
-              <span>🎓 Yalnız Foundation Tələbələri Üçün</span>
+              <span>🎓 Yalnız 2026 Qəbul (Foundation)</span>
             </span>
 
             {mounted && countdown.isStarted && (
@@ -161,10 +161,13 @@ export default function FoundationTournamentBanner() {
 
           <div className="flex flex-wrap items-center gap-2 pt-0.5">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200">
-              <span>📅 7 Noyabr 2026</span>
+              <span>📅 7 Noyabr 2026 • 14:00</span>
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200">
               <span>📍 Bibiheybət Kampusu</span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-amber-500/30 text-xs font-semibold text-amber-300">
+              <span>⚖️ Baş Hakim: Əli İsgəndərli</span>
             </span>
           </div>
 
@@ -172,7 +175,7 @@ export default function FoundationTournamentBanner() {
             <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-rose-600/10 border border-rose-600/40 text-xs text-rose-300">
               <ShieldAlert className="w-4 h-4 text-rose-400 shrink-0 mt-0.5" />
               <span>
-                Bu turnir yalnız <strong>BANM Foundation (Hazırlıq kursu)</strong> tələbələri üçündür. Sizin profiliniz ({currentUser?.admission_year ? `${currentUser.admission_year}-ci il qəbul` : 'Heyət'}) bu kateqoriyaya uyğun deyil.
+                Bu turnirdə yalnız <strong>2026-cı il qəbul (Foundation / Hazırlıq kursu)</strong> tələbələri qeydiyyatdan keçə bilər. Sizin profiliniz ({currentUser?.admission_year ? `${currentUser.admission_year}-ci il qəbul` : 'Heyət'}) oyunçu qeydiyyatı üçün uyğun deyil.
               </span>
             </div>
           )}
@@ -216,7 +219,7 @@ export default function FoundationTournamentBanner() {
               className="inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-slate-950 border border-slate-800 text-slate-400 font-display font-semibold text-xs sm:text-sm cursor-not-allowed whitespace-nowrap"
             >
               <Lock className="w-3.5 h-3.5 text-rose-400" />
-              <span>Yalnız Foundation Tələbələri Üçün</span>
+              <span>Yalnız 2026 Foundation Tələbələri</span>
             </button>
           ) : (
             <button
@@ -262,7 +265,7 @@ export default function FoundationTournamentBanner() {
             </div>
 
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              7 Noyabr tarixində keçiriləcək bu turnirdə <strong>yalnız BANM Foundation (Hazırlıq kursu)</strong> tələbələri iştirak edə bilər. Yuxarı kurs tələbələrinin müraciətləri qeydiyyata alınmır.
+              7 Noyabr saat 14:00-da (Bakı vaxtı ilə) Bibiheybət kampusunda keçiriləcək bu turnirdə <strong>yalnız 2026-cı il qəbul (Foundation / Hazırlıq kursu)</strong> tələbələri iştirak edə bilər. Turnirin baş hakimi: <strong>Əli İsgəndərli</strong>.
             </p>
 
             <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-blue-600/50 cursor-pointer transition select-none">
@@ -273,7 +276,7 @@ export default function FoundationTournamentBanner() {
                 className="mt-0.5 w-4 h-4 rounded border-slate-700 bg-slate-900 text-rose-600 focus:ring-rose-500"
               />
               <span className="text-xs font-semibold text-slate-200 leading-snug">
-                Təsdiq edirəm ki, mən hazırda BANM Foundation (Hazırlıq kursu) tələbəsiyəm.
+                Təsdiq edirəm ki, mən 2026-cı il qəbul BANM Foundation (Hazırlıq kursu) tələbəsiyəm.
               </span>
             </label>
 
