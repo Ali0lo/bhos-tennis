@@ -3,12 +3,17 @@
 import React from 'react';
 import Link from 'next/link';
 import SmoothReveal from '../../components/SmoothReveal';
+import FoundationTournamentBanner from '../../components/FoundationTournamentBanner';
 import { Trophy, CalendarClock, ArrowLeft, Sparkles } from 'lucide-react';
 
 export default function TournamentsPage() {
   return (
-    <div className="min-h-[70vh] flex items-center justify-center px-4 pt-20 pb-16">
-      <SmoothReveal delay={0.05} scale>
+    <div className="min-h-[70vh] flex flex-col items-center justify-center gap-8 px-4 pt-6 pb-16 max-w-5xl mx-auto">
+      <SmoothReveal delay={0.02} className="w-full">
+        <FoundationTournamentBanner />
+      </SmoothReveal>
+
+      <SmoothReveal delay={0.05} scale className="w-full">
         <div className="relative w-full max-w-2xl mx-auto rounded-3xl bg-slate-900 border border-slate-800 p-8 sm:p-12 shadow-sm overflow-hidden text-center">
           <div className="relative flex flex-col items-center gap-6">
             <div className="w-16 h-16 rounded-2xl bg-slate-950 border border-blue-600/30 flex items-center justify-center shadow-sm">
