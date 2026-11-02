@@ -166,9 +166,6 @@ export default function FoundationTournamentBanner() {
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200">
               <span>📍 Bibiheybət Kampusu</span>
             </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-amber-500/30 text-xs font-semibold text-amber-300">
-              <span>⚖️ Baş Hakim: Əli İsgəndərli</span>
-            </span>
           </div>
 
           {ineligibleWarning && isIneligibleUser && (
@@ -265,7 +262,7 @@ export default function FoundationTournamentBanner() {
             </div>
 
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              7 Noyabr saat 14:00-da (Bakı vaxtı ilə) Bibiheybət kampusunda keçiriləcək bu turnirdə <strong>yalnız 2026-cı il qəbul (Foundation / Hazırlıq kursu)</strong> tələbələri iştirak edə bilər. Turnirin baş hakimi: <strong>Əli İsgəndərli</strong>.
+              7 Noyabr saat 14:00-da (Bakı vaxtı ilə) Bibiheybət kampusunda keçiriləcək bu turnirdə <strong>yalnız 2026-cı il qəbul (Foundation / Hazırlıq kursu)</strong> tələbələri iştirak edə bilər. Yuxarı kurs tələbələrinin müraciətləri qeydiyyata alınmır.
             </p>
 
             <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-blue-600/50 cursor-pointer transition select-none">
