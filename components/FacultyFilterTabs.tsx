@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { isAllDepartmentsFilter, matchesDepartmentFilter } from '../lib/data/types';
+import { isAllDepartmentsFilter, matchesDepartmentFilter } from '../lib/utils/department';
 
 export interface FacultyTabOption {
   id: string;

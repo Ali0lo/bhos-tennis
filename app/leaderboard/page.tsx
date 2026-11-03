@@ -7,11 +7,12 @@ import { BHOSDataStore, getPlayerHref } from '../../lib/data/store';
 import { PlayerProfile } from '../../lib/data/types';
 import SmoothReveal from '../../components/SmoothReveal';
 import CourtBackground from '../../components/CourtBackground';
-import LeaderboardTable, {
-  isStaffMember,
+import LeaderboardTable, { isStaffMember } from '../../components/LeaderboardTable';
+import {
   getProfileDepartment,
   matchesDepartmentFilter,
-} from '../../components/LeaderboardTable';
+  isAllDepartmentsFilter,
+} from '../../lib/utils/department';
 import LeaderboardSkeleton from '../../components/LeaderboardSkeleton';
 import AnimatedCounter from '../../components/AnimatedCounter';
 import HoloCard from '../../components/HoloCard';
@@ -37,6 +38,7 @@ const FACULTIES = [
   'Process Automation',
   'Business Administration',
   'Finance',
+  'Foundation',
   'İdman Klubu',
 ];
 
@@ -48,6 +50,7 @@ const FACULTY_TABS: { id: string; label: string }[] = [
   { id: 'Chemical Engineering', label: 'Kimya müh.' },
   { id: 'Petroleum Engineering', label: 'Neft-qaz müh.' },
   { id: 'Business Administration', label: 'Biznesin idarə edilməsi' },
+  { id: 'Foundation', label: 'Hazırlıq (Foundation)' },
 ];
 
 const COHORT_PILLS: { id: string; label: string }[] = [
@@ -120,7 +123,9 @@ export default function LeaderboardPage() {
         matchesDepartmentFilter(p, q) ||
         (p.blade_equipment && p.blade_equipment.toLowerCase().includes(q));
 
-      const matchesFaculty = matchesDepartmentFilter(p, selectedFaculty);
+      const matchesFaculty = isAllDepartmentsFilter(selectedFaculty)
+        ? true
+        : matchesDepartmentFilter(p, selectedFaculty);
 
       const matchesGender =
         genderFilter === 'ALL' ||

@@ -3,16 +3,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
+import { PlayerProfile, isPresidentBadgeHolder } from '../lib/data/types';
 import {
-  PlayerProfile,
   normalizeDepartment,
   foldDepartmentAscii,
   getProfileDepartment,
   resolveCanonicalDepartment,
   matchesDepartmentFilter,
   isAllDepartmentsFilter,
-  isPresidentBadgeHolder,
-} from '../lib/data/types';
+} from '../lib/utils/department';
 import AnimatedCounter from './AnimatedCounter';
 import { getPlayerHref } from '../lib/data/store';
 import {

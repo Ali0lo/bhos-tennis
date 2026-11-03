@@ -6,7 +6,7 @@ import {
   isAllDepartmentsFilter,
   matchesDepartmentFilter,
   resolveCanonicalDepartment,
-} from '../../../lib/data/types';
+} from '../../../lib/utils/department';
 
 export const revalidate = 30;
 
@@ -32,8 +32,10 @@ export async function GET(request: Request) {
     return {
       ...row,
       major_faculty: row.major_faculty || canonicalDept,
-      faculty: row.faculty || canonicalDept,
-      department: canonicalDept,
+      faculty: row.faculty || row.major_faculty || canonicalDept,
+      department: row.department || row.major_faculty || canonicalDept,
+      major: row.major || row.major_faculty || canonicalDept,
+      group: row.group || '',
     };
   };
 

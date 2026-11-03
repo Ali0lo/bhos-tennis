@@ -429,8 +429,10 @@ export class BHOSDataStore {
               full_name: row.full_name,
               email: row.email || prev?.email || seed?.email || '',
               major_faculty: canonicalDept,
-              faculty: canonicalDept,
-              department: canonicalDept,
+              faculty: row.faculty || canonicalDept,
+              department: row.department || canonicalDept,
+              major: row.major || prev?.major || canonicalDept,
+              group: row.group || prev?.group || '',
               admission_year:
                 row.admission_year !== undefined
                   ? row.admission_year
@@ -522,8 +524,10 @@ export class BHOSDataStore {
             return {
               ...p,
               major_faculty: canonicalDept,
-              faculty: canonicalDept,
-              department: canonicalDept,
+              faculty: p.faculty || canonicalDept,
+              department: p.department || canonicalDept,
+              major: p.major || canonicalDept,
+              group: p.group || '',
               avatar_url: normalizeAvatarUrl(p.avatar_url),
             };
           });
@@ -589,8 +593,10 @@ export class BHOSDataStore {
           return {
             ...p,
             major_faculty: canonicalDept,
-            faculty: canonicalDept,
-            department: canonicalDept,
+            faculty: p.faculty || canonicalDept,
+            department: p.department || canonicalDept,
+            major: p.major || canonicalDept,
+            group: p.group || '',
             avatar_url: normalizeAvatarUrl(p.avatar_url),
           };
         });
@@ -2339,13 +2345,22 @@ function mapRawProfileToPlayerProfile(
     raw.losses ?? Math.max(0, totalMatches - wins)
   );
 
+  const rawDept =
+    getProfileDepartment(raw) ||
+    getProfileDepartment(fallback) ||
+    'Computer Engineering';
+  const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
+
   return {
     id: raw.id || fallback?.id || '',
     full_name: raw.full_name || fallback?.full_name || 'Unknown',
     slug: raw.slug || fallback?.slug || null,
     email: raw.email || fallback?.email || '',
-    major_faculty:
-      raw.major_faculty || raw.faculty || fallback?.major_faculty || 'Computer Engineering',
+    major_faculty: canonicalDept,
+    faculty: raw.faculty || canonicalDept,
+    department: raw.department || canonicalDept,
+    major: raw.major || canonicalDept,
+    group: raw.group || fallback?.group || '',
     admission_year: raw.admission_year ?? fallback?.admission_year ?? 2024,
     user_type:
       raw.user_type ||
