@@ -59,7 +59,7 @@ export default function EditTournamentModal({
   const [startDate, setStartDate] = useState(
     tournament.start_date
       ? new Date(tournament.start_date).toISOString().slice(0, 16)
-      : '2026-11-07T14:00'
+      : '2026-11-07T10:00'
   );
   const [customRules, setCustomRules] = useState(tournament.custom_rules || '');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);

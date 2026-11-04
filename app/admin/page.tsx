@@ -145,7 +145,7 @@ export default function AdminDashboardPage() {
   const [tRules, setTRules] = useState(
     '### Turnir Qaydaları\n- Qrup mərhələsi: 4-5 nəfərlik qruplar (hər qrupdan 2 nəfər pley-offa vəsiqə qazanır).\n- Pley-off: Olimpiya sistemi (uduzan çıxır), 5 setdən ən yaxşısı.\n- ITTF standartlı servis qaydası (16 sm açıq ovucdan atış).'
   );
-  const [tStartDate, setTStartDate] = useState('2026-11-07');
+  const [tStartDate, setTStartDate] = useState('2026-11-07T10:00');
   const [selectedParticipants, setSelectedParticipants] = useState<string[]>([]);
   const [formError, setFormError] = useState<string | null>(null);
   const [tournamentsList, setTournamentsList] = useState<Tournament[]>([]);

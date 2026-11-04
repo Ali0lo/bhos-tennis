@@ -5,7 +5,7 @@ import { X, ExternalLink, ShieldAlert, Lock, CheckCircle2 } from 'lucide-react';
 import { BHOSDataStore } from '../lib/data/store';
 import { PlayerProfile } from '../lib/data/types';
 
-const TARGET_DATE_ISO = '2026-11-07T14:00:00+04:00';
+const TARGET_DATE_ISO = '2026-11-07T10:00:00+04:00';
 const DISMISS_STORAGE_KEY = 'bhos_foundation_tournament_banner_dismissed_v1';
 const REGISTRATION_URL = 'https://forms.gle/ULNedGr1LFzyafRe9';
 const FOUNDATION_ADMISSION_YEAR = 2026;
@@ -161,7 +161,7 @@ export default function FoundationTournamentBanner() {
 
           <div className="flex flex-wrap items-center gap-2 pt-0.5">
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200">
-              <span>📅 7 Noyabr 2026 • 14:00</span>
+              <span>📅 7 Noyabr 2026 (Şənbə) • 10:00</span>
             </span>
             <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-200">
               <span>📍 Bibiheybət Kampusu</span>
@@ -262,7 +262,7 @@ export default function FoundationTournamentBanner() {
             </div>
 
             <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              7 Noyabr saat 14:00-da (Bakı vaxtı ilə) Bibiheybət kampusunda keçiriləcək bu turnirdə <strong>yalnız 2026-cı il qəbul (Foundation / Hazırlıq kursu)</strong> tələbələri iştirak edə bilər. Yuxarı kurs tələbələrinin müraciətləri qeydiyyata alınmır.
+              7 Noyabr şənbə günü saat 10:00-da (Bakı vaxtı ilə) Bibiheybət kampusunda keçiriləcək bu turnirdə <strong>yalnız 2026-cı il qəbul (Foundation / Hazırlıq kursu)</strong> tələbələri iştirak edə bilər. Yuxarı kurs tələbələrinin müraciətləri qeydiyyata alınmır.
             </p>
 
             <label className="flex items-start gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-blue-600/50 cursor-pointer transition select-none">

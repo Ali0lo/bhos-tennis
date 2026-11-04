@@ -224,8 +224,8 @@ export const INITIAL_TOURNAMENTS: Tournament[] = [
     registration_url: 'https://forms.gle/ULNedGr1LFzyafRe9',
     allowed_admission_year: 2026,
     status: 'upcoming',
-    start_date: '2026-11-07T14:00:00+04:00',
-    end_date: '2026-11-07T19:00:00+04:00',
+    start_date: '2026-11-07T10:00:00+04:00',
+    end_date: '2026-11-07T16:00:00+04:00',
     created_by: 'p-1',
     participants: [],
     bracket_data: {
