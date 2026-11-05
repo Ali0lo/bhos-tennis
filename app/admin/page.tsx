@@ -707,8 +707,14 @@ export default function AdminDashboardPage() {
         ? 8
         : uniqueParticipants.length <= 16
         ? 16
+        : uniqueParticipants.length <= 24
+        ? 24
         : uniqueParticipants.length <= 32
         ? 32
+        : uniqueParticipants.length <= 40
+        ? 40
+        : uniqueParticipants.length <= 48
+        ? 48
         : 64;
 
     try {

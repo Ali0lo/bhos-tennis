@@ -364,9 +364,13 @@ export default function EditTournamentModal({
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500"
                 >
                   <option value={8}>8 Slot (Mini Bracket)</option>
-                  <option value={16}>16 Slot (Standart Səbət)</option>
-                  <option value={20}>20 Slot (4-5 Nəfərlik Qruplar)</option>
-                  <option value={32}>32 Slot (Böyük Səbət)</option>
+                  <option value={16}>16 Slot (Standart Səbət • 4 Qrup x 4 Oyunçu)</option>
+                  <option value={20}>20 Slot (5 Qrup x 4 Oyunçu)</option>
+                  <option value={24}>24 Slot (6 Qrup x 4 Oyunçu)</option>
+                  <option value={32}>32 Slot (8 Qrup x 4 Oyunçu)</option>
+                  <option value={36}>36 Slot (9 Qrup x 4 Oyunçu)</option>
+                  <option value={40}>40 Slot (Foundation: 30–40 Oyunçu • 8 Qrup x 5 Oyunçu)</option>
+                  <option value={48}>48 Slot (12 Qrup x 4 Oyunçu)</option>
                   <option value={64}>64 Slot (Böyük Çempionat)</option>
                 </select>
               </div>

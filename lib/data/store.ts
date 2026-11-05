@@ -273,6 +273,7 @@ export class BHOSDataStore {
               title: t.title || init.title,
               start_date: t.start_date || init.start_date,
               custom_rules: t.custom_rules || init.custom_rules,
+              max_participants: Math.max(t.max_participants || 0, init.max_participants || 40),
               location: t.location || init.location,
               format: t.format || init.format,
             };
