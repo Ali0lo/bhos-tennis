@@ -262,6 +262,23 @@ export class BHOSDataStore {
       );
       if (this.tournaments.length === 0) {
         this.tournaments = [...INITIAL_TOURNAMENTS];
+      } else {
+        // Guarantee latest Foundation tournament rules, date and format from initial seed
+        this.tournaments = this.tournaments.map((t) => {
+          const init = INITIAL_TOURNAMENTS.find((it) => it.id === t.id);
+          if (init) {
+            return {
+              ...init,
+              ...t,
+              title: t.title || init.title,
+              start_date: t.start_date || init.start_date,
+              custom_rules: t.custom_rules || init.custom_rules,
+              location: t.location || init.location,
+              format: t.format || init.format,
+            };
+          }
+          return t;
+        });
       }
       this.reservations = getStored(STORAGE_KEYS.RESERVATIONS, INITIAL_RESERVATIONS);
       this.currentUserId = getStored<string | null>(STORAGE_KEYS.CURRENT_USER_ID, null);
@@ -1000,7 +1017,72 @@ export class BHOSDataStore {
   }
 
   public getProfile(id: string): PlayerProfile | undefined {
-    return this.profiles.find((p) => p.id === id);
+    return (
+      this.profiles.find((p) => p.id === id) ||
+      this.leaderboardCache?.data?.find((p) => p.id === id)
+    );
+  }
+
+  public async fetchParticipantProfiles(participantIds: string[]): Promise<PlayerProfile[]> {
+    if (!participantIds || participantIds.length === 0) return [];
+    const missingIds: string[] = [];
+    const resolved: PlayerProfile[] = [];
+
+    for (const id of participantIds) {
+      const p = this.getProfile(id);
+      if (p) {
+        resolved.push(p);
+      } else {
+        missingIds.push(id);
+      }
+    }
+
+    if (missingIds.length > 0) {
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        try {
+          const { data, error } = await supabase
+            .from('profiles')
+            .select('*')
+            .in('id', missingIds);
+          if (!error && data) {
+            data.forEach((row: any) => {
+              this.addProfile(row as PlayerProfile);
+              resolved.push(row as PlayerProfile);
+            });
+          }
+        } catch (e) {
+          console.warn('[BHOS Store] Error fetching missing participant profiles:', e);
+        }
+      }
+    }
+
+    const profileMap = new Map<string, PlayerProfile>();
+    resolved.forEach((p) => profileMap.set(p.id, p));
+
+    return participantIds.map((id, idx) => {
+      const found = profileMap.get(id);
+      if (found) return found;
+      return {
+        id,
+        full_name: `Tələbə #${idx + 1}`,
+        email: '',
+        major_faculty: 'Foundation',
+        department: 'Foundation',
+        admission_year: 2026,
+        role: 'player',
+        playing_style: 'Allround',
+        blade_equipment: 'Standard',
+        forehand_rubber: 'Standard',
+        backhand_rubber: 'Standard',
+        current_elo: 1000,
+        matches_played: 0,
+        wins: 0,
+        losses: 0,
+        is_active: true,
+        created_at: new Date().toISOString(),
+      } as PlayerProfile;
+    });
   }
 
   public addProfile(profile: PlayerProfile): void {

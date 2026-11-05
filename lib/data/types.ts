@@ -328,6 +328,42 @@ export function formatDateTimeAz(dateStr?: string | null): string {
   return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+export function formatTournamentDateAz(dateStr?: string | null): string {
+  if (!dateStr) return '7 Noyabr 2026 (Şənbə) • 10:00';
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  const day = d.getDate();
+  const months = [
+    'Yanvar',
+    'Fevral',
+    'Mart',
+    'Aprel',
+    'May',
+    'İyun',
+    'İyul',
+    'Avqust',
+    'Sentyabr',
+    'Oktyabr',
+    'Noyabr',
+    'Dekabr',
+  ];
+  const weekDays = [
+    'Bazar',
+    'Bazar ertəsi',
+    'Çərşənbə axşamı',
+    'Çərşənbə',
+    'Cümə axşamı',
+    'Cümə',
+    'Şənbə',
+  ];
+  const month = months[d.getMonth()];
+  const weekDay = weekDays[d.getDay()];
+  const year = d.getFullYear();
+  const hours = String(d.getHours()).padStart(2, '0');
+  const minutes = String(d.getMinutes()).padStart(2, '0');
+  return `${day} ${month} ${year} (${weekDay}) • ${hours}:${minutes}`;
+}
+
 export {
   normalizeDepartmentText,
   stripPunctuation,

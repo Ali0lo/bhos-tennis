@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Tournament, TournamentFormat, TournamentStatus, PlayerProfile } from '../lib/data/types';
 import { BHOSDataStore } from '../lib/data/store';
 import { isTournamentRosterLocked } from '../lib/tournament';
+import TournamentRulesViewer from './TournamentRulesViewer';
 import {
   X,
   Settings,
@@ -87,12 +88,26 @@ export default function EditTournamentModal({
   const isCurrentUserEnrolled = currentUser ? participantIds.includes(currentUser.id) : false;
 
   const allProfiles = useMemo(() => store.getProfiles(), [store]);
+  const [fetchedProfiles, setFetchedProfiles] = useState<PlayerProfile[]>([]);
+
+  useEffect(() => {
+    if (participantIds.length > 0) {
+      store.fetchParticipantProfiles(participantIds).then(setFetchedProfiles);
+    } else {
+      setFetchedProfiles([]);
+    }
+  }, [participantIds, store]);
 
   const participantProfiles = useMemo(() => {
     return participantIds
-      .map((id) => allProfiles.find((p) => p.id === id) || store.getProfile(id))
+      .map(
+        (id) =>
+          fetchedProfiles.find((p) => p.id === id) ||
+          allProfiles.find((p) => p.id === id) ||
+          store.getProfile(id)
+      )
       .filter((p): p is PlayerProfile => Boolean(p));
-  }, [participantIds, allProfiles, store]);
+  }, [participantIds, fetchedProfiles, allProfiles, store]);
 
   const availableToAddProfiles = useMemo(() => {
     const existingSet = new Set(participantIds);
@@ -450,16 +465,33 @@ export default function EditTournamentModal({
                 />
               </div>
 
-              <div className="sm:col-span-2 space-y-1.5">
-                <label className="block text-slate-300 font-semibold">
-                  Xüsusi Qaydalar (Markdown)
-                </label>
+              <div className="sm:col-span-2 space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="block text-slate-300 font-semibold text-xs">
+                    Xüsusi Qaydalar (Markdown formatında)
+                  </label>
+                  <span className="text-[11px] text-blue-400 font-mono">
+                    # Başlıq, **Qayda:** İzah
+                  </span>
+                </div>
                 <textarea
                   rows={4}
                   value={customRules}
                   onChange={(e) => setCustomRules(e.target.value)}
+                  placeholder="### Turnir Reqlamenti&#10;- **Tarix və Saat:** 7 Noyabr 2026 (Şənbə), saat 10:00&#10;- **Məkan:** Bibiheybət Kampusu"
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-mono text-xs focus:outline-none focus:border-blue-500"
                 />
+
+                {customRules && (
+                  <div className="space-y-1.5 pt-1">
+                    <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+                      Canlı Qaydalar Önizləməsi (Tələbələrin gördüyü görünüş):
+                    </span>
+                    <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-white/5 max-h-48 overflow-y-auto">
+                      <TournamentRulesViewer rules={customRules} />
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 

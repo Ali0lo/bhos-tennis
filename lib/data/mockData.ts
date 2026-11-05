@@ -211,11 +211,15 @@ export const INITIAL_TOURNAMENTS: Tournament[] = [
     slug: 'foundation-kuboku-2026',
     description:
       'Bibiheybət kampusunda 2026-cı il qəbul (Foundation) tələbələri üçün keçirilən rəsmi stolüstü tennis turniri. İlk mərhələdə 4–5 nəfərlik qruplarda dairəvi oyunlar keçirilir və hər qrupdan ən yaxşı 2 oyunçu Pley-off mərhələsinə yüksəlir.',
-    custom_rules: `### Turnir Formatı və Qaydalar
-- **Mərhələ 1 (Qrup Mərhələsi):** Hər qrupda 4–5 oyunçu dairəvi sistemlə (Round-Robin) mübarizə aparır.
-- **Pley-offa Yüksəliş:** Hər qrupdan ilk 2 yeri tutan oyunçu Olimpiya (Pley-off) mərhələsinə vəsiqə qazanır.
-- **İştirak Şərti:** Yalnız 2026-cı il qəbul BANM Foundation (Hazırlıq kursu) tələbələri iştirak edə bilər.
-- **Oyun Qaydaları:** Qrup oyunları 3 setdən (Best of 3), Pley-off və Final oyunları 5 setdən (Best of 5) ibarətdir.`,
+    custom_rules: `### Turnir Reqlamenti və Qaydalar
+- **Tarix və Saat:** 7 Noyabr 2026 (Şənbə), saat 10:00.
+- **Məkan:** Bibiheybət Kampusu, Əsas İdman Zalı.
+- **İştirak Şərti:** Yalnız 2026-cı il qəbul BANM Foundation (Hazırlıq kursu) tələbələri üçün nəzərdə tutulub.
+- **Mərhələ 1 (Qrup Mərhələsi):** İştirakçılar 4–5 nəfərlik qruplarda dairəvi sistemlə (Round-Robin) mübarizə aparır.
+- **Pley-offa Yüksəliş:** Hər qrupdan ən yaxşı nəticə göstərən ilk 2 oyunçu Olimpiya (Pley-off) mərhələsinə vəsiqə qazanır.
+- **Set Formatı:** Qrup mərhələsi oyunları 3 setdən (Best of 3, 2 set qazanan qalibdir), Pley-off və Final oyunları isə 5 setdən (Best of 5, 3 set qazanan qalibdir) ibarətdir.
+- **Xal Qaydası:** Hər set 11 xala qədər davam edir (10-10 bərabərlik halında 2 xal fərqinə qədər davam edir).
+- **Avadanlıq və İntizam:** Rəsmi ITTF 40+ ağ toplardan istifadə olunur. Bütün oyunçular təyin olunmuş saatda (10:00) yarış zonasında hazır olmalıdır.`,
     format: 'groups_and_knockout',
     max_participants: 20,
     group_size: 4,

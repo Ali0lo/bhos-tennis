@@ -6,7 +6,14 @@ import SmoothReveal from '../../components/SmoothReveal';
 import FoundationTournamentBanner from '../../components/FoundationTournamentBanner';
 import EditTournamentModal from '../../components/EditTournamentModal';
 import { BHOSDataStore } from '../../lib/data/store';
-import { Tournament, PlayerProfile, isTournamentOrganizerOrAdmin } from '../../lib/data/types';
+import {
+  Tournament,
+  PlayerProfile,
+  isTournamentOrganizerOrAdmin,
+  formatTournamentDateAz,
+} from '../../lib/data/types';
+import TournamentParticipantsRoster from '../../components/TournamentParticipantsRoster';
+import { getProfileDepartment } from '../../lib/utils/department';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { isTournamentRosterLocked } from '../../lib/tournament';
 import {
@@ -25,6 +32,13 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
+function getInitials(name?: string): string {
+  if (!name) return '??';
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function TournamentsPage() {
   const store = BHOSDataStore.getInstance();
 
@@ -33,16 +47,34 @@ export default function TournamentsPage() {
   const [editingTournament, setEditingTournament] = useState<Tournament | null>(null);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
   const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  const [participantsByTournament, setParticipantsByTournament] = useState<Record<string, PlayerProfile[]>>({});
+  const [expandedRosterId, setExpandedRosterId] = useState<string | null>(null);
+
+  const fetchParticipants = useCallback(async (tourns: Tournament[]) => {
+    const map: Record<string, PlayerProfile[]> = {};
+    for (const t of tourns) {
+      if (t.participants && t.participants.length > 0) {
+        map[t.id] = await store.fetchParticipantProfiles(t.participants);
+      } else {
+        map[t.id] = [];
+      }
+    }
+    setParticipantsByTournament(map);
+  }, [store]);
 
   const loadData = useCallback(() => {
-    setTournaments([...store.getTournaments()]);
+    const currentTournaments = [...store.getTournaments()];
+    setTournaments(currentTournaments);
     setCurrentUser(store.getCurrentUser());
-  }, [store]);
+    fetchParticipants(currentTournaments);
+  }, [store, fetchParticipants]);
 
   useEffect(() => {
     loadData();
     store.fetchTournamentsFromCloud().then(() => {
-      setTournaments([...store.getTournaments()]);
+      const currentTournaments = [...store.getTournaments()];
+      setTournaments(currentTournaments);
+      fetchParticipants(currentTournaments);
     });
 
     const unsub = store.subscribe(() => {
@@ -249,6 +281,7 @@ export default function TournamentsPage() {
             : false;
           const eligibility = checkEligibility(t, currentUser);
           const isLoading = actionLoadingId === t.id;
+          const resolvedParts = participantsByTournament[t.id] || [];
 
           return (
             <SmoothReveal key={t.id} delay={0.05 + index * 0.03} className="w-full">
@@ -306,16 +339,7 @@ export default function TournamentsPage() {
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800">
                       <Calendar className="w-3.5 h-3.5 text-blue-400" />
                       <span>
-                        {new Date(t.start_date).toLocaleDateString('az-AZ', {
-                          month: 'short',
-                          day: 'numeric',
-                          year: 'numeric',
-                        })}{' '}
-                        •{' '}
-                        {new Date(t.start_date).toLocaleTimeString([], {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
+                        {formatTournamentDateAz(t.start_date)}
                       </span>
                     </span>
 
@@ -331,6 +355,87 @@ export default function TournamentsPage() {
                       </span>
                     </span>
                   </div>
+                </div>
+
+                {/* Registered Students Section on Card */}
+                <div className="pt-3 border-t border-white/5 space-y-3">
+                  <div className="flex items-center justify-between gap-2 flex-wrap">
+                    <div className="flex items-center gap-2">
+                      <Users className="w-3.5 h-3.5 text-blue-400" />
+                      <span className="text-xs font-display font-bold text-white">
+                        Qeydiyyatdan Keçən Tələbələr ({participantCount} / {maxCapacity})
+                      </span>
+                    </div>
+
+                    {participantCount > 0 && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setExpandedRosterId((prev) => (prev === t.id ? null : t.id))
+                        }
+                        className="text-xs text-blue-400 hover:text-blue-300 font-semibold transition inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <span>{expandedRosterId === t.id ? 'Siyahını Yığcamlaşdır ▲' : 'Bütün Tələbələri Göstər ▼'}</span>
+                      </button>
+                    )}
+                  </div>
+
+                  {participantCount === 0 ? (
+                    <div className="p-3 rounded-xl bg-slate-950/60 border border-white/5 text-xs text-slate-400 flex items-center justify-between gap-3">
+                      <span>Hələ heç bir tələbə qeydiyyatdan keçməyib. İlk qoşulan siz olun!</span>
+                      <span className="text-[11px] font-mono text-emerald-400 font-semibold">{maxCapacity} yer açıqdır</span>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {/* Avatars Stack Preview */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <div className="flex -space-x-2 overflow-hidden py-0.5">
+                          {resolvedParts.slice(0, 8).map((player, pIdx) => (
+                            <div
+                              key={player.id || pIdx}
+                              title={`${player.full_name} (${getProfileDepartment(player) || 'Foundation'})`}
+                              className="inline-block h-8 w-8 rounded-full ring-2 ring-slate-900 bg-gradient-to-br from-blue-600 to-indigo-700 text-white text-[11px] font-display font-black flex items-center justify-center shrink-0 shadow-sm"
+                            >
+                              {player.avatar_url ? (
+                                <img
+                                  src={player.avatar_url}
+                                  alt={player.full_name}
+                                  className="h-full w-full rounded-full object-cover"
+                                />
+                              ) : (
+                                getInitials(player.full_name)
+                              )}
+                            </div>
+                          ))}
+                        </div>
+
+                        {participantCount > 8 && (
+                          <span className="text-xs font-mono text-slate-400 font-bold">
+                            +{participantCount - 8} digər
+                          </span>
+                        )}
+
+                        <span className="text-xs text-slate-400 font-mono">
+                          • {resolvedParts.map((p) => p.full_name.split(' ')[0]).slice(0, 3).join(', ')}
+                          {participantCount > 3 ? '...' : ''}
+                        </span>
+                      </div>
+
+                      {/* Detailed Expanded Roster */}
+                      {expandedRosterId === t.id && (
+                        <div className="pt-2">
+                          <TournamentParticipantsRoster
+                            tournament={t}
+                            participants={resolvedParts}
+                            currentUser={currentUser}
+                            isAdmin={isAdmin}
+                            showAdminControls={false}
+                            compact={true}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 {/* Registration CTA & Actions Footer */}

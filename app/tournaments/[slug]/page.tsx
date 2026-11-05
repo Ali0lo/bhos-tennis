@@ -5,11 +5,18 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '../../../lib/supabase/client';
 import { BHOSDataStore, getPlayerHref } from '../../../lib/data/store';
-import { Tournament, PlayerProfile, isTournamentOrganizerOrAdmin } from '../../../lib/data/types';
+import {
+  Tournament,
+  PlayerProfile,
+  isTournamentOrganizerOrAdmin,
+  formatTournamentDateAz,
+} from '../../../lib/data/types';
 import SmoothReveal from '../../../components/SmoothReveal';
 import BracketTree from '../../../components/BracketTree';
 import TournamentGroupsStage from '../../../components/TournamentGroupsStage';
 import EditTournamentModal from '../../../components/EditTournamentModal';
+import TournamentRulesViewer from '../../../components/TournamentRulesViewer';
+import TournamentParticipantsRoster from '../../../components/TournamentParticipantsRoster';
 import { 
   Trophy, 
   ArrowLeft, 
@@ -71,10 +78,10 @@ export default function TournamentDetailPage() {
         if (!error && data) {
           setTournament(data as Tournament);
           if (data.participants && Array.isArray(data.participants)) {
-            const parts = data.participants
-              .map((pid: string) => store.getProfile(pid))
-              .filter((p: any): p is PlayerProfile => Boolean(p));
+            const parts = await store.fetchParticipantProfiles(data.participants);
             setParticipants(parts);
+          } else {
+            setParticipants([]);
           }
           setLoading(false);
           return;
@@ -86,11 +93,11 @@ export default function TournamentDetailPage() {
     const local = store.getTournament(slug);
     if (local) {
       setTournament({ ...local });
-      if (local.participants) {
-        const parts = local.participants
-          .map((pid) => store.getProfile(pid))
-          .filter((p): p is PlayerProfile => Boolean(p));
+      if (local.participants && Array.isArray(local.participants)) {
+        const parts = await store.fetchParticipantProfiles(local.participants);
         setParticipants(parts);
+      } else {
+        setParticipants([]);
       }
     } else {
       setTournament(null);
@@ -101,15 +108,15 @@ export default function TournamentDetailPage() {
 
   useEffect(() => {
     loadData(false);
-    const unsub = store.subscribe(() => {
+    const unsub = store.subscribe(async () => {
       const local = store.getTournament(slug);
       if (local) {
         setTournament({ ...local });
-        if (local.participants) {
-          const parts = local.participants
-            .map((pid) => store.getProfile(pid))
-            .filter((p): p is PlayerProfile => Boolean(p));
+        if (local.participants && Array.isArray(local.participants)) {
+          const parts = await store.fetchParticipantProfiles(local.participants);
           setParticipants(parts);
+        } else {
+          setParticipants([]);
         }
       }
       setCurrentUser(store.getCurrentUser());
@@ -237,6 +244,21 @@ export default function TournamentDetailPage() {
     }
   };
 
+  const handleRemoveParticipant = async (pid: string) => {
+    if (!tournament) return;
+    setActionLoading(true);
+    setFeedback(null);
+    try {
+      await store.withdrawFromTournament(tournament.id, pid);
+      setFeedback('İştirakçı turnir siyahısından çıxarıldı.');
+      await loadData(true);
+    } catch (e: any) {
+      setFeedback(e.message || 'Xəta baş verdi');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-16">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -299,8 +321,7 @@ export default function TournamentDetailPage() {
               <span className="flex items-center gap-1.5">
                 <Calendar className="w-4 h-4 text-[#3B82F6]" />
                 <span>
-                  Başlama: {new Date(tournament.start_date).toLocaleDateString('az-AZ', { month: 'short', day: 'numeric', year: 'numeric' })}{' '}
-                  {new Date(tournament.start_date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {formatTournamentDateAz(tournament.start_date)}
                 </span>
               </span>
               {tournament.location && (
@@ -311,7 +332,7 @@ export default function TournamentDetailPage() {
               )}
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-[#3B82F6]" />
-                <span>İştirakçılar: {participantCount} / {tournament.max_participants || 16} Oyunçu</span>
+                <span>İştirakçılar: {participants.length} / {tournament.max_participants || 16} Oyunçu</span>
               </span>
             </div>
 
@@ -441,71 +462,42 @@ export default function TournamentDetailPage() {
         </div>
       </SmoothReveal>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <SmoothReveal delay={0.15}>
-            <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-6 shadow-xl space-y-4 h-full">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-[#3B82F6]" />
-                <h3 className="text-base font-display font-bold text-white">
-                  Official Tournament Rules
-                </h3>
-              </div>
-              <div className="p-4 rounded-xl bg-[#131C2B] border border-white/5 text-xs text-slate-300 leading-relaxed whitespace-pre-line font-mono">
-                {tournament.custom_rules || 'Standard ITTF and BHOS Table Tennis club tournament regulations apply.'}
-              </div>
-            </div>
-          </SmoothReveal>
+      {/* Registered Students Section */}
+      <SmoothReveal delay={0.12}>
+        <div className="rounded-3xl border border-white/10 bg-[#0F1623] p-6 sm:p-8 shadow-2xl space-y-6">
+          <TournamentParticipantsRoster
+            tournament={tournament}
+            participants={participants}
+            currentUser={currentUser}
+            isAdmin={isAdmin}
+            showAdminControls={isAdmin}
+            onRegister={handleRegister}
+            onRemoveParticipant={handleRemoveParticipant}
+            actionLoading={actionLoading}
+          />
         </div>
+      </SmoothReveal>
 
-        <div className="lg:col-span-1">
-          <SmoothReveal delay={0.2}>
-            <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-6 shadow-xl space-y-4 h-full">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Users className="w-4 h-4 text-[#3B82F6]" />
-                  <h3 className="text-base font-display font-bold text-white">
-                    Seed Roster
-                  </h3>
-                </div>
-                <span className="text-xs text-slate-400 font-mono">
-                  {participants.length} Seeding Slots
-                </span>
-              </div>
-
-              <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
-                {participants.length === 0 ? (
-                  <div className="p-4 text-center rounded-xl bg-[#131C2B] text-xs text-slate-500">
-                    Seeding pending confirmation
-                  </div>
-                ) : (
-                  participants.map((player, idx) => (
-                    <div
-                      key={player.id}
-                      className="p-2.5 rounded-xl bg-[#131C2B] border border-white/5 flex items-center justify-between text-xs"
-                    >
-                      <div className="flex items-center gap-2 truncate">
-                        <span className="w-5 h-5 rounded-full bg-white/5 text-slate-400 flex items-center justify-center text-[10px] font-mono shrink-0">
-                          #{idx + 1}
-                        </span>
-                        <Link
-                          href={getPlayerHref(player.id)}
-                          className="font-bold text-white hover:text-[#3B82F6] transition truncate"
-                        >
-                          {player.full_name}
-                        </Link>
-                      </div>
-                      <span className="font-mono text-[#3B82F6] font-bold text-[11px] shrink-0">
-                        {player.current_elo} ELO
-                      </span>
-                    </div>
-                  ))
-                )}
-              </div>
+      {/* Official Tournament Rules */}
+      <SmoothReveal delay={0.15}>
+        <div className="rounded-3xl border border-white/10 bg-[#0F1623] p-6 sm:p-8 shadow-2xl space-y-5">
+          <div className="flex items-center gap-2.5 pb-4 border-b border-white/10">
+            <div className="w-8 h-8 rounded-xl bg-blue-700/20 border border-blue-600/40 flex items-center justify-center text-blue-400">
+              <FileText className="w-4 h-4" />
             </div>
-          </SmoothReveal>
+            <div>
+              <h2 className="text-lg font-display font-black text-white">
+                Rəsmi Turnir Reqlamenti & Qaydalar
+              </h2>
+              <p className="text-xs text-slate-400">
+                ITTF standartları və BANM Stolüstü Tennis Klubu daxili nizamnaməsi
+              </p>
+            </div>
+          </div>
+
+          <TournamentRulesViewer rules={tournament.custom_rules} />
         </div>
-      </div>
+      </SmoothReveal>
 
       {showEditModal && tournament && (
         <EditTournamentModal
