@@ -43,6 +43,29 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_registrations_player_slug
   ON public.tournament_registrations(tournament_slug, player_id)
   WHERE tournament_slug IS NOT NULL;
 
+-- Ensure is_admin helper exists
+CREATE OR REPLACE FUNCTION public.is_admin(p_user_id UUID DEFAULT auth.uid())
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF p_user_id IS NULL THEN
+    RETURN FALSE;
+  END IF;
+
+  RETURN EXISTS (
+    SELECT 1
+    FROM public.profiles
+    WHERE id = p_user_id
+      AND role IN ('president', 'coach')
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_admin(UUID) TO anon, authenticated;
+
 ALTER TABLE public.tournament_registrations ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Public read tournament registrations" ON public.tournament_registrations;
