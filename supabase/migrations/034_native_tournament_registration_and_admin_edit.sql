@@ -15,11 +15,25 @@ ALTER TABLE public.tournaments
 CREATE TABLE IF NOT EXISTS public.tournament_registrations (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   player_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  tournament_id UUID REFERENCES public.tournaments(id) ON DELETE CASCADE,
+  tournament_id UUID,
   tournament_slug VARCHAR(120),
   registered_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Ensure all columns exist even if table was created in an earlier migration (e.g. migration 008)
+ALTER TABLE public.tournament_registrations
+  ADD COLUMN IF NOT EXISTS tournament_id UUID,
+  ADD COLUMN IF NOT EXISTS tournament_slug VARCHAR(120),
+  ADD COLUMN IF NOT EXISTS registered_at TIMESTAMP WITH TIME ZONE DEFAULT NOW();
+
+-- Relax NOT NULL on tournament_slug if present from migration 008
+DO $$
+BEGIN
+  ALTER TABLE public.tournament_registrations ALTER COLUMN tournament_slug DROP NOT NULL;
+EXCEPTION WHEN OTHERS THEN
+  NULL;
+END $$;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_tournament_registrations_player_tourn
   ON public.tournament_registrations(tournament_id, player_id)
