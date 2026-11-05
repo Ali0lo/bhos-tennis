@@ -241,45 +241,6 @@ export const INITIAL_TOURNAMENTS: Tournament[] = [
     },
     created_at: '2026-11-01T10:00:00Z',
   },
-  {
-    id: 'tourn-1',
-    title: 'BHOS Autumn Open Championship 2026',
-    slug: 'bhos-autumn-open-2026',
-    description: 'The premier seasonal tournament of Baku Higher Oil School Table Tennis Club, gathering top student athletes and faculty for the prestigious BANM Trophy.',
-    custom_rules: `### Official Rules & Regulations
-- **Format:** Single Elimination, Best of 5 sets (Final Best of 7).
-- **Service:** Ball must rest freely on the open palm of the server's stationary free hand and project upwards at least 16 cm.
-- **Equipment:** ITTF approved rubbers only. Both red/black or approved alternate colors.
-- **Punctuality:** 10 minutes delay results in 1st set loss; 15 minutes is a default walkover.`,
-    format: 'single_elimination',
-    max_participants: 8,
-    status: 'ongoing',
-    start_date: '2026-09-15T10:00:00Z',
-    end_date: '2026-09-25T18:00:00Z',
-    created_by: 'p-1',
-    participants: ['p-1', 'p-2', 'p-3', 'p-4', 'p-5', 'p-6'],
-    bracket_data: generateSingleEliminationBracket(INITIAL_PROFILES, 'tourn-1'),
-    created_at: '2026-09-10T12:00:00Z',
-  },
-  {
-    id: 'tourn-2',
-    title: 'Inter-Faculty Engineering Cup 2026',
-    slug: 'inter-faculty-engineering-cup-2026',
-    description: 'Championship dedicated to fostering camaraderie and athletic competition across BHOS engineering faculties.',
-    custom_rules: `### Engineering Cup Regulations
-- Open to Information Security, Petroleum, Chemical, and Process Automation students.
-- Group stage followed by single elimination knockout.
-- Free BHOS TT club racket kit awarded to Top 3 finalists!`,
-    format: 'single_elimination',
-    max_participants: 8,
-    status: 'upcoming',
-    start_date: '2026-10-05T14:00:00Z',
-    end_date: '2026-10-06T19:00:00Z',
-    created_by: 'p-1',
-    participants: ['p-3', 'p-4', 'p-5', 'p-6'],
-    bracket_data: generateSingleEliminationBracket([INITIAL_PROFILES[2], INITIAL_PROFILES[3], INITIAL_PROFILES[4], INITIAL_PROFILES[5]], 'tourn-2'),
-    created_at: '2026-09-15T08:00:00Z',
-  },
 ];
 
 const todayStr = new Date().toISOString().split('T')[0];

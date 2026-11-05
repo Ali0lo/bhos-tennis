@@ -200,3 +200,4 @@ CREATE POLICY "Admin update tournaments full"
   ON public.tournaments
   FOR UPDATE
   USING (public.is_admin(auth.uid()) OR true);
+

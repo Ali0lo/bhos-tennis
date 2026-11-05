@@ -32,10 +32,18 @@ import { buildSlugMap, generateSlug, isUuid, normalizeForSearch, shortIdSuffix }
 const STORAGE_KEYS = {
   PROFILES: 'bhos_tt_profiles_v8',
   MATCHES: 'bhos_tt_matches_v8',
-  TOURNAMENTS: 'bhos_tt_tournaments_v8',
+  TOURNAMENTS: 'bhos_tt_tournaments_v9',
   RESERVATIONS: 'bhos_tt_reservations_v8',
   CURRENT_USER_ID: 'bhos_tt_active_user_id_v8',
 };
+
+const OBSOLETE_TOURNAMENT_IDENTIFIERS = new Set([
+  'tourn-1',
+  'tourn-2',
+  '11111111-1111-1111-1111-111111111111',
+  'bhos-autumn-open-2026',
+  'inter-faculty-engineering-cup-2026',
+]);
 
 const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v3';
 const SESSION_RECENT_MATCHES_KEY = 'bhos_tt_recent_matches';
@@ -245,7 +253,15 @@ export class BHOSDataStore {
         (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
       );
       setStored(STORAGE_KEYS.MATCHES, this.matches);
-      this.tournaments = getStored(STORAGE_KEYS.TOURNAMENTS, INITIAL_TOURNAMENTS);
+      const storedTournaments = getStored(STORAGE_KEYS.TOURNAMENTS, INITIAL_TOURNAMENTS);
+      this.tournaments = storedTournaments.filter(
+        (t) =>
+          !OBSOLETE_TOURNAMENT_IDENTIFIERS.has(t.id) &&
+          !OBSOLETE_TOURNAMENT_IDENTIFIERS.has(t.slug)
+      );
+      if (this.tournaments.length === 0) {
+        this.tournaments = [...INITIAL_TOURNAMENTS];
+      }
       this.reservations = getStored(STORAGE_KEYS.RESERVATIONS, INITIAL_RESERVATIONS);
       this.currentUserId = getStored<string | null>(STORAGE_KEYS.CURRENT_USER_ID, null);
       if (this.currentUserId) {
@@ -675,7 +691,13 @@ export class BHOSDataStore {
 
       if (!error && data) {
         const cloudMap = new Map<string, Tournament>();
-        (data as Tournament[]).forEach((t) => cloudMap.set(t.id, t));
+        (data as Tournament[])
+          .filter(
+            (t) =>
+              !OBSOLETE_TOURNAMENT_IDENTIFIERS.has(t.id) &&
+              !OBSOLETE_TOURNAMENT_IDENTIFIERS.has(t.slug)
+          )
+          .forEach((t) => cloudMap.set(t.id, t));
         INITIAL_TOURNAMENTS.forEach((it) => {
           if (!cloudMap.has(it.id)) {
             cloudMap.set(it.id, it);
@@ -1767,10 +1789,17 @@ export class BHOSDataStore {
   }
 
   public getTournaments(): Tournament[] {
-    return [...this.tournaments];
+    return this.tournaments.filter(
+      (t) =>
+        !OBSOLETE_TOURNAMENT_IDENTIFIERS.has(t.id) &&
+        !OBSOLETE_TOURNAMENT_IDENTIFIERS.has(t.slug)
+    );
   }
 
   public getTournament(slugOrId: string): Tournament | undefined {
+    if (OBSOLETE_TOURNAMENT_IDENTIFIERS.has(slugOrId)) {
+      return undefined;
+    }
     return this.tournaments.find((t) => t.slug === slugOrId || t.id === slugOrId);
   }
 

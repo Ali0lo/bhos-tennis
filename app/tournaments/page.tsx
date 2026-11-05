@@ -230,7 +230,16 @@ export default function TournamentsPage() {
 
       {/* Tournaments List */}
       <div className="space-y-6">
-        {tournaments.map((t, index) => {
+        {tournaments.length === 0 ? (
+          <div className="p-8 rounded-3xl bg-slate-900 border border-slate-800 text-center space-y-3">
+            <Trophy className="w-10 h-10 text-amber-400 mx-auto" />
+            <h3 className="text-base font-bold text-white">Bu semestr üçün turnir</h3>
+            <p className="text-xs text-slate-400 max-w-md mx-auto">
+              Bu semestr üçün yeganə rəsmi yarış Foundation Tələbələri Üçün Stolüstü Tennis Turniridir (7 Noyabr).
+            </p>
+          </div>
+        ) : (
+          tournaments.map((t, index) => {
           const participantCount = t.participants?.length || 0;
           const maxCapacity = t.max_participants || 16;
           const isFull = participantCount >= maxCapacity;
@@ -406,7 +415,7 @@ export default function TournamentsPage() {
               </div>
             </SmoothReveal>
           );
-        })}
+        }))}
       </div>
 
       {/* Admin Tournament Settings Modal */}
