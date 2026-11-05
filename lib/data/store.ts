@@ -9,6 +9,7 @@ import {
   isProfilePending,
   getProfileDepartment,
   resolveCanonicalDepartment,
+  isTournamentOrganizerOrAdmin,
 } from './types';
 import { INITIAL_PROFILES, INITIAL_MATCHES, INITIAL_TOURNAMENTS, INITIAL_RESERVATIONS } from './mockData';
 import { calculateMatchElo, parseSetScores, validateMatchSetSummary } from '../elo';
@@ -2239,7 +2240,8 @@ export class BHOSDataStore {
     }
 
     const profile = this.getProfile(targetId);
-    if (tournament.allowed_admission_year && profile) {
+    const isOrganizer = isTournamentOrganizerOrAdmin(profile, tournament);
+    if (!isOrganizer && tournament.allowed_admission_year && profile) {
       const isTeacherOrStaff = profile.user_type === 'teacher' || profile.user_type === 'staff';
       if (isTeacherOrStaff || profile.admission_year !== tournament.allowed_admission_year) {
         throw new Error(

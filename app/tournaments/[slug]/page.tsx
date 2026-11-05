@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getSupabaseClient } from '../../../lib/supabase/client';
 import { BHOSDataStore, getPlayerHref } from '../../../lib/data/store';
-import { Tournament, PlayerProfile } from '../../../lib/data/types';
+import { Tournament, PlayerProfile, isTournamentOrganizerOrAdmin } from '../../../lib/data/types';
 import SmoothReveal from '../../../components/SmoothReveal';
 import BracketTree from '../../../components/BracketTree';
 import TournamentGroupsStage from '../../../components/TournamentGroupsStage';
@@ -141,7 +141,7 @@ export default function TournamentDetailPage() {
     };
   }, [loadData, slug, store]);
 
-  const isAdmin = currentUser?.role === 'president' || currentUser?.role === 'coach';
+  const isAdmin = isTournamentOrganizerOrAdmin(currentUser, tournament);
 
   if (loading) {
     return (
@@ -200,6 +200,12 @@ export default function TournamentDetailPage() {
   );
   const isLocked = isTournamentRosterLocked(tournament.status);
   const isRegistered = currentUser ? store.isPlayerRegistered(tournament, currentUser.id) : false;
+  const isEligible =
+    !tournament.allowed_admission_year ||
+    isAdmin ||
+    (currentUser?.admission_year === tournament.allowed_admission_year &&
+      currentUser?.user_type !== 'teacher' &&
+      currentUser?.user_type !== 'staff');
 
   const handleRegister = async () => {
     if (!currentUser || !tournament) return;
@@ -250,11 +256,11 @@ export default function TournamentDetailPage() {
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition shadow-sm active:scale-95"
             >
               <Settings className="w-3.5 h-3.5" />
-              <span>Tənzimləmələri Redaktə Et</span>
+              <span>Tənzimləmələri Redaktə Et (Təşkilatçı)</span>
             </button>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30 text-xs font-bold font-mono">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Admin Nəzarəti Aktiv</span>
+              <span>Turnir Təşkilatçısı</span>
             </span>
           </div>
         )}
@@ -341,16 +347,28 @@ export default function TournamentDetailPage() {
                     <Lock className="w-3.5 h-3.5 text-slate-500" />
                     <span>Turnir Aktivdir • Qeydiyyat Bağlanıb</span>
                   </span>
+                ) : !isEligible ? (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs font-semibold">
+                    <Lock className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Yalnız {tournament.allowed_admission_year} Qəbul Tələbələri</span>
+                  </span>
                 ) : (
-                  <button
-                    type="button"
-                    disabled={actionLoading}
-                    onClick={handleRegister}
-                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs shadow-md transition active:scale-95"
-                  >
-                    <span>{actionLoading ? 'Qeydiyyat aparılır...' : 'Turnirə Qoşul (1-Klik)'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      type="button"
+                      disabled={actionLoading}
+                      onClick={handleRegister}
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs shadow-md transition active:scale-95"
+                    >
+                      <span>{actionLoading ? 'Qeydiyyat aparılır...' : 'Turnirə Qoşul (1-Klik)'}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                    {isAdmin && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold">
+                        👑 Təşkilatçı kimi iştirak
+                      </span>
+                    )}
+                  </div>
                 )}
 
                 {feedback && (

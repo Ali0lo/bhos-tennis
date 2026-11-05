@@ -83,6 +83,9 @@ export default function EditTournamentModal({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
 
+  const currentUser = useMemo(() => store.getCurrentUser(), [store]);
+  const isCurrentUserEnrolled = currentUser ? participantIds.includes(currentUser.id) : false;
+
   const allProfiles = useMemo(() => store.getProfiles(), [store]);
 
   const participantProfiles = useMemo(() => {
@@ -513,7 +516,23 @@ export default function EditTournamentModal({
 
             {/* Search & Add Player */}
             {!isLocked && (
-              <div className="space-y-2 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+              <div className="space-y-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800">
+                {currentUser && !isCurrentUserEnrolled && (
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                    <span className="text-amber-300 font-semibold text-xs">
+                      👑 Təşkilatçı kimi bu turnirə qatılmaq istəyirsiniz?
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleAddPlayer(currentUser.id)}
+                      className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-sm transition active:scale-95"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>+ Özünü ({currentUser.full_name || 'Təşkilatçı'}) Əlavə Et</span>
+                    </button>
+                  </div>
+                )}
+
                 <div className="flex items-center gap-2">
                   <Search className="w-4 h-4 text-slate-400" />
                   <input

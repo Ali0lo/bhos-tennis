@@ -6,7 +6,7 @@ import SmoothReveal from '../../components/SmoothReveal';
 import FoundationTournamentBanner from '../../components/FoundationTournamentBanner';
 import EditTournamentModal from '../../components/EditTournamentModal';
 import { BHOSDataStore } from '../../lib/data/store';
-import { Tournament, PlayerProfile } from '../../lib/data/types';
+import { Tournament, PlayerProfile, isTournamentOrganizerOrAdmin } from '../../lib/data/types';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { isTournamentRosterLocked } from '../../lib/tournament';
 import {
@@ -72,11 +72,7 @@ export default function TournamentsPage() {
 
   const isAdmin = useMemo(() => {
     if (!currentUser) return false;
-    return (
-      currentUser.role === 'president' ||
-      currentUser.role === 'coach' ||
-      Boolean((currentUser as any).is_admin)
-    );
+    return isTournamentOrganizerOrAdmin(currentUser);
   }, [currentUser]);
 
   const handleRegister = async (t: Tournament) => {
@@ -124,8 +120,11 @@ export default function TournamentsPage() {
   };
 
   const checkEligibility = (t: Tournament, user: PlayerProfile | null) => {
-    if (!t.allowed_admission_year) return { eligible: true };
     if (!user) return { eligible: true }; // will prompt login first
+    if (isTournamentOrganizerOrAdmin(user, t)) {
+      return { eligible: true, isOrganizer: true };
+    }
+    if (!t.allowed_admission_year) return { eligible: true };
 
     if (user.user_type === 'teacher' || user.user_type === 'staff') {
       return {
@@ -285,7 +284,7 @@ export default function TournamentsPage() {
                       className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-700/30 hover:bg-blue-700/50 text-blue-300 border border-blue-600/40 text-xs font-bold transition shadow-sm self-start sm:self-auto"
                     >
                       <Settings className="w-3.5 h-3.5" />
-                      <span>⚙️ Turniri Redaktə Et (Admin)</span>
+                      <span>⚙️ Turniri Redaktə Et (Təşkilatçı)</span>
                     </button>
                   )}
                 </div>
@@ -370,7 +369,7 @@ export default function TournamentsPage() {
 
                     {/* Logged in, Not Registered */}
                     {currentUser && !isRegistered && (
-                      <>
+                      <div className="flex items-center gap-2 flex-wrap">
                         {isLocked ? (
                           <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs font-semibold">
                             <Lock className="w-3.5 h-3.5 text-slate-500" />
@@ -399,7 +398,13 @@ export default function TournamentsPage() {
                             <ArrowRight className="w-3.5 h-3.5" />
                           </button>
                         )}
-                      </>
+
+                        {eligibility.isOrganizer && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold">
+                            👑 Təşkilatçı kimi iştirak
+                          </span>
+                        )}
+                      </div>
                     )}
                   </div>
 

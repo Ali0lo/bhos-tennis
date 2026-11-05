@@ -302,6 +302,24 @@ export function canAccessAdminPanel(profile?: PlayerProfile | null): boolean {
   return false;
 }
 
+export function isTournamentOrganizerOrAdmin(
+  profile?: PlayerProfile | null,
+  tournament?: Tournament | null
+): boolean {
+  if (!profile) return false;
+  if (canAccessAdminPanel(profile)) return true;
+  if (profile.role === 'president' || profile.role === 'coach') return true;
+  if ((profile as any).is_admin) return true;
+  if (
+    tournament &&
+    tournament.created_by &&
+    (tournament.created_by === profile.id || tournament.created_by === profile.email)
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function formatDateTimeAz(dateStr?: string | null): string {
   if (!dateStr) return '—';
   const d = new Date(dateStr);

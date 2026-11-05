@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { X, ArrowRight, ShieldAlert, Lock } from 'lucide-react';
 import { BHOSDataStore } from '../lib/data/store';
-import { PlayerProfile } from '../lib/data/types';
+import { PlayerProfile, isTournamentOrganizerOrAdmin } from '../lib/data/types';
 
 const TARGET_DATE_ISO = '2026-11-07T10:00:00+04:00';
 const DISMISS_STORAGE_KEY = 'bhos_foundation_tournament_banner_dismissed_v1';
@@ -37,6 +37,7 @@ function computeCountdown(): CountdownTime {
 
 function isNonFoundationProfile(user: PlayerProfile | null): boolean {
   if (!user) return false;
+  if (isTournamentOrganizerOrAdmin(user)) return false;
   if (user.user_type === 'teacher' || user.user_type === 'staff' || user.role === 'coach') {
     return true;
   }

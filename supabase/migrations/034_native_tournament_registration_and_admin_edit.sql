@@ -129,10 +129,19 @@ BEGIN
     RAISE EXCEPTION 'Turnir artıq aktivdir və ya başa çatıb. Qeydiyyat bağlanıb.';
   END IF;
 
-  -- Check eligibility if restricted to admission year
+  -- Check eligibility if restricted to admission year (organizers & admins like Ali Iskandarli are exempt)
   IF v_tourn.allowed_admission_year IS NOT NULL THEN
-    IF v_player.user_type IN ('teacher', 'staff') OR v_player.admission_year IS DISTINCT FROM v_tourn.allowed_admission_year THEN
-      RAISE EXCEPTION 'Bu turnir yalnız % qəbul ili (Foundation) tələbələri üçündür.', v_tourn.allowed_admission_year;
+    IF NOT (
+      v_player.role IN ('president', 'coach')
+      OR v_player.email IN ('ali.iskandarli.std@bhos.edu.az', 'ali.iskandarli@bhos.edu.az')
+      OR v_player.full_name ILIKE '%ali iskandarli%'
+      OR v_player.full_name ILIKE '%əli isgəndərli%'
+      OR v_uid::text = COALESCE(v_tourn.created_by, '')
+      OR public.is_admin(v_uid)
+    ) THEN
+      IF v_player.user_type IN ('teacher', 'staff') OR v_player.admission_year IS DISTINCT FROM v_tourn.allowed_admission_year THEN
+        RAISE EXCEPTION 'Bu turnir yalnız % qəbul ili (Foundation) tələbələri üçündür.', v_tourn.allowed_admission_year;
+      END IF;
     END IF;
   END IF;
 
