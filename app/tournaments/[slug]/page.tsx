@@ -22,7 +22,11 @@ import {
   Settings,
   MapPin,
   ExternalLink,
+  CheckCircle2,
+  ArrowRight,
+  Lock,
 } from 'lucide-react';
+import { isTournamentRosterLocked } from '../../../lib/tournament';
 
 export default function TournamentDetailPage() {
   const params = useParams();
@@ -36,6 +40,8 @@ export default function TournamentDetailPage() {
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [loading, setLoading] = useState(true);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
 
   const loadData = useCallback(async (silent: boolean = false) => {
     if (!slug) return;
@@ -192,6 +198,38 @@ export default function TournamentDetailPage() {
   const hasPlayoffRounds = Boolean(
     tournament.bracket_data?.rounds && tournament.bracket_data.rounds.length > 0
   );
+  const isLocked = isTournamentRosterLocked(tournament.status);
+  const isRegistered = currentUser ? store.isPlayerRegistered(tournament, currentUser.id) : false;
+
+  const handleRegister = async () => {
+    if (!currentUser || !tournament) return;
+    setActionLoading(true);
+    setFeedback(null);
+    try {
+      await store.registerForTournament(tournament.id, currentUser.id);
+      setFeedback('Turnirə uğurla qeydiyyatdan keçdiniz!');
+      await loadData(true);
+    } catch (e: any) {
+      setFeedback(e.message || 'Xəta baş verdi');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleWithdraw = async () => {
+    if (!currentUser || !tournament) return;
+    setActionLoading(true);
+    setFeedback(null);
+    try {
+      await store.withdrawFromTournament(tournament.id, currentUser.id);
+      setFeedback('Qeydiyyatınız ləğv edildi.');
+      await loadData(true);
+    } catch (e: any) {
+      setFeedback(e.message || 'Xəta baş verdi');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-16">
@@ -267,19 +305,60 @@ export default function TournamentDetailPage() {
               )}
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-[#3B82F6]" />
-                <span>İştirakçılar: {participantCount} Oyunçu</span>
+                <span>İştirakçılar: {participantCount} / {tournament.max_participants || 16} Oyunçu</span>
               </span>
-              {tournament.registration_url && (
-                <a
-                  href={tournament.registration_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-rose-400 hover:text-rose-300 hover:underline"
-                >
-                  <span>Qeydiyyat Formu</span>
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-              )}
+            </div>
+
+            {/* Native 1-Click Registration / Withdraw Bar */}
+            <div className="pt-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex items-center gap-3 flex-wrap">
+                {!currentUser ? (
+                  <Link
+                    href={`/login?redirect=/tournaments/${slug}`}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-display font-bold text-xs shadow-md transition active:scale-95"
+                  >
+                    <span>Daxil Ol və Turnirə Qoşul →</span>
+                  </Link>
+                ) : isRegistered ? (
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500 text-emerald-400 font-display font-bold text-xs">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Qeydiyyatdan Keçmisiniz ✓</span>
+                    </span>
+                    {!isLocked && (
+                      <button
+                        type="button"
+                        disabled={actionLoading}
+                        onClick={handleWithdraw}
+                        className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-rose-500/50 text-slate-400 hover:text-rose-400 font-semibold text-xs transition"
+                      >
+                        {actionLoading ? 'Ləğv edilir...' : 'Qeydiyyatı Ləğv Et'}
+                      </button>
+                    )}
+                  </div>
+                ) : isLocked ? (
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs font-semibold">
+                    <Lock className="w-3.5 h-3.5 text-slate-500" />
+                    <span>Turnir Aktivdir • Qeydiyyat Bağlanıb</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={handleRegister}
+                    className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs shadow-md transition active:scale-95"
+                  >
+                    <span>{actionLoading ? 'Qeydiyyat aparılır...' : 'Turnirə Qoşul (1-Klik)'}</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+
+                {feedback && (
+                  <span className="text-xs font-semibold text-blue-300 animate-pulse">
+                    {feedback}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
         </div>

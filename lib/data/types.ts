@@ -98,7 +98,13 @@ export function isAutoApprovedMatch(match: MatchRecord): boolean {
 }
 
 export type TournamentFormat = 'single_elimination' | 'round_robin' | 'groups_and_knockout';
-export type TournamentStatus = 'upcoming' | 'ongoing' | 'completed';
+export type TournamentStatus =
+  | 'upcoming'
+  | 'registration'
+  | 'ongoing'
+  | 'in_progress'
+  | 'active'
+  | 'completed';
 
 export interface BracketMatch {
   id: string;

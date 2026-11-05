@@ -673,8 +673,15 @@ export class BHOSDataStore {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        this.tournaments = data as Tournament[];
+      if (!error && data) {
+        const cloudMap = new Map<string, Tournament>();
+        (data as Tournament[]).forEach((t) => cloudMap.set(t.id, t));
+        INITIAL_TOURNAMENTS.forEach((it) => {
+          if (!cloudMap.has(it.id)) {
+            cloudMap.set(it.id, it);
+          }
+        });
+        this.tournaments = Array.from(cloudMap.values());
         setStored(STORAGE_KEYS.TOURNAMENTS, this.tournaments);
         this.notify();
       }
@@ -2048,6 +2055,11 @@ export class BHOSDataStore {
           start_date: tournament.start_date,
           end_date: tournament.end_date,
           max_participants: tournament.max_participants,
+          group_size: tournament.group_size,
+          advance_per_group: tournament.advance_per_group,
+          location: tournament.location,
+          allowed_admission_year: tournament.allowed_admission_year,
+          registration_url: tournament.registration_url,
           bracket_data: tournament.bracket_data,
           participants: tournament.participants,
         })
@@ -2171,6 +2183,235 @@ export class BHOSDataStore {
 
     this.saveLocal();
     this.notify();
+    return tournament;
+  }
+
+  public isPlayerRegistered(tournament: Tournament, playerId?: string): boolean {
+    const targetId = playerId || this.currentUserId;
+    if (!targetId || !tournament.participants) return false;
+    return tournament.participants.includes(targetId);
+  }
+
+  public async registerForTournament(tournamentId: string, playerId?: string): Promise<Tournament> {
+    const tournament = this.tournaments.find(
+      (t) => t.id === tournamentId || t.slug === tournamentId
+    );
+    if (!tournament) {
+      throw new Error('Turnir tapılmadı.');
+    }
+
+    const targetId = playerId || this.currentUserId;
+    if (!targetId) {
+      throw new Error('Qeydiyyatdan keçmək üçün əvvəlcə sayta daxil olmalısınız.');
+    }
+
+    if (isTournamentRosterLocked(tournament.status)) {
+      throw new Error('Turnir artıq başlayıb və ya başa çatıb. Qeydiyyat bağlanıb.');
+    }
+
+    const profile = this.getProfile(targetId);
+    if (tournament.allowed_admission_year && profile) {
+      const isTeacherOrStaff = profile.user_type === 'teacher' || profile.user_type === 'staff';
+      if (isTeacherOrStaff || profile.admission_year !== tournament.allowed_admission_year) {
+        throw new Error(
+          `Bu turnir yalnız ${tournament.allowed_admission_year} qəbul ili (Foundation) tələbələri üçündür.`
+        );
+      }
+    }
+
+    tournament.participants = tournament.participants || [];
+    if (!tournament.participants.includes(targetId)) {
+      const maxCapacity = tournament.max_participants || 16;
+      if (tournament.participants.length >= maxCapacity) {
+        throw new Error(`Turnirdə yerlər dolub (Maksimum ${maxCapacity} iştirakçı).`);
+      }
+      tournament.participants.push(targetId);
+    }
+
+    this.saveLocal();
+    this.notify();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.rpc('register_for_tournament', {
+          target_tournament_id: tournament.id,
+        });
+        if (!error && data) {
+          if (Array.isArray(data.participants)) {
+            tournament.participants = data.participants;
+            this.saveLocal();
+            this.notify();
+          }
+        } else {
+          if (error) {
+            console.warn('[BHOS Store] Supabase register_for_tournament notice:', error.message);
+          }
+          await supabase
+            .from('tournaments')
+            .update({ participants: tournament.participants })
+            .eq('id', tournament.id);
+          await supabase
+            .from('tournament_registrations')
+            .upsert(
+              {
+                player_id: targetId,
+                tournament_id: tournament.id,
+                tournament_slug: tournament.slug,
+              },
+              { onConflict: 'tournament_id,player_id' }
+            );
+        }
+      } catch (e: any) {
+        console.warn('[BHOS Store] Error registering for tournament in Supabase:', e?.message || e);
+      }
+    }
+
+    return tournament;
+  }
+
+  public async withdrawFromTournament(tournamentId: string, playerId?: string): Promise<Tournament> {
+    const tournament = this.tournaments.find(
+      (t) => t.id === tournamentId || t.slug === tournamentId
+    );
+    if (!tournament) {
+      throw new Error('Turnir tapılmadı.');
+    }
+
+    const targetId = playerId || this.currentUserId;
+    if (!targetId) {
+      throw new Error('Bu əməliyyatı icra etmək üçün sayta daxil olmalısınız.');
+    }
+
+    if (isTournamentRosterLocked(tournament.status)) {
+      throw new Error('Turnir artıq başlayıb və ya başa çatıb. Qeydiyyatı ləğv etmək mümkün deyil.');
+    }
+
+    tournament.participants = (tournament.participants || []).filter((id) => id !== targetId);
+
+    this.saveLocal();
+    this.notify();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      try {
+        const { data, error } = await supabase.rpc('withdraw_from_tournament', {
+          target_tournament_id: tournament.id,
+        });
+        if (!error && data) {
+          if (Array.isArray(data.participants)) {
+            tournament.participants = data.participants;
+            this.saveLocal();
+            this.notify();
+          }
+        } else {
+          if (error) {
+            console.warn('[BHOS Store] Supabase withdraw_from_tournament notice:', error.message);
+          }
+          await supabase
+            .from('tournaments')
+            .update({ participants: tournament.participants })
+            .eq('id', tournament.id);
+          await supabase
+            .from('tournament_registrations')
+            .delete()
+            .eq('player_id', targetId)
+            .eq('tournament_id', tournament.id);
+        }
+      } catch (e: any) {
+        console.warn('[BHOS Store] Error withdrawing from tournament in Supabase:', e?.message || e);
+      }
+    }
+
+    return tournament;
+  }
+
+  public addTournamentParticipant(tournamentId: string, playerId: string): Tournament {
+    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+    if (!tournament) throw new Error('Turnir tapılmadı.');
+
+    tournament.participants = tournament.participants || [];
+    if (!tournament.participants.includes(playerId)) {
+      tournament.participants.push(playerId);
+      this.saveLocal();
+      this.notify();
+
+      const supabase = getSupabaseClient();
+      if (supabase) {
+        supabase
+          .from('tournaments')
+          .update({ participants: tournament.participants })
+          .eq('id', tournamentId)
+          .then(({ error }) => {
+            if (error) console.warn('[BHOS Store] addTournamentParticipant Supabase failed:', error.message);
+          });
+      }
+    }
+    return tournament;
+  }
+
+  public removeTournamentParticipant(tournamentId: string, playerId: string): Tournament {
+    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+    if (!tournament) throw new Error('Turnir tapılmadı.');
+
+    tournament.participants = (tournament.participants || []).filter((id) => id !== playerId);
+    this.saveLocal();
+    this.notify();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('tournaments')
+        .update({ participants: tournament.participants })
+        .eq('id', tournamentId)
+        .then(({ error }) => {
+          if (error) console.warn('[BHOS Store] removeTournamentParticipant Supabase failed:', error.message);
+        });
+    }
+    return tournament;
+  }
+
+  public regenerateTournamentBracket(tournamentId: string): Tournament {
+    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+    if (!tournament) throw new Error('Turnir tapılmadı.');
+
+    const participantIds = tournament.participants || [];
+    if (participantIds.length < 2) {
+      throw new Error('Səbət (bracket) qurmaq üçün ən azı 2 iştirakçı lazımdır.');
+    }
+
+    if (tournament.format === 'groups_and_knockout') {
+      return this.generateTournamentGroupsAction(
+        tournamentId,
+        tournament.group_size || 4,
+        tournament.advance_per_group || 2
+      );
+    }
+
+    const selectedPlayers = participantIds
+      .map((pid) => this.getProfile(pid))
+      .filter((p): p is PlayerProfile => Boolean(p));
+
+    selectedPlayers.sort((a, b) => (b.current_elo ?? 1200) - (a.current_elo ?? 1200));
+
+    tournament.bracket_data = generateSingleEliminationBracket(selectedPlayers, tournament.id);
+    this.saveLocal();
+    this.notify();
+
+    const supabase = getSupabaseClient();
+    if (supabase) {
+      supabase
+        .from('tournaments')
+        .update({
+          participants: tournament.participants,
+          bracket_data: tournament.bracket_data,
+        })
+        .eq('id', tournamentId)
+        .then(({ error }) => {
+          if (error) console.warn('[BHOS Store] regenerateTournamentBracket Supabase failed:', error.message);
+        });
+    }
+
     return tournament;
   }
 
