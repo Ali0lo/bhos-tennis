@@ -17,6 +17,7 @@ import TournamentGroupsStage from '../../../components/TournamentGroupsStage';
 import EditTournamentModal from '../../../components/EditTournamentModal';
 import TournamentRulesViewer from '../../../components/TournamentRulesViewer';
 import TournamentParticipantsRoster from '../../../components/TournamentParticipantsRoster';
+import { INITIAL_TOURNAMENTS } from '../../../lib/data/mockData';
 import { 
   Trophy, 
   ArrowLeft, 
@@ -88,16 +89,38 @@ export default function TournamentDetailPage() {
           } catch {}
 
           const local = store.getTournament(slug);
+          const init = INITIAL_TOURNAMENTS.find((it) => it.slug === slug || it.id === data.id);
+          const cachedBracket = store.getBracketDataFromCache(slug) || store.getBracketDataFromCache(data.id);
+
+          const cloudHasGroups = Boolean(data.bracket_data?.groups && data.bracket_data.groups.length > 0);
+          const localHasGroups = Boolean(local?.bracket_data?.groups && local.bracket_data.groups.length > 0);
+          const cachedHasGroups = Boolean(cachedBracket?.groups && cachedBracket.groups.length > 0);
+          const initHasGroups = Boolean(init?.bracket_data?.groups && init.bracket_data.groups.length > 0);
+
+          if (!cloudHasGroups) {
+            if (cachedHasGroups) {
+              data.bracket_data = cachedBracket;
+            } else if (localHasGroups) {
+              data.bracket_data = local!.bracket_data;
+            } else if (initHasGroups) {
+              data.bracket_data = init!.bracket_data;
+            }
+          } else {
+            store.saveBracketDataToCache(slug, data.bracket_data);
+            store.saveBracketDataToCache(data.id, data.bracket_data);
+          }
+
           const combinedParticipantIds = Array.from(
             new Set([
               ...(Array.isArray(data.participants) ? data.participants : []),
               ...(local?.participants || []),
+              ...(init?.participants || []),
               ...regIds,
             ])
           ).filter(Boolean) as string[];
 
           const rawParts = await store.fetchParticipantProfiles(combinedParticipantIds);
-          const actualPlayers = rawParts.filter((p) => {
+          let actualPlayers = rawParts.filter((p) => {
             const email = (p.email || '').trim().toLowerCase();
             const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
             return (
@@ -107,6 +130,17 @@ export default function TournamentDetailPage() {
               name !== 'eliisgenderli'
             );
           });
+
+          if (actualPlayers.length === 0 && data.bracket_data?.groups) {
+            const groupPlayers = data.bracket_data.groups.flatMap((g: any) => g.players || []);
+            const seen = new Set<string>();
+            for (const gp of groupPlayers) {
+              if (gp && gp.id && !seen.has(gp.id)) {
+                seen.add(gp.id);
+                actualPlayers.push(gp);
+              }
+            }
+          }
 
           data.participants = actualPlayers.map((p) => p.id);
           setTournament(data as Tournament);
@@ -119,11 +153,29 @@ export default function TournamentDetailPage() {
     }
 
     const local = store.getTournament(slug);
+    const init = INITIAL_TOURNAMENTS.find((it) => it.slug === slug || it.id === local?.id);
+    const cachedBracket = store.getBracketDataFromCache(slug) || (local?.id ? store.getBracketDataFromCache(local.id) : null);
+
     if (local) {
+      if (!local.bracket_data?.groups || local.bracket_data.groups.length === 0) {
+        if (cachedBracket?.groups && cachedBracket.groups.length > 0) {
+          local.bracket_data = cachedBracket;
+        } else if (init?.bracket_data?.groups && init.bracket_data.groups.length > 0) {
+          local.bracket_data = init.bracket_data;
+        }
+      }
+
       setTournament({ ...local });
-      if (local.participants && Array.isArray(local.participants)) {
-        const rawParts = await store.fetchParticipantProfiles(local.participants);
-        const actualPlayers = rawParts.filter((p) => {
+      let actualPlayers: PlayerProfile[] = [];
+      const combinedIds = Array.from(
+        new Set([
+          ...(local.participants || []),
+          ...(init?.participants || []),
+        ])
+      );
+      if (combinedIds.length > 0) {
+        const rawParts = await store.fetchParticipantProfiles(combinedIds);
+        actualPlayers = rawParts.filter((p) => {
           const email = (p.email || '').trim().toLowerCase();
           const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
           return (
@@ -133,11 +185,22 @@ export default function TournamentDetailPage() {
             name !== 'eliisgenderli'
           );
         });
-        local.participants = actualPlayers.map((p) => p.id);
-        setParticipants(actualPlayers);
-      } else {
-        setParticipants([]);
       }
+      if (actualPlayers.length === 0 && local.bracket_data?.groups) {
+        const groupPlayers = local.bracket_data.groups.flatMap((g) => g.players || []);
+        const seen = new Set<string>();
+        for (const gp of groupPlayers) {
+          if (gp && gp.id && !seen.has(gp.id)) {
+            seen.add(gp.id);
+            actualPlayers.push(gp);
+          }
+        }
+      }
+      local.participants = actualPlayers.map((p) => p.id);
+      setParticipants(actualPlayers);
+    } else if (init) {
+      setTournament({ ...init });
+      setParticipants(init.bracket_data?.groups?.flatMap((g) => g.players) || []);
     } else {
       setTournament(null);
     }
@@ -149,11 +212,29 @@ export default function TournamentDetailPage() {
     loadData(false);
     const unsub = store.subscribe(async () => {
       const local = store.getTournament(slug);
+      const init = INITIAL_TOURNAMENTS.find((it) => it.slug === slug || it.id === local?.id);
+      const cachedBracket = store.getBracketDataFromCache(slug) || (local?.id ? store.getBracketDataFromCache(local.id) : null);
+
       if (local) {
+        if (!local.bracket_data?.groups || local.bracket_data.groups.length === 0) {
+          if (cachedBracket?.groups && cachedBracket.groups.length > 0) {
+            local.bracket_data = cachedBracket;
+          } else if (init?.bracket_data?.groups && init.bracket_data.groups.length > 0) {
+            local.bracket_data = init.bracket_data;
+          }
+        }
+
         setTournament({ ...local });
-        if (local.participants && Array.isArray(local.participants)) {
-          const rawParts = await store.fetchParticipantProfiles(local.participants);
-          const actualPlayers = rawParts.filter((p) => {
+        let actualPlayers: PlayerProfile[] = [];
+        const combinedIds = Array.from(
+          new Set([
+            ...(local.participants || []),
+            ...(init?.participants || []),
+          ])
+        );
+        if (combinedIds.length > 0) {
+          const rawParts = await store.fetchParticipantProfiles(combinedIds);
+          actualPlayers = rawParts.filter((p) => {
             const email = (p.email || '').trim().toLowerCase();
             const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
             return (
@@ -163,11 +244,19 @@ export default function TournamentDetailPage() {
               name !== 'eliisgenderli'
             );
           });
-          local.participants = actualPlayers.map((p) => p.id);
-          setParticipants(actualPlayers);
-        } else {
-          setParticipants([]);
         }
+        if (actualPlayers.length === 0 && local.bracket_data?.groups) {
+          const groupPlayers = local.bracket_data.groups.flatMap((g) => g.players || []);
+          const seen = new Set<string>();
+          for (const gp of groupPlayers) {
+            if (gp && gp.id && !seen.has(gp.id)) {
+              seen.add(gp.id);
+              actualPlayers.push(gp);
+            }
+          }
+        }
+        local.participants = actualPlayers.map((p) => p.id);
+        setParticipants(actualPlayers);
       }
       setCurrentUser(store.getCurrentUser());
     });

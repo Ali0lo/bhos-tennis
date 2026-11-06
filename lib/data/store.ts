@@ -269,8 +269,27 @@ export class BHOSDataStore {
       } else {
         // Guarantee latest Foundation tournament rules, date and format from initial seed
         this.tournaments = this.tournaments.map((t) => {
-          const init = INITIAL_TOURNAMENTS.find((it) => it.id === t.id);
+          const init = INITIAL_TOURNAMENTS.find((it) => it.id === t.id || it.slug === t.slug);
           if (init) {
+            const hasStoredGroups = Boolean(t.bracket_data?.groups && t.bracket_data.groups.length > 0);
+            const cachedBracket = this.getBracketDataFromCache(t.slug) || this.getBracketDataFromCache(t.id);
+            const hasCachedGroups = Boolean(cachedBracket?.groups && cachedBracket.groups.length > 0);
+            const hasInitGroups = Boolean(init.bracket_data?.groups && init.bracket_data.groups.length > 0);
+
+            let bracket_data = t.bracket_data;
+            if (cachedBracket && hasCachedGroups) {
+              bracket_data = cachedBracket;
+            } else if (!hasStoredGroups && hasInitGroups) {
+              bracket_data = init.bracket_data;
+            }
+
+            const participants = Array.from(
+              new Set([
+                ...(Array.isArray(t.participants) ? t.participants : []),
+                ...(init.participants || []),
+              ])
+            );
+
             return {
               ...init,
               ...t,
@@ -280,6 +299,8 @@ export class BHOSDataStore {
               max_participants: Math.max(t.max_participants || 0, init.max_participants || 40),
               location: t.location || init.location,
               format: t.format || init.format,
+              bracket_data,
+              participants,
             };
           }
           return t;
@@ -301,6 +322,29 @@ export class BHOSDataStore {
       BHOSDataStore.instance = new BHOSDataStore();
     }
     return BHOSDataStore.instance;
+  }
+
+  public getBracketCacheKey(identifier: string): string {
+    return `bhos_tt_bracket_cache_${identifier}`;
+  }
+
+  public getBracketDataFromCache(identifier: string): Tournament['bracket_data'] | null {
+    if (typeof window === 'undefined') return null;
+    try {
+      const raw = localStorage.getItem(this.getBracketCacheKey(identifier));
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  }
+
+  public saveBracketDataToCache(identifier: string, data: Tournament['bracket_data']): void {
+    if (typeof window === 'undefined' || !data) return;
+    try {
+      localStorage.setItem(this.getBracketCacheKey(identifier), JSON.stringify(data));
+    } catch (e) {
+      console.warn('[BHOS Store] Could not cache bracket data:', e);
+    }
   }
 
   private async initializeCloudSync() {
@@ -768,6 +812,29 @@ export class BHOSDataStore {
           const localExisting = this.tournaments.find(
             (lt) => lt.id === t.id || lt.slug === t.slug
           );
+          const init = INITIAL_TOURNAMENTS.find(
+            (it) => it.id === t.id || it.slug === t.slug
+          );
+          const cachedBracket = this.getBracketDataFromCache(t.slug) || this.getBracketDataFromCache(t.id);
+
+          const cloudHasGroups = Boolean(t.bracket_data?.groups && t.bracket_data.groups.length > 0);
+          const localHasGroups = Boolean(localExisting?.bracket_data?.groups && localExisting.bracket_data.groups.length > 0);
+          const cachedHasGroups = Boolean(cachedBracket?.groups && cachedBracket.groups.length > 0);
+          const initHasGroups = Boolean(init?.bracket_data?.groups && init.bracket_data.groups.length > 0);
+
+          if (!cloudHasGroups) {
+            if (cachedBracket && cachedHasGroups) {
+              t.bracket_data = cachedBracket;
+            } else if (localHasGroups) {
+              t.bracket_data = localExisting!.bracket_data;
+            } else if (initHasGroups) {
+              t.bracket_data = init!.bracket_data;
+            }
+          } else {
+            this.saveBracketDataToCache(t.slug, t.bracket_data);
+            this.saveBracketDataToCache(t.id, t.bracket_data);
+          }
+
           const regsFromCloud = [
             ...(regMap.get(t.id) || []),
             ...(t.slug ? regMap.get(t.slug) || [] : []),
@@ -790,6 +857,7 @@ export class BHOSDataStore {
             new Set([
               ...(Array.isArray(t.participants) ? t.participants : []),
               ...(Array.isArray(localExisting?.participants) ? localExisting!.participants : []),
+              ...(init?.participants || []),
               ...regsFromCloud,
             ])
           )
@@ -954,9 +1022,39 @@ export class BHOSDataStore {
   private handleRealtimeTournament(payload: any) {
     const { eventType, new: newRecord } = payload;
     if (eventType === 'INSERT' || eventType === 'UPDATE') {
-      const idx = this.tournaments.findIndex((t) => t.id === newRecord.id);
+      const idx = this.tournaments.findIndex(
+        (t) => t.id === newRecord.id || (newRecord.slug && t.slug === newRecord.slug)
+      );
       if (idx !== -1) {
-        this.tournaments[idx] = { ...this.tournaments[idx], ...newRecord };
+        const existing = this.tournaments[idx];
+        const cloudHasGroups = Boolean(
+          newRecord.bracket_data?.groups && newRecord.bracket_data.groups.length > 0
+        );
+        const localHasGroups = Boolean(
+          existing.bracket_data?.groups && existing.bracket_data.groups.length > 0
+        );
+        const cachedBracket =
+          this.getBracketDataFromCache(existing.slug) ||
+          this.getBracketDataFromCache(existing.id);
+        const cachedHasGroups = Boolean(cachedBracket?.groups && cachedBracket.groups.length > 0);
+
+        let bracket_data = newRecord.bracket_data;
+        if (!cloudHasGroups) {
+          if (cachedHasGroups) {
+            bracket_data = cachedBracket;
+          } else if (localHasGroups) {
+            bracket_data = existing.bracket_data;
+          }
+        } else {
+          this.saveBracketDataToCache(newRecord.slug || existing.slug, newRecord.bracket_data);
+          this.saveBracketDataToCache(newRecord.id || existing.id, newRecord.bracket_data);
+        }
+
+        this.tournaments[idx] = {
+          ...existing,
+          ...newRecord,
+          bracket_data,
+        };
       } else {
         this.tournaments.unshift(newRecord);
       }
@@ -1118,7 +1216,8 @@ export class BHOSDataStore {
   public getProfile(id: string): PlayerProfile | undefined {
     return (
       this.profiles.find((p) => p.id === id) ||
-      this.leaderboardCache?.data?.find((p) => p.id === id)
+      this.leaderboardCache?.data?.find((p) => p.id === id) ||
+      INITIAL_PROFILES.find((p) => p.id === id)
     );
   }
 
@@ -2422,6 +2521,8 @@ export class BHOSDataStore {
       },
     };
 
+    this.saveBracketDataToCache(tournament.slug, tournament.bracket_data);
+    this.saveBracketDataToCache(tournament.id, tournament.bracket_data);
     this.saveLocal();
     this.notify();
     this.syncTournamentBracketToCloud(tournament);
@@ -2512,6 +2613,8 @@ export class BHOSDataStore {
       targetGroup.matches = newMatches;
     }
 
+    this.saveBracketDataToCache(tournament.slug, tournament.bracket_data);
+    this.saveBracketDataToCache(tournament.id, tournament.bracket_data);
     this.saveLocal();
     this.notify();
     this.syncTournamentBracketToCloud(tournament);
@@ -2547,6 +2650,8 @@ export class BHOSDataStore {
       tournament.status = 'ongoing';
     }
 
+    this.saveBracketDataToCache(tournament.slug, tournament.bracket_data);
+    this.saveBracketDataToCache(tournament.id, tournament.bracket_data);
     this.saveLocal();
     this.notify();
     this.syncTournamentBracketToCloud(tournament);
@@ -2581,6 +2686,8 @@ export class BHOSDataStore {
     );
     tournament.bracket_data.rounds = playoffBracket.rounds;
 
+    this.saveBracketDataToCache(tournament.slug, tournament.bracket_data);
+    this.saveBracketDataToCache(tournament.id, tournament.bracket_data);
     this.saveLocal();
     this.notify();
     this.syncTournamentBracketToCloud(tournament);
