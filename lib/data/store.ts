@@ -4,6 +4,8 @@ import {
   PlayerProfile,
   MatchRecord,
   Tournament,
+  TournamentGroup,
+  GroupMatch,
   TableReservation,
   UserRole,
   isProfilePending,
@@ -16,8 +18,10 @@ import { calculateMatchElo, parseSetScores, validateMatchSetSummary } from '../e
 import {
   advanceBracketWinner,
   findBracketNodeForMatch,
+  generatePlayoffBracketFromGroups,
   generateSingleEliminationBracket,
   generateTournamentGroups,
+  GenerateTournamentGroupsOptions,
   getQualifiedPlayersFromGroups,
   isTournamentRosterLocked,
 } from '../tournament';
@@ -2264,10 +2268,44 @@ export class BHOSDataStore {
     return tournament;
   }
 
+  private async syncTournamentBracketToCloud(tournament: Tournament): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    try {
+      const payload: any = {
+        bracket_data: tournament.bracket_data,
+        status: tournament.status,
+        format: tournament.format,
+        group_size: tournament.group_size,
+        advance_per_group: tournament.advance_per_group,
+        participants: tournament.participants,
+      };
+
+      if (tournament.slug) {
+        await supabase
+          .from('tournaments')
+          .update(payload)
+          .eq('slug', tournament.slug);
+      }
+
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournament.id);
+      if (isUuid) {
+        await supabase
+          .from('tournaments')
+          .update(payload)
+          .eq('id', tournament.id);
+      }
+    } catch (err: any) {
+      console.warn('[BHOS Store] syncTournamentBracketToCloud error:', err?.message || err);
+    }
+  }
+
   public generateTournamentGroupsAction(
     tournamentId: string,
     groupSize = 4,
-    advancePerGroup = 2
+    advancePerGroup = 2,
+    options?: GenerateTournamentGroupsOptions
   ): Tournament {
     const tournament = this.tournaments.find((t) => t.id === tournamentId);
     if (!tournament) throw new Error('Turnir tapılmadı.');
@@ -2292,7 +2330,7 @@ export class BHOSDataStore {
       throw new Error('Qrup mərhələsi üçün ən azı 3 oyunçu lazımdır.');
     }
 
-    const groups = generateTournamentGroups(players, tournament.id, groupSize);
+    const groups = generateTournamentGroups(players, tournament.id, groupSize, options);
     tournament.group_size = groupSize;
     tournament.advance_per_group = advancePerGroup;
     tournament.format = 'groups_and_knockout';
@@ -2307,11 +2345,103 @@ export class BHOSDataStore {
         location: tournament.location,
         registration_url: tournament.registration_url,
         allowed_admission_year: tournament.allowed_admission_year,
+        top_seed_ids: options?.topSeedPlayerIds || [],
       },
     };
 
     this.saveLocal();
     this.notify();
+    this.syncTournamentBracketToCloud(tournament);
+    return tournament;
+  }
+
+  public movePlayerBetweenGroups(
+    tournamentId: string,
+    playerId: string,
+    targetGroupId: string
+  ): Tournament {
+    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+    if (!tournament || !tournament.bracket_data?.groups) {
+      throw new Error('Turnir və ya qruplar tapılmadı.');
+    }
+
+    const player = this.getProfile(playerId);
+    if (!player) throw new Error('Oyunçu profili tapılmadı.');
+
+    const groups = tournament.bracket_data.groups;
+    const currentGroup = groups.find((g) => g.players.some((p) => p.id === playerId));
+    const targetGroup = groups.find((g) => g.id === targetGroupId);
+
+    if (!targetGroup) throw new Error('Hədəf qrup tapılmadı.');
+    if (currentGroup?.id === targetGroupId) return tournament;
+
+    // Remove from current group
+    if (currentGroup) {
+      currentGroup.players = currentGroup.players.filter((p) => p.id !== playerId);
+      const existingCompleted = currentGroup.matches.filter(
+        (m) => m.status === 'completed' && m.player1.id !== playerId && m.player2.id !== playerId
+      );
+      const newMatches: GroupMatch[] = [];
+      let mIdx = 0;
+      for (let i = 0; i < currentGroup.players.length; i++) {
+        for (let j = i + 1; j < currentGroup.players.length; j++) {
+          const p1 = currentGroup.players[i];
+          const p2 = currentGroup.players[j];
+          const prev = existingCompleted.find(
+            (em) =>
+              (em.player1.id === p1.id && em.player2.id === p2.id) ||
+              (em.player1.id === p2.id && em.player2.id === p1.id)
+          );
+          if (prev) {
+            newMatches.push(prev);
+          } else {
+            newMatches.push({
+              id: `${currentGroup.id}-m${mIdx++}`,
+              groupId: currentGroup.id,
+              player1: p1,
+              player2: p2,
+              status: 'ready',
+            });
+          }
+        }
+      }
+      currentGroup.matches = newMatches;
+    }
+
+    // Add to target group
+    if (!targetGroup.players.some((p) => p.id === playerId)) {
+      targetGroup.players.push(player);
+      const existingCompleted = targetGroup.matches.filter((m) => m.status === 'completed');
+      const newMatches: GroupMatch[] = [];
+      let mIdx = 0;
+      for (let i = 0; i < targetGroup.players.length; i++) {
+        for (let j = i + 1; j < targetGroup.players.length; j++) {
+          const p1 = targetGroup.players[i];
+          const p2 = targetGroup.players[j];
+          const prev = existingCompleted.find(
+            (em) =>
+              (em.player1.id === p1.id && em.player2.id === p2.id) ||
+              (em.player1.id === p2.id && em.player2.id === p1.id)
+          );
+          if (prev) {
+            newMatches.push(prev);
+          } else {
+            newMatches.push({
+              id: `${targetGroup.id}-m${mIdx++}`,
+              groupId: targetGroup.id,
+              player1: p1,
+              player2: p2,
+              status: 'ready',
+            });
+          }
+        }
+      }
+      targetGroup.matches = newMatches;
+    }
+
+    this.saveLocal();
+    this.notify();
+    this.syncTournamentBracketToCloud(tournament);
     return tournament;
   }
 
@@ -2346,6 +2476,7 @@ export class BHOSDataStore {
 
     this.saveLocal();
     this.notify();
+    this.syncTournamentBracketToCloud(tournament);
     return tournament;
   }
 
@@ -2370,11 +2501,16 @@ export class BHOSDataStore {
       );
     }
 
-    const playoffBracket = generateSingleEliminationBracket(qualified, tournament.id);
+    const playoffBracket = generatePlayoffBracketFromGroups(
+      tournament.bracket_data.groups,
+      tournament.id,
+      advancePerGroup
+    );
     tournament.bracket_data.rounds = playoffBracket.rounds;
 
     this.saveLocal();
     this.notify();
+    this.syncTournamentBracketToCloud(tournament);
     return tournament;
   }
 

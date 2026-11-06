@@ -144,6 +144,7 @@ export interface TournamentGroup {
   name: string;
   players: PlayerProfile[];
   matches: GroupMatch[];
+  top_seed_id?: string;
 }
 
 export interface TournamentSettingsConfig {
@@ -154,6 +155,8 @@ export interface TournamentSettingsConfig {
   registration_url?: string;
   allowed_admission_year?: number | null;
   best_of_sets?: number;
+  top_seed_ids?: string[];
+  seeding_guarantee?: string;
 }
 
 export interface Tournament {

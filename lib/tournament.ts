@@ -366,10 +366,16 @@ export interface GroupStandingRow {
   points: number;
 }
 
+export interface GenerateTournamentGroupsOptions {
+  numGroups?: number;
+  topSeedPlayerIds?: string[];
+}
+
 export function generateTournamentGroups(
   players: PlayerProfile[],
   tournamentId: string,
-  targetGroupSize = 4
+  targetGroupSize = 4,
+  options?: GenerateTournamentGroupsOptions
 ): TournamentGroup[] {
   const seenIds = new Set<string>();
   const uniquePlayers: PlayerProfile[] = [];
@@ -384,14 +390,65 @@ export function generateTournamentGroups(
     return [];
   }
 
-  const clampedGroupSize = Math.max(3, Math.min(8, targetGroupSize || 4));
-  const sortedPlayers = [...uniquePlayers].sort((a, b) => b.current_elo - a.current_elo);
-  const numGroups = Math.max(1, Math.floor(sortedPlayers.length / clampedGroupSize));
-  const groupBuckets: PlayerProfile[][] = Array.from({ length: numGroups }, () => []);
+  const requestedNumGroups = options?.numGroups;
+  const clampedGroupSize = Math.max(3, Math.min(12, targetGroupSize || 4));
+  const numGroups =
+    requestedNumGroups && requestedNumGroups >= 1
+      ? requestedNumGroups
+      : Math.max(1, Math.floor(uniquePlayers.length / clampedGroupSize));
 
-  sortedPlayers.forEach((player, idx) => {
+  const groupBuckets: PlayerProfile[][] = Array.from({ length: numGroups }, () => []);
+  const topSeedIds = (options?.topSeedPlayerIds || []).filter(Boolean);
+
+  // 1. Separate top seeds from general pool
+  const topSeedPlayers: PlayerProfile[] = [];
+  const remainingPlayers: PlayerProfile[] = [];
+
+  const playerMap = new Map<string, PlayerProfile>();
+  uniquePlayers.forEach((p) => playerMap.set(p.id, p));
+
+  // Place designated top seeds first
+  for (const seedId of topSeedIds) {
+    const p = playerMap.get(seedId);
+    if (p && !topSeedPlayers.some((tsp) => tsp.id === p.id)) {
+      topSeedPlayers.push(p);
+    }
+  }
+
+  // Everyone else goes to remaining
+  uniquePlayers.forEach((p) => {
+    if (!topSeedPlayers.some((tsp) => tsp.id === p.id)) {
+      remainingPlayers.push(p);
+    }
+  });
+
+  // Sort remaining by current_elo descending
+  remainingPlayers.sort((a, b) => (b.current_elo ?? 1200) - (a.current_elo ?? 1200));
+
+  // If no top seeds were explicitly chosen, use top N by ELO as seeds
+  if (topSeedPlayers.length === 0 && numGroups > 1) {
+    const autoSeedCount = Math.min(numGroups, remainingPlayers.length);
+    for (let i = 0; i < autoSeedCount; i++) {
+      const topP = remainingPlayers.shift();
+      if (topP) topSeedPlayers.push(topP);
+    }
+  }
+
+  // 2. Assign top seeds to different groups:
+  // Seed 1 -> Group A (bucket 0)
+  // Seed 2 -> Group B (bucket 1)
+  // Seed 3 -> Group C (bucket 2)
+  // Seed 4 -> Group D (bucket 3)
+  topSeedPlayers.forEach((seedPlayer, idx) => {
+    const bucketIdx = idx % numGroups;
+    groupBuckets[bucketIdx].push(seedPlayer);
+  });
+
+  // 3. Distribute remaining players across groups evenly using serpentine distribution
+  remainingPlayers.forEach((player, idx) => {
     const cycle = Math.floor(idx / numGroups);
     const posInCycle = idx % numGroups;
+    // Serpentine order: left-to-right on even cycles, right-to-left on odd cycles
     const bucketIdx = cycle % 2 === 0 ? posInCycle : numGroups - 1 - posInCycle;
     groupBuckets[bucketIdx].push(player);
   });
@@ -415,11 +472,14 @@ export function generateTournamentGroups(
       }
     }
 
+    const assignedTopSeed = topSeedPlayers[gIdx]?.id;
+
     return {
       id: groupId,
       name: `Qrup ${letter}`,
       players: bucketPlayers,
       matches,
+      top_seed_id: assignedTopSeed,
     };
   });
 }
@@ -504,4 +564,267 @@ export function getQualifiedPlayersFromGroups(
   }
 
   return qualified;
+}
+
+export function generatePlayoffBracketFromGroups(
+  groups: TournamentGroup[],
+  tournamentId: string,
+  advancePerGroup = 2
+): NonNullable<Tournament['bracket_data']> {
+  const cap = Math.max(1, advancePerGroup || 2);
+  const groupRankings: PlayerProfile[][] = (groups || []).map((g) => {
+    const standings = computeGroupStandings(g);
+    return standings.slice(0, cap).map((r) => r.player);
+  });
+
+  // 4 Groups, 2 advancing each (8 players in Quarterfinals)
+  // Guarantees:
+  // - Seed 1 (A1) & Seed 2 (B1) meet ONLY in the FINAL
+  // - Seed 1 (A1) & Seed 4 (D1) meet ONLY in Semifinal 1
+  // - Seed 3 (C1) & Seed 2 (B1) meet ONLY in Semifinal 2
+  // - Group runners-up do not face their own group winner in QF
+  if (groups.length === 4 && cap === 2) {
+    const A = groupRankings[0] || [];
+    const B = groupRankings[1] || [];
+    const C = groupRankings[2] || [];
+    const D = groupRankings[3] || [];
+
+    const a1 = A[0] || null;
+    const a2 = A[1] || null;
+    const b1 = B[0] || null;
+    const b2 = B[1] || null;
+    const c1 = C[0] || null;
+    const c2 = C[1] || null;
+    const d1 = D[0] || null;
+    const d2 = D[1] || null;
+
+    const qfMatches: BracketMatch[] = [
+      {
+        id: `t-${tournamentId}-r0-m0`,
+        roundIndex: 0,
+        matchIndex: 0,
+        round_number: 1,
+        bracket_node_index: 0,
+        player1: a1,
+        player2: c2,
+        nextMatchId: `t-${tournamentId}-r1-m0`,
+        next_match_id: `t-${tournamentId}-r1-m0`,
+        nextMatchSlot: 1,
+        status: a1 && c2 ? 'ready' : 'pending',
+      },
+      {
+        id: `t-${tournamentId}-r0-m1`,
+        roundIndex: 0,
+        matchIndex: 1,
+        round_number: 1,
+        bracket_node_index: 1,
+        player1: d1,
+        player2: b2,
+        nextMatchId: `t-${tournamentId}-r1-m0`,
+        next_match_id: `t-${tournamentId}-r1-m0`,
+        nextMatchSlot: 2,
+        status: d1 && b2 ? 'ready' : 'pending',
+      },
+      {
+        id: `t-${tournamentId}-r0-m2`,
+        roundIndex: 0,
+        matchIndex: 2,
+        round_number: 1,
+        bracket_node_index: 2,
+        player1: c1,
+        player2: a2,
+        nextMatchId: `t-${tournamentId}-r1-m1`,
+        next_match_id: `t-${tournamentId}-r1-m1`,
+        nextMatchSlot: 1,
+        status: c1 && a2 ? 'ready' : 'pending',
+      },
+      {
+        id: `t-${tournamentId}-r0-m3`,
+        roundIndex: 0,
+        matchIndex: 3,
+        round_number: 1,
+        bracket_node_index: 3,
+        player1: b1,
+        player2: d2,
+        nextMatchId: `t-${tournamentId}-r1-m1`,
+        next_match_id: `t-${tournamentId}-r1-m1`,
+        nextMatchSlot: 2,
+        status: b1 && d2 ? 'ready' : 'pending',
+      },
+    ];
+
+    const sfMatches: BracketMatch[] = [
+      {
+        id: `t-${tournamentId}-r1-m0`,
+        roundIndex: 1,
+        matchIndex: 0,
+        round_number: 2,
+        bracket_node_index: 0,
+        player1: null,
+        player2: null,
+        nextMatchId: `t-${tournamentId}-r2-m0`,
+        next_match_id: `t-${tournamentId}-r2-m0`,
+        nextMatchSlot: 1,
+        status: 'pending',
+      },
+      {
+        id: `t-${tournamentId}-r1-m1`,
+        roundIndex: 1,
+        matchIndex: 1,
+        round_number: 2,
+        bracket_node_index: 1,
+        player1: null,
+        player2: null,
+        nextMatchId: `t-${tournamentId}-r2-m0`,
+        next_match_id: `t-${tournamentId}-r2-m0`,
+        nextMatchSlot: 2,
+        status: 'pending',
+      },
+    ];
+
+    const finalMatch: BracketMatch[] = [
+      {
+        id: `t-${tournamentId}-r2-m0`,
+        roundIndex: 2,
+        matchIndex: 0,
+        round_number: 3,
+        bracket_node_index: 0,
+        player1: null,
+        player2: null,
+        status: 'pending',
+      },
+    ];
+
+    return {
+      rounds: [
+        { name: 'Quarterfinals', matches: qfMatches },
+        { name: 'Semifinals', matches: sfMatches },
+        { name: 'Final', matches: finalMatch },
+      ],
+    };
+  }
+
+  // 4 Groups, 1 advancing each (4 players in Semifinals)
+  if (groups.length === 4 && cap === 1) {
+    const a1 = groupRankings[0]?.[0] || null;
+    const b1 = groupRankings[1]?.[0] || null;
+    const c1 = groupRankings[2]?.[0] || null;
+    const d1 = groupRankings[3]?.[0] || null;
+
+    const sfMatches: BracketMatch[] = [
+      {
+        id: `t-${tournamentId}-r0-m0`,
+        roundIndex: 0,
+        matchIndex: 0,
+        round_number: 1,
+        bracket_node_index: 0,
+        player1: a1,
+        player2: d1,
+        nextMatchId: `t-${tournamentId}-r1-m0`,
+        next_match_id: `t-${tournamentId}-r1-m0`,
+        nextMatchSlot: 1,
+        status: a1 && d1 ? 'ready' : 'pending',
+      },
+      {
+        id: `t-${tournamentId}-r0-m1`,
+        roundIndex: 0,
+        matchIndex: 1,
+        round_number: 1,
+        bracket_node_index: 1,
+        player1: b1,
+        player2: c1,
+        nextMatchId: `t-${tournamentId}-r1-m0`,
+        next_match_id: `t-${tournamentId}-r1-m0`,
+        nextMatchSlot: 2,
+        status: b1 && c1 ? 'ready' : 'pending',
+      },
+    ];
+
+    const finalMatch: BracketMatch[] = [
+      {
+        id: `t-${tournamentId}-r1-m0`,
+        roundIndex: 1,
+        matchIndex: 0,
+        round_number: 2,
+        bracket_node_index: 0,
+        player1: null,
+        player2: null,
+        status: 'pending',
+      },
+    ];
+
+    return {
+      rounds: [
+        { name: 'Semifinals', matches: sfMatches },
+        { name: 'Final', matches: finalMatch },
+      ],
+    };
+  }
+
+  // 2 Groups, 2 advancing each (4 players in Semifinals)
+  if (groups.length === 2 && cap === 2) {
+    const a1 = groupRankings[0]?.[0] || null;
+    const a2 = groupRankings[0]?.[1] || null;
+    const b1 = groupRankings[1]?.[0] || null;
+    const b2 = groupRankings[1]?.[1] || null;
+
+    const sfMatches: BracketMatch[] = [
+      {
+        id: `t-${tournamentId}-r0-m0`,
+        roundIndex: 0,
+        matchIndex: 0,
+        round_number: 1,
+        bracket_node_index: 0,
+        player1: a1,
+        player2: b2,
+        nextMatchId: `t-${tournamentId}-r1-m0`,
+        next_match_id: `t-${tournamentId}-r1-m0`,
+        nextMatchSlot: 1,
+        status: a1 && b2 ? 'ready' : 'pending',
+      },
+      {
+        id: `t-${tournamentId}-r0-m1`,
+        roundIndex: 0,
+        matchIndex: 1,
+        round_number: 1,
+        bracket_node_index: 1,
+        player1: b1,
+        player2: a2,
+        nextMatchId: `t-${tournamentId}-r1-m0`,
+        next_match_id: `t-${tournamentId}-r1-m0`,
+        nextMatchSlot: 2,
+        status: b1 && a2 ? 'ready' : 'pending',
+      },
+    ];
+
+    const finalMatch: BracketMatch[] = [
+      {
+        id: `t-${tournamentId}-r1-m0`,
+        roundIndex: 1,
+        matchIndex: 0,
+        round_number: 2,
+        bracket_node_index: 0,
+        player1: null,
+        player2: null,
+        status: 'pending',
+      },
+    ];
+
+    return {
+      rounds: [
+        { name: 'Semifinals', matches: sfMatches },
+        { name: 'Final', matches: finalMatch },
+      ],
+    };
+  }
+
+  // General fallback: flatten qualified players and use standard bracket
+  const allQualified: PlayerProfile[] = [];
+  for (let rank = 0; rank < cap; rank++) {
+    groupRankings.forEach((grp) => {
+      if (grp[rank]) allQualified.push(grp[rank]);
+    });
+  }
+
+  return generateSingleEliminationBracket(allQualified, tournamentId);
 }

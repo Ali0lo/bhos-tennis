@@ -18,6 +18,9 @@ import {
   PlayCircle,
   X,
   AlertCircle,
+  Crown,
+  ChevronDown,
+  ArrowRightLeft,
 } from 'lucide-react';
 
 interface TournamentGroupsStageProps {
@@ -51,15 +54,66 @@ export default function TournamentGroupsStage({
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loadingAction, setLoadingAction] = useState(false);
 
+  // Setup / Seeding modal state
+  const [setupModalOpen, setSetupModalOpen] = useState(false);
+  const [numGroups, setNumGroups] = useState<number>(4);
+  const [advancePerGroupChoice, setAdvancePerGroupChoice] = useState<number>(advanceCount || 2);
+  const [seed1Id, setSeed1Id] = useState<string>('');
+  const [seed2Id, setSeed2Id] = useState<string>('');
+  const [seed3Id, setSeed3Id] = useState<string>('');
+  const [seed4Id, setSeed4Id] = useState<string>('');
+  const [movingPlayerId, setMovingPlayerId] = useState<string | null>(null);
+
   const activeGroup =
     groups.find((g) => g.id === activeGroupId) || groups[0] || null;
 
-  const handleGenerateGroups = () => {
+  // Registered players for the tournament
+  const registeredPlayers: PlayerProfile[] = (tournament.participants || [])
+    .map((pid) => store.getProfile(pid))
+    .filter((p): p is PlayerProfile => Boolean(p));
+
+  const sortedCandidates = [...registeredPlayers].sort(
+    (a, b) => (b.current_elo ?? 1200) - (a.current_elo ?? 1200)
+  );
+
+  const handleAutoFillTopSeeds = () => {
+    setSeed1Id(sortedCandidates[0]?.id || '');
+    setSeed2Id(sortedCandidates[1]?.id || '');
+    setSeed3Id(sortedCandidates[2]?.id || '');
+    setSeed4Id(sortedCandidates[3]?.id || '');
+  };
+
+  const handleOpenSetupModal = () => {
+    // If existing top seeds were saved, restore them
+    const existingTopSeeds = tournament.bracket_data?.settings?.top_seed_ids || [];
+    if (existingTopSeeds.length > 0) {
+      setSeed1Id(existingTopSeeds[0] || '');
+      setSeed2Id(existingTopSeeds[1] || '');
+      setSeed3Id(existingTopSeeds[2] || '');
+      setSeed4Id(existingTopSeeds[3] || '');
+    } else if (sortedCandidates.length >= 2) {
+      setSeed1Id(sortedCandidates[0]?.id || '');
+      setSeed2Id(sortedCandidates[1]?.id || '');
+      setSeed3Id(sortedCandidates[2]?.id || '');
+      setSeed4Id(sortedCandidates[3]?.id || '');
+    }
+    setNumGroups(groups.length > 0 ? groups.length : 4);
+    setAdvancePerGroupChoice(advanceCount);
+    setSetupModalOpen(true);
+  };
+
+  const handleConfirmGenerateGroups = () => {
     if (!isAdmin) return;
     try {
       setLoadingAction(true);
-      const groupSize = tournament.group_size || 4;
-      store.generateTournamentGroupsAction(tournament.id, groupSize, advanceCount);
+      const topSeedPlayerIds = [seed1Id, seed2Id, seed3Id, seed4Id].filter(Boolean);
+      const calculatedGroupSize = Math.max(3, Math.ceil(registeredPlayers.length / numGroups));
+
+      store.generateTournamentGroupsAction(tournament.id, calculatedGroupSize, advancePerGroupChoice, {
+        numGroups,
+        topSeedPlayerIds,
+      });
+      setSetupModalOpen(false);
       onUpdate();
     } catch (err: any) {
       alert(err.message || 'Qruplar yaradılarkən xəta baş verdi.');
@@ -68,8 +122,27 @@ export default function TournamentGroupsStage({
     }
   };
 
+  const handleMovePlayer = (playerId: string, targetGroupId: string) => {
+    if (!isAdmin) return;
+    try {
+      setLoadingAction(true);
+      store.movePlayerBetweenGroups(tournament.id, playerId, targetGroupId);
+      setMovingPlayerId(null);
+      onUpdate();
+    } catch (err: any) {
+      alert(err.message || 'Oyunçu köçürülərkən xəta baş verdi.');
+    } finally {
+      setLoadingAction(false);
+    }
+  };
+
   const handleAdvanceToPlayoffs = () => {
     if (!isAdmin) return;
+    const confirmMsg =
+      'Bütün qrupların nəticələri əsasında Olimpiya (Pley-off) səbəti yaradılsın?\n\n' +
+      'Təminat: Qrup qalibləri (1-ci və 2-ci səbət başçıları) yalnız FİNALDA, digər səbət başçıları isə YARIMFİNALDA üz-üzə gələcəklər.';
+    if (!confirm(confirmMsg)) return;
+
     try {
       setLoadingAction(true);
       store.advanceGroupWinnersToPlayoffs(tournament.id);
@@ -125,26 +198,245 @@ export default function TournamentGroupsStage({
             Qrup Mərhələsi Hələ Tərtib Edilməyib
           </h3>
           <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Hər qrupda 4–5 oyunçu olmaqla dairəvi oyunlar keçirilir və ilk {advanceCount} yer pley-offa yüksəlir.
+            İştirakçıları qruplara bölün və 3-4 güclü oyunçunu səbət başçısı kimi seçin ki, onlar yalnız Yarımfinal və Finalda qarşılaşsınlar.
           </p>
         </div>
         {isAdmin && (
           <button
             type="button"
             disabled={loadingAction}
-            onClick={handleGenerateGroups}
+            onClick={handleOpenSetupModal}
             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-display font-bold text-xs shadow-sm transition active:scale-95"
           >
             <Shuffle className="w-4 h-4" />
-            <span>Qrupları Avtomatik Püşkat ({tournament.group_size || 4} nəfərlik)</span>
+            <span>🏆 Qrupları Formalaşdır və Səbətləri Seç</span>
           </button>
         )}
+
+        {/* Modal when groups is 0 */}
+        {setupModalOpen && renderSetupModal()}
+      </div>
+    );
+  }
+
+  function renderSetupModal() {
+    return (
+      <div
+        role="dialog"
+        aria-modal="true"
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto"
+      >
+        <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-slate-900 border-2 border-blue-700/80 p-6 shadow-2xl space-y-6 text-left">
+          <div className="flex items-center justify-between border-b border-white/10 pb-4">
+            <div className="flex items-center gap-2.5">
+              <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400">
+                <Crown className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-display font-bold text-white">
+                  Qrup Mərhələsi & Səbət Başçılarının Seçimi
+                </h3>
+                <p className="text-xs text-slate-400">
+                  Güclü oyunçuları fərqli qruplara və pley-offun əks qollarına yerləşdirin
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSetupModalOpen(false)}
+              className="w-8 h-8 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 hover:text-white flex items-center justify-center transition"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Guarantee Banner */}
+          <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-transparent border border-amber-500/30 space-y-1.5">
+            <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
+              <ShieldCheck className="w-4 h-4 text-amber-400" />
+              <span>YARIMFİNAL VƏ FİNAL TƏMİNATI (ITTF Seeding)</span>
+            </div>
+            <p className="text-[11px] text-slate-300 leading-relaxed">
+              Aşağıda seçdiyiniz 3–4 güclü oyunçu <strong>ayrı-ayrı qruplara (A, B, C, D)</strong> səbət başçısı kimi düşəcək. Qrupdan çıxdıqda isə pley-off cədvəlinin əks tərəflərinə yerləşdiriləcəklər.
+              Beləliklə, onlar <strong>yalnız YARIMFİNAL və FİNALDA</strong> üz-üzə gələ bilərlər!
+            </p>
+          </div>
+
+          <div className="space-y-4 text-xs">
+            {/* Format Selection */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="block text-slate-300 font-bold">
+                  Qrup Sayı
+                </label>
+                <select
+                  value={numGroups}
+                  onChange={(e) => setNumGroups(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500"
+                >
+                  <option value={4}>4 Qrup (Qrup A, B, C, D) — Tövsiyə olunur</option>
+                  <option value={2}>2 Qrup (Qrup A, B)</option>
+                  <option value={6}>6 Qrup (Qrup A — F)</option>
+                  <option value={8}>8 Qrup (Qrup A — H)</option>
+                </select>
+                <p className="text-[10px] text-slate-400">
+                  {registeredPlayers.length} oyunçu / {numGroups} qrup ≈ {Math.ceil(registeredPlayers.length / numGroups)} nəfər/qrup
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-slate-300 font-bold">
+                  Pley-offa Vəsiqə Qazananlar
+                </label>
+                <select
+                  value={advancePerGroupChoice}
+                  onChange={(e) => setAdvancePerGroupChoice(Number(e.target.value))}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500"
+                >
+                  <option value={2}>Hər qrupdan 2 nəfər (8 nəfərlik 1/4 Final)</option>
+                  <option value={1}>Hər qrupdan 1 nəfər (4 nəfərlik Yarımfinal)</option>
+                  <option value={4}>Hər qrupdan 4 nəfər (16 nəfərlik 1/8 Final)</option>
+                </select>
+                <p className="text-[10px] text-slate-400">
+                  Cəmi {numGroups * advancePerGroupChoice} oyunçu pley-off mərhələsinə yüksələcək
+                </p>
+              </div>
+            </div>
+
+            {/* Top Seeds Header & Auto Button */}
+            <div className="flex items-center justify-between pt-2 border-t border-white/10">
+              <div className="flex items-center gap-2">
+                <Crown className="w-4 h-4 text-amber-400" />
+                <span className="font-bold text-white text-xs">
+                  Səbət Başçıları / 3–4 Güclü Oyunçu
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={handleAutoFillTopSeeds}
+                className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 hover:bg-amber-500/25 text-[11px] font-semibold transition"
+              >
+                ⚡ Ən Yüksək ELO-luları Doldur
+              </button>
+            </div>
+
+            {/* Seed Pickers */}
+            <div className="space-y-3">
+              {/* Seed 1 */}
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-amber-400 text-[11px] flex items-center gap-1.5">
+                    <span>👑 1-ci Səbət (Qrup A Başçısı)</span>
+                    <span className="text-[10px] text-slate-500 font-normal">→ Pley-off Yuxarı Qol</span>
+                  </span>
+                </div>
+                <select
+                  value={seed1Id}
+                  onChange={(e) => setSeed1Id(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-amber-500"
+                >
+                  <option value="">-- Oyunçu seçin --</option>
+                  {sortedCandidates.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.full_name} ({p.admission_year || 'BHOS'} • ELO {p.current_elo ?? 1200})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Seed 2 */}
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-rose-400 text-[11px] flex items-center gap-1.5">
+                    <span>👑 2-ci Səbət (Qrup B Başçısı)</span>
+                    <span className="text-[10px] text-emerald-400 font-bold">→ Əks Aşağı Qol (Yalnız Finalda görüşə bilərlər!)</span>
+                  </span>
+                </div>
+                <select
+                  value={seed2Id}
+                  onChange={(e) => setSeed2Id(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-rose-500"
+                >
+                  <option value="">-- Oyunçu seçin --</option>
+                  {sortedCandidates.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.full_name} ({p.admission_year || 'BHOS'} • ELO {p.current_elo ?? 1200})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Seed 3 */}
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-blue-400 text-[11px] flex items-center gap-1.5">
+                    <span>👑 3-cü Səbət (Qrup C Başçısı)</span>
+                    <span className="text-[10px] text-slate-500 font-normal">→ 2-ci Yarımfinal Qolu</span>
+                  </span>
+                </div>
+                <select
+                  value={seed3Id}
+                  onChange={(e) => setSeed3Id(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-blue-500"
+                >
+                  <option value="">-- Oyunçu seçin (İstəyə bağlı) --</option>
+                  {sortedCandidates.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.full_name} ({p.admission_year || 'BHOS'} • ELO {p.current_elo ?? 1200})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Seed 4 */}
+              <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 space-y-1">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-emerald-400 text-[11px] flex items-center gap-1.5">
+                    <span>👑 4-cü Səbət (Qrup D Başçısı)</span>
+                    <span className="text-[10px] text-slate-500 font-normal">→ 1-ci Yarımfinal Qolu</span>
+                  </span>
+                </div>
+                <select
+                  value={seed4Id}
+                  onChange={(e) => setSeed4Id(e.target.value)}
+                  className="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-white text-xs focus:outline-none focus:border-emerald-500"
+                >
+                  <option value="">-- Oyunçu seçin (İstəyə bağlı) --</option>
+                  {sortedCandidates.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.full_name} ({p.admission_year || 'BHOS'} • ELO {p.current_elo ?? 1200})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-end gap-3 pt-3 border-t border-white/10">
+            <button
+              type="button"
+              onClick={() => setSetupModalOpen(false)}
+              className="px-4 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white text-xs transition"
+            >
+              Ləğv et
+            </button>
+            <button
+              type="button"
+              disabled={loadingAction}
+              onClick={handleConfirmGenerateGroups}
+              className="px-5 py-2 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-display font-bold text-xs shadow-md transition active:scale-95 disabled:opacity-50"
+            >
+              {loadingAction ? 'Formalaşdırılır...' : '✨ Qrupları Formalaşdır və Püşkat'}
+            </button>
+          </div>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
+      {/* Top Header & Actions */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-white/10">
         <div>
           <div className="flex items-center gap-2">
@@ -166,19 +458,19 @@ export default function TournamentGroupsStage({
             <button
               type="button"
               disabled={loadingAction}
-              onClick={handleGenerateGroups}
+              onClick={handleOpenSetupModal}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white text-xs font-semibold transition"
-              title="Qrupları yenidən püşkat"
+              title="Qrupları və səbət başçılarını tənzimlə"
             >
               <Shuffle className="w-3.5 h-3.5 text-blue-400" />
-              <span>Qrupları Yenidən Püşkat</span>
+              <span>Qrupları & Səbətləri Tənzimlə</span>
             </button>
             <button
               type="button"
               disabled={loadingAction}
               onClick={handleAdvanceToPlayoffs}
               className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-sm active:scale-95"
-              title="İlk 2 yeri tutanları pley-off səbətinə keçir"
+              title="Qrup qaliblərini pley-off səbətinə keçir"
             >
               <Trophy className="w-3.5 h-3.5" />
               <span>Qalibləri Pley-offa Keçir</span>
@@ -187,6 +479,36 @@ export default function TournamentGroupsStage({
         )}
       </div>
 
+      {/* Seeding Protection Live Banner */}
+      <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-950/40 via-purple-950/20 to-slate-900 border border-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="flex items-center gap-2.5">
+          <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+            <Crown className="w-4 h-4" />
+          </div>
+          <div>
+            <div className="font-bold text-white flex items-center gap-2">
+              <span>🛡️ Güclü Oyunçular Qorunması Aktivdir</span>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
+                Yalnız Yarımfinal & Final
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-300 mt-0.5">
+              Səbət başçıları ayrı-ayrı qruplara salınıb. Qrup qalibləri kimi onlar yalnız <strong>YARIMFİNAL</strong> və <strong>FİNALDA</strong> qarşılaşacaqlar.
+            </p>
+          </div>
+        </div>
+        {isAdmin && (
+          <button
+            type="button"
+            onClick={handleOpenSetupModal}
+            className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold border border-white/10 shrink-0 self-start sm:self-auto transition"
+          >
+            ⚙️ Səbətləri Yenidən Qur
+          </button>
+        )}
+      </div>
+
+      {/* Group Navigation Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
         {groups.map((group) => {
           const active = group.id === (activeGroup?.id || '');
@@ -223,6 +545,7 @@ export default function TournamentGroupsStage({
 
       {activeGroup && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Group Standings Table */}
           <div className="lg:col-span-7 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-display font-bold text-white flex items-center gap-2">
@@ -246,11 +569,16 @@ export default function TournamentGroupsStage({
                       <th className="py-2.5 px-2 text-center" title="Məğlubiyyət">M</th>
                       <th className="py-2.5 px-2 text-center" title="Set Fərqi">+/-</th>
                       <th className="py-2.5 px-3 text-right font-black" title="Xal">XAL</th>
+                      {isAdmin && <th className="py-2.5 px-2 text-right">Admin</th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5 font-sans">
                     {computeGroupStandings(activeGroup).map((row, idx) => {
                       const qualifies = idx < advanceCount;
+                      const isTopSeed =
+                        activeGroup.top_seed_id === row.player.id ||
+                        (tournament.bracket_data?.settings?.top_seed_ids || []).includes(row.player.id);
+
                       return (
                         <tr
                           key={row.player.id}
@@ -270,13 +598,19 @@ export default function TournamentGroupsStage({
                             </span>
                           </td>
                           <td className="py-3 px-3">
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-2 flex-wrap">
                               <Link
                                 href={getPlayerHref(row.player.id)}
                                 className="font-semibold text-white hover:text-blue-400 transition"
                               >
                                 {row.player.full_name}
                               </Link>
+                              {isTopSeed && (
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
+                                  <Crown className="w-2.5 h-2.5" />
+                                  <span>Səbət Başçısı</span>
+                                </span>
+                              )}
                               {qualifies && (
                                 <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-emerald-600/20 text-emerald-400 border border-emerald-600/30">
                                   Pley-off
@@ -299,6 +633,45 @@ export default function TournamentGroupsStage({
                           <td className="py-3 px-3 text-right font-mono font-black text-amber-400 text-sm">
                             {row.points}
                           </td>
+
+                          {/* Admin: Move player to another group */}
+                          {isAdmin && (
+                            <td className="py-3 px-2 text-right relative">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setMovingPlayerId(
+                                    movingPlayerId === row.player.id ? null : row.player.id
+                                  )
+                                }
+                                className="px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] font-medium border border-white/10 transition"
+                                title="Bu oyunçunu başqa qrupa köçür"
+                              >
+                                Qrup ▾
+                              </button>
+
+                              {movingPlayerId === row.player.id && (
+                                <div className="absolute right-0 top-full mt-1 z-20 w-36 rounded-xl bg-slate-900 border border-slate-700 shadow-xl p-1 text-left">
+                                  <div className="text-[9px] uppercase tracking-wider text-slate-400 px-2 py-1 font-bold">
+                                    Qrupa köçür:
+                                  </div>
+                                  {groups.map((g) => {
+                                    if (g.id === activeGroup.id) return null;
+                                    return (
+                                      <button
+                                        key={g.id}
+                                        type="button"
+                                        onClick={() => handleMovePlayer(row.player.id, g.id)}
+                                        className="w-full text-left px-2 py-1 rounded hover:bg-blue-600 hover:text-white text-slate-200 text-xs font-medium transition"
+                                      >
+                                        → {g.name}
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -308,6 +681,7 @@ export default function TournamentGroupsStage({
             </div>
           </div>
 
+          {/* Group Matches */}
           <div className="lg:col-span-5 space-y-3">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-display font-bold text-white flex items-center gap-2">
@@ -394,6 +768,7 @@ export default function TournamentGroupsStage({
         </div>
       )}
 
+      {/* Match Score Modal */}
       {matchModal && (
         <div
           role="dialog"
@@ -482,7 +857,9 @@ export default function TournamentGroupsStage({
           </div>
         </div>
       )}
+
+      {/* Setup Modal */}
+      {setupModalOpen && renderSetupModal()}
     </div>
   );
 }
-
