@@ -773,13 +773,28 @@ export class BHOSDataStore {
             ...(t.slug ? regMap.get(t.slug) || [] : []),
           ];
 
+          const isOrganizer = (pid: string) => {
+            const p = this.getProfile(pid);
+            if (!p) return false;
+            const email = (p.email || '').trim().toLowerCase();
+            const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
+            return (
+              email === 'ali.iskandarli.std@bhos.edu.az' ||
+              email === 'ali.iskandarli@bhos.edu.az' ||
+              name === 'aliiskandarli' ||
+              name === 'eliisgenderli'
+            );
+          };
+
           const combinedParticipants = Array.from(
             new Set([
               ...(Array.isArray(t.participants) ? t.participants : []),
               ...(Array.isArray(localExisting?.participants) ? localExisting!.participants : []),
               ...regsFromCloud,
             ])
-          ).filter(Boolean) as string[];
+          )
+            .filter(Boolean)
+            .filter((pid) => !isOrganizer(pid as string)) as string[];
 
           t.participants = combinedParticipants;
           t.max_participants = Math.max(t.max_participants || 0, 40);
@@ -2287,6 +2302,23 @@ export class BHOSDataStore {
     const tournament = this.tournaments.find((t) => t.id === tournamentId);
     if (!tournament) throw new Error('Turnir tapılmadı.');
 
+    const isOrganizer = (pid: string) => {
+      const p = this.getProfile(pid);
+      if (!p) return false;
+      const email = (p.email || '').trim().toLowerCase();
+      const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
+      return (
+        email === 'ali.iskandarli.std@bhos.edu.az' ||
+        email === 'ali.iskandarli@bhos.edu.az' ||
+        name === 'aliiskandarli' ||
+        name === 'eliisgenderli'
+      );
+    };
+
+    if (tournament.participants && Array.isArray(tournament.participants)) {
+      tournament.participants = tournament.participants.filter((pid) => !isOrganizer(pid));
+    }
+
     tournament.status = 'ongoing';
     tournament.group_size = 7;
     tournament.advance_per_group = 4;
@@ -2344,7 +2376,17 @@ export class BHOSDataStore {
     const participantIds = tournament.participants || [];
     let players = participantIds
       .map((pid) => this.getProfile(pid))
-      .filter((p): p is PlayerProfile => Boolean(p));
+      .filter((p): p is PlayerProfile => Boolean(p))
+      .filter((p) => {
+        const email = (p.email || '').trim().toLowerCase();
+        const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
+        return (
+          email !== 'ali.iskandarli.std@bhos.edu.az' &&
+          email !== 'ali.iskandarli@bhos.edu.az' &&
+          name !== 'aliiskandarli' &&
+          name !== 'eliisgenderli'
+        );
+      });
 
     if (players.length < 3) {
       const activeProfiles = this.getVerifiedProfiles();

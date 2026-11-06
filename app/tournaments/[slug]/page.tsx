@@ -96,10 +96,21 @@ export default function TournamentDetailPage() {
             ])
           ).filter(Boolean) as string[];
 
-          data.participants = combinedParticipantIds;
+          const rawParts = await store.fetchParticipantProfiles(combinedParticipantIds);
+          const actualPlayers = rawParts.filter((p) => {
+            const email = (p.email || '').trim().toLowerCase();
+            const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
+            return (
+              email !== 'ali.iskandarli.std@bhos.edu.az' &&
+              email !== 'ali.iskandarli@bhos.edu.az' &&
+              name !== 'aliiskandarli' &&
+              name !== 'eliisgenderli'
+            );
+          });
+
+          data.participants = actualPlayers.map((p) => p.id);
           setTournament(data as Tournament);
-          const parts = await store.fetchParticipantProfiles(combinedParticipantIds);
-          setParticipants(parts);
+          setParticipants(actualPlayers);
           setLoading(false);
           return;
         }
@@ -111,8 +122,19 @@ export default function TournamentDetailPage() {
     if (local) {
       setTournament({ ...local });
       if (local.participants && Array.isArray(local.participants)) {
-        const parts = await store.fetchParticipantProfiles(local.participants);
-        setParticipants(parts);
+        const rawParts = await store.fetchParticipantProfiles(local.participants);
+        const actualPlayers = rawParts.filter((p) => {
+          const email = (p.email || '').trim().toLowerCase();
+          const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
+          return (
+            email !== 'ali.iskandarli.std@bhos.edu.az' &&
+            email !== 'ali.iskandarli@bhos.edu.az' &&
+            name !== 'aliiskandarli' &&
+            name !== 'eliisgenderli'
+          );
+        });
+        local.participants = actualPlayers.map((p) => p.id);
+        setParticipants(actualPlayers);
       } else {
         setParticipants([]);
       }
@@ -130,8 +152,19 @@ export default function TournamentDetailPage() {
       if (local) {
         setTournament({ ...local });
         if (local.participants && Array.isArray(local.participants)) {
-          const parts = await store.fetchParticipantProfiles(local.participants);
-          setParticipants(parts);
+          const rawParts = await store.fetchParticipantProfiles(local.participants);
+          const actualPlayers = rawParts.filter((p) => {
+            const email = (p.email || '').trim().toLowerCase();
+            const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
+            return (
+              email !== 'ali.iskandarli.std@bhos.edu.az' &&
+              email !== 'ali.iskandarli@bhos.edu.az' &&
+              name !== 'aliiskandarli' &&
+              name !== 'eliisgenderli'
+            );
+          });
+          local.participants = actualPlayers.map((p) => p.id);
+          setParticipants(actualPlayers);
         } else {
           setParticipants([]);
         }
@@ -377,8 +410,17 @@ export default function TournamentDetailPage() {
                     href={`/login?redirect=/tournaments/${slug}`}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-display font-bold text-xs shadow-md transition active:scale-95"
                   >
-                    <span>Daxil Ol və Turnirə Qoşul →</span>
+                    <span>Daxil Ol →</span>
                   </Link>
+                ) : isAdmin ? (
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 font-display font-bold text-xs">
+                      👑 Turnir Təşkilatçısı (İdarəçi)
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      Oyunçu deyilsiniz — yalnız 14 iştirakçı turnirdə yarışır.
+                    </span>
+                  </div>
                 ) : isRegistered ? (
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500 text-emerald-400 font-display font-bold text-xs">
@@ -417,11 +459,6 @@ export default function TournamentDetailPage() {
                       <span>{actionLoading ? 'Qeydiyyat aparılır...' : 'Turnirə Qoşul (1-Klik)'}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
-                    {isAdmin && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold">
-                        👑 Təşkilatçı kimi iştirak
-                      </span>
-                    )}
                   </div>
                 )}
 

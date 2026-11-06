@@ -341,3 +341,28 @@ WHERE slug = 'foundation-kuboku-2026'
    OR id::text = 'tourn-foundation-2026'
    OR title ILIKE '%foundation%';
 
+-- 7. Remove organizer (Ali Iskandarli) from tournament roster so only the 14 actual players remain
+DELETE FROM public.tournament_registrations
+WHERE (tournament_slug = 'foundation-kuboku-2026' OR tournament_id::text = 'tourn-foundation-2026')
+  AND player_id IN (
+    SELECT id FROM public.profiles
+    WHERE email IN ('ali.iskandarli.std@bhos.edu.az', 'ali.iskandarli@bhos.edu.az')
+       OR full_name ILIKE '%ali iskandarli%'
+       OR full_name ILIKE '%əli isgəndərli%'
+  );
+
+UPDATE public.tournaments
+SET participants = (
+  SELECT COALESCE(jsonb_agg(elem), '[]'::jsonb)
+  FROM jsonb_array_elements_text(COALESCE(participants, '[]'::jsonb)) elem
+  WHERE elem NOT IN (
+    SELECT id::text FROM public.profiles
+    WHERE email IN ('ali.iskandarli.std@bhos.edu.az', 'ali.iskandarli@bhos.edu.az')
+       OR full_name ILIKE '%ali iskandarli%'
+       OR full_name ILIKE '%əli isgəndərli%'
+  )
+)
+WHERE slug = 'foundation-kuboku-2026'
+   OR id::text = 'tourn-foundation-2026'
+   OR title ILIKE '%foundation%';
+

@@ -67,10 +67,20 @@ export default function TournamentGroupsStage({
   const activeGroup =
     groups.find((g) => g.id === activeGroupId) || groups[0] || null;
 
-  // Registered players for the tournament
+  // Registered players for the tournament (excluding tournament organizer)
   const registeredPlayers: PlayerProfile[] = (tournament.participants || [])
     .map((pid) => store.getProfile(pid))
-    .filter((p): p is PlayerProfile => Boolean(p));
+    .filter((p): p is PlayerProfile => Boolean(p))
+    .filter((p) => {
+      const email = (p.email || '').trim().toLowerCase();
+      const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
+      return (
+        email !== 'ali.iskandarli.std@bhos.edu.az' &&
+        email !== 'ali.iskandarli@bhos.edu.az' &&
+        name !== 'aliiskandarli' &&
+        name !== 'eliisgenderli'
+      );
+    });
 
   const sortedCandidates = [...registeredPlayers].sort(
     (a, b) => (b.current_elo ?? 1200) - (a.current_elo ?? 1200)
