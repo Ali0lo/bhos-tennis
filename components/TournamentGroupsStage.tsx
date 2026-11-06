@@ -56,8 +56,8 @@ export default function TournamentGroupsStage({
 
   // Setup / Seeding modal state
   const [setupModalOpen, setSetupModalOpen] = useState(false);
-  const [numGroups, setNumGroups] = useState<number>(4);
-  const [advancePerGroupChoice, setAdvancePerGroupChoice] = useState<number>(advanceCount || 2);
+  const [numGroups, setNumGroups] = useState<number>(2);
+  const [advancePerGroupChoice, setAdvancePerGroupChoice] = useState<number>(4);
   const [seed1Id, setSeed1Id] = useState<string>('');
   const [seed2Id, setSeed2Id] = useState<string>('');
   const [seed3Id, setSeed3Id] = useState<string>('');
@@ -83,6 +83,15 @@ export default function TournamentGroupsStage({
     setSeed4Id(sortedCandidates[3]?.id || '');
   };
 
+  const handleNumGroupsChange = (val: number) => {
+    setNumGroups(val);
+    if (val === 2) {
+      setAdvancePerGroupChoice(4); // 2 groups x 4 = 8 players in 1/4 Final
+    } else if (val === 4) {
+      setAdvancePerGroupChoice(2); // 4 groups x 2 = 8 players in 1/4 Final
+    }
+  };
+
   const handleOpenSetupModal = () => {
     // If existing top seeds were saved, restore them
     const existingTopSeeds = tournament.bracket_data?.settings?.top_seed_ids || [];
@@ -97,8 +106,15 @@ export default function TournamentGroupsStage({
       setSeed3Id(sortedCandidates[2]?.id || '');
       setSeed4Id(sortedCandidates[3]?.id || '');
     }
-    setNumGroups(groups.length > 0 ? groups.length : 4);
-    setAdvancePerGroupChoice(advanceCount);
+
+    if (groups.length > 0) {
+      setNumGroups(groups.length);
+      setAdvancePerGroupChoice(advanceCount);
+    } else {
+      // 14 players default: 2 groups of 7, 4 pass each to 1/4 Final
+      setNumGroups(2);
+      setAdvancePerGroupChoice(4);
+    }
     setSetupModalOpen(true);
   };
 
@@ -254,11 +270,21 @@ export default function TournamentGroupsStage({
           <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-rose-500/10 to-transparent border border-amber-500/30 space-y-1.5">
             <div className="flex items-center gap-2 text-amber-300 font-bold text-xs">
               <ShieldCheck className="w-4 h-4 text-amber-400" />
-              <span>YARIMFİNAL VƏ FİNAL TƏMİNATI (ITTF Seeding)</span>
+              <span>1/4 FİNAL, YARIMFİNAL VƏ FİNAL TƏMİNATI (ITTF Seeding)</span>
             </div>
             <p className="text-[11px] text-slate-300 leading-relaxed">
-              Aşağıda seçdiyiniz 3–4 güclü oyunçu <strong>ayrı-ayrı qruplara (A, B, C, D)</strong> səbət başçısı kimi düşəcək. Qrupdan çıxdıqda isə pley-off cədvəlinin əks tərəflərinə yerləşdiriləcəklər.
-              Beləliklə, onlar <strong>yalnız YARIMFİNAL və FİNALDA</strong> üz-üzə gələ bilərlər!
+              {numGroups === 2 ? (
+                <>
+                  14 oyunçu <strong>2 qrupa (Qrup A: 7 nəfər, Qrup B: 7 nəfər)</strong> bölünəcək. Hər qrupdan <strong>4 nəfər</strong> vəsiqə qazanır və 8 nəfərlik <strong>1/4 Final (Çərək final)</strong> başlayır.
+                  1/4 Finalda A1 vs B4, B2 vs A3, A2 vs B3, B1 vs A4 çarpaz qarşılaşır.
+                  <strong> 1-ci və 2-ci güclü oyunçular yalnız FİNALDA</strong>, 3-cü və 4-cü güclü oyunçular isə <strong>YARIMFİNALDA</strong> üz-üzə gələ bilərlər!
+                </>
+              ) : (
+                <>
+                  Seçdiyiniz 3–4 güclü oyunçu <strong>ayrı-ayrı qruplara (A, B, C, D)</strong> səbət başçısı kimi düşəcək və pley-off cədvəlinin əks tərəflərinə yerləşdiriləcək.
+                  Beləliklə, onlar <strong>yalnız YARIMFİNAL və FİNALDA</strong> üz-üzə gələ bilərlər!
+                </>
+              )}
             </p>
           </div>
 
@@ -271,11 +297,11 @@ export default function TournamentGroupsStage({
                 </label>
                 <select
                   value={numGroups}
-                  onChange={(e) => setNumGroups(Number(e.target.value))}
+                  onChange={(e) => handleNumGroupsChange(Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500"
                 >
-                  <option value={4}>4 Qrup (Qrup A, B, C, D) — Tövsiyə olunur</option>
-                  <option value={2}>2 Qrup (Qrup A, B)</option>
+                  <option value={2}>2 Qrup (Qrup A, B) — 14 oyunçu üçün hər qrupda 7 nəfər (Tövsiyə olunur)</option>
+                  <option value={4}>4 Qrup (Qrup A, B, C, D)</option>
                   <option value={6}>6 Qrup (Qrup A — F)</option>
                   <option value={8}>8 Qrup (Qrup A — H)</option>
                 </select>
@@ -293,12 +319,12 @@ export default function TournamentGroupsStage({
                   onChange={(e) => setAdvancePerGroupChoice(Number(e.target.value))}
                   className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500"
                 >
-                  <option value={2}>Hər qrupdan 2 nəfər (8 nəfərlik 1/4 Final)</option>
-                  <option value={1}>Hər qrupdan 1 nəfər (4 nəfərlik Yarımfinal)</option>
-                  <option value={4}>Hər qrupdan 4 nəfər (16 nəfərlik 1/8 Final)</option>
+                  <option value={4}>Hər qrupdan 4 nəfər (2 qrup üçün 8 nəfərlik 1/4 Final — Tövsiyə olunur)</option>
+                  <option value={2}>Hər qrupdan 2 nəfər (4 qrup üçün 8 nəfərlik 1/4 Final və ya 2 qrup üçün 4 nəfərlik Yarımfinal)</option>
+                  <option value={1}>Hər qrupdan 1 nəfər (Final və ya Yarımfinal)</option>
                 </select>
                 <p className="text-[10px] text-slate-400">
-                  Cəmi {numGroups * advancePerGroupChoice} oyunçu pley-off mərhələsinə yüksələcək
+                  Cəmi {numGroups * advancePerGroupChoice} oyunçu pley-off (Olimpiya) mərhələsinə yüksələcək
                 </p>
               </div>
             </div>
@@ -326,7 +352,7 @@ export default function TournamentGroupsStage({
               <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-amber-400 text-[11px] flex items-center gap-1.5">
-                    <span>👑 1-ci Səbət (Qrup A Başçısı)</span>
+                    <span>👑 1-ci Səbət {numGroups === 2 ? '(Qrup A 1-ci Başçı)' : '(Qrup A Başçısı)'}</span>
                     <span className="text-[10px] text-slate-500 font-normal">→ Pley-off Yuxarı Qol</span>
                   </span>
                 </div>
@@ -348,7 +374,7 @@ export default function TournamentGroupsStage({
               <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-rose-400 text-[11px] flex items-center gap-1.5">
-                    <span>👑 2-ci Səbət (Qrup B Başçısı)</span>
+                    <span>👑 2-ci Səbət {numGroups === 2 ? '(Qrup B 1-ci Başçı)' : '(Qrup B Başçısı)'}</span>
                     <span className="text-[10px] text-emerald-400 font-bold">→ Əks Aşağı Qol (Yalnız Finalda görüşə bilərlər!)</span>
                   </span>
                 </div>
@@ -370,7 +396,7 @@ export default function TournamentGroupsStage({
               <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-blue-400 text-[11px] flex items-center gap-1.5">
-                    <span>👑 3-cü Səbət (Qrup C Başçısı)</span>
+                    <span>👑 3-cü Səbət {numGroups === 2 ? '(Qrup A 2-ci Güclü)' : '(Qrup C Başçısı)'}</span>
                     <span className="text-[10px] text-slate-500 font-normal">→ 2-ci Yarımfinal Qolu</span>
                   </span>
                 </div>
@@ -392,7 +418,7 @@ export default function TournamentGroupsStage({
               <div className="p-3 rounded-xl bg-slate-950/70 border border-white/5 space-y-1">
                 <div className="flex items-center justify-between">
                   <span className="font-bold text-emerald-400 text-[11px] flex items-center gap-1.5">
-                    <span>👑 4-cü Səbət (Qrup D Başçısı)</span>
+                    <span>👑 4-cü Səbət {numGroups === 2 ? '(Qrup B 2-ci Güclü)' : '(Qrup D Başçısı)'}</span>
                     <span className="text-[10px] text-slate-500 font-normal">→ 1-ci Yarımfinal Qolu</span>
                   </span>
                 </div>
