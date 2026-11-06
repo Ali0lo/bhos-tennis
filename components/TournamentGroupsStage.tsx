@@ -526,34 +526,34 @@ export default function TournamentGroupsStage({
         )}
       </div>
 
-      {/* Seeding Protection Live Banner */}
-      <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-950/40 via-purple-950/20 to-slate-900 border border-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
-            <Crown className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="font-bold text-white flex items-center gap-2">
-              <span>🛡️ Güclü Oyunçular Qorunması Aktivdir</span>
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
-                Yalnız Yarımfinal & Final
-              </span>
+      {/* Seeding Protection Live Banner - ONLY VISIBLE TO TOURNAMENT ORGANIZER / ADMIN */}
+      {isAdmin && (
+        <div className="p-3.5 rounded-2xl bg-gradient-to-r from-blue-950/40 via-purple-950/20 to-slate-900 border border-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-amber-400 shrink-0">
+              <Crown className="w-4 h-4" />
             </div>
-            <p className="text-[11px] text-slate-300 mt-0.5">
-              Səbət başçıları ayrı-ayrı qruplara salınıb. Qrup qalibləri kimi onlar yalnız <strong>YARIMFİNAL</strong> və <strong>FİNALDA</strong> qarşılaşacaqlar.
-            </p>
+            <div>
+              <div className="font-bold text-white flex items-center gap-2">
+                <span>🛡️ Təşkilatçı Qeydi: Güclü Oyunçular Qorunması Aktivdir</span>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold">
+                  Məxfi • Yalnız Admin Görür
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-300 mt-0.5">
+                Səbət başçıları ayrı qruplara və pley-offun əks qollarına yerləşdirilib. <strong>Adi istifadəçilər və oyunçular bu bildirişi və ya səbət işarələrini görmürlər.</strong>
+              </p>
+            </div>
           </div>
-        </div>
-        {isAdmin && (
           <button
             type="button"
             onClick={handleOpenSetupModal}
             className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold border border-white/10 shrink-0 self-start sm:self-auto transition"
           >
-            ⚙️ Səbətləri Yenidən Qur
+            ⚙️ Səbətləri Tənzimlə
           </button>
-        )}
-      </div>
+        </div>
+      )}
 
       {/* Group Navigation Tabs */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -652,10 +652,13 @@ export default function TournamentGroupsStage({
                               >
                                 {row.player.full_name}
                               </Link>
-                              {isTopSeed && (
-                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5">
+                              {isAdmin && isTopSeed && (
+                                <span
+                                  className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-0.5"
+                                  title="Yalnız təşkilatçıya görünür"
+                                >
                                   <Crown className="w-2.5 h-2.5" />
-                                  <span>Səbət Başçısı</span>
+                                  <span>Səbət Başçısı (Admin)</span>
                                 </span>
                               )}
                               {qualifies && (
