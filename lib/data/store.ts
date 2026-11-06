@@ -708,6 +708,34 @@ export class BHOSDataStore {
         .select('*')
         .order('created_at', { ascending: false });
 
+      // Fetch tournament_registrations table to ensure all participant IDs are captured
+      let cloudRegistrations: any[] = [];
+      try {
+        const { data: regsData, error: regsError } = await supabase
+          .from('tournament_registrations')
+          .select('player_id, tournament_id, tournament_slug');
+        if (!regsError && Array.isArray(regsData)) {
+          cloudRegistrations = regsData;
+        }
+      } catch (re) {
+        console.warn('[BHOS Store] Could not fetch tournament registrations:', re);
+      }
+
+      const regMap = new Map<string, string[]>();
+      for (const reg of cloudRegistrations) {
+        if (!reg.player_id) continue;
+        if (reg.tournament_id) {
+          const list = regMap.get(reg.tournament_id) || [];
+          list.push(reg.player_id);
+          regMap.set(reg.tournament_id, list);
+        }
+        if (reg.tournament_slug) {
+          const list = regMap.get(reg.tournament_slug) || [];
+          list.push(reg.player_id);
+          regMap.set(reg.tournament_slug, list);
+        }
+      }
+
       if (!error && data) {
         const cloudMap = new Map<string, Tournament>();
         (data as Tournament[])
@@ -717,14 +745,65 @@ export class BHOSDataStore {
               !OBSOLETE_TOURNAMENT_IDENTIFIERS.has(t.slug)
           )
           .forEach((t) => cloudMap.set(t.id, t));
+
         INITIAL_TOURNAMENTS.forEach((it) => {
-          if (!cloudMap.has(it.id)) {
-            cloudMap.set(it.id, it);
+          const cloudMatch = Array.from(cloudMap.values()).find(
+            (ct) => ct.id === it.id || ct.slug === it.slug
+          );
+          if (!cloudMatch) {
+            cloudMap.set(it.id, { ...it });
           }
         });
-        this.tournaments = Array.from(cloudMap.values());
+
+        // Merge participants from:
+        // 1. Cloud tournament row participants
+        // 2. Cloud registrations table
+        // 3. Local existing store participants
+        const mergedTournaments: Tournament[] = [];
+        for (const t of Array.from(cloudMap.values())) {
+          const localExisting = this.tournaments.find(
+            (lt) => lt.id === t.id || lt.slug === t.slug
+          );
+          const regsFromCloud = [
+            ...(regMap.get(t.id) || []),
+            ...(t.slug ? regMap.get(t.slug) || [] : []),
+          ];
+
+          const combinedParticipants = Array.from(
+            new Set([
+              ...(Array.isArray(t.participants) ? t.participants : []),
+              ...(Array.isArray(localExisting?.participants) ? localExisting!.participants : []),
+              ...regsFromCloud,
+            ])
+          ).filter(Boolean) as string[];
+
+          t.participants = combinedParticipants;
+          t.max_participants = Math.max(t.max_participants || 0, 40);
+          mergedTournaments.push(t);
+        }
+
+        this.tournaments = mergedTournaments;
         setStored(STORAGE_KEYS.TOURNAMENTS, this.tournaments);
         this.notify();
+      } else if (cloudRegistrations.length > 0) {
+        let updated = false;
+        this.tournaments.forEach((t) => {
+          const regs = [
+            ...(regMap.get(t.id) || []),
+            ...(t.slug ? regMap.get(t.slug) || [] : []),
+          ];
+          if (regs.length > 0) {
+            const combined = Array.from(new Set([...(t.participants || []), ...regs]));
+            if (combined.length !== (t.participants || []).length) {
+              t.participants = combined;
+              updated = true;
+            }
+          }
+        });
+        if (updated) {
+          setStored(STORAGE_KEYS.TOURNAMENTS, this.tournaments);
+          this.notify();
+        }
       }
     } catch (err) {
       console.warn('[BHOS Store] Error fetching tournaments:', err);
@@ -2349,11 +2428,14 @@ export class BHOSDataStore {
     if (supabase) {
       try {
         const { data, error } = await supabase.rpc('register_for_tournament', {
-          target_tournament_id: tournament.id,
+          target_tournament_id: tournament.slug || tournament.id,
+          p_target_player_id: targetId,
         });
         if (!error && data) {
           if (Array.isArray(data.participants)) {
-            tournament.participants = data.participants;
+            tournament.participants = Array.from(
+              new Set([...tournament.participants, ...data.participants])
+            );
             this.saveLocal();
             this.notify();
           }
@@ -2361,20 +2443,27 @@ export class BHOSDataStore {
           if (error) {
             console.warn('[BHOS Store] Supabase register_for_tournament notice:', error.message);
           }
-          await supabase
-            .from('tournaments')
-            .update({ participants: tournament.participants })
-            .eq('id', tournament.id);
+          if (tournament.slug) {
+            await supabase
+              .from('tournaments')
+              .update({ participants: tournament.participants })
+              .eq('slug', tournament.slug);
+          }
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournament.id);
+          if (isUuid) {
+            await supabase
+              .from('tournaments')
+              .update({ participants: tournament.participants })
+              .eq('id', tournament.id);
+          }
+          const regPayload: any = {
+            player_id: targetId,
+            tournament_slug: tournament.slug,
+          };
+          if (isUuid) regPayload.tournament_id = tournament.id;
           await supabase
             .from('tournament_registrations')
-            .upsert(
-              {
-                player_id: targetId,
-                tournament_id: tournament.id,
-                tournament_slug: tournament.slug,
-              },
-              { onConflict: 'tournament_id,player_id' }
-            );
+            .upsert(regPayload, { onConflict: 'tournament_slug,player_id' });
         }
       } catch (e: any) {
         console.warn('[BHOS Store] Error registering for tournament in Supabase:', e?.message || e);
@@ -2410,7 +2499,8 @@ export class BHOSDataStore {
     if (supabase) {
       try {
         const { data, error } = await supabase.rpc('withdraw_from_tournament', {
-          target_tournament_id: tournament.id,
+          target_tournament_id: tournament.slug || tournament.id,
+          p_target_player_id: targetId,
         });
         if (!error && data) {
           if (Array.isArray(data.participants)) {
@@ -2422,15 +2512,26 @@ export class BHOSDataStore {
           if (error) {
             console.warn('[BHOS Store] Supabase withdraw_from_tournament notice:', error.message);
           }
-          await supabase
-            .from('tournaments')
-            .update({ participants: tournament.participants })
-            .eq('id', tournament.id);
-          await supabase
-            .from('tournament_registrations')
-            .delete()
-            .eq('player_id', targetId)
-            .eq('tournament_id', tournament.id);
+          if (tournament.slug) {
+            await supabase
+              .from('tournaments')
+              .update({ participants: tournament.participants })
+              .eq('slug', tournament.slug);
+          }
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournament.id);
+          if (isUuid) {
+            await supabase
+              .from('tournaments')
+              .update({ participants: tournament.participants })
+              .eq('id', tournament.id);
+          }
+          if (tournament.slug) {
+            await supabase
+              .from('tournament_registrations')
+              .delete()
+              .eq('player_id', targetId)
+              .eq('tournament_slug', tournament.slug);
+          }
         }
       } catch (e: any) {
         console.warn('[BHOS Store] Error withdrawing from tournament in Supabase:', e?.message || e);

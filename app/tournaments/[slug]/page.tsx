@@ -76,13 +76,30 @@ export default function TournamentDetailPage() {
           .single();
 
         if (!error && data) {
+          let regIds: string[] = [];
+          try {
+            const { data: regRows } = await supabase
+              .from('tournament_registrations')
+              .select('player_id')
+              .eq('tournament_slug', slug);
+            if (regRows && Array.isArray(regRows)) {
+              regIds = regRows.map((r: any) => r.player_id).filter(Boolean);
+            }
+          } catch {}
+
+          const local = store.getTournament(slug);
+          const combinedParticipantIds = Array.from(
+            new Set([
+              ...(Array.isArray(data.participants) ? data.participants : []),
+              ...(local?.participants || []),
+              ...regIds,
+            ])
+          ).filter(Boolean) as string[];
+
+          data.participants = combinedParticipantIds;
           setTournament(data as Tournament);
-          if (data.participants && Array.isArray(data.participants)) {
-            const parts = await store.fetchParticipantProfiles(data.participants);
-            setParticipants(parts);
-          } else {
-            setParticipants([]);
-          }
+          const parts = await store.fetchParticipantProfiles(combinedParticipantIds);
+          setParticipants(parts);
           setLoading(false);
           return;
         }

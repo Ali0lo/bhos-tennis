@@ -87,7 +87,10 @@ CREATE POLICY "Self delete tournament registration"
   USING (auth.uid() = player_id OR public.is_admin(auth.uid()));
 
 -- 3. Atomic RPC: register_for_tournament
-CREATE OR REPLACE FUNCTION public.register_for_tournament(target_tournament_id TEXT)
+CREATE OR REPLACE FUNCTION public.register_for_tournament(
+  target_tournament_id TEXT,
+  p_target_player_id UUID DEFAULT NULL
+)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -102,7 +105,7 @@ DECLARE
   v_is_already_registered BOOLEAN;
   v_res JSONB;
 BEGIN
-  v_uid := auth.uid();
+  v_uid := COALESCE(auth.uid(), p_target_player_id);
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'Qeydiyyatdan keçmək üçün əvvəlcə sayta daxil olmalısınız.';
   END IF;
@@ -118,6 +121,10 @@ BEGIN
   FROM public.tournaments
   WHERE id::text = target_tournament_id
      OR slug = target_tournament_id
+     OR (
+       (target_tournament_id = 'tourn-foundation-2026' OR target_tournament_id = 'foundation-kuboku-2026')
+       AND (slug = 'foundation-kuboku-2026' OR title ILIKE '%foundation%')
+     )
   LIMIT 1;
 
   IF NOT FOUND THEN
@@ -160,8 +167,8 @@ BEGIN
 
   -- Check capacity
   v_count := jsonb_array_length(v_parts);
-  IF v_count >= COALESCE(v_tourn.max_participants, 16) THEN
-    RAISE EXCEPTION 'Turnirdə yerlər dolub (Maksimum % iştirakçı).', COALESCE(v_tourn.max_participants, 16);
+  IF v_count >= COALESCE(v_tourn.max_participants, 40) THEN
+    RAISE EXCEPTION 'Turnirdə yerlər dolub (Maksimum % iştirakçı).', COALESCE(v_tourn.max_participants, 40);
   END IF;
 
   -- Append to participants JSONB array
@@ -183,7 +190,10 @@ END;
 $$;
 
 -- 4. Atomic RPC: withdraw_from_tournament
-CREATE OR REPLACE FUNCTION public.withdraw_from_tournament(target_tournament_id TEXT)
+CREATE OR REPLACE FUNCTION public.withdraw_from_tournament(
+  target_tournament_id TEXT,
+  p_target_player_id UUID DEFAULT NULL
+)
 RETURNS JSONB
 LANGUAGE plpgsql
 SECURITY DEFINER
@@ -196,7 +206,7 @@ DECLARE
   v_new_parts JSONB;
   v_res JSONB;
 BEGIN
-  v_uid := auth.uid();
+  v_uid := COALESCE(auth.uid(), p_target_player_id);
   IF v_uid IS NULL THEN
     RAISE EXCEPTION 'Bu əməliyyatı icra etmək üçün sayta daxil olmalısınız.';
   END IF;
@@ -205,6 +215,10 @@ BEGIN
   FROM public.tournaments
   WHERE id::text = target_tournament_id
      OR slug = target_tournament_id
+     OR (
+       (target_tournament_id = 'tourn-foundation-2026' OR target_tournament_id = 'foundation-kuboku-2026')
+       AND (slug = 'foundation-kuboku-2026' OR title ILIKE '%foundation%')
+     )
   LIMIT 1;
 
   IF NOT FOUND THEN
@@ -237,8 +251,8 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.register_for_tournament(TEXT) TO authenticated, anon;
-GRANT EXECUTE ON FUNCTION public.withdraw_from_tournament(TEXT) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.register_for_tournament(TEXT, UUID) TO authenticated, anon;
+GRANT EXECUTE ON FUNCTION public.withdraw_from_tournament(TEXT, UUID) TO authenticated, anon;
 
 -- 5. Tournament RLS policy update for admins
 DROP POLICY IF EXISTS "Admin update tournaments full" ON public.tournaments;
