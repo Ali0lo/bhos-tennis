@@ -331,11 +331,12 @@ CREATE POLICY "Admin update tournaments full"
   FOR UPDATE
   USING (public.is_admin(auth.uid()) OR true);
 
--- 6. Set Foundation championship capacity to 40 players (accommodating 30-40 participants)
+-- 6. Set Foundation championship to ongoing (deadline finished, locked roster) with 14 players in 2 groups of 7
 UPDATE public.tournaments
-SET max_participants = 40,
-    group_size = 4,
-    advance_per_group = 2
+SET status = 'ongoing',
+    max_participants = 14,
+    group_size = 7,
+    advance_per_group = 4
 WHERE slug = 'foundation-kuboku-2026'
    OR id::text = 'tourn-foundation-2026'
    OR title ILIKE '%foundation%';

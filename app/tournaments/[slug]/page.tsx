@@ -200,12 +200,12 @@ export default function TournamentDetailPage() {
 
   const formatStatus = (status?: string) => {
     if (status === 'ongoing' || status === 'In Progress' || status === 'in_progress') {
-      return { label: 'Davam edir', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
+      return { label: 'Canlı Gedir (Püşkatma / Qruplar)', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
     }
     if (status === 'completed' || status === 'Completed') {
       return { label: 'Başa çatıb', color: 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30' };
     }
-    return { label: 'Gözləyir', color: 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30' };
+    return { label: 'Qeydiyyat Açıqdır', color: 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30' };
   };
 
   const formatLabel = (fmt?: string) => {
@@ -397,9 +397,9 @@ export default function TournamentDetailPage() {
                     )}
                   </div>
                 ) : isLocked ? (
-                  <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs font-semibold">
-                    <Lock className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Turnir Aktivdir • Qeydiyyat Bağlanıb</span>
+                  <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-amber-500/30 text-amber-300 text-xs font-semibold">
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Qeydiyyat Bağlanıb • Püşkatma Mərhələsi (Draft)</span>
                   </span>
                 ) : !isEligible ? (
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs font-semibold">
@@ -423,6 +423,35 @@ export default function TournamentDetailPage() {
                       </span>
                     )}
                   </div>
+                )}
+
+                {isAdmin && !isLocked && (
+                  <button
+                    type="button"
+                    disabled={actionLoading}
+                    onClick={async () => {
+                      if (
+                        confirm(
+                          'Turnir üçün qeydiyyat rəsmi olaraq bağlansın və Püşkatma (Draft) mərhələsinə keçilsin?\n\nArtıq yeni iştirakçı qeydiyyatı dayandırılacaq və mövcud 14 oyunçu 2 qrupa bölünəcək.'
+                        )
+                      ) {
+                        setActionLoading(true);
+                        try {
+                          store.closeRegistrationAndLockRoster(tournament.id);
+                          setFeedback('Qeydiyyat bağlandı. Püşkatma mərhələsi başladı!');
+                          await loadData(true);
+                        } catch (err: any) {
+                          setFeedback(err.message || 'Xəta baş verdi');
+                        } finally {
+                          setActionLoading(false);
+                        }
+                      }
+                    }}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 border border-amber-500/40 hover:bg-amber-500/15 text-amber-300 text-xs font-bold transition shadow-sm"
+                  >
+                    <Lock className="w-3.5 h-3.5 text-amber-400" />
+                    <span>Qeydiyyatı Bağla və Püşkatmaya Keç (Draft)</span>
+                  </button>
                 )}
 
                 {feedback && (

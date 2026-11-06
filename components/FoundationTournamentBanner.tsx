@@ -124,7 +124,7 @@ export default function FoundationTournamentBanner() {
           <div className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600/15 border border-rose-600/50 text-rose-400 text-[11px] font-display font-extrabold uppercase tracking-wider">
               <span className="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse" />
-              <span>🏆 YENİ TURNİR • FOUNDATION KUBOKU</span>
+              <span>🏆 FOUNDATION KUBOKU • PÜŞKATMA MƏRHƏLƏSİ</span>
             </span>
 
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-700/20 border border-blue-600/40 text-blue-300 text-[11px] font-bold">
@@ -193,10 +193,10 @@ export default function FoundationTournamentBanner() {
           )}
 
           <Link
-            href="/tournaments"
+            href="/tournaments/foundation-kuboku-2026"
             className="group inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-display font-semibold text-xs sm:text-sm shadow-sm active:scale-95 transition whitespace-nowrap"
           >
-            <span>Turnirə Qeydiyyatdan Keç →</span>
+            <span>Turnir Püşkatması və Cədvələ Bax →</span>
             <ArrowRight className="w-3.5 h-3.5 opacity-80 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>

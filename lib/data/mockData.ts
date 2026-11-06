@@ -210,24 +210,25 @@ export const INITIAL_TOURNAMENTS: Tournament[] = [
     title: 'Foundation Tələbələri Üçün Stolüstü Tennis Turniri',
     slug: 'foundation-kuboku-2026',
     description:
-      'Bibiheybət kampusunda 2026-cı il qəbul (Foundation) tələbələri üçün keçirilən rəsmi stolüstü tennis turniri. 30–40 oyunçu üçün 4–5 nəfərlik qruplarda dairəvi oyunlar keçirilir və hər qrupdan ən yaxşı 2 oyunçu Pley-off mərhələsinə (Round of 16) yüksəlir.',
+      'Bibiheybət kampusunda 2026-cı il qəbul (Foundation) tələbələri üçün rəsmi stolüstü tennis turniri. Qeydiyyat başa çatıb. 14 iştirakçı 2 qrupda (hər qrupda 7 nəfər) dairəvi oyunlar keçirir və hər qrupdan ən yaxşı 4 oyunçu 1/4 Final (Olimpiya) mərhələsinə yüksəlir.',
     custom_rules: `### Turnir Reqlamenti və Qaydalar
+- **Status:** Qeydiyyat rəsmi olaraq bağlanıb. Turnir Püşkatma (Draft) və Qrup Mərhələsindədir.
 - **Tarix və Saat:** 7 Noyabr 2026 (Şənbə), saat 10:00.
 - **Məkan:** Bibiheybət Kampusu, Əsas İdman Zalı.
-- **İştirakçı Tutumu:** 30–40 nəfər (Maksimum 40 iştirakçı yeri).
-- **İştirak Şərti:** Yalnız 2026-cı il qəbul BANM Foundation (Hazırlıq kursu) tələbələri üçün nəzərdə tutulub.
-- **Mərhələ 1 (Qrup Mərhələsi):** İştirakçılar 4–5 nəfərlik qruplarda dairəvi sistemlə (Round-Robin) mübarizə aparır.
-- **Pley-offa Yüksəliş:** Hər qrupdan ən yaxşı nəticə göstərən ilk 2 oyunçu Olimpiya (Pley-off) mərhələsinə vəsiqə qazanır.
+- **İştirakçı Sayı:** 14 nəfər (2 Qrup x 7 Oyunçu).
+- **Mərhələ 1 (Qrup Mərhələsi):** 2 Qrup (A və B), hər qrupda 7 nəfər dairəvi sistemlə (Round-Robin) mübarizə aparır.
+- **Pley-offa Yüksəliş:** Hər qrupdan ən yaxşı 4 oyunçu (cəmi 8 nəfər) 1/4 Final (Olimpiya) mərhələsinə vəsiqə qazanır.
+- **Pley-off Formatı:** Çarpaz sistem (A1 vs B4, B2 vs A3, A2 vs B3, B1 vs A4) ➔ Yarımfinal ➔ Final.
 - **Set Formatı:** Qrup mərhələsi oyunları 3 setdən (Best of 3, 2 set qazanan qalibdir), Pley-off və Final oyunları isə 5 setdən (Best of 5, 3 set qazanan qalibdir) ibarətdir.
 - **Xal Qaydası:** Hər set 11 xala qədər davam edir (10-10 bərabərlik halında 2 xal fərqinə qədər davam edir).
-- **Avadanlıq və İntizam:** Rəsmi ITTF 40+ ağ toplardan istifadə olunur. Bütün oyunçular təyin olunmuş saatda (10:00) yarış zonasında hazır olmalıdır.`,
+- **Avadanlıq:** Rəsmi ITTF 40+ ağ toplardan istifadə olunur.`,
     format: 'groups_and_knockout',
-    max_participants: 40,
-    group_size: 4,
-    advance_per_group: 2,
+    max_participants: 14,
+    group_size: 7,
+    advance_per_group: 4,
     location: 'Bibiheybət Kampusu',
     allowed_admission_year: 2026,
-    status: 'upcoming',
+    status: 'ongoing',
     start_date: '2026-11-07T10:00:00+04:00',
     end_date: '2026-11-07T16:00:00+04:00',
     created_by: 'p-1',
@@ -236,9 +237,9 @@ export const INITIAL_TOURNAMENTS: Tournament[] = [
       rounds: [],
       groups: [],
       settings: {
-        group_size: 4,
-        group_size_label: '4–5 nəfər',
-        advance_per_group: 2,
+        group_size: 7,
+        group_size_label: '7 nəfər',
+        advance_per_group: 4,
         location: 'Bibiheybət Kampusu',
         allowed_admission_year: 2026,
         best_of_sets: 3,

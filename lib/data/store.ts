@@ -2240,31 +2240,62 @@ export class BHOSDataStore {
 
     const supabase = getSupabaseClient();
     if (supabase) {
-      supabase
-        .from('tournaments')
-        .update({
-          title: tournament.title,
-          description: tournament.description,
-          custom_rules: tournament.custom_rules,
-          format: tournament.format,
-          status: tournament.status,
-          start_date: tournament.start_date,
-          end_date: tournament.end_date,
-          max_participants: tournament.max_participants,
-          group_size: tournament.group_size,
-          advance_per_group: tournament.advance_per_group,
-          location: tournament.location,
-          allowed_admission_year: tournament.allowed_admission_year,
-          registration_url: tournament.registration_url,
-          bracket_data: tournament.bracket_data,
-          participants: tournament.participants,
-        })
-        .eq('id', tournamentId)
-        .then(({ error }) => {
-          if (error) console.warn('[BHOS Store] Supabase updateTournamentSettings failed:', error.message);
-        });
+      const payload = {
+        title: tournament.title,
+        description: tournament.description,
+        custom_rules: tournament.custom_rules,
+        format: tournament.format,
+        status: tournament.status,
+        start_date: tournament.start_date,
+        end_date: tournament.end_date,
+        max_participants: tournament.max_participants,
+        group_size: tournament.group_size,
+        advance_per_group: tournament.advance_per_group,
+        location: tournament.location,
+        allowed_admission_year: tournament.allowed_admission_year,
+        registration_url: tournament.registration_url,
+        bracket_data: tournament.bracket_data,
+        participants: tournament.participants,
+      };
+
+      if (tournament.slug) {
+        supabase
+          .from('tournaments')
+          .update(payload)
+          .eq('slug', tournament.slug)
+          .then(({ error }) => {
+            if (error) console.warn('[BHOS Store] Supabase updateTournamentSettings slug failed:', error.message);
+          });
+      }
+
+      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournamentId);
+      if (isUuid) {
+        supabase
+          .from('tournaments')
+          .update(payload)
+          .eq('id', tournamentId)
+          .then(({ error }) => {
+            if (error) console.warn('[BHOS Store] Supabase updateTournamentSettings id failed:', error.message);
+          });
+      }
     }
 
+    return tournament;
+  }
+
+  public closeRegistrationAndLockRoster(tournamentId: string): Tournament {
+    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+    if (!tournament) throw new Error('Turnir tapılmadı.');
+
+    tournament.status = 'ongoing';
+    tournament.group_size = 7;
+    tournament.advance_per_group = 4;
+    tournament.format = 'groups_and_knockout';
+    tournament.max_participants = 14;
+
+    this.saveLocal();
+    this.notify();
+    this.syncTournamentBracketToCloud(tournament);
     return tournament;
   }
 

@@ -205,28 +205,39 @@ export default function TournamentGroupsStage({
 
   if (groups.length === 0) {
     return (
-      <div className="p-8 rounded-3xl border border-white/10 bg-[#0F1623] text-center space-y-4">
-        <div className="w-12 h-12 rounded-2xl bg-blue-700/20 border border-blue-600/30 flex items-center justify-center text-blue-400 mx-auto">
-          <Users className="w-6 h-6" />
+      <div className="p-8 sm:p-10 rounded-3xl border border-blue-500/20 bg-gradient-to-b from-[#0F1623] via-[#0B101B] to-slate-950 text-center space-y-5 shadow-2xl relative overflow-hidden">
+        <div className="w-16 h-16 rounded-3xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-blue-400 mx-auto shadow-lg shadow-blue-500/10">
+          <Shuffle className="w-8 h-8 text-blue-400 animate-pulse" />
         </div>
-        <div className="space-y-1">
-          <h3 className="text-lg font-display font-bold text-white">
-            Qrup Mərhələsi Hələ Tərtib Edilməyib
+
+        <div className="space-y-2 max-w-lg mx-auto">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold">
+            <span>🔒 Qeydiyyat Bağlanıb • Püşkatma Mərhələsi (Draft)</span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-display font-black text-white">
+            Qrup Püşkatmasına (Draft) Keçin
           </h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
-            İştirakçıları qruplara bölün və 3-4 güclü oyunçunu səbət başçısı kimi seçin ki, onlar yalnız Yarımfinal və Finalda qarşılaşsınlar.
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Qeydiyyat müddəti başa çatıb. 14 iştirakçı <strong>2 qrupa (Qrup A: 7 nəfər, Qrup B: 7 nəfər)</strong> bölünəcək. Hər qrupdan ən yaxşı 4 oyunçu 1/4 Final (Olimpiya) mərhələsinə yüksələcək.
           </p>
         </div>
-        {isAdmin && (
-          <button
-            type="button"
-            disabled={loadingAction}
-            onClick={handleOpenSetupModal}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-display font-bold text-xs shadow-sm transition active:scale-95"
-          >
-            <Shuffle className="w-4 h-4" />
-            <span>🏆 Qrupları Formalaşdır və Səbətləri Seç</span>
-          </button>
+
+        {isAdmin ? (
+          <div className="pt-2">
+            <button
+              type="button"
+              disabled={loadingAction}
+              onClick={handleOpenSetupModal}
+              className="inline-flex items-center gap-2.5 px-6 py-3.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-sm shadow-xl shadow-rose-600/25 transition active:scale-95"
+            >
+              <Crown className="w-4 h-4 text-amber-300" />
+              <span>🎲 Püşkatmaya Başla (2 Qrup x 7 Oyunçu)</span>
+            </button>
+          </div>
+        ) : (
+          <p className="text-xs text-slate-400 italic">
+            Təşkilatçı qrupların püşkatmasını apardıqdan sonra cədvəl burada görünəcək.
+          </p>
         )}
 
         {/* Modal when groups is 0 */}
