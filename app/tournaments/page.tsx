@@ -429,7 +429,15 @@ export default function TournamentsPage() {
                             participants={resolvedParts}
                             currentUser={currentUser}
                             isAdmin={isAdmin}
-                            showAdminControls={false}
+                            showAdminControls={isAdmin}
+                            onAddParticipant={async (pid) => {
+                              await store.addTournamentParticipant(t.id, pid);
+                              loadData();
+                            }}
+                            onRemoveParticipant={async (pid) => {
+                              await store.withdrawFromTournament(t.id, pid);
+                              loadData();
+                            }}
                             compact={true}
                           />
                         </div>

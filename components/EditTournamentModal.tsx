@@ -128,7 +128,7 @@ export default function EditTournamentModal({
 
   const isLocked = isTournamentRosterLocked(status);
 
-  const handleAddPlayer = (playerId: string) => {
+  const handleAddPlayer = async (playerId: string) => {
     setErrorMsg(null);
     setSuccessMsg(null);
     if (participantIds.length >= maxParticipants) {
@@ -138,7 +138,7 @@ export default function EditTournamentModal({
     if (participantIds.includes(playerId)) return;
 
     try {
-      store.addTournamentParticipant(tournament.id, playerId);
+      await store.addTournamentParticipant(tournament.id, playerId);
       setParticipantIds((prev) => [...prev, playerId]);
       setSuccessMsg('Oyunçu turnirə əlavə edildi.');
     } catch (err: any) {
@@ -146,11 +146,11 @@ export default function EditTournamentModal({
     }
   };
 
-  const handleRemovePlayer = (playerId: string) => {
+  const handleRemovePlayer = async (playerId: string) => {
     setErrorMsg(null);
     setSuccessMsg(null);
     try {
-      store.removeTournamentParticipant(tournament.id, playerId);
+      await store.removeTournamentParticipant(tournament.id, playerId);
       setParticipantIds((prev) => prev.filter((id) => id !== playerId));
       setSuccessMsg('Oyunçu turnirdən çıxarıldı.');
     } catch (err: any) {

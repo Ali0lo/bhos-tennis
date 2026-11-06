@@ -276,6 +276,22 @@ export default function TournamentDetailPage() {
     }
   };
 
+  const handleAddParticipant = async (pid: string) => {
+    if (!tournament) return;
+    setActionLoading(true);
+    setFeedback(null);
+    try {
+      await store.addTournamentParticipant(tournament.id, pid);
+      setFeedback('Tələbə turnir siyahısına əlavə edildi!');
+      await loadData(true);
+    } catch (e: any) {
+      setFeedback(e.message || 'Xəta baş verdi');
+      throw e;
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   return (
     <div className="space-y-8 max-w-6xl mx-auto pb-16">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -490,6 +506,7 @@ export default function TournamentDetailPage() {
             showAdminControls={isAdmin}
             onRegister={handleRegister}
             onRemoveParticipant={handleRemoveParticipant}
+            onAddParticipant={handleAddParticipant}
             actionLoading={actionLoading}
           />
         </div>

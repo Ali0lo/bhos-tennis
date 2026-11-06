@@ -2541,11 +2541,18 @@ export class BHOSDataStore {
     return tournament;
   }
 
-  public addTournamentParticipant(tournamentId: string, playerId: string): Tournament {
-    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+  public async addTournamentParticipant(tournamentId: string, playerId: string): Promise<Tournament> {
+    const tournament = this.tournaments.find(
+      (t) => t.id === tournamentId || t.slug === tournamentId
+    );
     if (!tournament) throw new Error('Turnir tapılmadı.');
 
+    const maxCapacity = tournament.max_participants || 40;
     tournament.participants = tournament.participants || [];
+    if (tournament.participants.length >= maxCapacity && !tournament.participants.includes(playerId)) {
+      throw new Error(`Turnirdə yerlər dolub (Maksimum ${maxCapacity} iştirakçı).`);
+    }
+
     if (!tournament.participants.includes(playerId)) {
       tournament.participants.push(playerId);
       this.saveLocal();
@@ -2553,20 +2560,55 @@ export class BHOSDataStore {
 
       const supabase = getSupabaseClient();
       if (supabase) {
-        supabase
-          .from('tournaments')
-          .update({ participants: tournament.participants })
-          .eq('id', tournamentId)
-          .then(({ error }) => {
-            if (error) console.warn('[BHOS Store] addTournamentParticipant Supabase failed:', error.message);
+        try {
+          // 1. Try dedicated admin RPC
+          const { error: rpcError } = await supabase.rpc('admin_add_tournament_participant', {
+            target_tournament_id: tournament.slug || tournament.id,
+            target_player_id: playerId,
           });
+
+          if (rpcError) {
+            console.warn('[BHOS Store] admin_add_tournament_participant notice:', rpcError.message);
+          }
+
+          // 2. Direct fallback update by slug
+          if (tournament.slug) {
+            await supabase
+              .from('tournaments')
+              .update({ participants: tournament.participants })
+              .eq('slug', tournament.slug);
+          }
+
+          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournament.id);
+          if (isUuid) {
+            await supabase
+              .from('tournaments')
+              .update({ participants: tournament.participants })
+              .eq('id', tournament.id);
+          }
+
+          // 3. Upsert into tournament_registrations
+          const regPayload: any = {
+            player_id: playerId,
+            tournament_slug: tournament.slug,
+          };
+          if (isUuid) regPayload.tournament_id = tournament.id;
+
+          await supabase
+            .from('tournament_registrations')
+            .upsert(regPayload, { onConflict: 'tournament_slug,player_id' });
+        } catch (err: any) {
+          console.warn('[BHOS Store] addTournamentParticipant Supabase failed:', err?.message || err);
+        }
       }
     }
     return tournament;
   }
 
-  public removeTournamentParticipant(tournamentId: string, playerId: string): Tournament {
-    const tournament = this.tournaments.find((t) => t.id === tournamentId);
+  public async removeTournamentParticipant(tournamentId: string, playerId: string): Promise<Tournament> {
+    const tournament = this.tournaments.find(
+      (t) => t.id === tournamentId || t.slug === tournamentId
+    );
     if (!tournament) throw new Error('Turnir tapılmadı.');
 
     tournament.participants = (tournament.participants || []).filter((id) => id !== playerId);
@@ -2575,13 +2617,36 @@ export class BHOSDataStore {
 
     const supabase = getSupabaseClient();
     if (supabase) {
-      supabase
-        .from('tournaments')
-        .update({ participants: tournament.participants })
-        .eq('id', tournamentId)
-        .then(({ error }) => {
-          if (error) console.warn('[BHOS Store] removeTournamentParticipant Supabase failed:', error.message);
-        });
+      try {
+        if (tournament.slug) {
+          await supabase
+            .from('tournaments')
+            .update({ participants: tournament.participants })
+            .eq('slug', tournament.slug);
+
+          await supabase
+            .from('tournament_registrations')
+            .delete()
+            .eq('player_id', playerId)
+            .eq('tournament_slug', tournament.slug);
+        }
+
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournament.id);
+        if (isUuid) {
+          await supabase
+            .from('tournaments')
+            .update({ participants: tournament.participants })
+            .eq('id', tournament.id);
+
+          await supabase
+            .from('tournament_registrations')
+            .delete()
+            .eq('player_id', playerId)
+            .eq('tournament_id', tournament.id);
+        }
+      } catch (err: any) {
+        console.warn('[BHOS Store] removeTournamentParticipant Supabase failed:', err?.message || err);
+      }
     }
     return tournament;
   }
