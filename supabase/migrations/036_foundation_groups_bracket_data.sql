@@ -1,10 +1,10 @@
 -- ==============================================================================
 -- Migration 036: Foundation Cup 2026 Locked Groups & Bracket Data
--- Safely configures Qrup A (7 players) and Qrup B (7 players) with all 42 matches
--- without violating auth.users foreign key constraints.
+-- Qrup A (7 oyunçu, 21 oyun) və Qrup B (6 oyunçu, 15 oyun)
+-- Kamran Aliyev yalnız Qrup A-dadır.
 -- ==============================================================================
 
--- Step 1: Remove organizer (Ali Iskandarli) from tournament registrations & roster
+-- 1. Təşkilatçını (Əli İsgəndərli) turnir iştirakçı siyahısından təmizlə
 DELETE FROM public.tournament_registrations
 WHERE (tournament_slug = 'foundation-kuboku-2026' OR tournament_id::text = 'tourn-foundation-2026')
   AND player_id IN (
@@ -14,7 +14,7 @@ WHERE (tournament_slug = 'foundation-kuboku-2026' OR tournament_id::text = 'tour
        OR full_name ILIKE '%əli isgəndərli%'
   );
 
--- Step 2: Register any existing profiles into tournament_registrations safely
+-- 2. Əgər bu 13 tələbədən qeydiyyatdan keçənlər varsa, onları qeydiyyata bağla
 INSERT INTO public.tournament_registrations (player_id, tournament_slug, registered_at)
 SELECT p.id, 'foundation-kuboku-2026', NOW()
 FROM public.profiles p
@@ -30,7 +30,6 @@ WHERE p.email IN (
   'kazim.fetelizade.std@bhos.edu.az',
   'qulam.rustemzade.std@bhos.edu.az',
   'faiq.huseynli.std@bhos.edu.az',
-  'kamran.aliev2.std@bhos.edu.az',
   'rafiq.hesenli.std@bhos.edu.az',
   'meherrem.mirzexanli.std@bhos.edu.az'
 ) OR p.full_name IN (
@@ -50,7 +49,7 @@ WHERE p.email IN (
 )
 ON CONFLICT DO NOTHING;
 
--- Step 3: Build and lock the tournament bracket data for Foundation Cup 2026
+-- 3. Qrup A (7 oyunçu) və Qrup B (6 oyunçu) turnir cədvəlinə yaz
 DO $$
 DECLARE
   v_group_a_players jsonb;
@@ -65,11 +64,12 @@ DECLARE
   m_idx int := 0;
   v_part_ids jsonb;
 
-  -- Helper function to resolve profile or fallback object
+  -- Group A (7 oyunçu)
   v_a1 jsonb; v_a2 jsonb; v_a3 jsonb; v_a4 jsonb; v_a5 jsonb; v_a6 jsonb; v_a7 jsonb;
-  v_b1 jsonb; v_b2 jsonb; v_b3 jsonb; v_b4 jsonb; v_b5 jsonb; v_b6 jsonb; v_b7 jsonb;
+  -- Group B (6 oyunçu)
+  v_b1 jsonb; v_b2 jsonb; v_b3 jsonb; v_b4 jsonb; v_b5 jsonb; v_b6 jsonb;
 BEGIN
-  -- Resolve Group A players (using existing profile if present, else fallback object)
+  -- Qrup A oyunçuları
   SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-yusif-xanlarov', 'full_name', 'Yusif Xanlarov', 'email', 'yusif.xanlarov.std@bhos.edu.az', 'major_faculty', 'Computer Engineering', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
   INTO v_a1 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.full_name ILIKE '%Yusif%Xanlarov%' OR p.email ILIKE '%yusif.xanlarov%') LIMIT 1;
 
@@ -85,13 +85,13 @@ BEGIN
   SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-adem-rehimli', 'full_name', 'Adəm Rəhimli', 'email', 'adem.rehimli.std@bhos.edu.az', 'major_faculty', 'Chemical Engineering', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
   INTO v_a5 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.full_name ILIKE '%Adəm%Rəhimli%' OR p.full_name ILIKE '%Adem%Rehimli%' OR p.email ILIKE '%adem.rehimli%') LIMIT 1;
 
-  SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-kamran-aliev-a', 'full_name', 'Kamran Aliev', 'email', 'kamran.aliev.std@bhos.edu.az', 'major_faculty', 'Computer Engineering', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
+  SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-kamran-aliev', 'full_name', 'Kamran Aliev', 'email', 'kamran.aliev.std@bhos.edu.az', 'major_faculty', 'Computer Engineering', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
   INTO v_a6 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.full_name ILIKE '%Kamran%Aliev%' OR p.full_name ILIKE '%Kamran%Aliyev%' OR p.email ILIKE '%kamran.aliev%') LIMIT 1;
 
   SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-adil-suleymanov', 'full_name', 'Adil Süleymanov', 'email', 'adil.suleymanov.std@bhos.edu.az', 'major_faculty', 'Information Security', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
   INTO v_a7 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.full_name ILIKE '%Adil%Süleymanov%' OR p.full_name ILIKE '%Adil%Suleymanov%' OR p.email ILIKE '%adil.suleymanov%') LIMIT 1;
 
-  -- Resolve Group B players
+  -- Qrup B oyunçuları (6 oyunçu - Kamran Aliyev yalnız Qrup A-dadır)
   SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-meharet-kerimli', 'full_name', 'Məharət Kərimli', 'email', 'meharet.kerimli.std@bhos.edu.az', 'major_faculty', 'Computer Engineering', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
   INTO v_b1 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.full_name ILIKE '%Məharət%Kərimli%' OR p.full_name ILIKE '%Meharet%Kerimli%' OR p.email ILIKE '%meharet.kerimli%') LIMIT 1;
 
@@ -104,20 +104,17 @@ BEGIN
   SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-faiq-huseynli', 'full_name', 'Faiq Hüseynli', 'email', 'faiq.huseynli.std@bhos.edu.az', 'major_faculty', 'Chemical Engineering', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
   INTO v_b4 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.full_name ILIKE '%Faiq%Hüseynli%' OR p.full_name ILIKE '%Faiq%Huseynli%' OR p.email ILIKE '%faiq.huseynli%') LIMIT 1;
 
-  SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-kamran-aliev-b', 'full_name', 'Kamran Aliev', 'email', 'kamran.aliev2.std@bhos.edu.az', 'major_faculty', 'Information Security', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
-  INTO v_b5 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.email ILIKE '%kamran.aliev2%' OR p.id::text = '00000000-0000-0000-0001-000000000012') LIMIT 1;
-
   SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-rafiq-hesenli', 'full_name', 'Rafiq Həsənli', 'email', 'rafiq.hesenli.std@bhos.edu.az', 'major_faculty', 'Computer Engineering', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
-  INTO v_b6 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.full_name ILIKE '%Rafiq%Həsənli%' OR p.full_name ILIKE '%Rafiq%Hesenli%' OR p.email ILIKE '%rafiq.hesenli%') LIMIT 1;
+  INTO v_b5 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.full_name ILIKE '%Rafiq%Həsənli%' OR p.full_name ILIKE '%Rafiq%Hesenli%' OR p.email ILIKE '%rafiq.hesenli%') LIMIT 1;
 
-  SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-meherrem-mirzexanli', 'full_name', 'Məhəmməd Mirzəxanlı', 'email', 'meherrem.mirzexanli.std@bhos.edu.az', 'major_faculty', 'Process Automation Engineering', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
-  INTO v_b7 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.full_name ILIKE '%Məhərrəm%Mirzəxanlı%' OR p.full_name ILIKE '%Meherrem%Mirzexanli%' OR p.email ILIKE '%meherrem.mirzexanli%') LIMIT 1;
+  SELECT COALESCE(to_jsonb(p.*), jsonb_build_object('id', 'p-f-meherrem-mirzexanli', 'full_name', 'Məhərrəm Mirzəxanlı', 'email', 'meherrem.mirzexanli.std@bhos.edu.az', 'major_faculty', 'Process Automation Engineering', 'admission_year', 2026, 'current_elo', 1000, 'role', 'player'))
+  INTO v_b6 FROM (SELECT 1) d LEFT JOIN public.profiles p ON (p.full_name ILIKE '%Məhərrəm%Mirzəxanlı%' OR p.full_name ILIKE '%Meherrem%Mirzexanli%' OR p.email ILIKE '%meherrem.mirzexanli%') LIMIT 1;
 
-  -- Combine into arrays
+  -- Array-ləri tərtib et
   v_group_a_players := jsonb_build_array(v_a1, v_a2, v_a3, v_a4, v_a5, v_a6, v_a7);
-  v_group_b_players := jsonb_build_array(v_b1, v_b2, v_b3, v_b4, v_b5, v_b6, v_b7);
+  v_group_b_players := jsonb_build_array(v_b1, v_b2, v_b3, v_b4, v_b5, v_b6);
 
-  -- Generate Group A round-robin matches (21 matches)
+  -- Qrup A oyunları (7 oyunçu = 21 oyun)
   m_idx := 0;
   FOR i IN 0..6 LOOP
     FOR j IN (i + 1)..6 LOOP
@@ -136,10 +133,10 @@ BEGIN
     END LOOP;
   END LOOP;
 
-  -- Generate Group B round-robin matches (21 matches)
+  -- Qrup B oyunları (6 oyunçu = 15 oyun)
   m_idx := 0;
-  FOR i IN 0..6 LOOP
-    FOR j IN (i + 1)..6 LOOP
+  FOR i IN 0..5 LOOP
+    FOR j IN (i + 1)..5 LOOP
       v_p1 := v_group_b_players->i;
       v_p2 := v_group_b_players->j;
       v_group_b_matches := v_group_b_matches || jsonb_build_array(
@@ -155,7 +152,7 @@ BEGIN
     END LOOP;
   END LOOP;
 
-  -- Build full bracket_data JSONB
+  -- bracket_data JSONB qurulması
   v_bracket_data := jsonb_build_object(
     'rounds', '[]'::jsonb,
     'groups', jsonb_build_array(
@@ -198,17 +195,16 @@ BEGIN
     SELECT jsonb_array_elements(v_group_b_players) AS p
   ) s;
 
-  -- Update tournaments table
+  -- Turnir cədvəlini yenilə (updated_at sütunu olmadan)
   UPDATE public.tournaments
   SET
     status = 'ongoing',
     format = 'groups_and_knockout',
-    max_participants = 14,
+    max_participants = 13,
     group_size = 7,
     advance_per_group = 4,
     participants = v_part_ids,
-    bracket_data = v_bracket_data,
-    updated_at = NOW()
+    bracket_data = v_bracket_data
   WHERE slug = 'foundation-kuboku-2026'
      OR id::text = 'tourn-foundation-2026'
      OR title ILIKE '%foundation%';

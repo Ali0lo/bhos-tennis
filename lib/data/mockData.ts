@@ -114,7 +114,7 @@ export const FOUNDATION_PLAYERS: PlayerProfile[] = [
     created_at: '2026-11-01T10:00:00Z',
   },
   {
-    id: 'p-f-kamran-aliev-a',
+    id: 'p-f-kamran-aliev',
     full_name: 'Kamran Aliev',
     email: 'kamran.aliev.std@bhos.edu.az',
     major_faculty: 'Computer Engineering',
@@ -158,7 +158,7 @@ export const FOUNDATION_PLAYERS: PlayerProfile[] = [
     created_at: '2026-11-01T10:00:00Z',
   },
 
-  // Qrup B (7 Oyunçu)
+  // Qrup B (6 Oyunçu)
   {
     id: 'p-f-meharet-kerimli',
     full_name: 'Məharət Kərimli',
@@ -248,28 +248,6 @@ export const FOUNDATION_PLAYERS: PlayerProfile[] = [
     created_at: '2026-11-01T10:00:00Z',
   },
   {
-    id: 'p-f-kamran-aliev-b',
-    full_name: 'Kamran Aliev',
-    email: 'kamran.aliev2.std@bhos.edu.az',
-    major_faculty: 'Information Security',
-    admission_year: 2026,
-    user_type: 'student',
-    gender: 'male',
-    role: 'player',
-    playing_style: 'Shakehand All-round',
-    blade_equipment: 'Stiga Clipper CR',
-    forehand_rubber: 'Stiga Calibra LT',
-    backhand_rubber: 'Stiga Calibra LT Sound',
-    current_elo: 1000,
-    matches_played: 0,
-    wins: 0,
-    losses: 0,
-    is_active: true,
-    rank: 12,
-    rank_change: 0,
-    created_at: '2026-11-01T10:00:00Z',
-  },
-  {
     id: 'p-f-rafiq-hesenli',
     full_name: 'Rafiq Həsənli',
     email: 'rafiq.hesenli.std@bhos.edu.az',
@@ -287,7 +265,7 @@ export const FOUNDATION_PLAYERS: PlayerProfile[] = [
     wins: 0,
     losses: 0,
     is_active: true,
-    rank: 13,
+    rank: 12,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
@@ -309,7 +287,7 @@ export const FOUNDATION_PLAYERS: PlayerProfile[] = [
     wins: 0,
     losses: 0,
     is_active: true,
-    rank: 14,
+    rank: 13,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
@@ -333,7 +311,7 @@ function buildInitialGroupMatches(groupId: string, players: PlayerProfile[]): Gr
 }
 
 const foundationGroupAPlayers = FOUNDATION_PLAYERS.slice(0, 7);
-const foundationGroupBPlayers = FOUNDATION_PLAYERS.slice(7, 14);
+const foundationGroupBPlayers = FOUNDATION_PLAYERS.slice(7, 13);
 
 export const FOUNDATION_GROUPS: TournamentGroup[] = [
   {
@@ -562,20 +540,20 @@ export const INITIAL_TOURNAMENTS: Tournament[] = [
     title: 'Foundation Tələbələri Üçün Stolüstü Tennis Turniri',
     slug: 'foundation-kuboku-2026',
     description:
-      'Bibiheybət kampusunda 2026-cı il qəbul (Foundation) tələbələri üçün rəsmi stolüstü tennis turniri. Qeydiyyat başa çatıb. 14 iştirakçı 2 qrupda (hər qrupda 7 nəfər) dairəvi oyunlar keçirir və hər qrupdan ən yaxşı 4 oyunçu 1/4 Final (Olimpiya) mərhələsinə yüksəlir.',
+      'Bibiheybət kampusunda 2026-cı il qəbul (Foundation) tələbələri üçün rəsmi stolüstü tennis turniri. Qeydiyyat başa çatıb. 13 iştirakçı 2 qrupda (Qrup A: 7 nəfər, Qrup B: 6 nəfər) dairəvi oyunlar keçirir və hər qrupdan ən yaxşı 4 oyunçu 1/4 Final (Olimpiya) mərhələsinə yüksəlir.',
     custom_rules: `### Turnir Reqlamenti və Qaydalar
 - **Status:** Qeydiyyat rəsmi olaraq bağlanıb. Turnir Püşkatma (Draft) və Qrup Mərhələsindədir.
 - **Tarix və Saat:** 7 Noyabr 2026 (Şənbə), saat 10:00.
 - **Məkan:** Bibiheybət Kampusu, Əsas İdman Zalı.
-- **İştirakçı Sayı:** 14 nəfər (2 Qrup x 7 Oyunçu).
-- **Mərhələ 1 (Qrup Mərhələsi):** 2 Qrup (A və B), hər qrupda 7 nəfər dairəvi sistemlə (Round-Robin) mübarizə aparır.
+- **İştirakçı Sayı:** 13 nəfər (Qrup A: 7 oyunçu, Qrup B: 6 oyunçu).
+- **Mərhələ 1 (Qrup Mərhələsi):** 2 Qrup (A və B) dairəvi sistemlə (Round-Robin) mübarizə aparır.
 - **Pley-offa Yüksəliş:** Hər qrupdan ən yaxşı 4 oyunçu (cəmi 8 nəfər) 1/4 Final (Olimpiya) mərhələsinə vəsiqə qazanır.
 - **Pley-off Formatı:** Çarpaz sistem (A1 vs B4, B2 vs A3, A2 vs B3, B1 vs A4) ➔ Yarımfinal ➔ Final.
 - **Set Formatı:** Qrup mərhələsi oyunları 3 setdən (Best of 3, 2 set qazanan qalibdir), Pley-off və Final oyunları isə 5 setdən (Best of 5, 3 set qazanan qalibdir) ibarətdir.
 - **Xal Qaydası:** Hər set 11 xala qədər davam edir (10-10 bərabərlik halında 2 xal fərqinə qədər davam edir).
 - **Avadanlıq:** Rəsmi ITTF 40+ ağ toplardan istifadə olunur.`,
     format: 'groups_and_knockout',
-    max_participants: 14,
+    max_participants: 13,
     group_size: 7,
     advance_per_group: 4,
     location: 'Bibiheybət Kampusu',
