@@ -30,12 +30,10 @@ export default function AnimatedCounter({
   const isInView = useInView(ref, { once: true, margin: '0px' });
 
   useEffect(() => {
-    if (isInView) {
-      const timer = setTimeout(() => {
-        motionValue.set(value);
-      }, delay * 1000);
-      return () => clearTimeout(timer);
-    }
+    const timer = setTimeout(() => {
+      motionValue.set(value);
+    }, delay * 1000);
+    return () => clearTimeout(timer);
   }, [motionValue, isInView, delay, value]);
 
   useEffect(() => {
@@ -53,7 +51,7 @@ export default function AnimatedCounter({
       className={`inline-block tabular-nums font-mono will-change-transform ${className}`}
     >
       {prefix}
-      {(0).toFixed(decimalPlaces)}
+      {value.toFixed(decimalPlaces)}
       {suffix}
     </span>
   );

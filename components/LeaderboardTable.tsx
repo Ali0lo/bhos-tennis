@@ -148,14 +148,28 @@ export default function LeaderboardTable({
           <tbody className="divide-y divide-slate-800">
             <AnimatePresence mode="popLayout" initial={false}>
               {displayedPlayers.map((player, idx) => {
-                const rank = player.rank ?? startIndex + idx + 1;
+              const rank = player.rank ?? startIndex + idx + 1;
               const isMe = currentUser?.id === player.id;
-              const totalGames = player.matches_played || player.wins + player.losses;
+              const matchesPlayed =
+                (player.wins || 0) + (player.losses || 0) > 0
+                  ? Math.max(player.matches_played || 0, (player.wins || 0) + (player.losses || 0))
+                  : player.matches_played || 0;
               const winRate =
-                totalGames > 0 ? Math.round((player.wins / totalGames) * 100) : 0;
+                matchesPlayed > 0 ? Math.round(((player.wins || 0) / matchesPlayed) * 100) : 0;
               const rankChange = player.rank_change ?? 0;
               const staff = isStaffMember(player);
-              const departmentLabel = getProfileDepartment(player);
+              const isFoundationPlayer =
+                Number(player.year_of_study) === 2026 ||
+                Number(player.admission_year) === 2026 ||
+                player.department?.toLowerCase().includes('foundation') ||
+                player.department?.toLowerCase().includes('hazirliq');
+              const rawDeptLabel = getProfileDepartment(player);
+              const departmentLabel =
+                departmentFilter?.toLowerCase() === 'foundation' && isFoundationPlayer
+                  ? rawDeptLabel && !rawDeptLabel.toLowerCase().includes('foundation')
+                    ? `Foundation (${rawDeptLabel})`
+                    : 'Foundation'
+                  : rawDeptLabel;
               const yearSuffix = player.admission_year ? ` • ${player.admission_year}` : '';
               const facultySubtitle = staff
                 ? `${departmentLabel || 'İdman Klubu'} • Müəllim`

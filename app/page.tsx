@@ -464,7 +464,9 @@ export default function HomePage() {
                             <span className="text-xs text-slate-400 font-sans">ELO</span>
                           </div>
                           <span className="text-xs text-emerald-500 font-semibold">
-                            {Math.round((top3[1].wins / (top3[1].matches_played || 1)) * 100)}% {t('table_headers.win_rate')}
+                            {top3[1].matches_played > 0
+                              ? Math.round((top3[1].wins / top3[1].matches_played) * 100)
+                              : 0}% {t('table_headers.win_rate')}
                           </span>
                         </div>
 
@@ -532,7 +534,9 @@ export default function HomePage() {
                           <span className="text-xs text-slate-300 font-sans">ELO</span>
                         </div>
                         <div className="mt-2 text-xs text-emerald-500 font-semibold">
-                          {Math.round((top3[0].wins / (top3[0].matches_played || 1)) * 100)}% {t('table_headers.win_rate')} ({top3[0].wins}W - {top3[0].losses}L)
+                          {top3[0].matches_played > 0
+                            ? Math.round((top3[0].wins / top3[0].matches_played) * 100)
+                            : 0}% {t('table_headers.win_rate')} ({top3[0].wins}W - {top3[0].losses}L)
                         </div>
                         <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-center">
                           <span>
@@ -594,7 +598,9 @@ export default function HomePage() {
                             <span className="text-xs text-slate-400 font-sans">ELO</span>
                           </div>
                           <span className="text-xs text-emerald-500 font-semibold">
-                            {Math.round((top3[2].wins / (top3[2].matches_played || 1)) * 100)}% {t('table_headers.win_rate')}
+                            {top3[2].matches_played > 0
+                              ? Math.round((top3[2].wins / top3[2].matches_played) * 100)
+                              : 0}% {t('table_headers.win_rate')}
                           </span>
                         </div>
 

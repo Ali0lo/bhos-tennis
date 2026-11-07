@@ -28,7 +28,8 @@ export default function FacultyFilterTabs({
             ? true
             : !isAllDepartmentsFilter(selectedFaculty) &&
               !isAllDepartmentsFilter(tab.id) &&
-              matchesDepartmentFilter(tab.id, selectedFaculty);
+              (tab.id.trim().toLowerCase() === selectedFaculty.trim().toLowerCase() ||
+                matchesDepartmentFilter(tab.id, selectedFaculty));
         return (
           <button
             key={tab.id}

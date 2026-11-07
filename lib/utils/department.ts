@@ -261,7 +261,7 @@ export function getCanonicalDepartments(input?: string | null): Set<CanonicalDep
   }
 
   // 7. Foundation:
-  // matches foundation, hazirliq, found, fnd
+  // matches foundation, hazirliq, found, fnd, f-, fnd-
   if (
     norm === 'foundation' ||
     norm === 'hazirliq' ||
@@ -273,9 +273,11 @@ export function getCanonicalDepartments(input?: string | null): Set<CanonicalDep
     stripped === 'fnd' ||
     norm.includes('foundation') ||
     norm.includes('hazirliq') ||
+    norm.startsWith('f-') ||
     norm.startsWith('fnd-') ||
     norm.startsWith('found-') ||
     norm.startsWith('hazirliq-') ||
+    /^f[-_./\s]?\d+/i.test(norm) ||
     /^fnd[-_./\s]?\d+/i.test(norm) ||
     /^found[-_./\s]?\d+/i.test(norm)
   ) {
@@ -399,6 +401,67 @@ export function matchesDepartmentFilter(
     return false;
   }
 
+  const filterDepts = getCanonicalDepartments(selectedFilter);
+  const normFilter = normalizeDepartmentText(selectedFilter);
+  const strippedFilter = stripPunctuation(selectedFilter);
+
+  if (
+    selectedFilter &&
+    (selectedFilter.trim().toLowerCase() === 'foundation' ||
+      normFilter === 'foundation' ||
+      normFilter === 'hazirliq' ||
+      normFilter.includes('foundation') ||
+      normFilter.includes('hazirliq') ||
+      filterDepts.has('FOUNDATION'))
+  ) {
+    if (typeof playerOrValue === 'string') {
+      const s = playerOrValue.trim().toLowerCase();
+      const sNorm = normalizeDepartmentText(playerOrValue);
+      return (
+        s.includes('foundation') ||
+        s.includes('hazirliq') ||
+        sNorm.includes('foundation') ||
+        sNorm.includes('hazirliq') ||
+        s === '2026' ||
+        s.startsWith('f-') ||
+        s.startsWith('fnd-') ||
+        s.startsWith('found')
+      );
+    }
+
+    if (typeof playerOrValue === 'object' && playerOrValue !== null) {
+      const player = playerOrValue;
+      const deptNorm = normalizeDepartmentText(player.department);
+      const facNorm = normalizeDepartmentText(player.faculty);
+      const majorFacNorm = normalizeDepartmentText(player.major_faculty);
+      const groupNorm = normalizeDepartmentText(player.group);
+
+      return Boolean(
+        player.department?.toLowerCase().includes('foundation') ||
+          player.department?.toLowerCase().includes('hazirliq') ||
+          deptNorm.includes('foundation') ||
+          deptNorm.includes('hazirliq') ||
+          player.faculty?.toLowerCase().includes('foundation') ||
+          player.faculty?.toLowerCase().includes('hazirliq') ||
+          facNorm.includes('foundation') ||
+          facNorm.includes('hazirliq') ||
+          player.major_faculty?.toLowerCase().includes('foundation') ||
+          player.major_faculty?.toLowerCase().includes('hazirliq') ||
+          majorFacNorm.includes('foundation') ||
+          majorFacNorm.includes('hazirliq') ||
+          player.year_of_study === 2026 ||
+          Number(player.year_of_study) === 2026 ||
+          Number(player.admission_year) === 2026 ||
+          player.is_foundation === true ||
+          player.group?.toLowerCase().startsWith('f-') ||
+          player.group?.toLowerCase().startsWith('fnd-') ||
+          player.group?.toLowerCase().startsWith('found') ||
+          groupNorm.includes('foundation') ||
+          groupNorm.includes('hazirliq')
+      );
+    }
+  }
+
   const valuesToCheck: string[] = [];
 
   if (typeof playerOrValue === 'string') {
@@ -430,10 +493,6 @@ export function matchesDepartmentFilter(
   if (valuesToCheck.length === 0) {
     return false;
   }
-
-  const filterDepts = getCanonicalDepartments(selectedFilter);
-  const normFilter = normalizeDepartmentText(selectedFilter);
-  const strippedFilter = stripPunctuation(selectedFilter);
 
   for (const val of valuesToCheck) {
     const valDepts = getCanonicalDepartments(val);

@@ -35,7 +35,7 @@ import { getSupabaseClient } from '../supabase/client';
 import { buildSlugMap, generateSlug, isUuid, normalizeForSearch, shortIdSuffix } from '../utils/slug';
 
 const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v12',
+  PROFILES: 'bhos_tt_profiles_v13',
   MATCHES: 'bhos_tt_matches_v12',
   TOURNAMENTS: 'bhos_tt_tournaments_v13',
   RESERVATIONS: 'bhos_tt_reservations_v8',
@@ -156,9 +156,41 @@ const OBSOLETE_TOURNAMENT_IDENTIFIERS = new Set([
   'inter-faculty-engineering-cup-2026',
 ]);
 
-const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v3';
+const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v4';
 const SESSION_RECENT_MATCHES_KEY = 'bhos_tt_recent_matches';
 const LEADERBOARD_TTL_MS = 60_000;
+
+function findMatchingSeedProfile(raw: any): PlayerProfile | undefined {
+  if (!raw) return undefined;
+  const rawId = typeof raw.id === 'string' ? raw.id.trim() : '';
+  const rawEmail = typeof raw.email === 'string' ? raw.email.trim().toLowerCase() : '';
+  const rawSlug = typeof raw.slug === 'string' ? raw.slug.trim().toLowerCase() : '';
+  const rawNorm = normalizeForSearch(raw.full_name || '');
+
+  if (rawId) {
+    const byId = INITIAL_PROFILES.find((p) => p.id === rawId);
+    if (byId) return byId;
+  }
+  if (rawEmail) {
+    const byEmail = INITIAL_PROFILES.find((p) => (p.email || '').trim().toLowerCase() === rawEmail);
+    if (byEmail) return byEmail;
+  }
+  if (rawSlug) {
+    const bySlug = INITIAL_PROFILES.find((p) => (p.slug || '').trim().toLowerCase() === rawSlug);
+    if (bySlug) return bySlug;
+  }
+  if (rawNorm) {
+    const byNorm = INITIAL_PROFILES.find((p) => normalizeForSearch(p.full_name) === rawNorm);
+    if (byNorm) return byNorm;
+    const official = OFFICIAL_FOUNDATION_CUP_PLAYERS.find((o) =>
+      o.aliases.some((alias) => alias === rawNorm)
+    );
+    if (official) {
+      return INITIAL_PROFILES.find((p) => p.id === official.seedId);
+    }
+  }
+  return undefined;
+}
 
 export function isApprovedMatch(
   match?: Partial<MatchRecord> | null,
@@ -330,6 +362,7 @@ export class BHOSDataStore {
   private constructor() {
     if (typeof window !== 'undefined') {
       const oldKeys = [
+        'bhos_tt_profiles_v12',
         'bhos_tt_profiles_v11',
         'bhos_tt_matches_v11',
         'bhos_tt_tournaments_v12',
@@ -356,6 +389,9 @@ export class BHOSDataStore {
           localStorage.removeItem(k);
         } catch {}
       });
+      try {
+        sessionStorage.removeItem('bhos_tt_leaderboard_cache_v3');
+      } catch {}
 
       this.leaderboardCache = getSessionLeaderboardCache();
       this.profiles = getStored(STORAGE_KEYS.PROFILES, INITIAL_PROFILES);
@@ -613,100 +649,207 @@ export class BHOSDataStore {
           const existingByName = new Map(
             this.profiles
               .filter((p) => Boolean(p.full_name))
-              .map((p) => [p.full_name.trim().toLowerCase(), p])
-          );
-          const seedByEmail = new Map(
-            INITIAL_PROFILES.filter((p) => Boolean(p.email)).map((p) => [
-              p.email.trim().toLowerCase(),
-              p,
-            ])
-          );
-          const seedByName = new Map(
-            INITIAL_PROFILES.filter((p) => Boolean(p.full_name)).map((p) => [
-              p.full_name.trim().toLowerCase(),
-              p,
-            ])
+              .map((p) => [normalizeForSearch(p.full_name), p])
           );
 
-          const mapped: PlayerProfile[] = data.map((row: any, idx: number) => {
-            const rowEmail = typeof row.email === 'string' ? row.email.trim().toLowerCase() : '';
-            const rowName =
-              typeof row.full_name === 'string' ? row.full_name.trim().toLowerCase() : '';
-            const prev =
-              existingById.get(row.id) ||
-              (rowEmail ? existingByEmail.get(rowEmail) : undefined) ||
-              (rowName ? existingByName.get(rowName) : undefined);
-            const seed =
-              (rowEmail ? seedByEmail.get(rowEmail) : undefined) ||
-              (rowName ? seedByName.get(rowName) : undefined);
+          const mapped: PlayerProfile[] = (data as any[])
+            .filter((row) => {
+              const nameLower = (row.full_name || '').toLowerCase();
+              return !nameLower.includes('adəm rəhimli') && !nameLower.includes('adem rehimli');
+            })
+            .map((row: any, idx: number) => {
+              const rowEmail = typeof row.email === 'string' ? row.email.trim().toLowerCase() : '';
+              const rowNorm = normalizeForSearch(row.full_name || '');
+              const prev =
+                existingById.get(row.id) ||
+                (rowEmail ? existingByEmail.get(rowEmail) : undefined) ||
+                (rowNorm ? existingByName.get(rowNorm) : undefined);
+              const seed = findMatchingSeedProfile(row) || (prev ? findMatchingSeedProfile(prev) : undefined);
 
-            const totalMatches = Number(
-              row.total_matches ?? row.matches_played ?? prev?.matches_played ?? 0
-            );
-            const wins = Number(row.wins ?? prev?.wins ?? 0);
-            const losses = Number(row.losses ?? Math.max(0, totalMatches - wins));
-            const rawDept =
-              getProfileDepartment(row) ||
-              getProfileDepartment(prev) ||
-              getProfileDepartment(seed) ||
-              'Computer Engineering';
-            const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
+              const rawWins = Number(row.wins ?? 0);
+              const rawLosses = Number(row.losses ?? 0);
+              const rawMatches = Math.max(
+                Number(row.total_matches ?? row.matches_played ?? 0),
+                rawWins + rawLosses
+              );
 
-            return {
-              id: row.id,
-              full_name: row.full_name,
-              email: row.email || prev?.email || seed?.email || '',
-              major_faculty: canonicalDept,
-              faculty: row.faculty || canonicalDept,
-              department: row.department || canonicalDept,
-              major: row.major || prev?.major || canonicalDept,
-              group: row.group || prev?.group || '',
-              admission_year:
-                row.admission_year !== undefined
-                  ? row.admission_year
-                  : prev?.admission_year !== undefined
-                  ? prev.admission_year
-                  : seed?.admission_year ?? 2024,
-              user_type:
-                row.user_type ||
-                prev?.user_type ||
-                seed?.user_type ||
-                (row.full_name?.includes('İftixar') ? 'staff' : 'student'),
-              gender: row.gender || prev?.gender || seed?.gender || 'male',
-              role:
-                row.role ||
-                prev?.role ||
-                seed?.role ||
-                (row.full_name?.includes('İftixar')
-                  ? 'coach'
-                  : row.full_name?.includes('İsgəndərli')
-                  ? 'president'
-                  : 'player'),
-              playing_level:
-                row.playing_level || prev?.playing_level || seed?.playing_level || 'Advanced',
-              playing_style:
-                row.playing_style || prev?.playing_style || seed?.playing_style || 'Shakehand Attack',
-              blade_equipment:
-                row.blade_equipment ||
-                prev?.blade_equipment ||
-                seed?.blade_equipment ||
-                'Butterfly Viscaria',
-              forehand_rubber:
-                row.forehand_rubber || prev?.forehand_rubber || seed?.forehand_rubber || 'Tenergy 05',
-              backhand_rubber:
-                row.backhand_rubber || prev?.backhand_rubber || seed?.backhand_rubber || 'Dignics 09C',
-              current_elo: Number(row.current_elo ?? 0),
-              matches_played: totalMatches,
-              wins,
-              losses,
-              status: 'approved',
-              origin: row.origin || prev?.origin || seed?.origin || 'Qeydiyyat',
-              is_verified: true,
-              is_active: true,
-              avatar_url: normalizeAvatarUrl(row.avatar_url || prev?.avatar_url),
-              rank: idx + 1,
-              created_at: row.created_at || prev?.created_at || new Date().toISOString(),
-            };
+              const prevWins = Number(prev?.wins ?? 0);
+              const prevLosses = Number(prev?.losses ?? 0);
+              const prevMatches = Math.max(
+                Number(prev?.matches_played ?? 0),
+                prevWins + prevLosses
+              );
+
+              const seedWins = Number(seed?.wins ?? 0);
+              const seedLosses = Number(seed?.losses ?? 0);
+              const seedMatches = Math.max(
+                Number(seed?.matches_played ?? 0),
+                seedWins + seedLosses
+              );
+
+              let wins = rawWins;
+              let losses = rawLosses;
+              let totalMatches = rawMatches;
+
+              if (totalMatches === 0) {
+                if (prevMatches > 0) {
+                  wins = prevWins;
+                  losses = prevLosses > 0 ? prevLosses : Math.max(0, prevMatches - prevWins);
+                  totalMatches = Math.max(prevMatches, wins + losses);
+                } else if (seedMatches > 0) {
+                  wins = seedWins;
+                  losses = seedLosses > 0 ? seedLosses : Math.max(0, seedMatches - seedWins);
+                  totalMatches = Math.max(seedMatches, wins + losses);
+                }
+              } else {
+                losses = rawLosses > 0 ? rawLosses : Math.max(0, totalMatches - wins);
+                totalMatches = Math.max(totalMatches, wins + losses);
+              }
+
+              const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
+
+              const admissionYear =
+                row.admission_year ??
+                row.year_of_study ??
+                prev?.admission_year ??
+                prev?.year_of_study ??
+                seed?.admission_year ??
+                2024;
+              const yearOfStudy =
+                row.year_of_study ??
+                row.admission_year ??
+                prev?.year_of_study ??
+                prev?.admission_year ??
+                seed?.year_of_study ??
+                admissionYear;
+
+              const rawDept =
+                getProfileDepartment(row) ||
+                getProfileDepartment(prev) ||
+                getProfileDepartment(seed) ||
+                'Computer Engineering';
+              const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
+
+              const isFoundation =
+                Number(admissionYear) === 2026 ||
+                Number(yearOfStudy) === 2026 ||
+                row.is_foundation === true ||
+                prev?.is_foundation === true ||
+                seed?.is_foundation === true ||
+                (row.department || prev?.department || seed?.department || '')
+                  .toLowerCase()
+                  .includes('foundation') ||
+                (row.department || prev?.department || seed?.department || '')
+                  .toLowerCase()
+                  .includes('hazirliq') ||
+                (row.group || prev?.group || seed?.group || '')
+                  .toLowerCase()
+                  .startsWith('f-') ||
+                (row.group || prev?.group || seed?.group || '')
+                  .toLowerCase()
+                  .startsWith('fnd-') ||
+                (row.group || prev?.group || seed?.group || '')
+                  .toLowerCase()
+                  .includes('foundation');
+
+              const resolvedElo =
+                rawMatches === 0 && (prevMatches > 0 || seedMatches > 0)
+                  ? Math.max(
+                      Number(row.current_elo ?? 0),
+                      Number(prev?.current_elo ?? 0),
+                      Number(seed?.current_elo ?? 0)
+                    )
+                  : Number(row.current_elo ?? prev?.current_elo ?? seed?.current_elo ?? 0);
+
+              return {
+                id: row.id,
+                full_name: row.full_name,
+                slug: row.slug || prev?.slug || seed?.slug || null,
+                email: row.email || prev?.email || seed?.email || '',
+                major_faculty: canonicalDept,
+                faculty: row.faculty || prev?.faculty || seed?.faculty || canonicalDept,
+                department:
+                  row.department ||
+                  prev?.department ||
+                  seed?.department ||
+                  (isFoundation ? 'Foundation' : canonicalDept),
+                major: row.major || prev?.major || seed?.major || canonicalDept,
+                group:
+                  row.group ||
+                  prev?.group ||
+                  seed?.group ||
+                  (isFoundation ? 'Foundation / 2026' : ''),
+                admission_year: admissionYear,
+                year_of_study: yearOfStudy,
+                is_foundation: isFoundation,
+                user_type:
+                  row.user_type ||
+                  prev?.user_type ||
+                  seed?.user_type ||
+                  (row.full_name?.includes('İftixar') ? 'staff' : 'student'),
+                gender: row.gender || prev?.gender || seed?.gender || 'male',
+                role:
+                  row.role ||
+                  prev?.role ||
+                  seed?.role ||
+                  (row.full_name?.includes('İftixar')
+                    ? 'coach'
+                    : row.full_name?.includes('İsgəndərli')
+                    ? 'president'
+                    : 'player'),
+                playing_level:
+                  row.playing_level || prev?.playing_level || seed?.playing_level || 'Advanced',
+                playing_style:
+                  row.playing_style || prev?.playing_style || seed?.playing_style || 'Shakehand Attack',
+                blade_equipment:
+                  row.blade_equipment ||
+                  prev?.blade_equipment ||
+                  seed?.blade_equipment ||
+                  'Butterfly Viscaria',
+                forehand_rubber:
+                  row.forehand_rubber || prev?.forehand_rubber || seed?.forehand_rubber || 'Tenergy 05',
+                backhand_rubber:
+                  row.backhand_rubber || prev?.backhand_rubber || seed?.backhand_rubber || 'Dignics 09C',
+                current_elo: resolvedElo,
+                matches_played: totalMatches,
+                wins,
+                losses,
+                win_rate: winRate,
+                status: 'approved',
+                origin: row.origin || prev?.origin || seed?.origin || 'Qeydiyyat',
+                is_verified: true,
+                is_active: true,
+                avatar_url: normalizeAvatarUrl(row.avatar_url || prev?.avatar_url),
+                rank: idx + 1,
+                created_at: row.created_at || prev?.created_at || new Date().toISOString(),
+              };
+            });
+
+          // Ensure any missing Foundation 2026 seed profiles are included
+          const byEmail = new Map(mapped.map((p) => [(p.email || '').toLowerCase(), p]));
+          const byName = new Map(mapped.map((p) => [normalizeForSearch(p.full_name), p]));
+          for (const seed of INITIAL_PROFILES) {
+            if (seed.admission_year !== 2026) continue;
+            const seedNorm = normalizeForSearch(seed.full_name);
+            const existing =
+              byEmail.get((seed.email || '').toLowerCase()) ||
+              byName.get(seedNorm) ||
+              (seedNorm.includes('kamran')
+                ? byName.get('kamran aliev') || byName.get('kamran aliyev') || byName.get('kamran eliyev')
+                : undefined);
+            if (!existing) {
+              mapped.push({
+                ...seed,
+                year_of_study: 2026,
+                is_foundation: true,
+                win_rate: seed.matches_played > 0 ? Math.round((seed.wins / seed.matches_played) * 100) : 0,
+              });
+            }
+          }
+
+          mapped.sort((a, b) => b.current_elo - a.current_elo);
+          mapped.forEach((p, idx) => {
+            p.rank = idx + 1;
           });
 
           const localVerified = this.getVerifiedProfiles();
@@ -735,9 +878,7 @@ export class BHOSDataStore {
 
         let fallbackQuery = supabase
           .from('profiles')
-          .select(
-            'id, full_name, email, major_faculty, admission_year, user_type, gender, role, playing_level, current_elo, matches_played, wins, losses, status, origin, is_verified, is_active, avatar_url, created_at'
-          )
+          .select('*')
           .order('current_elo', { ascending: false });
 
         if (limit) {
@@ -747,15 +888,40 @@ export class BHOSDataStore {
         const { data: fallbackData, error: fallbackError } = await fallbackQuery;
         if (!fallbackError && fallbackData && fallbackData.length > 0) {
           const normalized = (fallbackData as PlayerProfile[]).map((p) => {
-            const rawDept = getProfileDepartment(p) || 'Computer Engineering';
+            const seed = findMatchingSeedProfile(p);
+            const rawDept = getProfileDepartment(p) || getProfileDepartment(seed) || 'Computer Engineering';
             const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
+            const admissionYear = p.admission_year ?? p.year_of_study ?? seed?.admission_year ?? 2024;
+            const yearOfStudy = p.year_of_study ?? p.admission_year ?? seed?.year_of_study ?? admissionYear;
+            const isFoundation =
+              Number(admissionYear) === 2026 ||
+              Number(yearOfStudy) === 2026 ||
+              p.is_foundation === true ||
+              (p.department || seed?.department || '').toLowerCase().includes('foundation') ||
+              (p.department || seed?.department || '').toLowerCase().includes('hazirliq') ||
+              (p.group || seed?.group || '').toLowerCase().startsWith('f-') ||
+              (p.group || seed?.group || '').toLowerCase().startsWith('fnd-');
+            const rawWins = Number(p.wins ?? 0);
+            const rawLosses = Number(p.losses ?? 0);
+            const rawMatches = Math.max(Number(p.matches_played ?? 0), rawWins + rawLosses);
+            const wins = rawMatches > 0 ? rawWins : Number(seed?.wins ?? 0);
+            const losses = rawMatches > 0 ? rawLosses : Number(seed?.losses ?? 0);
+            const matchesPlayed = Math.max(rawMatches > 0 ? rawMatches : Number(seed?.matches_played ?? 0), wins + losses);
+            const winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0;
             return {
               ...p,
               major_faculty: canonicalDept,
               faculty: p.faculty || canonicalDept,
-              department: p.department || canonicalDept,
+              department: p.department || seed?.department || (isFoundation ? 'Foundation' : canonicalDept),
               major: p.major || canonicalDept,
-              group: p.group || '',
+              group: p.group || seed?.group || (isFoundation ? 'Foundation / 2026' : ''),
+              admission_year: admissionYear,
+              year_of_study: yearOfStudy,
+              is_foundation: isFoundation,
+              matches_played: matchesPlayed,
+              wins,
+              losses,
+              win_rate: winRate,
               avatar_url: normalizeAvatarUrl(p.avatar_url),
             };
           });
@@ -821,15 +987,45 @@ export class BHOSDataStore {
             return !nameLower.includes('adəm rəhimli') && !nameLower.includes('adem rehimli');
           })
           .map((p) => {
-            const rawDept = getProfileDepartment(p) || 'Computer Engineering';
+            const seed = findMatchingSeedProfile(p);
+            const rawDept = getProfileDepartment(p) || getProfileDepartment(seed) || 'Computer Engineering';
             const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
+            const admissionYear = p.admission_year ?? p.year_of_study ?? seed?.admission_year ?? 2024;
+            const yearOfStudy = p.year_of_study ?? p.admission_year ?? seed?.year_of_study ?? admissionYear;
+            const isFoundation =
+              Number(admissionYear) === 2026 ||
+              Number(yearOfStudy) === 2026 ||
+              p.is_foundation === true ||
+              (p.department || seed?.department || '').toLowerCase().includes('foundation') ||
+              (p.department || seed?.department || '').toLowerCase().includes('hazirliq') ||
+              (p.group || seed?.group || '').toLowerCase().startsWith('f-') ||
+              (p.group || seed?.group || '').toLowerCase().startsWith('fnd-');
+            const rawWins = Number(p.wins ?? 0);
+            const rawLosses = Number(p.losses ?? 0);
+            const rawMatches = Math.max(Number(p.matches_played ?? 0), rawWins + rawLosses);
+            const wins = rawMatches > 0 ? rawWins : Number(seed?.wins ?? 0);
+            const losses = rawMatches > 0 ? rawLosses : Number(seed?.losses ?? 0);
+            const matchesPlayed = Math.max(rawMatches > 0 ? rawMatches : Number(seed?.matches_played ?? 0), wins + losses);
+            const winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0;
+            const currentElo =
+              rawMatches === 0 && Number(seed?.matches_played ?? 0) > 0
+                ? Math.max(Number(p.current_elo ?? 0), Number(seed?.current_elo ?? 0))
+                : Number(p.current_elo ?? 0);
             return {
               ...p,
               major_faculty: canonicalDept,
               faculty: p.faculty || canonicalDept,
-              department: p.department || canonicalDept,
+              department: p.department || seed?.department || (isFoundation ? 'Foundation' : canonicalDept),
               major: p.major || canonicalDept,
-              group: p.group || '',
+              group: p.group || seed?.group || (isFoundation ? 'Foundation / 2026' : ''),
+              admission_year: admissionYear,
+              year_of_study: yearOfStudy,
+              is_foundation: isFoundation,
+              current_elo: currentElo,
+              matches_played: matchesPlayed,
+              wins,
+              losses,
+              win_rate: winRate,
               avatar_url: normalizeAvatarUrl(p.avatar_url),
             };
           });
@@ -1308,11 +1504,23 @@ export class BHOSDataStore {
   }
 
   private saveLocal() {
+    this.recalculateRanks();
     setStored(STORAGE_KEYS.PROFILES, this.profiles);
     setStored(STORAGE_KEYS.MATCHES, this.matches);
     setStored(STORAGE_KEYS.TOURNAMENTS, this.tournaments);
     setStored(STORAGE_KEYS.RESERVATIONS, this.reservations);
     setStored(STORAGE_KEYS.CURRENT_USER_ID, this.currentUserId);
+    const verified = this.profiles.filter((p) => !isProfilePending(p));
+    if (verified.length > 0) {
+      const cacheEntry: LeaderboardCacheEntry = {
+        data: verified,
+        timestamp: Date.now(),
+        isFull: true,
+      };
+      this.leaderboardCache = cacheEntry;
+      setSessionLeaderboardCache(cacheEntry);
+    }
+    inMemoryPlayerCache.clear();
     this.notify();
   }
 
@@ -1331,6 +1539,9 @@ export class BHOSDataStore {
     this.profiles.sort((a, b) => b.current_elo - a.current_elo);
     this.profiles.forEach((p, idx) => {
       p.rank = idx + 1;
+      const total = Math.max(Number(p.matches_played || 0), (p.wins || 0) + (p.losses || 0));
+      p.matches_played = total;
+      p.win_rate = total > 0 ? Math.round(((p.wins || 0) / total) * 100) : 0;
     });
   }
 
@@ -1895,17 +2106,32 @@ export class BHOSDataStore {
     const profile =
       this.getProfile(playerId) ||
       this.profiles.find((p) => p.full_name?.toLowerCase() === playerId.toLowerCase());
+    const seed = findMatchingSeedProfile(profile || { id: playerId, full_name: playerId });
     const targetName = profile?.full_name?.trim().toLowerCase();
-    const targetIds = Array.from(new Set([playerId, profile?.id].filter(Boolean))) as string[];
-    return this.getMatches().filter(
-      (m) =>
-        targetIds.includes(m.player1_id) ||
-        targetIds.includes(m.player2_id) ||
-        (targetName && (
-          m.player1_name?.trim().toLowerCase() === targetName ||
-          m.player2_name?.trim().toLowerCase() === targetName
-        ))
-    );
+    const targetNorm = normalizeForSearch(profile?.full_name || seed?.full_name || '');
+    const targetIds = Array.from(
+      new Set([playerId, profile?.id, seed?.id].filter(Boolean))
+    ) as string[];
+    return this.getMatches().filter((m) => {
+      if (targetIds.includes(m.player1_id) || targetIds.includes(m.player2_id)) {
+        return true;
+      }
+      if (
+        targetName &&
+        (m.player1_name?.trim().toLowerCase() === targetName ||
+          m.player2_name?.trim().toLowerCase() === targetName)
+      ) {
+        return true;
+      }
+      if (targetNorm) {
+        const p1Norm = normalizeForSearch(m.player1_name || '');
+        const p2Norm = normalizeForSearch(m.player2_name || '');
+        if (p1Norm === targetNorm || p2Norm === targetNorm) {
+          return true;
+        }
+      }
+      return false;
+    });
   }
 
   public clearMatchAndPlayerCaches(): void {
@@ -3517,31 +3743,111 @@ function mapRawProfileToPlayerProfile(
   raw: any,
   fallback?: PlayerProfile
 ): PlayerProfile {
-  const totalMatches = Number(
-    raw.matches_played ?? raw.total_matches ?? fallback?.matches_played ?? 0
+  const seed = findMatchingSeedProfile(raw) || (fallback ? findMatchingSeedProfile(fallback) : undefined);
+
+  const rawWins = Number(raw.wins ?? 0);
+  const rawLosses = Number(raw.losses ?? 0);
+  const rawMatches = Math.max(
+    Number(raw.matches_played ?? raw.total_matches ?? 0),
+    rawWins + rawLosses
   );
-  const wins = Number(raw.wins ?? fallback?.wins ?? 0);
-  const losses = Number(
-    raw.losses ?? Math.max(0, totalMatches - wins)
-  );
+
+  const fbWins = Number(fallback?.wins ?? 0);
+  const fbLosses = Number(fallback?.losses ?? 0);
+  const fbMatches = Math.max(Number(fallback?.matches_played ?? 0), fbWins + fbLosses);
+
+  const seedWins = Number(seed?.wins ?? 0);
+  const seedLosses = Number(seed?.losses ?? 0);
+  const seedMatches = Math.max(Number(seed?.matches_played ?? 0), seedWins + seedLosses);
+
+  let wins = rawWins;
+  let losses = rawLosses;
+  let totalMatches = rawMatches;
+
+  if (totalMatches === 0) {
+    if (fbMatches > 0) {
+      wins = fbWins;
+      losses = fbLosses > 0 ? fbLosses : Math.max(0, fbMatches - fbWins);
+      totalMatches = Math.max(fbMatches, wins + losses);
+    } else if (seedMatches > 0) {
+      wins = seedWins;
+      losses = seedLosses > 0 ? seedLosses : Math.max(0, seedMatches - seedWins);
+      totalMatches = Math.max(seedMatches, wins + losses);
+    }
+  } else {
+    losses = rawLosses > 0 ? rawLosses : Math.max(0, totalMatches - wins);
+    totalMatches = Math.max(totalMatches, wins + losses);
+  }
+
+  const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
 
   const rawDept =
     getProfileDepartment(raw) ||
     getProfileDepartment(fallback) ||
+    getProfileDepartment(seed) ||
     'Computer Engineering';
   const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
+
+  const admissionYear =
+    raw.admission_year ??
+    raw.year_of_study ??
+    fallback?.admission_year ??
+    fallback?.year_of_study ??
+    seed?.admission_year ??
+    2024;
+  const yearOfStudy =
+    raw.year_of_study ??
+    raw.admission_year ??
+    fallback?.year_of_study ??
+    fallback?.admission_year ??
+    seed?.year_of_study ??
+    admissionYear;
+
+  const isFoundation =
+    Number(admissionYear) === 2026 ||
+    Number(yearOfStudy) === 2026 ||
+    raw.is_foundation === true ||
+    fallback?.is_foundation === true ||
+    seed?.is_foundation === true ||
+    (raw.department || fallback?.department || seed?.department || '')
+      .toLowerCase()
+      .includes('foundation') ||
+    (raw.department || fallback?.department || seed?.department || '')
+      .toLowerCase()
+      .includes('hazirliq') ||
+    (raw.group || fallback?.group || seed?.group || '').toLowerCase().startsWith('f-') ||
+    (raw.group || fallback?.group || seed?.group || '').toLowerCase().startsWith('fnd-');
+
+  const resolvedElo =
+    rawMatches === 0 && (fbMatches > 0 || seedMatches > 0)
+      ? Math.max(
+          Number(raw.current_elo ?? 0),
+          Number(fallback?.current_elo ?? 0),
+          Number(seed?.current_elo ?? 0)
+        )
+      : Number(raw.current_elo ?? fallback?.current_elo ?? seed?.current_elo ?? 0);
 
   return {
     id: raw.id || fallback?.id || '',
     full_name: raw.full_name || fallback?.full_name || 'Unknown',
-    slug: raw.slug || fallback?.slug || null,
-    email: raw.email || fallback?.email || '',
+    slug: raw.slug || fallback?.slug || seed?.slug || null,
+    email: raw.email || fallback?.email || seed?.email || '',
     major_faculty: canonicalDept,
-    faculty: raw.faculty || canonicalDept,
-    department: raw.department || canonicalDept,
-    major: raw.major || canonicalDept,
-    group: raw.group || fallback?.group || '',
-    admission_year: raw.admission_year ?? fallback?.admission_year ?? 2024,
+    faculty: raw.faculty || fallback?.faculty || canonicalDept,
+    department:
+      raw.department ||
+      fallback?.department ||
+      seed?.department ||
+      (isFoundation ? 'Foundation' : canonicalDept),
+    major: raw.major || fallback?.major || canonicalDept,
+    group:
+      raw.group ||
+      fallback?.group ||
+      seed?.group ||
+      (isFoundation ? 'Foundation / 2026' : ''),
+    admission_year: admissionYear,
+    year_of_study: yearOfStudy,
+    is_foundation: isFoundation,
     user_type:
       raw.user_type ||
       fallback?.user_type ||
@@ -3560,10 +3866,11 @@ function mapRawProfileToPlayerProfile(
     blade_equipment: raw.blade_equipment || fallback?.blade_equipment || 'Butterfly Viscaria',
     forehand_rubber: raw.forehand_rubber || fallback?.forehand_rubber || 'Tenergy 05',
     backhand_rubber: raw.backhand_rubber || fallback?.backhand_rubber || 'Dignics 09C',
-    current_elo: Number(raw.current_elo ?? fallback?.current_elo ?? 0),
+    current_elo: resolvedElo,
     matches_played: totalMatches,
     wins,
     losses,
+    win_rate: winRate,
     status: raw.status || fallback?.status || 'approved',
     origin: raw.origin || fallback?.origin || 'Qeydiyyat',
     is_verified: raw.is_verified ?? fallback?.is_verified ?? true,

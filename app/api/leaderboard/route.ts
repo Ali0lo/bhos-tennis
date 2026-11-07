@@ -29,13 +29,38 @@ export async function GET(request: Request) {
   const normalizeRow = (row: any) => {
     const rawDept = getProfileDepartment(row);
     const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept || 'Computer Engineering';
+    const wins = Number(row.wins ?? 0);
+    const losses = Number(row.losses ?? 0);
+    const matchesPlayed =
+      wins + losses > 0
+        ? Math.max(Number(row.matches_played ?? row.total_matches ?? 0), wins + losses)
+        : Number(row.matches_played ?? row.total_matches ?? 0);
+    const winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0;
+    const yearOfStudy = row.year_of_study ?? row.admission_year ?? null;
+    const isFoundation =
+      Number(yearOfStudy) === 2026 ||
+      Number(row.admission_year) === 2026 ||
+      row.is_foundation === true ||
+      row.department?.toLowerCase().includes('foundation') ||
+      row.department?.toLowerCase().includes('hazirliq') ||
+      row.faculty?.toLowerCase().includes('foundation') ||
+      row.major_faculty?.toLowerCase().includes('foundation') ||
+      row.group?.toLowerCase().startsWith('f-') ||
+      row.group?.toLowerCase().startsWith('fnd-');
+
     return {
       ...row,
-      major_faculty: row.major_faculty || canonicalDept,
-      faculty: row.faculty || row.major_faculty || canonicalDept,
-      department: row.department || row.major_faculty || canonicalDept,
+      matches_played: matchesPlayed,
+      wins,
+      losses,
+      win_rate: winRate,
+      year_of_study: yearOfStudy,
+      is_foundation: isFoundation,
+      major_faculty: row.major_faculty || (isFoundation ? 'Foundation' : canonicalDept),
+      faculty: row.faculty || row.major_faculty || (isFoundation ? 'Foundation' : canonicalDept),
+      department: row.department || (isFoundation ? 'Foundation' : row.major_faculty || canonicalDept),
       major: row.major || row.major_faculty || canonicalDept,
-      group: row.group || '',
+      group: row.group || (isFoundation ? 'Foundation / 2026' : ''),
     };
   };
 
@@ -82,12 +107,18 @@ export async function GET(request: Request) {
     );
   }
 
-  const { data: profilesData } = await supabase
+  let profilesQuery = supabase
     .from('profiles')
-    .select(
-      'id, full_name, email, major_faculty, admission_year, user_type, gender, role, current_elo, avatar_url, origin, matches_played, wins, losses, status, is_verified'
-    )
+    .select('*')
     .order('current_elo', { ascending: false });
+
+  if (hasDepartmentFilter && departmentParam.trim().toLowerCase() === 'foundation') {
+    profilesQuery = profilesQuery.or(
+      'department.ilike.%foundation%,department.ilike.%hazirliq%,major_faculty.ilike.%foundation%,admission_year.eq.2026,year_of_study.eq.2026'
+    );
+  }
+
+  const { data: profilesData } = await profilesQuery;
 
   const { data: safeData, total: fallbackTotal } = applyFilterAndSlice(profilesData || []);
   return NextResponse.json(

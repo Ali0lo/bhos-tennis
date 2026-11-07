@@ -31,12 +31,17 @@ export default function NumberTicker({
   const isInView = useInView(ref, { once: true, margin: '0px' });
 
   useEffect(() => {
-    if (!isInView) return;
-
     const from = currentRef.current;
     const to = direction === 'down' ? startValue : value;
     let rafId: number | null = null;
     let startTime: number | null = null;
+
+    if (from === to) {
+      if (ref.current) {
+        ref.current.textContent = `${prefix}${to.toFixed(decimalPlaces)}${suffix}`;
+      }
+      return;
+    }
 
     const timer = setTimeout(() => {
       const tick = (now: number) => {
@@ -76,7 +81,7 @@ export default function NumberTicker({
       className={`inline-block tabular-nums font-mono ${className}`}
     >
       {prefix}
-      {(direction === 'down' ? value : startValue).toFixed(decimalPlaces)}
+      {(direction === 'down' ? startValue : value).toFixed(decimalPlaces)}
       {suffix}
     </span>
   );

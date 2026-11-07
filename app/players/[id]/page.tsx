@@ -268,6 +268,30 @@ export default function PlayerProfilePage() {
 
     void fetchPlayerData(false);
 
+    const unsubStore = store.subscribe(() => {
+      const updatedLocal = store.getPlayerByIdOrSlug(routeIdentifier);
+      if (updatedLocal) {
+        setProfile((prev) => (prev ? { ...prev, ...updatedLocal } : updatedLocal));
+        const localMatches = store.getPlayerMatches(updatedLocal.id);
+        if (localMatches.length > 0) {
+          setMatches((prevMatches) => {
+            const map = new Map<string, MatchRecord>();
+            prevMatches.forEach((m) => map.set(m.id, m));
+            localMatches.forEach((m) => map.set(m.id, m));
+            return Array.from(map.values()).sort(
+              (a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
+            );
+          });
+        }
+      }
+    });
+
+    const handleFocus = () => {
+      void fetchPlayerData(true);
+    };
+
+    window.addEventListener('focus', handleFocus);
+
     const supabase = getSupabaseClient();
     let channel: any = null;
     if (supabase) {
@@ -294,6 +318,8 @@ export default function PlayerProfilePage() {
     }
 
     return () => {
+      unsubStore();
+      window.removeEventListener('focus', handleFocus);
       if (channel && supabase) {
         supabase.removeChannel(channel);
       }
@@ -454,8 +480,16 @@ export default function PlayerProfilePage() {
     }).length;
   }, [validMatches, playerId, profile]);
 
-  const totalMatchesCount = Math.max(profile?.matches_played || 0, validMatches.length);
+  const totalMatchesCount = Math.max(
+    profile?.matches_played || 0,
+    (profile?.wins || 0) + (profile?.losses || 0),
+    validMatches.length
+  );
   const effectiveWins = Math.max(profile?.wins || 0, actualWins);
+  const effectiveLosses = Math.max(
+    profile?.losses || 0,
+    Math.max(0, totalMatchesCount - effectiveWins)
+  );
   const winRatePercent =
     totalMatchesCount > 0
       ? Math.round((effectiveWins / totalMatchesCount) * 100)
@@ -750,7 +784,7 @@ export default function PlayerProfilePage() {
               <NumberTicker value={totalMatchesCount} />
             </div>
             <p className="text-[10px] text-slate-500 mt-1">
-              {profile.wins}Q - {profile.losses}M Nəticə
+              {effectiveWins}Q - {effectiveLosses}M Nəticə
             </p>
           </div>
 

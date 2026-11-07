@@ -36,6 +36,8 @@ export interface PlayerProfile {
   major?: string;
   group?: string;
   admission_year?: number | null;
+  year_of_study?: number | null;
+  is_foundation?: boolean;
   user_type?: UserType | string;
   gender?: 'female' | 'male' | 'other';
   role: UserRole;
@@ -49,6 +51,7 @@ export interface PlayerProfile {
   matches_played: number;
   wins: number;
   losses: number;
+  win_rate?: number;
   status?: 'pending' | 'approved' | string;
   origin?: 'İlkin Heyət' | 'Qeydiyyat' | string;
   is_verified?: boolean;

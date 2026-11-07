@@ -79,36 +79,75 @@ export default function LeaderboardPage() {
   useEffect(() => {
     let isMounted = true;
 
-    const cached = store.getCachedLeaderboard();
-    if (cached.length > 0) {
-      setProfiles(cached);
-      setCurrentUser(store.getCurrentUser());
-      setLoading(false);
-    }
-
-    store.fetchLeaderboardStandings().then((standings) => {
+    const syncFromStore = () => {
       if (!isMounted) return;
-      if (standings.length > 0) {
-        setProfiles(standings);
-      } else {
-        setProfiles(store.getVerifiedProfiles());
-      }
+      const latest = store.getCachedLeaderboard();
+      const verified = store.getVerifiedProfiles();
+      const source = latest.length >= verified.length && latest.length > 0 ? latest : verified;
+      setProfiles(
+        source.map((p) => {
+          const total =
+            (p.wins || 0) + (p.losses || 0) > 0
+              ? Math.max(p.matches_played || 0, (p.wins || 0) + (p.losses || 0))
+              : p.matches_played || 0;
+          return {
+            ...p,
+            matches_played: total,
+            win_rate: total > 0 ? Math.round(((p.wins || 0) / total) * 100) : 0,
+          };
+        })
+      );
       setCurrentUser(store.getCurrentUser());
       setLoading(false);
-    });
+    };
 
-    const unsub = store.subscribe(() => {
-      if (isMounted) {
-        const latest = store.getCachedLeaderboard();
-        setProfiles(latest.length > 0 ? latest : store.getVerifiedProfiles());
+    syncFromStore();
+
+    const revalidateStandings = (force = false) => {
+      store.fetchLeaderboardStandings({ force }).then((standings) => {
+        if (!isMounted) return;
+        const source = standings.length > 0 ? standings : store.getVerifiedProfiles();
+        setProfiles(
+          source.map((p) => {
+            const total =
+              (p.wins || 0) + (p.losses || 0) > 0
+                ? Math.max(p.matches_played || 0, (p.wins || 0) + (p.losses || 0))
+                : p.matches_played || 0;
+            return {
+              ...p,
+              matches_played: total,
+              win_rate: total > 0 ? Math.round(((p.wins || 0) / total) * 100) : 0,
+            };
+          })
+        );
         setCurrentUser(store.getCurrentUser());
         setLoading(false);
-      }
+      });
+    };
+
+    revalidateStandings(false);
+
+    const unsub = store.subscribe(() => {
+      syncFromStore();
     });
+
+    const handleFocus = () => {
+      revalidateStandings(true);
+    };
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        revalidateStandings(true);
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
       isMounted = false;
       unsub();
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [store]);
 
@@ -246,6 +285,12 @@ export default function LeaderboardPage() {
                 <div className="mt-4 font-mono text-3xl font-black text-amber-400 flex items-baseline justify-center gap-1">
                   <AnimatedCounter value={top3Podium[0].current_elo} />
                   <span className="text-xs text-slate-300 font-sans">ELO</span>
+                </div>
+                <div className="mt-2 text-xs text-emerald-500 font-semibold">
+                  {top3Podium[0].matches_played > 0
+                    ? Math.round((top3Podium[0].wins / top3Podium[0].matches_played) * 100)
+                    : 0}
+                  % Qələbə
                 </div>
               </div>
             </HoloCard>
