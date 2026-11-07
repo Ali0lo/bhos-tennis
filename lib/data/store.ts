@@ -35,12 +35,118 @@ import { getSupabaseClient } from '../supabase/client';
 import { buildSlugMap, generateSlug, isUuid, normalizeForSearch, shortIdSuffix } from '../utils/slug';
 
 const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v11',
-  MATCHES: 'bhos_tt_matches_v11',
-  TOURNAMENTS: 'bhos_tt_tournaments_v12',
+  PROFILES: 'bhos_tt_profiles_v12',
+  MATCHES: 'bhos_tt_matches_v12',
+  TOURNAMENTS: 'bhos_tt_tournaments_v13',
   RESERVATIONS: 'bhos_tt_reservations_v8',
   CURRENT_USER_ID: 'bhos_tt_active_user_id_v8',
 };
+
+/**
+ * The 12 verified official participants of the November 7 Foundation Cup
+ * ("Zəfər Günü" Foundation Kuboku).
+ */
+export const OFFICIAL_FOUNDATION_CUP_PLAYERS: ReadonlyArray<{
+  name: string;
+  slug: string;
+  seedId: string;
+  aliases: string[];
+}> = [
+  {
+    name: 'Yusif Xanlarov',
+    slug: 'yusif-xanlarov',
+    seedId: 'p-f-yusif-xanlarov',
+    aliases: ['yusif xanlarov'],
+  },
+  {
+    name: 'Məharət Kərimli',
+    slug: 'maharat-karimli',
+    seedId: 'p-f-meharet-kerimli',
+    aliases: ['meharet kerimli', 'maharat karimli'],
+  },
+  {
+    name: 'Əhəd Zamanlı',
+    slug: 'ahad-zamanli',
+    seedId: 'p-f-ehed-zamanli',
+    aliases: ['ehed zamanli', 'ahad zamanli'],
+  },
+  {
+    name: 'Qulam Rüstəmzadə',
+    slug: 'qulam-rustamzada',
+    seedId: 'p-f-qulam-rustemzade',
+    aliases: ['qulam rustemzade', 'qulam rustamzada'],
+  },
+  {
+    name: 'Sabir Məhərrəmli',
+    slug: 'sabir-maharramli',
+    seedId: 'p-f-sabir-meherremli',
+    aliases: ['sabir meherremli', 'sabir maharramli'],
+  },
+  {
+    name: 'Adil Süleymanov',
+    slug: 'adil-suleymanov',
+    seedId: 'p-f-adil-suleymanov',
+    aliases: ['adil suleymanov'],
+  },
+  {
+    name: 'Kazım Fətəlizadə',
+    slug: 'kazim-fatalizada',
+    seedId: 'p-f-kazim-fetelizade',
+    aliases: ['kazim fetelizade', 'kazim fatalizada'],
+  },
+  {
+    name: 'Faiq Hüseynli',
+    slug: 'faiq-huseynli',
+    seedId: 'p-f-faiq-huseynli',
+    aliases: ['faiq huseynli'],
+  },
+  {
+    name: 'Məhəmməd Əsədov',
+    slug: 'muhammad-asadov',
+    seedId: 'p-f-mehemmed-esedov',
+    aliases: ['mehemmed esedov', 'muhammad asadov'],
+  },
+  {
+    name: 'Kamran Əliyev',
+    slug: 'kamran-aliyev',
+    seedId: 'p-f-kamran-aliev',
+    aliases: ['kamran aliyev', 'kamran aliev', 'kamran eliyev'],
+  },
+  {
+    name: 'Məhərrəm Mirzəxanlı',
+    slug: 'maharram-mirzaxanli',
+    seedId: 'p-f-meherrem-mirzexanli',
+    aliases: ['meherrem mirzexanli', 'maharram mirzaxanli'],
+  },
+  {
+    name: 'Rafiq Həsənli',
+    slug: 'rafiq-hasanli',
+    seedId: 'p-f-rafiq-hesenli',
+    aliases: ['rafiq hesenli', 'rafiq hasanli'],
+  },
+];
+
+export function isFoundationCupTournament(
+  t?: Partial<Tournament> | string | null
+): boolean {
+  if (!t) return false;
+  if (typeof t === 'string') {
+    const val = t.trim().toLowerCase();
+    return (
+      val === 'foundation-kuboku-2026' ||
+      val === 'tourn-foundation-2026' ||
+      val.includes('foundation')
+    );
+  }
+  const id = (t.id || '').toLowerCase();
+  const slug = (t.slug || '').toLowerCase();
+  const title = (t.title || '').toLowerCase();
+  return (
+    id === 'tourn-foundation-2026' ||
+    slug === 'foundation-kuboku-2026' ||
+    title.includes('foundation')
+  );
+}
 
 const OBSOLETE_TOURNAMENT_IDENTIFIERS = new Set([
   'tourn-1',
@@ -224,6 +330,9 @@ export class BHOSDataStore {
   private constructor() {
     if (typeof window !== 'undefined') {
       const oldKeys = [
+        'bhos_tt_profiles_v11',
+        'bhos_tt_matches_v11',
+        'bhos_tt_tournaments_v12',
         'bhos_tt_profiles_v10',
         'bhos_tt_matches_v10',
         'bhos_tt_tournaments_v11',
@@ -727,13 +836,17 @@ export class BHOSDataStore {
 
         // Merge any missing Foundation 2026 seed profiles (or their post-tournament stats if cloud hasn't run 035 yet)
         const byEmail = new Map(cloudProfiles.map((p) => [(p.email || '').toLowerCase(), p]));
-        const byName = new Map(cloudProfiles.map((p) => [(p.full_name || '').toLowerCase(), p]));
+        const byName = new Map(cloudProfiles.map((p) => [normalizeForSearch(p.full_name), p]));
 
         for (const seed of INITIAL_PROFILES) {
           if (seed.admission_year !== 2026) continue;
+          const seedNorm = normalizeForSearch(seed.full_name);
           const existing =
             byEmail.get((seed.email || '').toLowerCase()) ||
-            byName.get((seed.full_name || '').toLowerCase());
+            byName.get(seedNorm) ||
+            (seedNorm.includes('kamran')
+              ? byName.get('kamran aliev') || byName.get('kamran aliyev') || byName.get('kamran eliyev')
+              : undefined);
           if (!existing) {
             cloudProfiles.push({ ...seed });
           } else if ((existing.matches_played || 0) === 0 && seed.matches_played > 0) {
@@ -927,7 +1040,8 @@ export class BHOSDataStore {
             }
             this.saveBracketDataToCache(t.slug, t.bracket_data);
             this.saveBracketDataToCache(t.id, t.bracket_data);
-            t.participants = init.participants;
+            const officialProfiles = this.getOfficialFoundationParticipants();
+            t.participants = officialProfiles.map((p) => p.id);
             mergedTournaments.push(t);
             continue;
           }
@@ -989,6 +1103,7 @@ export class BHOSDataStore {
       } else if (cloudRegistrations.length > 0) {
         let updated = false;
         this.tournaments.forEach((t) => {
+          if (isFoundationCupTournament(t)) return;
           const regs = [
             ...(regMap.get(t.id) || []),
             ...(t.slug ? regMap.get(t.slug) || [] : []),
@@ -1164,9 +1279,24 @@ export class BHOSDataStore {
           this.saveBracketDataToCache(newRecord.id || existing.id, newRecord.bracket_data);
         }
 
+        const isFoundation =
+          isFoundationCupTournament(existing) || isFoundationCupTournament(newRecord);
+        const officialIds = isFoundation
+          ? this.getOfficialFoundationParticipants().map((p) => p.id)
+          : undefined;
+
         this.tournaments[idx] = {
           ...existing,
           ...newRecord,
+          ...(isFoundation
+            ? {
+                status: 'completed',
+                max_participants: 12,
+                group_size: 6,
+                advance_per_group: 4,
+                participants: officialIds,
+              }
+            : {}),
           bracket_data,
         };
       } else {
@@ -1335,16 +1465,108 @@ export class BHOSDataStore {
     );
   }
 
-  public async fetchParticipantProfiles(participantIds: string[]): Promise<PlayerProfile[]> {
-    if (!participantIds || participantIds.length === 0) return [];
+  /**
+   * Resolves the exact 12 official Foundation Cup participants, preferring real cloud UUID
+   * profiles over local `p-f-*` seed profiles and strictly excluding any non-attending
+   * or non-participant accounts (such as Adəm Rəhimli, Ali Iskandarli, or mock users).
+   */
+  public getOfficialFoundationParticipants(
+    extraCandidates: PlayerProfile[] = []
+  ): PlayerProfile[] {
+    const pool: PlayerProfile[] = [
+      ...extraCandidates,
+      ...this.profiles,
+      ...(this.leaderboardCache?.data || []),
+      ...INITIAL_PROFILES,
+    ];
+
+    return OFFICIAL_FOUNDATION_CUP_PLAYERS.map((official) => {
+      const matchesOfficial = (p: PlayerProfile) => {
+        if (!p) return false;
+        if (p.id === official.seedId) return true;
+        if (p.slug && p.slug.toLowerCase() === official.slug) return true;
+        const normName = normalizeForSearch(p.full_name || '');
+        if (!normName) return false;
+        return official.aliases.some((alias) => normName === alias);
+      };
+
+      const candidates = pool.filter(matchesOfficial);
+      // Prefer a real UUID profile from Supabase over a `p-f-*` seed ID
+      const uuidMatch = candidates.find((c) => isUuid(c.id));
+      const seedMatch =
+        INITIAL_PROFILES.find((ip) => ip.id === official.seedId) || candidates[0];
+      const chosen = uuidMatch || seedMatch;
+
+      if (chosen) {
+        return {
+          ...seedMatch,
+          ...chosen,
+          full_name: chosen.full_name || official.name,
+          current_elo:
+            (chosen.matches_played || 0) > 0
+              ? chosen.current_elo
+              : seedMatch?.current_elo ?? chosen.current_elo,
+          matches_played:
+            (chosen.matches_played || 0) > 0
+              ? chosen.matches_played
+              : seedMatch?.matches_played ?? 0,
+          wins:
+            (chosen.matches_played || 0) > 0
+              ? chosen.wins
+              : seedMatch?.wins ?? 0,
+          losses:
+            (chosen.matches_played || 0) > 0
+              ? chosen.losses
+              : seedMatch?.losses ?? 0,
+        } as PlayerProfile;
+      }
+
+      return {
+        id: official.seedId,
+        full_name: official.name,
+        slug: official.slug,
+        email: `${official.slug.replace(/-/g, '.')}.std@bhos.edu.az`,
+        major_faculty: 'Foundation',
+        department: 'Foundation',
+        admission_year: 2026,
+        role: 'player',
+        playing_style: 'Shakehand All-round',
+        blade_equipment: 'Standard Club Blade',
+        forehand_rubber: 'Standard Inverted',
+        backhand_rubber: 'Standard Inverted',
+        current_elo: 250,
+        matches_played: 0,
+        wins: 0,
+        losses: 0,
+        is_verified: true,
+        is_active: true,
+        created_at: '2026-11-01T10:00:00Z',
+      } as PlayerProfile;
+    });
+  }
+
+  public async fetchParticipantProfiles(
+    participantIds: string[],
+    tournament?: Partial<Tournament> | string | null
+  ): Promise<PlayerProfile[]> {
+    const isFoundation =
+      isFoundationCupTournament(tournament) ||
+      (participantIds &&
+        participantIds.some((id) => typeof id === 'string' && id.startsWith('p-f-')));
+
+    if ((!participantIds || participantIds.length === 0) && !isFoundation) {
+      return [];
+    }
+
     const missingIds: string[] = [];
     const resolved: PlayerProfile[] = [];
 
-    for (const id of participantIds) {
+    for (const id of participantIds || []) {
+      if (!id) continue;
       const p = this.getProfile(id);
       if (p) {
         resolved.push(p);
-      } else {
+      } else if (isUuid(id)) {
         missingIds.push(id);
       }
     }
@@ -1369,32 +1591,39 @@ export class BHOSDataStore {
       }
     }
 
-    const profileMap = new Map<string, PlayerProfile>();
-    resolved.forEach((p) => profileMap.set(p.id, p));
+    if (isFoundation) {
+      return this.getOfficialFoundationParticipants(resolved);
+    }
 
-    return participantIds.map((id, idx) => {
-      const found = profileMap.get(id);
-      if (found) return found;
-      return {
-        id,
-        full_name: `Tələbə #${idx + 1}`,
-        email: '',
-        major_faculty: 'Foundation',
-        department: 'Foundation',
-        admission_year: 2026,
-        role: 'player',
-        playing_style: 'Allround',
-        blade_equipment: 'Standard',
-        forehand_rubber: 'Standard',
-        backhand_rubber: 'Standard',
-        current_elo: 1000,
-        matches_played: 0,
-        wins: 0,
-        losses: 0,
-        is_active: true,
-        created_at: new Date().toISOString(),
-      } as PlayerProfile;
+    const deduplicated: PlayerProfile[] = [];
+    const seenKeys = new Set<string>();
+
+    // Sort so UUID profiles take precedence over mock IDs if both were passed
+    const orderedResolved = [...resolved].sort((a, b) => {
+      const aUuid = isUuid(a.id) ? 0 : 1;
+      const bUuid = isUuid(b.id) ? 0 : 1;
+      return aUuid - bUuid;
     });
+
+    for (const p of orderedResolved) {
+      const email = (p.email || '').trim().toLowerCase();
+      const normName = normalizeForSearch(p.full_name || '');
+      if (
+        email === 'ali.iskandarli.std@bhos.edu.az' ||
+        email === 'ali.iskandarli@bhos.edu.az' ||
+        normName === 'ali iskandarli' ||
+        normName === 'eli isgenderli' ||
+        normName.includes('adem rehimli')
+      ) {
+        continue;
+      }
+      const key = normName || email || p.id;
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+      deduplicated.push(p);
+    }
+
+    return deduplicated;
   }
 
   public addProfile(profile: PlayerProfile): void {

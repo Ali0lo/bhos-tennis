@@ -85,7 +85,7 @@ export default function TournamentParticipantsRoster({
     return () => unsub();
   }, [store]);
 
-  const maxCapacity = tournament.max_participants || 40;
+  const maxCapacity = tournament.max_participants || 12;
   const count = participants.length;
   const percentFilled = Math.min(100, Math.round((count / maxCapacity) * 100));
 
@@ -203,7 +203,7 @@ export default function TournamentParticipantsRoster({
               Qeydiyyatdan Keçən Tələbələr
             </h3>
             <span className="px-2.5 py-0.5 rounded-full bg-blue-700/20 border border-blue-600/30 text-blue-300 font-mono text-xs font-bold">
-              {count} / {maxCapacity} Oyunçu
+              {count} İştirakçı
             </span>
           </div>
           <p className="text-xs text-slate-400">

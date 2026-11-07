@@ -53,11 +53,7 @@ export default function TournamentsPage() {
   const fetchParticipants = useCallback(async (tourns: Tournament[]) => {
     const map: Record<string, PlayerProfile[]> = {};
     for (const t of tourns) {
-      if (t.participants && t.participants.length > 0) {
-        map[t.id] = await store.fetchParticipantProfiles(t.participants);
-      } else {
-        map[t.id] = [];
-      }
+      map[t.id] = await store.fetchParticipantProfiles(t.participants || [], t);
     }
     setParticipantsByTournament(map);
   }, [store]);
@@ -271,8 +267,9 @@ export default function TournamentsPage() {
           </div>
         ) : (
           tournaments.map((t, index) => {
-          const participantCount = t.participants?.length || 0;
-          const maxCapacity = t.max_participants || 16;
+          const resolvedParts = participantsByTournament[t.id] || [];
+          const participantCount = resolvedParts.length > 0 ? resolvedParts.length : (t.participants?.length || 0);
+          const maxCapacity = t.max_participants || 12;
           const isFull = participantCount >= maxCapacity;
           const statusConfig = formatStatus(t.status);
           const isLocked = isTournamentRosterLocked(t.status);
@@ -281,7 +278,6 @@ export default function TournamentsPage() {
             : false;
           const eligibility = checkEligibility(t, currentUser);
           const isLoading = actionLoadingId === t.id;
-          const resolvedParts = participantsByTournament[t.id] || [];
 
           return (
             <SmoothReveal key={t.id} delay={0.05 + index * 0.03} className="w-full">
@@ -351,7 +347,7 @@ export default function TournamentsPage() {
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800">
                       <Users className="w-3.5 h-3.5 text-blue-400" />
                       <span>
-                        {participantCount} / {maxCapacity} Oyunçu
+                        {participantCount} İştirakçı
                       </span>
                     </span>
                   </div>
@@ -472,7 +468,7 @@ export default function TournamentsPage() {
                     <div className="flex items-center gap-2">
                       <Users className="w-3.5 h-3.5 text-blue-400" />
                       <span className="text-xs font-display font-bold text-white">
-                        Qeydiyyatdan Keçən Tələbələr ({participantCount} / {maxCapacity})
+                        Qeydiyyatdan Keçən Tələbələr ({participantCount} İştirakçı)
                       </span>
                     </div>
 

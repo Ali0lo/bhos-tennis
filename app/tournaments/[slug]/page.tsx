@@ -137,16 +137,16 @@ export default function TournamentDetailPage() {
             store.saveBracketDataToCache(data.id, data.bracket_data);
           }
 
-          const combinedParticipantIds = Array.from(
-            new Set([
-              ...(Array.isArray(data.participants) ? data.participants : []),
-              ...(local?.participants || []),
-              ...(init?.participants || []),
-              ...regIds,
-            ])
-          ).filter(Boolean) as string[];
+          const candidateParticipantIds = isFoundation
+            ? (Array.isArray(data.participants) ? data.participants : [])
+            : Array.from(
+                new Set([
+                  ...(Array.isArray(data.participants) ? data.participants : []),
+                  ...regIds,
+                ])
+              ).filter(Boolean) as string[];
 
-          const rawParts = await store.fetchParticipantProfiles(combinedParticipantIds);
+          const rawParts = await store.fetchParticipantProfiles(candidateParticipantIds, data as Tournament);
           let actualPlayers = rawParts.filter((p) => {
             const email = (p.email || '').trim().toLowerCase();
             const nameLower = (p.full_name || '').toLowerCase();
@@ -196,26 +196,7 @@ export default function TournamentDetailPage() {
       }
 
       setTournament({ ...local });
-      let actualPlayers: PlayerProfile[] = [];
-      const combinedIds = Array.from(
-        new Set([
-          ...(local.participants || []),
-          ...(init?.participants || []),
-        ])
-      );
-      if (combinedIds.length > 0) {
-        const rawParts = await store.fetchParticipantProfiles(combinedIds);
-        actualPlayers = rawParts.filter((p) => {
-          const email = (p.email || '').trim().toLowerCase();
-          const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
-          return (
-            email !== 'ali.iskandarli.std@bhos.edu.az' &&
-            email !== 'ali.iskandarli@bhos.edu.az' &&
-            name !== 'aliiskandarli' &&
-            name !== 'eliisgenderli'
-          );
-        });
-      }
+      let actualPlayers = await store.fetchParticipantProfiles(local.participants || [], local);
       if (actualPlayers.length === 0 && local.bracket_data?.groups) {
         const groupPlayers = local.bracket_data.groups.flatMap((g) => g.players || []);
         const seen = new Set<string>();
@@ -255,26 +236,7 @@ export default function TournamentDetailPage() {
         }
 
         setTournament({ ...local });
-        let actualPlayers: PlayerProfile[] = [];
-        const combinedIds = Array.from(
-          new Set([
-            ...(local.participants || []),
-            ...(init?.participants || []),
-          ])
-        );
-        if (combinedIds.length > 0) {
-          const rawParts = await store.fetchParticipantProfiles(combinedIds);
-          actualPlayers = rawParts.filter((p) => {
-            const email = (p.email || '').trim().toLowerCase();
-            const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
-            return (
-              email !== 'ali.iskandarli.std@bhos.edu.az' &&
-              email !== 'ali.iskandarli@bhos.edu.az' &&
-              name !== 'aliiskandarli' &&
-              name !== 'eliisgenderli'
-            );
-          });
-        }
+        let actualPlayers = await store.fetchParticipantProfiles(local.participants || [], local);
         if (actualPlayers.length === 0 && local.bracket_data?.groups) {
           const groupPlayers = local.bracket_data.groups.flatMap((g) => g.players || []);
           const seen = new Set<string>();
@@ -517,7 +479,7 @@ export default function TournamentDetailPage() {
               )}
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-[#3B82F6]" />
-                <span>İştirakçılar: {participants.length} / {tournament.max_participants || 16} Oyunçu</span>
+                <span>{participants.length} İştirakçı ({participants.length} / {tournament.max_participants || 12})</span>
               </span>
             </div>
 
@@ -645,7 +607,7 @@ export default function TournamentDetailPage() {
                       👑 Turnir Təşkilatçısı (İdarəçi)
                     </span>
                     <span className="text-[11px] text-slate-400">
-                      Oyunçu deyilsiniz — yalnız 14 iştirakçı turnirdə yarışır.
+                      Oyunçu deyilsiniz — yalnız 12 rəsmi iştirakçı turnirdə yarışır.
                     </span>
                   </div>
                 ) : isRegistered ? (
