@@ -4,8 +4,10 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { BHOSDataStore, isApprovedMatch, getPlayerHref } from '../../lib/data/store';
 import { MatchRecord, PlayerProfile, isAutoApprovedMatch } from '../../lib/data/types';
+import { formatMatchStageAz, isPlayoffStage } from '../../lib/data/matches';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
+import MatchDetailModal from '../../components/MatchDetailModal';
 import PendingApprovals from '../../components/PendingApprovals';
 import { 
   Activity, 
@@ -26,20 +28,41 @@ export default function MatchesPage() {
   const [matches, setMatches] = useState<MatchRecord[]>([]);
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [showModal, setShowModal] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<MatchRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
-  const [matchScope, setMatchScope] = useState<'MY_GAMES' | 'ALL_GAMES'>('MY_GAMES');
+  const [matchScope, setMatchScope] = useState<'MY_GAMES' | 'ALL_GAMES'>('ALL_GAMES');
   const [filterType, setFilterType] = useState<'ALL' | 'TOURNAMENT' | 'RANKED'>('ALL');
 
   const updateData = useCallback(() => {
     const resolved = store.getResolvedMatchIds();
-    setMatches(store.getMatches().filter((m) => isApprovedMatch(m, resolved)));
+    const approved = store
+      .getMatches()
+      .filter((m) => isApprovedMatch(m, resolved))
+      .map((m) => store.enrichMatchRecord(m));
+    setMatches(approved);
     setCurrentUser(store.getCurrentUser());
   }, [store]);
 
   useEffect(() => {
     updateData();
+    void store.fetchMatchesFromCloud();
     return store.subscribe(updateData);
-  }, [updateData]);
+  }, [store, updateData]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || matches.length === 0) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const idParam = params.get('id');
+      if (idParam) {
+        const found = matches.find((m) => m.id === idParam);
+        if (found) {
+          setMatchScope('ALL_GAMES');
+          setSelectedMatch(found);
+        }
+      }
+    } catch {}
+  }, [matches]);
 
   const canLog = !!currentUser && currentUser.is_verified !== false;
   const effectiveScope = currentUser ? matchScope : 'ALL_GAMES';
@@ -304,86 +327,158 @@ export default function MatchesPage() {
           </div>
         ) : (
           filteredMatches.map((m) => {
-            const p1Won = m.player1_score > m.player2_score;
-            const isUserP1 = currentUser && (m.player1_id === currentUser.id || m.player1_name?.trim().toLowerCase() === currentUser.full_name?.trim().toLowerCase());
-            const isUserP2 = currentUser && (m.player2_id === currentUser.id || m.player2_name?.trim().toLowerCase() === currentUser.full_name?.trim().toLowerCase());
+            const p1Id = m.player1?.id || m.player1_id;
+            const p2Id = m.player2?.id || m.player2_id;
+            const p1Name = m.player1?.full_name || m.player1_name || 'Oyunçu 1';
+            const p2Name = m.player2?.full_name || m.player2_name || 'Oyunçu 2';
+
+            const p1Won = m.winner_id
+              ? m.winner_id === p1Id || m.player1_score > m.player2_score
+              : m.player1_score > m.player2_score;
+            const p2Won = !p1Won;
+
+            const isUserP1 =
+              currentUser &&
+              (p1Id === currentUser.id ||
+                p1Name.trim().toLowerCase() === currentUser.full_name?.trim().toLowerCase());
+            const isUserP2 =
+              currentUser &&
+              (p2Id === currentUser.id ||
+                p2Name.trim().toLowerCase() === currentUser.full_name?.trim().toLowerCase());
             const isUserMatch = isUserP1 || isUserP2;
-            const userWon = isUserMatch && ((isUserP1 && p1Won) || (isUserP2 && !p1Won));
+            const userWon = isUserMatch && ((isUserP1 && p1Won) || (isUserP2 && p2Won));
+
+            const p1Delta =
+              typeof m.player1_elo_delta === 'number'
+                ? m.player1_elo_delta
+                : m.player1_elo_after !== m.player1_elo_before
+                ? m.player1_elo_after - m.player1_elo_before
+                : p1Won
+                ? Math.abs(m.elo_delta)
+                : -Math.abs(m.elo_delta);
+
+            const p2Delta =
+              typeof m.player2_elo_delta === 'number'
+                ? m.player2_elo_delta
+                : m.player2_elo_after !== m.player2_elo_before
+                ? m.player2_elo_after - m.player2_elo_before
+                : p2Won
+                ? Math.abs(m.elo_delta)
+                : -Math.abs(m.elo_delta);
+
+            const stageLabel = formatMatchStageAz(m.stage, m.round_number, m.tournament_id);
+            const isPlayoff = isPlayoffStage(m.stage, m.round_number);
 
             return (
               <div
                 key={m.id}
-                className={`p-5 rounded-2xl border transition shadow-sm ${
+                role="button"
+                tabIndex={0}
+                onClick={() => setSelectedMatch(m)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setSelectedMatch(m);
+                  }
+                }}
+                className={`p-5 rounded-2xl border hover:bg-slate-800/60 cursor-pointer transition shadow-sm ${
                   isUserMatch
                     ? userWon
-                      ? 'border-emerald-600/35 bg-slate-900'
-                      : 'border-rose-600/35 bg-slate-900'
-                    : 'border-slate-800 bg-slate-900 hover:border-slate-700'
+                      ? 'border-emerald-600/35 bg-slate-900 hover:border-emerald-500/60'
+                      : 'border-rose-600/35 bg-slate-900 hover:border-rose-500/60'
+                    : 'border-slate-800 bg-slate-900 hover:border-blue-600/50'
                 }`}
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4 flex-1">
                     <div className="flex flex-col items-center justify-center w-16 h-16 rounded-2xl bg-slate-950 border border-slate-800 font-mono font-black text-xl text-white shrink-0">
-                      <span>{m.player1_score}</span>
+                      <span className={p1Won ? 'text-emerald-400' : 'text-slate-300'}>
+                        {m.player1_score}
+                      </span>
                       <span className="text-[10px] text-slate-500 -mt-1 font-normal">:</span>
-                      <span>{m.player2_score}</span>
+                      <span className={p2Won ? 'text-emerald-400' : 'text-slate-300'}>
+                        {m.player2_score}
+                      </span>
                     </div>
 
                     <div className="space-y-2 flex-1">
-                      <div className="flex items-center justify-between max-w-md">
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between max-w-md gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <Link
-                            href={getPlayerHref(m.player1_id)}
-                            className={`text-sm font-bold hover:text-blue-400 transition ${
-                              isUserP1 ? 'text-blue-400 underline underline-offset-2' : p1Won ? 'text-white' : 'text-slate-400'
+                            href={getPlayerHref(p1Id, p1Name)}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`text-sm hover:text-blue-400 transition truncate ${
+                              isUserP1
+                                ? 'text-blue-400 font-bold underline underline-offset-2'
+                                : p1Won
+                                ? 'text-emerald-400 font-bold'
+                                : 'text-slate-300 font-medium'
                             }`}
                           >
-                            {m.player1_name}
+                            {p1Name}
                           </Link>
-                          {p1Won && <Award className="w-3.5 h-3.5 text-emerald-500" />}
+                          {p1Won && <Award className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
                         </div>
-                        <div className="font-mono text-xs flex items-center gap-1.5">
+                        <div className="font-mono text-xs flex items-center gap-1.5 shrink-0">
                           <span className="text-slate-500">{m.player1_elo_before}</span>
                           <span className="text-slate-600">→</span>
                           <span className="font-bold text-white">{m.player1_elo_after}</span>
                           <span
                             className={`text-[11px] font-bold ${
-                              p1Won ? 'text-emerald-500' : 'text-rose-500'
+                              p1Delta >= 0 ? 'text-emerald-500' : 'text-rose-500'
                             }`}
                           >
-                            ({p1Won ? `+${m.elo_delta}` : `-${m.elo_delta}`})
+                            ({p1Delta >= 0 ? `+${p1Delta}` : p1Delta})
                           </span>
                         </div>
                       </div>
 
-                      <div className="flex items-center justify-between max-w-md">
-                        <div className="flex items-center gap-2">
+                      <div className="flex items-center justify-between max-w-md gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
                           <Link
-                            href={getPlayerHref(m.player2_id)}
-                            className={`text-sm font-bold hover:text-blue-400 transition ${
-                              isUserP2 ? 'text-blue-400 underline underline-offset-2' : !p1Won ? 'text-white' : 'text-slate-400'
+                            href={getPlayerHref(p2Id, p2Name)}
+                            onClick={(e) => e.stopPropagation()}
+                            className={`text-sm hover:text-blue-400 transition truncate ${
+                              isUserP2
+                                ? 'text-blue-400 font-bold underline underline-offset-2'
+                                : p2Won
+                                ? 'text-emerald-400 font-bold'
+                                : 'text-slate-300 font-medium'
                             }`}
                           >
-                            {m.player2_name}
+                            {p2Name}
                           </Link>
-                          {!p1Won && <Award className="w-3.5 h-3.5 text-emerald-500" />}
+                          {p2Won && <Award className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
                         </div>
-                        <div className="font-mono text-xs flex items-center gap-1.5">
+                        <div className="font-mono text-xs flex items-center gap-1.5 shrink-0">
                           <span className="text-slate-500">{m.player2_elo_before}</span>
                           <span className="text-slate-600">→</span>
                           <span className="font-bold text-white">{m.player2_elo_after}</span>
                           <span
                             className={`text-[11px] font-bold ${
-                              !p1Won ? 'text-emerald-500' : 'text-rose-500'
+                              p2Delta >= 0 ? 'text-emerald-500' : 'text-rose-500'
                             }`}
                           >
-                            ({!p1Won ? `+${m.elo_delta}` : `-${m.elo_delta}`})
+                            ({p2Delta >= 0 ? `+${p2Delta}` : p2Delta})
                           </span>
                         </div>
                       </div>
 
-                      <div className="text-xs font-mono text-slate-400 pt-0.5">
-                        Setlər: <span className="text-slate-300">{m.set_scores}</span>
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-400 pt-0.5">
+                        <span>
+                          Setlər: <span className="text-slate-300">{m.set_scores}</span>
+                        </span>
+                        {stageLabel && (
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[9px] font-sans font-extrabold uppercase tracking-wider border ${
+                              isPlayoff
+                                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                                : 'bg-blue-700/15 text-blue-300 border-blue-600/30'
+                            }`}
+                          >
+                            {stageLabel}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -423,7 +518,7 @@ export default function MatchesPage() {
 
                     <div className="text-xs text-slate-400 flex items-center gap-1 font-mono">
                       <Calendar className="w-3.5 h-3.5 text-slate-500" />
-                      <span>{new Date(m.match_date).toLocaleDateString()}</span>
+                      <span>{new Date(m.match_date).toLocaleDateString('az-AZ')}</span>
                     </div>
 
                     <div className="text-[11px] text-slate-500">
@@ -445,6 +540,9 @@ export default function MatchesPage() {
 
       {showModal && (
         <MatchLoggerModal onClose={() => setShowModal(false)} />
+      )}
+      {selectedMatch && (
+        <MatchDetailModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />
       )}
     </div>
   );

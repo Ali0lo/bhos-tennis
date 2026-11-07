@@ -63,6 +63,17 @@ export interface PlayerProfile {
   updated_at?: string;
 }
 
+export interface MatchCompetitorProfile {
+  id: string;
+  full_name: string;
+  slug?: string | null;
+  elo_rating?: number | null;
+  current_elo?: number | null;
+  department?: string | null;
+  major_faculty?: string | null;
+  avatar_url?: string | null;
+}
+
 export interface MatchRecord {
   id: string;
   tournament_id?: string | null;
@@ -74,8 +85,10 @@ export interface MatchRecord {
   winner_id?: string | null;
   player1_id: string;
   player1_name?: string;
+  player1?: MatchCompetitorProfile | null;
   player2_id: string;
   player2_name?: string;
+  player2?: MatchCompetitorProfile | null;
   logged_by: string;
   logged_by_name?: string;
   player1_score: number;

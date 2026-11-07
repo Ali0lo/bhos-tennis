@@ -21,6 +21,7 @@ import {
 import SmoothReveal from '../../../components/SmoothReveal';
 import NumberTicker from '../../../components/NumberTicker';
 import EditProfileModal from '../../../components/EditProfileModal';
+import MatchDetailModal from '../../../components/MatchDetailModal';
 import WhatIfSimulator from '../../../components/WhatIfSimulator';
 import HeadToHeadDuel from '../../../components/HeadToHeadDuel';
 import PlayerProfileSkeleton from '../../../components/PlayerProfileSkeleton';
@@ -115,6 +116,7 @@ export default function PlayerProfilePage() {
   const [profile, setProfile] = useState<PlayerProfile | null>(
     () => initialCached?.profile ?? null
   );
+  const [selectedMatch, setSelectedMatch] = useState<MatchRecord | null>(null);
   // Canonical player UUID used for all match comparisons and realtime filters.
   const playerId =
     profile?.id || store.resolvePlayerIdentifier(routeIdentifier) || routeIdentifier;
@@ -1223,28 +1225,40 @@ export default function PlayerProfilePage() {
                 Bu oyunçu üçün hələ rəsmi oyun qeydə alınmayıb.
               </div>
             ) : (
-              recentMatchesFeed.map((m) => {
+              recentMatchesFeed.map((rawM) => {
+                const m = store.enrichMatchRecord(rawM);
+                const p1Name = m.player1?.full_name || m.player1_name || 'Rəqib';
+                const p2Name = m.player2?.full_name || m.player2_name || 'Rəqib';
                 const isPlayer1 =
                   m.player1_id === playerId ||
                   m.player1_id === profile?.id ||
                   (profile?.full_name
-                    ? m.player1_name?.trim().toLowerCase() === profile.full_name.trim().toLowerCase()
+                    ? p1Name.trim().toLowerCase() === profile.full_name.trim().toLowerCase()
                     : false);
-                const opponentName = isPlayer1
-                  ? (m.player2_name || 'Rəqib')
-                  : (m.player1_name || 'Rəqib');
+                const opponentName = isPlayer1 ? p2Name : p1Name;
                 const opponentId = isPlayer1 ? m.player2_id : m.player1_id;
                 const myScore = isPlayer1 ? m.player1_score : m.player2_score;
                 const opScore = isPlayer1 ? m.player2_score : m.player1_score;
                 const won = myScore > opScore;
                 const isPending = m.status === 'pending';
-                const delta = isPlayer1 ? m.elo_delta : -m.elo_delta;
-                const absDelta = Math.abs(delta);
+                const specificDelta = isPlayer1 ? m.player1_elo_delta : m.player2_elo_delta;
+                const absDelta = Math.abs(
+                  typeof specificDelta === 'number' ? specificDelta : m.elo_delta
+                );
 
                 return (
                   <div
                     key={m.id}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl bg-[#131C2B] border border-white/5 hover:border-white/15 transition"
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => setSelectedMatch(m)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        setSelectedMatch(m);
+                      }
+                    }}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-xl bg-[#131C2B] border border-white/5 hover:bg-slate-800/60 hover:border-blue-500/40 cursor-pointer transition"
                   >
                     <div className="flex items-center gap-3.5">
                       <span
@@ -1263,7 +1277,8 @@ export default function PlayerProfilePage() {
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs text-slate-400">qarşı</span>
                           <Link
-                            href={getPlayerHref(opponentId)}
+                            href={getPlayerHref(opponentId, opponentName)}
+                            onClick={(e) => e.stopPropagation()}
                             className="text-sm font-bold text-white hover:text-[#3B82F6] transition"
                           >
                             {opponentName}
@@ -1348,6 +1363,9 @@ export default function PlayerProfilePage() {
             setProfile(updated);
           }}
         />
+      )}
+      {selectedMatch && (
+        <MatchDetailModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />
       )}
     </div>
   );

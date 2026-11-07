@@ -8,6 +8,9 @@ import { PlayerProfile, MatchRecord, Tournament, canAccessAdminPanel } from '../
 import { useTranslation, useTranslations } from '../lib/i18n';
 import HallRulesSection from '../components/HallRulesSection';
 import MatchLoggerModal from '../components/MatchLoggerModal';
+import MatchDetailModal from '../components/MatchDetailModal';
+import LiveMatches from '../components/LiveMatches';
+import RecentResults from '../components/RecentResults';
 import NumberTicker from '../components/NumberTicker';
 import AnimatedCounter from '../components/AnimatedCounter';
 import CourtBackground from '../components/CourtBackground';
@@ -15,14 +18,12 @@ import MagneticButton from '../components/MagneticButton';
 import LeaderboardSkeleton from '../components/LeaderboardSkeleton';
 import HoloCard from '../components/HoloCard';
 import TiltCard from '../components/TiltCard';
-import EloToastBadge from '../components/EloToastBadge';
 import OnboardingBanner from '../components/OnboardingBanner';
 import FoundationTournamentBanner from '../components/FoundationTournamentBanner';
 import SmoothReveal, { SmoothRevealItem } from '../components/SmoothReveal';
 import {
   Trophy,
   Table as TableIcon,
-  Activity,
   ArrowRight,
   Award,
   Zap,
@@ -60,6 +61,7 @@ export default function HomePage() {
   const [tournaments, setTournaments] = useState<Tournament[]>(() => store.getTournaments());
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [showMatchModal, setShowMatchModal] = useState(false);
+  const [selectedMatch, setSelectedMatch] = useState<MatchRecord | null>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -86,6 +88,7 @@ export default function HomePage() {
     };
 
     update();
+    void store.fetchMatchesFromCloud();
     void store.fetchLeaderboardStandings().then((allRows) => {
       if (isMounted) {
         const verified = store.getVerifiedProfiles();
@@ -111,11 +114,6 @@ export default function HomePage() {
 
   const top3 = profiles.slice(0, 3);
   const top5 = profiles.slice(0, 5);
-  const recentMatches = matches.slice(0, 5);
-  const tickerMatches = useMemo(() => {
-    const list = matches.slice(0, 8);
-    return list.length > 0 ? [...list, ...list] : [];
-  }, [matches]);
 
   const getActiveWinStreak = (player?: PlayerProfile): number => {
     if (!player) return 0;
@@ -197,55 +195,9 @@ export default function HomePage() {
         </div>
       </SmoothReveal>
 
-      {tickerMatches.length > 0 && (
+      {matches.length > 0 && (
         <SmoothReveal delay={0.02}>
-          <div className="ticker-viewport relative flex items-center rounded-2xl border border-slate-800 bg-slate-900 overflow-hidden shadow-sm">
-            <div className="shrink-0 z-10 flex items-center gap-2 px-3.5 py-2.5 bg-slate-950 border-r border-slate-800">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-500 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600" />
-              </span>
-              <span className="text-[11px] font-display font-extrabold uppercase tracking-wider text-white whitespace-nowrap">
-                Canlı Nəticələr
-              </span>
-            </div>
-
-            <div className="relative flex-1 overflow-hidden py-2">
-              <div className="animate-broadcast-ticker items-center gap-4 px-3">
-                {tickerMatches.map((m, idx) => {
-                  const p1Won = m.player1_score > m.player2_score;
-                  const winnerName = p1Won ? m.player1_name : m.player2_name;
-                  const loserName = p1Won ? m.player2_name : m.player1_name;
-                  const winScore = p1Won ? m.player1_score : m.player2_score;
-                  const loseScore = p1Won ? m.player2_score : m.player1_score;
-                  const delta = Math.abs(Math.round(Number(m.elo_delta) || 0));
-
-                  return (
-                    <Link
-                      key={`${m.id}-${idx}`}
-                      href="/matches"
-                      className="inline-flex items-center gap-2.5 px-3 py-1 rounded-xl bg-slate-950/90 border border-slate-800 hover:border-blue-600/50 transition text-xs shrink-0"
-                    >
-                      <span className="font-semibold text-white whitespace-nowrap">
-                        {winnerName}
-                      </span>
-                      <span className="px-1.5 py-0.5 rounded-md bg-blue-700/20 border border-blue-700/40 font-mono font-bold text-[11px] text-blue-400">
-                        {winScore}:{loseScore}
-                      </span>
-                      <span className="text-slate-400 whitespace-nowrap">
-                        {loserName}
-                      </span>
-                      {delta > 0 && (
-                        <span className="font-mono text-[11px] font-bold text-emerald-500">
-                          +{delta} ELO
-                        </span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
+          <LiveMatches matches={matches} onSelectMatch={(m) => setSelectedMatch(m)} />
         </SmoothReveal>
       )}
 
@@ -691,94 +643,8 @@ export default function HomePage() {
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
-              <Activity className="w-5 h-5 text-blue-400" />
-              <span>{rootT('home_recent.title')}</span>
-            </h3>
-            <Link
-              href="/matches"
-              className="group text-xs text-blue-400 hover:underline flex items-center gap-1"
-            >
-              <span>{rootT('home_recent.view_all')}</span>
-              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-            </Link>
-          </div>
-
-          <div className="space-y-3">
-            {recentMatches.length === 0 ? (
-              <div className="p-8 rounded-2xl border border-slate-800 bg-slate-900 text-center space-y-2">
-                <Activity className="w-8 h-8 text-slate-500 mx-auto" />
-                <p className="text-sm font-semibold text-slate-300">
-                  {t('recent_empty_title')}
-                </p>
-                <p className="text-xs text-slate-500">
-                  {t('recent_empty_desc')}
-                </p>
-              </div>
-            ) : (
-              recentMatches.map((m) => {
-                const p1Won = m.player1_score > m.player2_score;
-                return (
-                  <div
-                    key={m.id}
-                    className="p-4 rounded-2xl border border-slate-800 bg-slate-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-blue-600/60 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 shadow-sm will-change-transform"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="flex flex-col items-center justify-center w-14 h-14 rounded-2xl bg-slate-950 border border-slate-800 font-mono font-black text-lg text-white">
-                        <span>{m.player1_score}</span>
-                        <span className="text-[10px] text-slate-500 -mt-1 font-normal">:</span>
-                        <span>{m.player2_score}</span>
-                      </div>
-
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={getPlayerHref(m.player1_id)}
-                            className={`text-sm font-semibold hover:text-blue-400 transition ${
-                              p1Won ? 'text-white font-bold' : 'text-slate-400'
-                            }`}
-                          >
-                            {m.player1_name}
-                          </Link>
-                          {p1Won && <Award className="w-3.5 h-3.5 text-emerald-500" />}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <Link
-                            href={getPlayerHref(m.player2_id)}
-                            className={`text-sm font-semibold hover:text-blue-400 transition ${
-                              !p1Won ? 'text-white font-bold' : 'text-slate-400'
-                            }`}
-                          >
-                            {m.player2_name}
-                          </Link>
-                          {!p1Won && <Award className="w-3.5 h-3.5 text-emerald-500" />}
-                        </div>
-
-                        <div className="text-[11px] font-mono text-slate-500">
-                          {rootT('home_recent.sets_label')}: {m.set_scores}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex sm:flex-col items-center sm:items-end justify-between border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800">
-                      <EloToastBadge delta={m.elo_delta} size="sm" />
-                      <span className="text-[10px] text-slate-500 mt-1">
-                        {new Date(m.match_date).toLocaleDateString()}
-                      </span>
-                      {m.tournament_title && (
-                        <span className="mt-1 text-[9px] px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300 border border-amber-500/20 truncate max-w-[150px]">
-                          {m.tournament_title}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </div>
+        <div className="lg:col-span-2">
+          <RecentResults matches={matches} onSelectMatch={(m) => setSelectedMatch(m)} />
         </div>
 
         <SmoothReveal delay={0.1} scale className="space-y-4">
@@ -918,6 +784,9 @@ export default function HomePage() {
 
       {showMatchModal && (
         <MatchLoggerModal onClose={() => setShowMatchModal(false)} />
+      )}
+      {selectedMatch && (
+        <MatchDetailModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />
       )}
     </div>
   );

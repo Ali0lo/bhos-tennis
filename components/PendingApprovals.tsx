@@ -61,7 +61,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       try {
         let query = supabase
           .from('matches')
-          .select('*')
+          .select('*, player1:profiles!player1_id (id, full_name, slug, elo_rating, current_elo, department, major_faculty), player2:profiles!player2_id (id, full_name, slug, elo_rating, current_elo, department, major_faculty)')
           .eq('status', 'pending');
 
         if (!isAdminOrCoach) {
@@ -76,9 +76,9 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
 
         if (!error && data) {
           const resolved = store.getResolvedMatchIds();
-          const filtered = (data as MatchRecord[]).filter(
-            (m) => !resolved[m.id]
-          );
+          const filtered = (data as any[])
+            .map((m) => store.enrichMatchRecord(m))
+            .filter((m) => !resolved[m.id]);
           setPendingMatches(filtered);
           setLoading(false);
           return;

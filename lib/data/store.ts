@@ -33,10 +33,11 @@ import {
 } from '../security/sanitize';
 import { getSupabaseClient } from '../supabase/client';
 import { buildSlugMap, generateSlug, isUuid, normalizeForSearch, shortIdSuffix } from '../utils/slug';
+import { hydrateMatchCompetitors } from './matches';
 
 const STORAGE_KEYS = {
   PROFILES: 'bhos_tt_profiles_v13',
-  MATCHES: 'bhos_tt_matches_v12',
+  MATCHES: 'bhos_tt_matches_v13',
   TOURNAMENTS: 'bhos_tt_tournaments_v13',
   RESERVATIONS: 'bhos_tt_reservations_v8',
   CURRENT_USER_ID: 'bhos_tt_active_user_id_v8',
@@ -362,6 +363,7 @@ export class BHOSDataStore {
   private constructor() {
     if (typeof window !== 'undefined') {
       const oldKeys = [
+        'bhos_tt_matches_v12',
         'bhos_tt_profiles_v12',
         'bhos_tt_profiles_v11',
         'bhos_tt_matches_v11',
@@ -401,10 +403,11 @@ export class BHOSDataStore {
       const matchMap = new Map<string, MatchRecord>();
 
       storedMatches.forEach((m) => {
-        if (isApprovedMatch(m, resolvedMatches, deletedMatches)) {
+        const enriched = this.enrichMatchRecord(m);
+        if (isApprovedMatch(enriched, resolvedMatches, deletedMatches)) {
           const effectiveStatus =
-            resolvedMatches[m.id] || (m.status === 'approved' ? 'approved' : 'confirmed');
-          matchMap.set(m.id, { ...m, status: effectiveStatus });
+            resolvedMatches[enriched.id] || (enriched.status === 'approved' ? 'approved' : 'confirmed');
+          matchMap.set(enriched.id, { ...enriched, status: effectiveStatus });
         }
       });
 
@@ -1057,6 +1060,11 @@ export class BHOSDataStore {
         this.recalculateRanks();
         setStored(STORAGE_KEYS.PROFILES, this.profiles);
 
+        if (this.matches && this.matches.length > 0) {
+          this.matches = this.matches.map((m) => this.enrichMatchRecord(m));
+          setStored(STORAGE_KEYS.MATCHES, this.matches);
+        }
+
         const verified = this.getVerifiedProfiles();
         const cacheEntry: LeaderboardCacheEntry = {
           data: verified,
@@ -1073,6 +1081,21 @@ export class BHOSDataStore {
     }
   }
 
+  public enrichMatchRecord(raw: any): MatchRecord {
+    return hydrateMatchCompetitors(raw, (idOrName: string) => {
+      if (!idOrName) return undefined;
+      const byId = this.getProfile(idOrName);
+      if (byId) return byId;
+      const norm = normalizeForSearch(idOrName);
+      if (!norm) return undefined;
+      return (
+        this.profiles.find((p) => normalizeForSearch(p.full_name) === norm) ||
+        this.leaderboardCache?.data?.find((p) => normalizeForSearch(p.full_name) === norm) ||
+        INITIAL_PROFILES.find((p) => normalizeForSearch(p.full_name) === norm)
+      );
+    });
+  }
+
   public async fetchMatchesFromCloud(): Promise<void> {
     const supabase = getSupabaseClient();
     if (!supabase) return;
@@ -1080,11 +1103,51 @@ export class BHOSDataStore {
     try {
       void supabase.rpc('auto_resolve_stale_matches', { hours_threshold: 48 }).then(() => {}, () => {});
 
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('matches')
-        .select('*')
+        .select(`
+          id,
+          player1_id,
+          player2_id,
+          player1_name,
+          player2_name,
+          logged_by,
+          logged_by_name,
+          player1_score,
+          player2_score,
+          set_scores,
+          status,
+          stage,
+          created_at,
+          match_date,
+          tournament_id,
+          tournament_title,
+          winner_id,
+          elo_delta,
+          player1_elo_before,
+          player2_elo_before,
+          player1_elo_after,
+          player2_elo_after,
+          player1_elo_delta,
+          player2_elo_delta,
+          auto_approved,
+          approved_by,
+          approved_at,
+          player1:profiles!player1_id (id, full_name, slug, elo_rating, current_elo, department, major_faculty),
+          player2:profiles!player2_id (id, full_name, slug, elo_rating, current_elo, department, major_faculty)
+        `)
         .in('status', ['confirmed', 'approved'])
-        .order('match_date', { ascending: false });
+        .order('created_at', { ascending: false });
+
+      if (error || !data) {
+        const fallback = await supabase
+          .from('matches')
+          .select('*')
+          .in('status', ['confirmed', 'approved'])
+          .order('match_date', { ascending: false });
+        data = fallback.data as any;
+        error = fallback.error;
+      }
 
       if (error) {
         console.warn('[BHOS Store] Could not fetch matches from Supabase:', error.message);
@@ -1096,7 +1159,8 @@ export class BHOSDataStore {
         const resolved = this.getResolvedMatchIds();
         const matchMap = new Map<string, MatchRecord>();
 
-        (data as MatchRecord[]).forEach((m) => {
+        (data as any[]).forEach((rawMatch) => {
+          const m = this.enrichMatchRecord(rawMatch);
           const p1Name = (m.player1_name || '').toLowerCase();
           const p2Name = (m.player2_name || '').toLowerCase();
           if (
@@ -1121,7 +1185,7 @@ export class BHOSDataStore {
         if (matchMap.size < INITIAL_MATCHES.length) {
           INITIAL_MATCHES.forEach((im) => {
             if (!matchMap.has(im.id)) {
-              matchMap.set(im.id, im);
+              matchMap.set(im.id, this.enrichMatchRecord(im));
             }
           });
         }
@@ -2099,6 +2163,7 @@ export class BHOSDataStore {
     const resolved = this.getResolvedMatchIds();
     return this.matches
       .filter((m) => isApprovedMatch(m, resolved, deleted))
+      .map((m) => this.enrichMatchRecord(m))
       .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime());
   }
 
@@ -4016,7 +4081,7 @@ export async function fetchPlayerProfile(
         localProfile
       );
       const cloudMatches: MatchRecord[] = Array.isArray(rpcData.recent_matches)
-        ? rpcData.recent_matches
+        ? rpcData.recent_matches.map((m: any) => store.enrichMatchRecord(m))
         : [];
       const localMatches = store.getPlayerMatches(normalizedProfile.id);
       const matchMap = new Map<string, MatchRecord>();
@@ -4071,7 +4136,7 @@ export async function fetchPlayerProfile(
       ? supabase
           .from('matches')
           .select(
-            'id, created_at, match_date, tournament_id, tournament_title, player1_id, player1_name, player2_id, player2_name, logged_by, logged_by_name, winner_id, player1_score, player2_score, set_scores, player1_elo_before, player2_elo_before, player1_elo_after, player2_elo_after, elo_delta, status, auto_approved'
+            'id, created_at, match_date, tournament_id, tournament_title, player1_id, player1_name, player2_id, player2_name, logged_by, logged_by_name, winner_id, player1_score, player2_score, set_scores, player1_elo_before, player2_elo_before, player1_elo_after, player2_elo_after, player1_elo_delta, player2_elo_delta, elo_delta, status, stage, auto_approved, player1:profiles!player1_id(id, full_name, slug, elo_rating, current_elo, department, major_faculty), player2:profiles!player2_id(id, full_name, slug, elo_rating, current_elo, department, major_faculty)'
           )
           .in('status', ['confirmed', 'approved'])
           .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
@@ -4100,7 +4165,7 @@ export async function fetchPlayerProfile(
     localProfile
   );
 
-  const cloudMatches = (matchesRes.data || []) as MatchRecord[];
+  const cloudMatches = ((matchesRes.data || []) as any[]).map((m) => store.enrichMatchRecord(m));
   const localMatches = store.getPlayerMatches(resolvedProfile.id || playerId);
   const matchMap = new Map<string, MatchRecord>();
   cloudMatches.forEach((m) => {
