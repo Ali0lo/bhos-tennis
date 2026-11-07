@@ -45,6 +45,7 @@ export interface PlayerProfile {
   forehand_rubber: string;
   backhand_rubber: string;
   current_elo: number;
+  peak_elo?: number;
   matches_played: number;
   wins: number;
   losses: number;
@@ -81,6 +82,8 @@ export interface MatchRecord {
   player2_elo_before: number;
   player1_elo_after: number;
   player2_elo_after: number;
+  player1_elo_delta?: number;
+  player2_elo_delta?: number;
   elo_delta: number;
   status?: 'confirmed' | 'approved' | 'pending' | 'rejected' | 'waiting' | 'scheduled' | string;
   stage?: string;
@@ -156,6 +159,7 @@ export interface TournamentSettingsConfig {
   registration_url?: string;
   allowed_admission_year?: number | null;
   best_of_sets?: number;
+  point_weight?: number;
   top_seed_ids?: string[];
   seeding_guarantee?: string;
 }
@@ -177,6 +181,7 @@ export interface Tournament {
   third_place_id?: string | null;
   group_size?: number;
   advance_per_group?: number;
+  point_weight?: number;
   location?: string;
   registration_url?: string;
   allowed_admission_year?: number | null;

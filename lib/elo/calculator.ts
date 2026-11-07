@@ -7,6 +7,7 @@ export interface EloCalculationParams {
   playerScore: number;
   opponentScore: number;
   isWinner: boolean;
+  pointWeight?: number;
 }
 
 export function calculateEloDelta({
@@ -15,8 +16,10 @@ export function calculateEloDelta({
   playerScore,
   opponentScore,
   isWinner,
+  pointWeight = 1.0,
 }: EloCalculationParams): number {
   const K = 32;
+  const safeWeight = Number.isFinite(pointWeight) && pointWeight > 0 ? pointWeight : 1.0;
 
   const expectedProbability = 1 / (1 + Math.pow(10, (opponentElo - playerElo) / 400));
 
@@ -33,6 +36,26 @@ export function calculateEloDelta({
     dominanceMultiplier = 1.06;
   } else {
     dominanceMultiplier = 0.95;
+  }
+
+  // Dampened point scaling for introductory/beginner tournaments (e.g. pointWeight = 0.40)
+  // Targets +6 to +12 ELO per win and softened -3 to -7 ELO per loss.
+  if (safeWeight < 0.99) {
+    const scale = safeWeight / 0.4;
+    if (isWinner) {
+      const rawGain =
+        K * safeWeight * dominanceMultiplier * (0.5 + 0.65 * (1 - expectedProbability));
+      const minGain = Math.max(1, Math.round(6 * scale));
+      const maxGain = Math.max(minGain, Math.round(12 * scale));
+      return Math.max(minGain, Math.min(maxGain, Math.round(rawGain)));
+    } else {
+      const rawLoss =
+        K * (safeWeight * 0.5) * dominanceMultiplier * (0.45 + 0.65 * expectedProbability);
+      const minLoss = Math.max(1, Math.round(3 * scale));
+      const maxLoss = Math.max(minLoss, Math.round(7 * scale));
+      const clampedLoss = Math.max(minLoss, Math.min(maxLoss, Math.round(rawLoss)));
+      return -clampedLoss;
+    }
   }
 
   if (isWinner) {

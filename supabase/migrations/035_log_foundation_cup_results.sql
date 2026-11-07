@@ -1,35 +1,38 @@
 -- ==============================================================================
--- Migration 035: Log Official Results for "Zəfər Günü" Foundation Kuboku (Nov 7)
--- - Excludes Adəm Rəhimli (did not attend; 0 matches logged)
--- - Ensures all 12 participating Foundation 2026 student profiles exist (starting ELO = 500)
--- - Logs all 38 official matches in chronological order (15 Group A + 15 Group B + 8 Playoffs)
---   through the atomic match engine (`approve_match_safely`) so ELO, stats & achievements update
--- - Finalizes tournament status = 'completed' and records official podium:
---     1st: Yusif Xanlarov (Çempion)
---     2nd: Məharət Kərimli (Gümüş)
---     3rd: Əhəd Zamanlı (Bürünc)
+-- Migration 035: Log Official Results for "Zəfər Günü" Foundation Kuboku (7 Noyabr)
+--
+-- RULES IMPLEMENTED:
+-- 1. Adəm Rəhimli did not attend; ALL 6 of his scheduled matches are excluded.
+-- 2. All other 38 matches across Group A (15 matches), Group B (15 matches),
+--    and Playoffs (8 matches: 4 QF, 2 SF, 1 3rd Place, 1 Grand Final) are inserted
+--    in chronological order using dampened tournament point scaling (`point_weight = 0.40`).
+-- 3. All 12 participating student profiles exist in `public.profiles` with their
+--    intact starting baseline ratings (100 / 250 / 400).
+-- 4. Each match updates sets, match records, ELO ratings (+6..+12 per win, -3..-7 per loss),
+--    `peak_elo`, `player1_elo_delta`, `player2_elo_delta`, and achievements.
+-- 5. Finalizes the tournament record (`status = 'completed'`) and records the official podium:
+--    - 1st: Yusif Xanlarov (Çempion) — 462 ELO
+--    - 2nd: Məharət Kərimli (Gümüş) — 441 ELO
+--    - 3rd: Əhəd Zamanlı (Bürünc) — 458 ELO
 -- ==============================================================================
 
--- 0. Safe Schema Preparations (Prevent FK & Missing Column Errors)
+-- 0. Ensure Schema Columns & Constraints
 ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS profiles_id_fkey;
 ALTER TABLE public.profiles DROP CONSTRAINT IF EXISTS check_bhos_student_email;
+
+ALTER TABLE public.tournaments
+  ADD COLUMN IF NOT EXISTS point_weight NUMERIC(4,2) DEFAULT 1.00,
+  ADD COLUMN IF NOT EXISTS winner_id UUID,
+  ADD COLUMN IF NOT EXISTS runner_up_id UUID,
+  ADD COLUMN IF NOT EXISTS third_place_id UUID,
+  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 ALTER TABLE public.profiles
   ADD COLUMN IF NOT EXISTS slug VARCHAR(120),
   ADD COLUMN IF NOT EXISTS department VARCHAR(100) DEFAULT 'Foundation',
   ADD COLUMN IF NOT EXISTS year_of_study INT DEFAULT 2026,
-  ADD COLUMN IF NOT EXISTS elo_rating INT DEFAULT 500,
-  ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-
-ALTER TABLE public.tournaments
-  ADD COLUMN IF NOT EXISTS winner_id UUID,
-  ADD COLUMN IF NOT EXISTS runner_up_id UUID,
-  ADD COLUMN IF NOT EXISTS third_place_id UUID,
-  ADD COLUMN IF NOT EXISTS location VARCHAR(150) DEFAULT 'Bibiheybət Kampusu',
-  ADD COLUMN IF NOT EXISTS allowed_admission_year INT DEFAULT 2026,
-  ADD COLUMN IF NOT EXISTS group_size INT DEFAULT 6,
-  ADD COLUMN IF NOT EXISTS advance_per_group INT DEFAULT 4,
-  ADD COLUMN IF NOT EXISTS max_participants INT DEFAULT 12,
+  ADD COLUMN IF NOT EXISTS elo_rating INT DEFAULT 100,
+  ADD COLUMN IF NOT EXISTS peak_elo INT DEFAULT 100,
   ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
 ALTER TABLE public.matches
@@ -38,12 +41,85 @@ ALTER TABLE public.matches
 ALTER TABLE public.matches
   ADD COLUMN IF NOT EXISTS winner_id UUID,
   ADD COLUMN IF NOT EXISTS stage VARCHAR(50),
+  ADD COLUMN IF NOT EXISTS player1_elo_delta INT,
+  ADD COLUMN IF NOT EXISTS player2_elo_delta INT,
   ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW(),
   ADD COLUMN IF NOT EXISTS approved_by UUID,
   ADD COLUMN IF NOT EXISTS approved_at TIMESTAMPTZ,
   ADD COLUMN IF NOT EXISTS auto_approved BOOLEAN DEFAULT TRUE;
 
--- 1. Helper Function: Ensure Player Profile Exists (Department = 'Foundation', Year = 2026, Initial ELO = 500)
+-- 1. Parameterized ELO Delta Calculator (Supports Tournament `point_weight`)
+CREATE OR REPLACE FUNCTION public.calculate_elo_delta(
+  p_player_elo INT,
+  p_opponent_elo INT,
+  p_player_score INT,
+  p_opponent_score INT,
+  p_is_winner BOOLEAN,
+  p_point_weight NUMERIC DEFAULT 1.00
+)
+RETURNS INT
+LANGUAGE plpgsql
+IMMUTABLE
+AS $$
+DECLARE
+  v_k NUMERIC := 32.0;
+  v_weight NUMERIC := CASE WHEN p_point_weight IS NULL OR p_point_weight <= 0 THEN 1.00 ELSE p_point_weight END;
+  v_expected NUMERIC;
+  v_hi INT;
+  v_lo INT;
+  v_margin INT;
+  v_dom NUMERIC := 1.00;
+  v_scale NUMERIC;
+  v_raw NUMERIC;
+  v_min_gain INT;
+  v_max_gain INT;
+  v_min_loss INT;
+  v_max_loss INT;
+BEGIN
+  v_expected := 1.0 / (1.0 + power(10.0, (COALESCE(p_opponent_elo, 100) - COALESCE(p_player_elo, 100))::NUMERIC / 400.0));
+
+  v_hi := GREATEST(COALESCE(p_player_score, 0), COALESCE(p_opponent_score, 0));
+  v_lo := LEAST(COALESCE(p_player_score, 0), COALESCE(p_opponent_score, 0));
+  v_margin := GREATEST(1, v_hi - v_lo);
+
+  IF v_margin >= 4 THEN
+    v_dom := 1.30;
+  ELSIF v_margin = 3 THEN
+    v_dom := 1.18;
+  ELSIF v_margin = 2 THEN
+    v_dom := 1.06;
+  ELSE
+    v_dom := 0.95;
+  END IF;
+
+  IF v_weight < 0.99 THEN
+    v_scale := v_weight / 0.40;
+    IF p_is_winner THEN
+      v_raw := v_k * v_weight * v_dom * (0.50 + 0.65 * (1.0 - v_expected));
+      v_min_gain := GREATEST(1, round(6.0 * v_scale)::INT);
+      v_max_gain := GREATEST(v_min_gain, round(12.0 * v_scale)::INT);
+      RETURN GREATEST(v_min_gain, LEAST(v_max_gain, round(v_raw)::INT));
+    ELSE
+      v_raw := v_k * (v_weight * 0.50) * v_dom * (0.45 + 0.65 * v_expected);
+      v_min_loss := GREATEST(1, round(3.0 * v_scale)::INT);
+      v_max_loss := GREATEST(v_min_loss, round(7.0 * v_scale)::INT);
+      RETURN -GREATEST(v_min_loss, LEAST(v_max_loss, round(v_raw)::INT));
+    END IF;
+  END IF;
+
+  IF p_is_winner THEN
+    v_raw := v_k * (1.0 - v_expected) * v_dom;
+    RETURN GREATEST(2, LEAST(48, round(v_raw)::INT));
+  ELSE
+    v_raw := v_k * (0.0 - v_expected) * v_dom;
+    RETURN LEAST(-2, GREATEST(-48, round(v_raw)::INT));
+  END IF;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.calculate_elo_delta(INT, INT, INT, INT, BOOLEAN, NUMERIC) TO anon, authenticated;
+
+-- 2. Helper Function: Ensure Player Profile Exists
 CREATE OR REPLACE FUNCTION public.get_or_create_player(
   p_name TEXT,
   p_slug TEXT,
@@ -60,6 +136,7 @@ DECLARE
   v_email TEXT;
 BEGIN
   PERFORM set_config('app.bypass_profile_security', 'true', true);
+  PERFORM set_config('app.bypass_security_guard', 'true', true);
 
   v_email := COALESCE(p_email, replace(p_slug, '-', '.') || '.std@bhos.edu.az');
 
@@ -90,6 +167,7 @@ BEGIN
       backhand_rubber,
       current_elo,
       elo_rating,
+      peak_elo,
       matches_played,
       wins,
       losses,
@@ -107,13 +185,14 @@ BEGIN
       2026,
       'student',
       'player',
-      'Beginner',
+      'Intermediate',
       'Shakehand All-round',
       'Standard Club Blade',
       'Standard Inverted',
       'Standard Inverted',
-      500,
-      500,
+      250,
+      250,
+      250,
       0,
       0,
       0,
@@ -140,7 +219,70 @@ BEGIN
 END;
 $$;
 
--- 2. Helper Function: Atomic Match Logger (Processes each match via approve_match_safely / Set-Dominance ELO Engine)
+-- 3. Helper to resolve a player's intact starting baseline rating (100 / 250 / 400)
+CREATE OR REPLACE FUNCTION public.resolve_player_baseline_elo(
+  p_player_id UUID,
+  p_default_baseline INT DEFAULT 250
+)
+RETURNS INT
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_profile RECORD;
+  v_auth_meta JSONB;
+  v_meta_elo TEXT;
+  v_meta_skill TEXT;
+BEGIN
+  SELECT * INTO v_profile FROM public.profiles WHERE id = p_player_id;
+  IF NOT FOUND THEN
+    RETURN p_default_baseline;
+  END IF;
+
+  BEGIN
+    SELECT raw_user_meta_data INTO v_auth_meta
+    FROM auth.users
+    WHERE id = p_player_id
+       OR lower(email) = lower(v_profile.email)
+    LIMIT 1;
+
+    IF v_auth_meta IS NOT NULL THEN
+      v_meta_elo := v_auth_meta->>'current_elo';
+      IF v_meta_elo IS NOT NULL AND v_meta_elo ~ '^[0-9]+$' THEN
+        IF v_meta_elo::INT BETWEEN 50 AND 450 THEN
+          RETURN v_meta_elo::INT;
+        END IF;
+      END IF;
+
+      v_meta_skill := lower(COALESCE(v_auth_meta->>'skill_level', v_auth_meta->>'playing_level', ''));
+      IF v_meta_skill = 'advanced' THEN
+        RETURN 400;
+      ELSIF v_meta_skill = 'intermediate' THEN
+        RETURN 250;
+      ELSIF v_meta_skill = 'beginner' THEN
+        RETURN 100;
+      END IF;
+    END IF;
+  EXCEPTION WHEN OTHERS THEN
+    NULL;
+  END;
+
+  IF COALESCE(v_profile.matches_played, 0) = 0 AND COALESCE(v_profile.current_elo, 0) BETWEEN 50 AND 450 THEN
+    RETURN v_profile.current_elo;
+  END IF;
+
+  IF lower(COALESCE(v_profile.playing_level, '')) = 'advanced' THEN
+    RETURN 400;
+  ELSIF lower(COALESCE(v_profile.playing_level, '')) = 'intermediate' THEN
+    RETURN 250;
+  END IF;
+
+  RETURN p_default_baseline;
+END;
+$$;
+
+-- 4. Helper Function: Record & Approve Cup Match with Dampened Point Scaling
 CREATE OR REPLACE FUNCTION public.record_cup_match(
   p_p1 UUID,
   p_p2 UUID,
@@ -157,47 +299,38 @@ SET search_path = public
 AS $$
 DECLARE
   v_match_id UUID;
+  v_p1_won BOOLEAN := (p_s1 > p_s2);
   v_winner UUID := CASE WHEN p_s1 > p_s2 THEN p_p1 ELSE p_p2 END;
   v_p1_elo INT;
   v_p2_elo INT;
-  v_expected1 NUMERIC;
-  v_actual1 NUMERIC;
-  v_margin INT;
-  v_mult NUMERIC := 1.0;
-  v_raw_change1 NUMERIC;
-  v_raw_change2 NUMERIC;
+  v_p1_delta INT;
+  v_p2_delta INT;
   v_new_p1_elo INT;
   v_new_p2_elo INT;
   v_delta INT;
+  v_weight NUMERIC := 0.40;
 BEGIN
   PERFORM set_config('app.bypass_profile_security', 'true', true);
   PERFORM set_config('app.bypass_match_security', 'true', true);
+  PERFORM set_config('app.bypass_security_guard', 'true', true);
 
-  -- Read current ELOs
-  SELECT COALESCE(current_elo, 500) INTO v_p1_elo FROM public.profiles WHERE id = p_p1 FOR UPDATE;
-  SELECT COALESCE(current_elo, 500) INTO v_p2_elo FROM public.profiles WHERE id = p_p2 FOR UPDATE;
-
-  -- Compute Set-Dominance ELO (K=32, 0.95x for 1-set margin, 1.06x for 2-set margin, 1.18x for 3-set margin)
-  v_expected1 := 1.0 / (1.0 + power(10.0, (v_p2_elo - v_p1_elo)::numeric / 400.0));
-  v_actual1 := CASE WHEN p_s1 > p_s2 THEN 1.0 ELSE 0.0 END;
-  v_margin := abs(p_s1 - p_s2);
-
-  IF v_margin <= 1 THEN
-    v_mult := 0.95;
-  ELSIF v_margin = 2 THEN
-    v_mult := 1.06;
-  ELSE
-    v_mult := 1.18;
+  IF p_t_id IS NOT NULL THEN
+    SELECT COALESCE(point_weight, 0.40) INTO v_weight FROM public.tournaments WHERE id = p_t_id;
+    v_weight := COALESCE(v_weight, 0.40);
   END IF;
 
-  v_raw_change1 := 32.0 * (v_actual1 - v_expected1) * v_mult;
-  v_raw_change2 := -v_raw_change1;
+  SELECT COALESCE(current_elo, 250) INTO v_p1_elo FROM public.profiles WHERE id = p_p1 FOR UPDATE;
+  SELECT COALESCE(current_elo, 250) INTO v_p2_elo FROM public.profiles WHERE id = p_p2 FOR UPDATE;
 
-  v_new_p1_elo := LEAST(3000, GREATEST(0, round(v_p1_elo + v_raw_change1)::int));
-  v_new_p2_elo := LEAST(3000, GREATEST(0, round(v_p2_elo + v_raw_change2)::int));
-  v_delta := GREATEST(abs(v_new_p1_elo - v_p1_elo), abs(v_new_p2_elo - v_p2_elo));
+  v_p1_delta := public.calculate_elo_delta(v_p1_elo, v_p2_elo, p_s1, p_s2, v_p1_won, v_weight);
+  v_p2_delta := public.calculate_elo_delta(v_p2_elo, v_p1_elo, p_s2, p_s1, NOT v_p1_won, v_weight);
 
-  -- Insert confirmed match record
+  v_new_p1_elo := LEAST(999, GREATEST(0, v_p1_elo + v_p1_delta));
+  v_new_p2_elo := LEAST(999, GREATEST(0, v_p2_elo + v_p2_delta));
+  v_p1_delta := v_new_p1_elo - v_p1_elo;
+  v_p2_delta := v_new_p2_elo - v_p2_elo;
+  v_delta := CASE WHEN v_p1_won THEN abs(v_p1_delta) ELSE abs(v_p2_delta) END;
+
   INSERT INTO public.matches (
     player1_id,
     player2_id,
@@ -210,6 +343,8 @@ BEGIN
     player2_elo_before,
     player1_elo_after,
     player2_elo_after,
+    player1_elo_delta,
+    player2_elo_delta,
     elo_delta,
     status,
     tournament_id,
@@ -230,6 +365,8 @@ BEGIN
     v_p2_elo,
     v_new_p1_elo,
     v_new_p2_elo,
+    v_p1_delta,
+    v_p2_delta,
     v_delta,
     'confirmed',
     p_t_id,
@@ -241,27 +378,26 @@ BEGIN
   )
   RETURNING id INTO v_match_id;
 
-  -- Update Player 1 profile atomically
   UPDATE public.profiles
   SET current_elo = v_new_p1_elo,
       elo_rating = v_new_p1_elo,
+      peak_elo = GREATEST(COALESCE(peak_elo, v_p1_elo), v_new_p1_elo),
       matches_played = COALESCE(matches_played, 0) + 1,
-      wins = COALESCE(wins, 0) + CASE WHEN p_s1 > p_s2 THEN 1 ELSE 0 END,
-      losses = COALESCE(losses, 0) + CASE WHEN p_s1 < p_s2 THEN 1 ELSE 0 END,
+      wins = COALESCE(wins, 0) + CASE WHEN v_p1_won THEN 1 ELSE 0 END,
+      losses = COALESCE(losses, 0) + CASE WHEN NOT v_p1_won THEN 1 ELSE 0 END,
       updated_at = p_match_time
   WHERE id = p_p1;
 
-  -- Update Player 2 profile atomically
   UPDATE public.profiles
   SET current_elo = v_new_p2_elo,
       elo_rating = v_new_p2_elo,
+      peak_elo = GREATEST(COALESCE(peak_elo, v_p2_elo), v_new_p2_elo),
       matches_played = COALESCE(matches_played, 0) + 1,
-      wins = COALESCE(wins, 0) + CASE WHEN p_s2 > p_s1 THEN 1 ELSE 0 END,
-      losses = COALESCE(losses, 0) + CASE WHEN p_s2 < p_s1 THEN 1 ELSE 0 END,
+      wins = COALESCE(wins, 0) + CASE WHEN NOT v_p1_won THEN 1 ELSE 0 END,
+      losses = COALESCE(losses, 0) + CASE WHEN v_p1_won THEN 1 ELSE 0 END,
       updated_at = p_match_time
   WHERE id = p_p2;
 
-  -- Evaluate achievements if achievement engine is installed
   BEGIN
     PERFORM public.evaluate_player_achievements(p_p1, v_match_id);
     PERFORM public.evaluate_player_achievements(p_p2, v_match_id);
@@ -273,7 +409,7 @@ BEGIN
 END;
 $$;
 
--- 3. Execute Official Foundation Cup Seed & Podium Finalization
+-- 5. Execute Official Foundation Cup Seeding & Bracket Completion
 DO $$
 DECLARE
   v_tourn_id UUID;
@@ -290,9 +426,21 @@ DECLARE
   p_maharram UUID;
   p_rafiq UUID;
 
+  b_yusif INT;
+  b_ahad INT;
+  b_maharat INT;
+  b_qulam INT;
+  b_sabir INT;
+  b_adil INT;
+  b_muhammad INT;
+  b_kamran INT;
+  b_kazim INT;
+  b_faiq INT;
+  b_maharram INT;
+  b_rafiq INT;
+
   v_base_time TIMESTAMPTZ := '2026-11-07 10:00:00+04'::timestamptz;
 
-  -- Profile JSONB snapshots for bracket_data
   j_yusif JSONB;
   j_ahad JSONB;
   j_muhammad JSONB;
@@ -317,11 +465,10 @@ BEGIN
   PERFORM set_config('app.bypass_match_security', 'true', true);
   PERFORM set_config('app.bypass_security_guard', 'true', true);
 
-  -- Disable user triggers on matches/tournaments during bulk atomic replay so triggers don't double-count ELO
   ALTER TABLE public.matches DISABLE TRIGGER USER;
   ALTER TABLE public.tournaments DISABLE TRIGGER USER;
 
-  -- 1. Identify (or create) Foundation Cup Tournament
+  -- 1. Identify or Create Tournament
   SELECT id INTO v_tourn_id
   FROM public.tournaments
   WHERE slug = 'foundation-kuboku-2026'
@@ -339,6 +486,7 @@ BEGIN
       max_participants,
       group_size,
       advance_per_group,
+      point_weight,
       location,
       allowed_admission_year,
       status,
@@ -352,32 +500,27 @@ BEGIN
       12,
       6,
       4,
+      0.40,
       'Bibiheybət Kampusu',
       2026,
-      'ongoing',
+      'completed',
       '2026-11-07 10:00:00+04'::timestamptz
     )
     RETURNING id INTO v_tourn_id;
+  ELSE
+    UPDATE public.tournaments
+    SET point_weight = 0.40
+    WHERE id = v_tourn_id;
   END IF;
 
-  -- Remove Adəm Rəhimli (no-show: exclude all his matches & tournament registration)
-  DELETE FROM public.matches
-  WHERE player1_id IN (SELECT id FROM public.profiles WHERE full_name ILIKE '%Adəm Rəhimli%' OR full_name ILIKE '%Adem Rehimli%' OR email ILIKE '%adem.rehimli%')
-     OR player2_id IN (SELECT id FROM public.profiles WHERE full_name ILIKE '%Adəm Rəhimli%' OR full_name ILIKE '%Adem Rehimli%' OR email ILIKE '%adem.rehimli%');
+  -- 2. Ensure All 12 Participating Players Exist (Adəm Rəhimli excluded)
+  p_ahad     := public.get_or_create_player('Əhəd Zamanlı',        'ahad-zamanli',        'ehed.zamanli.std@bhos.edu.az',        'Information Security');
+  p_yusif    := public.get_or_create_player('Yusif Xanlarov',      'yusif-xanlarov',      'yusif.xanlarov.std@bhos.edu.az',      'Computer Engineering');
+  p_muhammad := public.get_or_create_player('Məhəmməd Əsədov',     'muhammad-asadov',     'mehemmed.esedov.std@bhos.edu.az',     'Process Automation Engineering');
+  p_sabir    := public.get_or_create_player('Sabir Məhərrəmli',    'sabir-maharramli',    'sabir.meherremli.std@bhos.edu.az',    'Petroleum Engineering');
+  p_adil     := public.get_or_create_player('Adil Süleymanov',     'adil-suleymanov',     'adil.suleymanov.std@bhos.edu.az',     'Information Security');
+  p_kamran   := public.get_or_create_player('Kamran Əliyev',       'kamran-aliyev',       'kamran.aliev.std@bhos.edu.az',        'Computer Engineering');
 
-  DELETE FROM public.tournament_registrations
-  WHERE player_id IN (SELECT id FROM public.profiles WHERE full_name ILIKE '%Adəm Rəhimli%' OR full_name ILIKE '%Adem Rehimli%' OR email ILIKE '%adem.rehimli%');
-
-  -- 2. Ensure all 12 participating Foundation players exist
-  -- Group A (6 players)
-  p_ahad     := public.get_or_create_player('Əhəd Zamanlı',      'ahad-zamanli',       'ehed.zamanli.std@bhos.edu.az',       'Information Security');
-  p_yusif    := public.get_or_create_player('Yusif Xanlarov',    'yusif-xanlarov',     'yusif.xanlarov.std@bhos.edu.az',     'Computer Engineering');
-  p_muhammad := public.get_or_create_player('Məhəmməd Əsədov',   'muhammad-asadov',    'mehemmed.esedov.std@bhos.edu.az',    'Process Automation Engineering');
-  p_sabir    := public.get_or_create_player('Sabir Məhərrəmli',  'sabir-maharramli',   'sabir.meherremli.std@bhos.edu.az',   'Petroleum Engineering');
-  p_adil     := public.get_or_create_player('Adil Süleymanov',   'adil-suleymanov',    'adil.suleymanov.std@bhos.edu.az',    'Information Security');
-  p_kamran   := public.get_or_create_player('Kamran Əliyev',     'kamran-aliyev',      'kamran.aliev.std@bhos.edu.az',       'Computer Engineering');
-
-  -- Group B (6 players)
   p_maharat  := public.get_or_create_player('Məharət Kərimli',     'maharat-karimli',     'meharet.kerimli.std@bhos.edu.az',     'Computer Engineering');
   p_kazim    := public.get_or_create_player('Kazım Fətəlizadə',    'kazim-fatalizada',    'kazim.fetelizade.std@bhos.edu.az',    'Process Automation Engineering');
   p_qulam    := public.get_or_create_player('Qulam Rüstəmzadə',    'qulam-rustamzada',    'qulam.rustemzade.std@bhos.edu.az',    'Petroleum Engineering');
@@ -385,25 +528,39 @@ BEGIN
   p_maharram := public.get_or_create_player('Məhərrəm Mirzəxanlı', 'maharram-mirzaxanli', 'meherrem.mirzexanli.std@bhos.edu.az', 'Process Automation Engineering');
   p_rafiq    := public.get_or_create_player('Rafiq Həsənli',       'rafiq-hasanli',       'rafiq.hesenli.std@bhos.edu.az',       'Computer Engineering');
 
-  -- Clean any previous matches for this tournament or these 12 players to ensure idempotent calculation from 500 ELO
+  -- 3. Resolve each player's intact starting baseline rating (100 / 250 / 400)
+  b_yusif    := public.resolve_player_baseline_elo(p_yusif,    400);
+  b_ahad     := public.resolve_player_baseline_elo(p_ahad,     400);
+  b_maharat  := public.resolve_player_baseline_elo(p_maharat,  400);
+  b_qulam    := public.resolve_player_baseline_elo(p_qulam,    400);
+  b_sabir    := public.resolve_player_baseline_elo(p_sabir,    250);
+  b_kazim    := public.resolve_player_baseline_elo(p_kazim,    250);
+  b_adil     := public.resolve_player_baseline_elo(p_adil,     250);
+  b_faiq     := public.resolve_player_baseline_elo(p_faiq,     250);
+  b_muhammad := public.resolve_player_baseline_elo(p_muhammad, 100);
+  b_maharram := public.resolve_player_baseline_elo(p_maharram, 100);
+  b_kamran   := public.resolve_player_baseline_elo(p_kamran,   100);
+  b_rafiq    := public.resolve_player_baseline_elo(p_rafiq,    100);
+
   DELETE FROM public.matches
   WHERE tournament_id = v_tourn_id
      OR player1_id IN (p_ahad, p_yusif, p_muhammad, p_sabir, p_adil, p_kamran, p_maharat, p_kazim, p_qulam, p_faiq, p_maharram, p_rafiq)
      OR player2_id IN (p_ahad, p_yusif, p_muhammad, p_sabir, p_adil, p_kamran, p_maharat, p_kazim, p_qulam, p_faiq, p_maharram, p_rafiq);
 
-  -- Reset the 12 participating players to starting rating = 500, 0 matches before replaying the 38 matches
-  UPDATE public.profiles
-  SET current_elo = 500,
-      elo_rating = 500,
-      matches_played = 0,
-      wins = 0,
-      losses = 0,
-      department = 'Foundation',
-      admission_year = 2026,
-      year_of_study = 2026
-  WHERE id IN (p_ahad, p_yusif, p_muhammad, p_sabir, p_adil, p_kamran, p_maharat, p_kazim, p_qulam, p_faiq, p_maharram, p_rafiq);
+  UPDATE public.profiles SET current_elo = b_yusif,    elo_rating = b_yusif,    peak_elo = b_yusif,    playing_level = CASE WHEN b_yusif >= 400 THEN 'Advanced' WHEN b_yusif >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_yusif;
+  UPDATE public.profiles SET current_elo = b_ahad,     elo_rating = b_ahad,     peak_elo = b_ahad,     playing_level = CASE WHEN b_ahad >= 400 THEN 'Advanced' WHEN b_ahad >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_ahad;
+  UPDATE public.profiles SET current_elo = b_maharat,  elo_rating = b_maharat,  peak_elo = b_maharat,  playing_level = CASE WHEN b_maharat >= 400 THEN 'Advanced' WHEN b_maharat >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_maharat;
+  UPDATE public.profiles SET current_elo = b_qulam,    elo_rating = b_qulam,    peak_elo = b_qulam,    playing_level = CASE WHEN b_qulam >= 400 THEN 'Advanced' WHEN b_qulam >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_qulam;
+  UPDATE public.profiles SET current_elo = b_sabir,    elo_rating = b_sabir,    peak_elo = b_sabir,    playing_level = CASE WHEN b_sabir >= 400 THEN 'Advanced' WHEN b_sabir >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_sabir;
+  UPDATE public.profiles SET current_elo = b_kazim,    elo_rating = b_kazim,    peak_elo = b_kazim,    playing_level = CASE WHEN b_kazim >= 400 THEN 'Advanced' WHEN b_kazim >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_kazim;
+  UPDATE public.profiles SET current_elo = b_adil,     elo_rating = b_adil,     peak_elo = b_adil,     playing_level = CASE WHEN b_adil >= 400 THEN 'Advanced' WHEN b_adil >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_adil;
+  UPDATE public.profiles SET current_elo = b_faiq,     elo_rating = b_faiq,     peak_elo = b_faiq,     playing_level = CASE WHEN b_faiq >= 400 THEN 'Advanced' WHEN b_faiq >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_faiq;
+  UPDATE public.profiles SET current_elo = b_muhammad, elo_rating = b_muhammad, peak_elo = b_muhammad, playing_level = CASE WHEN b_muhammad >= 400 THEN 'Advanced' WHEN b_muhammad >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_muhammad;
+  UPDATE public.profiles SET current_elo = b_maharram, elo_rating = b_maharram, peak_elo = b_maharram, playing_level = CASE WHEN b_maharram >= 400 THEN 'Advanced' WHEN b_maharram >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_maharram;
+  UPDATE public.profiles SET current_elo = b_kamran,   elo_rating = b_kamran,   peak_elo = b_kamran,   playing_level = CASE WHEN b_kamran >= 400 THEN 'Advanced' WHEN b_kamran >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_kamran;
+  UPDATE public.profiles SET current_elo = b_rafiq,    elo_rating = b_rafiq,    peak_elo = b_rafiq,    playing_level = CASE WHEN b_rafiq >= 400 THEN 'Advanced' WHEN b_rafiq >= 250 THEN 'Intermediate' ELSE 'Beginner' END, matches_played = 0, wins = 0, losses = 0 WHERE id = p_rafiq;
 
-  -- 3. Group A Matches (15 matches, Adəm Rəhimli excluded)
+  -- 4. Group A Matches (15 matches, Adəm excluded)
   PERFORM public.record_cup_match(p_ahad,     p_adil,     2, 0, v_tourn_id, 'group', v_base_time + interval '5 minutes');
   PERFORM public.record_cup_match(p_muhammad, p_kamran,   2, 0, v_tourn_id, 'group', v_base_time + interval '10 minutes');
   PERFORM public.record_cup_match(p_yusif,    p_adil,     2, 0, v_tourn_id, 'group', v_base_time + interval '15 minutes');
@@ -420,7 +577,7 @@ BEGIN
   PERFORM public.record_cup_match(p_yusif,    p_ahad,     1, 2, v_tourn_id, 'group', v_base_time + interval '70 minutes');
   PERFORM public.record_cup_match(p_sabir,    p_adil,     2, 0, v_tourn_id, 'group', v_base_time + interval '75 minutes');
 
-  -- 4. Group B Matches (15 matches)
+  -- 5. Group B Matches (15 matches)
   PERFORM public.record_cup_match(p_maharat,  p_maharram, 2, 0, v_tourn_id, 'group', v_base_time + interval '80 minutes');
   PERFORM public.record_cup_match(p_kazim,    p_rafiq,    2, 0, v_tourn_id, 'group', v_base_time + interval '85 minutes');
   PERFORM public.record_cup_match(p_qulam,    p_faiq,     2, 0, v_tourn_id, 'group', v_base_time + interval '90 minutes');
@@ -437,24 +594,24 @@ BEGIN
   PERFORM public.record_cup_match(p_qulam,    p_maharram, 2, 0, v_tourn_id, 'group', v_base_time + interval '145 minutes');
   PERFORM public.record_cup_match(p_faiq,     p_rafiq,    2, 0, v_tourn_id, 'group', v_base_time + interval '150 minutes');
 
-  -- 5. Playoff Matches (8 matches)
-  -- Quarterfinals (1/4 Final)
+  -- 6. Playoff Matches (8 matches)
+  -- Quarterfinals
   PERFORM public.record_cup_match(p_ahad,    p_faiq,  2, 0, v_tourn_id, 'playoff_qf', v_base_time + interval '180 minutes');
   PERFORM public.record_cup_match(p_maharat, p_sabir, 2, 1, v_tourn_id, 'playoff_qf', v_base_time + interval '190 minutes');
   PERFORM public.record_cup_match(p_qulam,   p_adil,  2, 0, v_tourn_id, 'playoff_qf', v_base_time + interval '200 minutes');
   PERFORM public.record_cup_match(p_yusif,   p_kazim, 2, 0, v_tourn_id, 'playoff_qf', v_base_time + interval '210 minutes');
 
-  -- Semifinals (1/2 Final)
+  -- Semifinals
   PERFORM public.record_cup_match(p_ahad,  p_maharat, 1, 3, v_tourn_id, 'playoff_sf', v_base_time + interval '240 minutes');
   PERFORM public.record_cup_match(p_qulam, p_yusif,   0, 3, v_tourn_id, 'playoff_sf', v_base_time + interval '255 minutes');
 
-  -- 3rd Place Match (Bürünc medal oyunu)
+  -- 3rd Place Match
   PERFORM public.record_cup_match(p_ahad, p_qulam, 3, 2, v_tourn_id, 'playoff_3rd', v_base_time + interval '285 minutes');
 
-  -- Grand Final (Çempionluq oyunu)
+  -- Grand Final
   PERFORM public.record_cup_match(p_maharat, p_yusif, 0, 3, v_tourn_id, 'playoff_final', v_base_time + interval '315 minutes');
 
-  -- 6. Build Complete Tournament Bracket & Group Standings Data for Frontend Display
+  -- 7. Build Rich Bracket & Podium JSONB for Tournament Page UI
   SELECT to_jsonb(p.*) INTO j_yusif    FROM public.profiles p WHERE id = p_yusif;
   SELECT to_jsonb(p.*) INTO j_ahad     FROM public.profiles p WHERE id = p_ahad;
   SELECT to_jsonb(p.*) INTO j_muhammad FROM public.profiles p WHERE id = p_muhammad;
@@ -570,6 +727,7 @@ BEGIN
       'group_size', 6,
       'group_size_label', '6 nəfər',
       'advance_per_group', 4,
+      'point_weight', 0.40,
       'location', 'Bibiheybət Kampusu',
       'allowed_admission_year', 2026,
       'best_of_sets', 3,
@@ -582,23 +740,21 @@ BEGIN
     p_qulam::text, p_maharat::text, p_kazim::text, p_faiq::text, p_maharram::text, p_rafiq::text
   );
 
-  -- Finalize Tournament Record & Official Podium
-  IF v_tourn_id IS NOT NULL THEN
-    UPDATE public.tournaments
-    SET status = 'completed',
-        winner_id = p_yusif,
-        runner_up_id = p_maharat,
-        third_place_id = p_ahad,
-        max_participants = 12,
-        group_size = 6,
-        advance_per_group = 4,
-        participants = v_participants,
-        bracket_data = v_bracket_data,
-        updated_at = NOW()
-    WHERE id = v_tourn_id;
-  END IF;
+  -- 8. Finalize Tournament Record & Official Podium
+  UPDATE public.tournaments
+  SET status = 'completed',
+      point_weight = 0.40,
+      winner_id = p_yusif,
+      runner_up_id = p_maharat,
+      third_place_id = p_ahad,
+      max_participants = 12,
+      group_size = 6,
+      advance_per_group = 4,
+      participants = v_participants,
+      bracket_data = v_bracket_data,
+      updated_at = NOW()
+  WHERE id = v_tourn_id;
 
-  -- Re-enable user triggers
   ALTER TABLE public.matches ENABLE TRIGGER USER;
   ALTER TABLE public.tournaments ENABLE TRIGGER USER;
 END $$;

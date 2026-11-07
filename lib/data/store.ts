@@ -35,9 +35,9 @@ import { getSupabaseClient } from '../supabase/client';
 import { buildSlugMap, generateSlug, isUuid, normalizeForSearch, shortIdSuffix } from '../utils/slug';
 
 const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v10',
-  MATCHES: 'bhos_tt_matches_v10',
-  TOURNAMENTS: 'bhos_tt_tournaments_v11',
+  PROFILES: 'bhos_tt_profiles_v11',
+  MATCHES: 'bhos_tt_matches_v11',
+  TOURNAMENTS: 'bhos_tt_tournaments_v12',
   RESERVATIONS: 'bhos_tt_reservations_v8',
   CURRENT_USER_ID: 'bhos_tt_active_user_id_v8',
 };
@@ -224,6 +224,9 @@ export class BHOSDataStore {
   private constructor() {
     if (typeof window !== 'undefined') {
       const oldKeys = [
+        'bhos_tt_profiles_v10',
+        'bhos_tt_matches_v10',
+        'bhos_tt_tournaments_v11',
         'bhos_tt_profiles_v9',
         'bhos_tt_matches_v9',
         'bhos_tt_tournaments_v10',

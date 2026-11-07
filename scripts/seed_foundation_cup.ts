@@ -23,6 +23,7 @@ interface SeedPlayer {
   email: string;
   major_faculty: string;
   group: 'A' | 'B';
+  baseline_elo: number;
 }
 
 export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
@@ -35,6 +36,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'ehed.zamanli.std@bhos.edu.az',
     major_faculty: 'Information Security',
     group: 'A',
+    baseline_elo: 400,
   },
   {
     key: 'yusif',
@@ -44,6 +46,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'yusif.xanlarov.std@bhos.edu.az',
     major_faculty: 'Computer Engineering',
     group: 'A',
+    baseline_elo: 400,
   },
   {
     key: 'muhammad',
@@ -53,6 +56,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'mehemmed.esedov.std@bhos.edu.az',
     major_faculty: 'Process Automation Engineering',
     group: 'A',
+    baseline_elo: 100,
   },
   {
     key: 'sabir',
@@ -62,6 +66,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'sabir.meherremli.std@bhos.edu.az',
     major_faculty: 'Petroleum Engineering',
     group: 'A',
+    baseline_elo: 250,
   },
   {
     key: 'adil',
@@ -71,6 +76,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'adil.suleymanov.std@bhos.edu.az',
     major_faculty: 'Information Security',
     group: 'A',
+    baseline_elo: 250,
   },
   {
     key: 'kamran',
@@ -80,6 +86,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'kamran.aliev.std@bhos.edu.az',
     major_faculty: 'Computer Engineering',
     group: 'A',
+    baseline_elo: 100,
   },
   // Group B (6 players)
   {
@@ -90,6 +97,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'meharet.kerimli.std@bhos.edu.az',
     major_faculty: 'Computer Engineering',
     group: 'B',
+    baseline_elo: 400,
   },
   {
     key: 'kazim',
@@ -99,6 +107,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'kazim.fetelizade.std@bhos.edu.az',
     major_faculty: 'Process Automation Engineering',
     group: 'B',
+    baseline_elo: 250,
   },
   {
     key: 'qulam',
@@ -108,6 +117,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'qulam.rustemzade.std@bhos.edu.az',
     major_faculty: 'Petroleum Engineering',
     group: 'B',
+    baseline_elo: 400,
   },
   {
     key: 'faiq',
@@ -117,6 +127,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'faiq.huseynli.std@bhos.edu.az',
     major_faculty: 'Chemical Engineering',
     group: 'B',
+    baseline_elo: 250,
   },
   {
     key: 'maharram',
@@ -126,6 +137,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'meherrem.mirzexanli.std@bhos.edu.az',
     major_faculty: 'Process Automation Engineering',
     group: 'B',
+    baseline_elo: 100,
   },
   {
     key: 'rafiq',
@@ -135,6 +147,7 @@ export const OFFICIAL_FOUNDATION_PLAYERS: SeedPlayer[] = [
     email: 'rafiq.hesenli.std@bhos.edu.az',
     major_faculty: 'Computer Engineering',
     group: 'B',
+    baseline_elo: 100,
   },
 ];
 
@@ -185,9 +198,9 @@ export const OFFICIAL_38_MATCHES: Array<[string, string, number, number, string]
 ];
 
 async function main() {
-  const stats = new Map<string, { elo: number; mp: number; w: number; l: number }>();
+  const stats = new Map<string, { elo: number; peak: number; mp: number; w: number; l: number }>();
   for (const p of OFFICIAL_FOUNDATION_PLAYERS) {
-    stats.set(p.key, { elo: 500, mp: 0, w: 0, l: 0 });
+    stats.set(p.key, { elo: p.baseline_elo, peak: p.baseline_elo, mp: 0, w: 0, l: 0 });
   }
 
   for (const [p1, p2, s1, s2] of OFFICIAL_38_MATCHES) {
@@ -199,9 +212,12 @@ async function main() {
       player1Won: s1 > s2,
       player1SetsWon: s1,
       player2SetsWon: s2,
+      pointWeight: 0.4,
     });
     st1.elo = res.player1EloAfter;
     st2.elo = res.player2EloAfter;
+    st1.peak = Math.max(st1.peak, st1.elo);
+    st2.peak = Math.max(st2.peak, st2.elo);
     st1.mp += 1;
     st2.mp += 1;
     if (s1 > s2) {

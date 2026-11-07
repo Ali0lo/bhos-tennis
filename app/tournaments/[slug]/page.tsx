@@ -542,7 +542,7 @@ export default function TournamentDetailPage() {
                       tournament.bracket_data?.podium?.first ||
                       (tournament.winner_id ? store.getProfile(tournament.winner_id) : undefined);
                     const name1 = p1?.full_name || 'Yusif Xanlarov';
-                    const elo1 = p1?.current_elo ?? 601;
+                    const elo1 = p1?.current_elo ?? 462;
                     return (
                       <Link
                         href={store.getPlayerHref(p1?.id || 'p-f-yusif-xanlarov', name1)}
@@ -572,7 +572,7 @@ export default function TournamentDetailPage() {
                       tournament.bracket_data?.podium?.second ||
                       (tournament.runner_up_id ? store.getProfile(tournament.runner_up_id) : undefined);
                     const name2 = p2?.full_name || 'Məharət Kərimli';
-                    const elo2 = p2?.current_elo ?? 560;
+                    const elo2 = p2?.current_elo ?? 441;
                     return (
                       <Link
                         href={store.getPlayerHref(p2?.id || 'p-f-meharet-kerimli', name2)}
@@ -602,7 +602,7 @@ export default function TournamentDetailPage() {
                       tournament.bracket_data?.podium?.third ||
                       (tournament.third_place_id ? store.getProfile(tournament.third_place_id) : undefined);
                     const name3 = p3?.full_name || 'Əhəd Zamanlı';
-                    const elo3 = p3?.current_elo ?? 586;
+                    const elo3 = p3?.current_elo ?? 458;
                     return (
                       <Link
                         href={store.getPlayerHref(p3?.id || 'p-f-ehed-zamanli', name3)}

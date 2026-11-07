@@ -93,7 +93,7 @@ export default function FoundationTournamentBanner() {
                 Yusif Xanlarov
               </div>
               <div className="text-[11px] font-mono text-amber-200/80">
-                601 ELO • 7Q - 1M (Final: 3-0)
+                462 ELO • 7Q - 1M (Final: 3-0)
               </div>
             </div>
           </Link>
@@ -113,7 +113,7 @@ export default function FoundationTournamentBanner() {
                 Məharət Kərimli
               </div>
               <div className="text-[11px] font-mono text-slate-400">
-                560 ELO • 6Q - 2M (Finalçı)
+                441 ELO • 6Q - 2M (Finalçı)
               </div>
             </div>
           </Link>
@@ -133,7 +133,7 @@ export default function FoundationTournamentBanner() {
                 Əhəd Zamanlı
               </div>
               <div className="text-[11px] font-mono text-orange-200/80">
-                586 ELO • 7Q - 1M (3-cü yer: 3-2)
+                458 ELO • 7Q - 1M (3-cü yer: 3-2)
               </div>
             </div>
           </Link>

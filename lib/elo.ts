@@ -25,6 +25,7 @@ export interface EloCalculationInput {
   customKFactor?: number;
   player1SetsWon?: number;
   player2SetsWon?: number;
+  pointWeight?: number;
 }
 
 export interface EloCalculationResult {
@@ -33,6 +34,8 @@ export interface EloCalculationResult {
   player1EloAfter: number;
   player2EloAfter: number;
   delta: number;
+  player1Delta: number;
+  player2Delta: number;
   winnerGained: number;
   p1WinProbability: number;
   p2WinProbability: number;
@@ -108,6 +111,7 @@ export function calculateMatchElo(input: EloCalculationInput): EloCalculationRes
     player1Won,
     player1SetsWon,
     player2SetsWon,
+    pointWeight = 1.0,
   } = input;
 
   const safeP1Elo = Math.min(MAX_ELO, Math.max(MIN_ELO, player1Elo));
@@ -120,24 +124,41 @@ export function calculateMatchElo(input: EloCalculationInput): EloCalculationRes
   const p2Sets = player2SetsWon ?? (player1Won ? 0 : 3);
   const setMultiplier = getSetDominanceMultiplier(p1Sets, p2Sets);
 
-  const rawDelta = calculateEloDelta({
+  const p1RawDelta = calculateEloDelta({
     playerElo: safeP1Elo,
     opponentElo: safeP2Elo,
     playerScore: p1Sets,
     opponentScore: p2Sets,
     isWinner: player1Won,
+    pointWeight,
   });
 
-  const winnerGained = Math.abs(rawDelta);
-  const p1After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP1Elo + rawDelta));
-  const p2After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP2Elo - rawDelta));
+  const p2RawDelta =
+    pointWeight < 0.99
+      ? calculateEloDelta({
+          playerElo: safeP2Elo,
+          opponentElo: safeP1Elo,
+          playerScore: p2Sets,
+          opponentScore: p1Sets,
+          isWinner: !player1Won,
+          pointWeight,
+        })
+      : -p1RawDelta;
+
+  const p1After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP1Elo + p1RawDelta));
+  const p2After = Math.min(MAX_ELO, Math.max(MIN_ELO, safeP2Elo + p2RawDelta));
+  const player1Delta = p1After - safeP1Elo;
+  const player2Delta = p2After - safeP2Elo;
+  const winnerGained = player1Won ? Math.abs(player1Delta) : Math.abs(player2Delta);
 
   return {
     player1EloBefore: safeP1Elo,
     player2EloBefore: safeP2Elo,
     player1EloAfter: p1After,
     player2EloAfter: p2After,
-    delta: rawDelta,
+    delta: player1Won ? winnerGained : -winnerGained,
+    player1Delta,
+    player2Delta,
     winnerGained,
     p1WinProbability: Math.round(p1Expected * 100) / 100,
     p2WinProbability: Math.round(p2Expected * 100) / 100,
