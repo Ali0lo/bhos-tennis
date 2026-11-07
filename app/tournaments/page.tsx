@@ -355,6 +355,115 @@ export default function TournamentsPage() {
                       </span>
                     </span>
                   </div>
+
+                  {/* Official Podium Banner for Completed Tournaments */}
+                  {t.status === 'completed' && (
+                    <div className="mt-4 rounded-2xl bg-gradient-to-r from-amber-500/10 via-slate-950 to-amber-500/5 border border-amber-500/30 p-4 sm:p-5 space-y-3">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2">
+                          <Trophy className="w-4 h-4 text-amber-400" />
+                          <span className="text-xs font-display font-black uppercase tracking-wider text-amber-300">
+                            Rəsmi Fəxri Kürsü (Podium) — Yekun Nəticələr
+                          </span>
+                        </div>
+                        <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold">
+                          38 Rəsmi Oyun Tamamlandı
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        {/* 1st Place */}
+                        {(() => {
+                          const p1 =
+                            t.bracket_data?.podium?.first ||
+                            (t.winner_id ? store.getProfile(t.winner_id) : undefined);
+                          const name1 = p1?.full_name || 'Yusif Xanlarov';
+                          const elo1 = p1?.current_elo ?? 601;
+                          return (
+                            <Link
+                              href={store.getPlayerHref(p1?.id || 'p-f-yusif-xanlarov', name1)}
+                              className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/15 border border-amber-400/40 hover:border-amber-400 transition group"
+                            >
+                              <div className="w-10 h-10 rounded-xl bg-amber-500 text-slate-950 font-display font-black text-base flex items-center justify-center shrink-0 shadow-md">
+                                🥇
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[10px] font-mono uppercase tracking-wider text-amber-300 font-bold">
+                                  1-ci Yer • Çempion
+                                </div>
+                                <div className="text-sm font-display font-black text-white truncate group-hover:text-amber-300 transition">
+                                  {name1}
+                                </div>
+                                <div className="text-[11px] font-mono text-amber-200/80">
+                                  {elo1} ELO • Final: 3-0
+                                </div>
+                              </div>
+                            </Link>
+                          );
+                        })()}
+
+                        {/* 2nd Place */}
+                        {(() => {
+                          const p2 =
+                            t.bracket_data?.podium?.second ||
+                            (t.runner_up_id ? store.getProfile(t.runner_up_id) : undefined);
+                          const name2 = p2?.full_name || 'Məharət Kərimli';
+                          const elo2 = p2?.current_elo ?? 560;
+                          return (
+                            <Link
+                              href={store.getPlayerHref(p2?.id || 'p-f-meharet-kerimli', name2)}
+                              className="flex items-center gap-3 p-3 rounded-xl bg-slate-800/70 border border-slate-600/50 hover:border-slate-400 transition group"
+                            >
+                              <div className="w-10 h-10 rounded-xl bg-slate-300 text-slate-950 font-display font-black text-base flex items-center justify-center shrink-0 shadow-md">
+                                🥈
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[10px] font-mono uppercase tracking-wider text-slate-300 font-bold">
+                                  2-ci Yer • Gümüş
+                                </div>
+                                <div className="text-sm font-display font-black text-white truncate group-hover:text-blue-300 transition">
+                                  {name2}
+                                </div>
+                                <div className="text-[11px] font-mono text-slate-400">
+                                  {elo2} ELO • Finalçı
+                                </div>
+                              </div>
+                            </Link>
+                          );
+                        })()}
+
+                        {/* 3rd Place */}
+                        {(() => {
+                          const p3 =
+                            t.bracket_data?.podium?.third ||
+                            (t.third_place_id ? store.getProfile(t.third_place_id) : undefined);
+                          const name3 = p3?.full_name || 'Əhəd Zamanlı';
+                          const elo3 = p3?.current_elo ?? 586;
+                          return (
+                            <Link
+                              href={store.getPlayerHref(p3?.id || 'p-f-ehed-zamanli', name3)}
+                              className="flex items-center gap-3 p-3 rounded-xl bg-orange-950/40 border border-orange-500/40 hover:border-orange-400 transition group"
+                            >
+                              <div className="w-10 h-10 rounded-xl bg-orange-400 text-slate-950 font-display font-black text-base flex items-center justify-center shrink-0 shadow-md">
+                                🥉
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-[10px] font-mono uppercase tracking-wider text-orange-300 font-bold">
+                                  3-cü Yer • Bürünc
+                                </div>
+                                <div className="text-sm font-display font-black text-white truncate group-hover:text-orange-300 transition">
+                                  {name3}
+                                </div>
+                                <div className="text-[11px] font-mono text-orange-200/80">
+                                  {elo3} ELO • 3-cü yer: 3-2
+                                </div>
+                              </div>
+                            </Link>
+                          );
+                        })()}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Registered Students Section on Card */}

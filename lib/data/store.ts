@@ -35,9 +35,9 @@ import { getSupabaseClient } from '../supabase/client';
 import { buildSlugMap, generateSlug, isUuid, normalizeForSearch, shortIdSuffix } from '../utils/slug';
 
 const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v8',
-  MATCHES: 'bhos_tt_matches_v8',
-  TOURNAMENTS: 'bhos_tt_tournaments_v9',
+  PROFILES: 'bhos_tt_profiles_v10',
+  MATCHES: 'bhos_tt_matches_v10',
+  TOURNAMENTS: 'bhos_tt_tournaments_v11',
   RESERVATIONS: 'bhos_tt_reservations_v8',
   CURRENT_USER_ID: 'bhos_tt_active_user_id_v8',
 };
@@ -224,6 +224,12 @@ export class BHOSDataStore {
   private constructor() {
     if (typeof window !== 'undefined') {
       const oldKeys = [
+        'bhos_tt_profiles_v9',
+        'bhos_tt_matches_v9',
+        'bhos_tt_tournaments_v10',
+        'bhos_tt_profiles_v8',
+        'bhos_tt_matches_v8',
+        'bhos_tt_tournaments_v9',
         'bhos_tt_profiles_v7',
         'bhos_tt_matches_v7',
         'bhos_tt_profiles_v6',
@@ -267,10 +273,37 @@ export class BHOSDataStore {
       if (this.tournaments.length === 0) {
         this.tournaments = [...INITIAL_TOURNAMENTS];
       } else {
-        // Guarantee latest Foundation tournament rules, date and format from initial seed
+        // Guarantee latest Foundation tournament completed results, podium, and bracket from initial seed
         this.tournaments = this.tournaments.map((t) => {
           const init = INITIAL_TOURNAMENTS.find((it) => it.id === t.id || it.slug === t.slug);
           if (init) {
+            const isFoundation =
+              init.id === 'tourn-foundation-2026' || init.slug === 'foundation-kuboku-2026';
+            if (isFoundation) {
+              return {
+                ...init,
+                ...t,
+                title: init.title,
+                status: 'completed',
+                winner_id: t.winner_id || init.winner_id,
+                runner_up_id: t.runner_up_id || init.runner_up_id,
+                third_place_id: t.third_place_id || init.third_place_id,
+                start_date: init.start_date,
+                end_date: init.end_date,
+                custom_rules: init.custom_rules,
+                max_participants: 12,
+                group_size: 6,
+                advance_per_group: 4,
+                location: init.location,
+                format: init.format,
+                bracket_data:
+                  t.bracket_data?.rounds && t.bracket_data.rounds.length >= 3 && t.bracket_data.third_place_match
+                    ? t.bracket_data
+                    : init.bracket_data,
+                participants: init.participants,
+              };
+            }
+
             const hasStoredGroups = Boolean(t.bracket_data?.groups && t.bracket_data.groups.length > 0);
             const cachedBracket = this.getBracketDataFromCache(t.slug) || this.getBracketDataFromCache(t.id);
             const hasCachedGroups = Boolean(cachedBracket?.groups && cachedBracket.groups.length > 0);
@@ -670,19 +703,45 @@ export class BHOSDataStore {
       }
 
       if (data && data.length > 0) {
-        this.profiles = (data as PlayerProfile[]).map((p) => {
-          const rawDept = getProfileDepartment(p) || 'Computer Engineering';
-          const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
-          return {
-            ...p,
-            major_faculty: canonicalDept,
-            faculty: p.faculty || canonicalDept,
-            department: p.department || canonicalDept,
-            major: p.major || canonicalDept,
-            group: p.group || '',
-            avatar_url: normalizeAvatarUrl(p.avatar_url),
-          };
-        });
+        const cloudProfiles: PlayerProfile[] = (data as PlayerProfile[])
+          .filter((p) => {
+            const nameLower = (p.full_name || '').toLowerCase();
+            return !nameLower.includes('adəm rəhimli') && !nameLower.includes('adem rehimli');
+          })
+          .map((p) => {
+            const rawDept = getProfileDepartment(p) || 'Computer Engineering';
+            const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
+            return {
+              ...p,
+              major_faculty: canonicalDept,
+              faculty: p.faculty || canonicalDept,
+              department: p.department || canonicalDept,
+              major: p.major || canonicalDept,
+              group: p.group || '',
+              avatar_url: normalizeAvatarUrl(p.avatar_url),
+            };
+          });
+
+        // Merge any missing Foundation 2026 seed profiles (or their post-tournament stats if cloud hasn't run 035 yet)
+        const byEmail = new Map(cloudProfiles.map((p) => [(p.email || '').toLowerCase(), p]));
+        const byName = new Map(cloudProfiles.map((p) => [(p.full_name || '').toLowerCase(), p]));
+
+        for (const seed of INITIAL_PROFILES) {
+          if (seed.admission_year !== 2026) continue;
+          const existing =
+            byEmail.get((seed.email || '').toLowerCase()) ||
+            byName.get((seed.full_name || '').toLowerCase());
+          if (!existing) {
+            cloudProfiles.push({ ...seed });
+          } else if ((existing.matches_played || 0) === 0 && seed.matches_played > 0) {
+            existing.current_elo = seed.current_elo;
+            existing.matches_played = seed.matches_played;
+            existing.wins = seed.wins;
+            existing.losses = seed.losses;
+          }
+        }
+
+        this.profiles = cloudProfiles;
         this.recalculateRanks();
         setStored(STORAGE_KEYS.PROFILES, this.profiles);
 
@@ -726,6 +785,18 @@ export class BHOSDataStore {
         const matchMap = new Map<string, MatchRecord>();
 
         (data as MatchRecord[]).forEach((m) => {
+          const p1Name = (m.player1_name || '').toLowerCase();
+          const p2Name = (m.player2_name || '').toLowerCase();
+          if (
+            p1Name.includes('adəm rəhimli') ||
+            p1Name.includes('adem rehimli') ||
+            p2Name.includes('adəm rəhimli') ||
+            p2Name.includes('adem rehimli') ||
+            m.player1_id === 'p-f-adem-rehimli' ||
+            m.player2_id === 'p-f-adem-rehimli'
+          ) {
+            return;
+          }
           if (isApprovedMatch(m, resolved, deleted)) {
             const status: string =
               resolved[m.id] || (m.status === 'approved' ? 'approved' : 'confirmed');
@@ -733,6 +804,15 @@ export class BHOSDataStore {
             matchMap.set(m.id, { ...m, status, auto_approved: autoApproved });
           }
         });
+
+        // If the cloud database has not yet executed 035_log_foundation_cup_results.sql, include the 38 official matches
+        if (matchMap.size < INITIAL_MATCHES.length) {
+          INITIAL_MATCHES.forEach((im) => {
+            if (!matchMap.has(im.id)) {
+              matchMap.set(im.id, im);
+            }
+          });
+        }
 
         this.matches = Array.from(matchMap.values()).sort(
           (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
@@ -817,6 +897,37 @@ export class BHOSDataStore {
           );
           const cachedBracket = this.getBracketDataFromCache(t.slug) || this.getBracketDataFromCache(t.id);
 
+          const isFoundation =
+            t.id === 'tourn-foundation-2026' ||
+            t.slug === 'foundation-kuboku-2026' ||
+            init?.id === 'tourn-foundation-2026' ||
+            init?.slug === 'foundation-kuboku-2026';
+
+          if (isFoundation && init) {
+            t.status = 'completed';
+            t.title = init.title;
+            t.winner_id = t.winner_id || init.winner_id;
+            t.runner_up_id = t.runner_up_id || init.runner_up_id;
+            t.third_place_id = t.third_place_id || init.third_place_id;
+            t.max_participants = 12;
+            t.group_size = 6;
+            t.advance_per_group = 4;
+            t.custom_rules = init.custom_rules;
+            t.description = init.description;
+            const cloudHasCompletedBracket = Boolean(
+              t.bracket_data?.rounds &&
+                t.bracket_data.rounds.length >= 3 &&
+                t.bracket_data.third_place_match
+            );
+            if (!cloudHasCompletedBracket) {
+              t.bracket_data = init.bracket_data;
+            }
+            this.saveBracketDataToCache(t.slug, t.bracket_data);
+            this.saveBracketDataToCache(t.id, t.bracket_data);
+            t.participants = init.participants;
+            mergedTournaments.push(t);
+            continue;
+          }
           const cloudHasGroups = Boolean(t.bracket_data?.groups && t.bracket_data.groups.length > 0);
           const localHasGroups = Boolean(localExisting?.bracket_data?.groups && localExisting.bracket_data.groups.length > 0);
           const cachedHasGroups = Boolean(cachedBracket?.groups && cachedBracket.groups.length > 0);

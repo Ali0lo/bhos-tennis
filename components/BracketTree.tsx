@@ -108,12 +108,28 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
   const rounds = tournament.bracket_data.rounds;
   const finalRound = rounds[rounds.length - 1];
   const finalMatch = finalRound?.matches?.[0];
+  const thirdPlaceMatch = tournament.bracket_data.third_place_match;
   const championProfile =
-    finalMatch?.status === 'completed' && finalMatch.winner_id
+    tournament.bracket_data.podium?.first ||
+    (finalMatch?.status === 'completed' && finalMatch.winner_id
       ? finalMatch.player1?.id === finalMatch.winner_id
         ? finalMatch.player1
         : finalMatch.player2
-      : null;
+      : null);
+  const runnerUpProfile =
+    tournament.bracket_data.podium?.second ||
+    (finalMatch?.status === 'completed' && finalMatch.winner_id
+      ? finalMatch.player1?.id === finalMatch.winner_id
+        ? finalMatch.player2
+        : finalMatch.player1
+      : null);
+  const thirdPlaceProfile =
+    tournament.bracket_data.podium?.third ||
+    (thirdPlaceMatch?.status === 'completed' && thirdPlaceMatch.winner_id
+      ? thirdPlaceMatch.player1?.id === thirdPlaceMatch.winner_id
+        ? thirdPlaceMatch.player1
+        : thirdPlaceMatch.player2
+      : null);
 
   const handleOpenScoreModal = (roundIndex: number, matchIndex: number, match: BracketMatch) => {
     if (!isAdmin || !match.player1 || !match.player2 || match.is_bye) return;
@@ -259,24 +275,76 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="p-4 rounded-2xl border border-amber-500/40 bg-slate-900 flex items-center justify-between gap-4 shadow-sm"
+          className="p-4 sm:p-5 rounded-2xl border border-amber-500/40 bg-slate-900 space-y-3 shadow-sm"
         >
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 shrink-0">
-              <Trophy className="w-5 h-5" />
-            </div>
-            <div>
-              <span className="text-[10px] font-mono uppercase tracking-widest text-amber-400 font-bold block">
-                Tournament Champion
-              </span>
-              <span className="text-base sm:text-lg font-display font-black text-white">
-                {championProfile.full_name}
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <div className="flex items-center gap-2">
+              <Trophy className="w-4 h-4 text-amber-400" />
+              <span className="text-xs font-mono uppercase tracking-widest text-amber-400 font-bold">
+                Rəsmi Pley-off Fəxri Kürsüsü (Podium)
               </span>
             </div>
+            <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono font-bold">
+              Turnir Tamamlandı
+            </span>
           </div>
-          <span className="px-3 py-1 rounded-full bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-mono font-bold">
-            {championProfile.current_elo} ELO
-          </span>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="flex items-center justify-between p-3 rounded-xl bg-amber-500/15 border border-amber-400/40">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <span className="text-lg">🥇</span>
+                <div className="min-w-0">
+                  <span className="block text-[10px] font-mono uppercase tracking-wider text-amber-300 font-bold">
+                    1-ci Yer • Çempion
+                  </span>
+                  <span className="block text-sm font-display font-black text-white truncate">
+                    {championProfile.full_name}
+                  </span>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-lg bg-amber-500/20 text-amber-200 text-xs font-mono font-bold shrink-0">
+                {championProfile.current_elo} ELO
+              </span>
+            </div>
+
+            {runnerUpProfile && (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-800/70 border border-slate-600/50">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-lg">🥈</span>
+                  <div className="min-w-0">
+                    <span className="block text-[10px] font-mono uppercase tracking-wider text-slate-300 font-bold">
+                      2-ci Yer • Gümüş
+                    </span>
+                    <span className="block text-sm font-display font-black text-white truncate">
+                      {runnerUpProfile.full_name}
+                    </span>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-lg bg-slate-700/60 text-slate-200 text-xs font-mono font-bold shrink-0">
+                  {runnerUpProfile.current_elo} ELO
+                </span>
+              </div>
+            )}
+
+            {thirdPlaceProfile && (
+              <div className="flex items-center justify-between p-3 rounded-xl bg-orange-950/40 border border-orange-500/40">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <span className="text-lg">🥉</span>
+                  <div className="min-w-0">
+                    <span className="block text-[10px] font-mono uppercase tracking-wider text-orange-300 font-bold">
+                      3-cü Yer • Bürünc
+                    </span>
+                    <span className="block text-sm font-display font-black text-white truncate">
+                      {thirdPlaceProfile.full_name}
+                    </span>
+                  </div>
+                </div>
+                <span className="px-2 py-0.5 rounded-lg bg-orange-500/20 text-orange-200 text-xs font-mono font-bold shrink-0">
+                  {thirdPlaceProfile.current_elo} ELO
+                </span>
+              </div>
+            )}
+          </div>
         </motion.div>
       )}
 
@@ -584,6 +652,86 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                     </div>
                   );
                 })}
+
+                {isFinal && thirdPlaceMatch && (
+                  <div className="relative group mt-4">
+                    <div className="rounded-2xl p-3.5 bg-slate-900 border border-orange-500/50 shadow-md ring-1 ring-orange-500/20 relative z-10">
+                      <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-2 pb-1.5 border-b border-slate-800">
+                        <span className="flex items-center gap-1.5 text-orange-400 font-bold">
+                          <span>🥉 3-cü Yer Uğrunda</span>
+                        </span>
+                        <span className="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
+                          <Check className="w-3 h-3 text-emerald-500 stroke-[3]" /> Completed
+                        </span>
+                      </div>
+
+                      <div className="space-y-1.5">
+                        {thirdPlaceMatch.player1 && (
+                          <div
+                            className={`flex items-center justify-between p-2 rounded-xl text-xs ${
+                              thirdPlaceMatch.winner_id === thirdPlaceMatch.player1.id
+                                ? 'bg-orange-500/20 text-white font-bold border border-orange-500/50 shadow-sm'
+                                : 'text-slate-500 opacity-60 bg-slate-950/50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                              {thirdPlaceMatch.winner_id === thirdPlaceMatch.player1.id && (
+                                <Award className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                              )}
+                              <span className="truncate font-semibold">
+                                {thirdPlaceMatch.player1.full_name}
+                              </span>
+                            </div>
+                            <span
+                              className={`font-mono font-black text-sm shrink-0 ${
+                                thirdPlaceMatch.winner_id === thirdPlaceMatch.player1.id
+                                  ? 'text-orange-400'
+                                  : ''
+                              }`}
+                            >
+                              {thirdPlaceMatch.player1_score ?? '-'}
+                            </span>
+                          </div>
+                        )}
+
+                        {thirdPlaceMatch.player2 && (
+                          <div
+                            className={`flex items-center justify-between p-2 rounded-xl text-xs ${
+                              thirdPlaceMatch.winner_id === thirdPlaceMatch.player2.id
+                                ? 'bg-orange-500/20 text-white font-bold border border-orange-500/50 shadow-sm'
+                                : 'text-slate-500 opacity-60 bg-slate-950/50'
+                            }`}
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0 pr-2">
+                              {thirdPlaceMatch.winner_id === thirdPlaceMatch.player2.id && (
+                                <Award className="w-3.5 h-3.5 text-orange-400 shrink-0" />
+                              )}
+                              <span className="truncate font-semibold">
+                                {thirdPlaceMatch.player2.full_name}
+                              </span>
+                            </div>
+                            <span
+                              className={`font-mono font-black text-sm shrink-0 ${
+                                thirdPlaceMatch.winner_id === thirdPlaceMatch.player2.id
+                                  ? 'text-orange-400'
+                                  : ''
+                              }`}
+                            >
+                              {thirdPlaceMatch.player2_score ?? '-'}
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      {thirdPlaceMatch.set_scores && (
+                        <div className="mt-2 pt-1.5 border-t border-white/5 flex items-center justify-between text-[10px] font-mono text-slate-500">
+                          <span>Sets</span>
+                          <span className="text-slate-400">{thirdPlaceMatch.set_scores}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           );

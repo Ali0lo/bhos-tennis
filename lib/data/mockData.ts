@@ -1,25 +1,31 @@
-import { PlayerProfile, MatchRecord, Tournament, TableReservation, TournamentGroup, GroupMatch } from './types';
-import { generateSingleEliminationBracket, generateTournamentGroups } from '../tournament';
+import { PlayerProfile, MatchRecord, Tournament, TableReservation, TournamentGroup, GroupMatch, BracketMatch } from './types';
+import { calculateMatchElo } from '../elo';
 
-export const FOUNDATION_PLAYERS: PlayerProfile[] = [
-  // Qrup A (7 Oyunçu)
+const BASE_FOUNDATION_PLAYERS: PlayerProfile[] = [
+  // Qrup A (6 Oyunçu — Adəm Rəhimli iştirak etmədiyi üçün çıxarılıb)
   {
     id: 'p-f-yusif-xanlarov',
     full_name: 'Yusif Xanlarov',
+    slug: 'yusif-xanlarov',
     email: 'yusif.xanlarov.std@bhos.edu.az',
     major_faculty: 'Computer Engineering',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand Offensive',
     blade_equipment: 'Butterfly Timo Boll ALC',
     forehand_rubber: 'Butterfly Dignics 09C',
     backhand_rubber: 'Butterfly Tenergy 05',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
     rank: 1,
     rank_change: 0,
@@ -28,20 +34,26 @@ export const FOUNDATION_PLAYERS: PlayerProfile[] = [
   {
     id: 'p-f-ehed-zamanli',
     full_name: 'Əhəd Zamanlı',
+    slug: 'ahad-zamanli',
     email: 'ehed.zamanli.std@bhos.edu.az',
     major_faculty: 'Information Security',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand All-round',
     blade_equipment: 'Stiga Allround Classic',
     forehand_rubber: 'Yasaka Rakza 7',
     backhand_rubber: 'Yasaka Rakza 7',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
     rank: 2,
     rank_change: 0,
@@ -50,20 +62,26 @@ export const FOUNDATION_PLAYERS: PlayerProfile[] = [
   {
     id: 'p-f-mehemmed-esedov',
     full_name: 'Məhəmməd Əsədov',
+    slug: 'muhammad-asadov',
     email: 'mehemmed.esedov.std@bhos.edu.az',
     major_faculty: 'Process Automation Engineering',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand Offensive',
     blade_equipment: 'Donic Waldner Senso V1',
     forehand_rubber: 'Donic Baracuda',
     backhand_rubber: 'Donic Baracuda',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
     rank: 3,
     rank_change: 0,
@@ -72,88 +90,84 @@ export const FOUNDATION_PLAYERS: PlayerProfile[] = [
   {
     id: 'p-f-sabir-meherremli',
     full_name: 'Sabir Məhərrəmli',
+    slug: 'sabir-maharramli',
     email: 'sabir.meherremli.std@bhos.edu.az',
     major_faculty: 'Petroleum Engineering',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand All-round',
     blade_equipment: 'Yasaka Sweden Extra',
     forehand_rubber: 'Xiom Vega Pro',
     backhand_rubber: 'Xiom Vega Europe',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
     rank: 4,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
   {
-    id: 'p-f-adem-rehimli',
-    full_name: 'Adəm Rəhimli',
-    email: 'adem.rehimli.std@bhos.edu.az',
-    major_faculty: 'Chemical Engineering',
+    id: 'p-f-kamran-aliev',
+    full_name: 'Kamran Əliyev',
+    slug: 'kamran-aliyev',
+    email: 'kamran.aliev.std@bhos.edu.az',
+    major_faculty: 'Computer Engineering',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
-    playing_style: 'Shakehand Offensive',
-    blade_equipment: 'Butterfly Primorac',
-    forehand_rubber: 'Butterfly Rozena',
-    backhand_rubber: 'Butterfly Rozena',
-    current_elo: 1000,
+    playing_level: 'Beginner',
+    playing_style: 'Shakehand All-round',
+    blade_equipment: 'Tibhar Samsonov Alpha',
+    forehand_rubber: 'Tibhar Evolution EL-P',
+    backhand_rubber: 'Tibhar Evolution FX-P',
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
     rank: 5,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
   {
-    id: 'p-f-kamran-aliev',
-    full_name: 'Kamran Aliev',
-    email: 'kamran.aliev.std@bhos.edu.az',
-    major_faculty: 'Computer Engineering',
-    admission_year: 2026,
-    user_type: 'student',
-    gender: 'male',
-    role: 'player',
-    playing_style: 'Shakehand All-round',
-    blade_equipment: 'Tibhar Samsonov Alpha',
-    forehand_rubber: 'Tibhar Evolution EL-P',
-    backhand_rubber: 'Tibhar Evolution FX-P',
-    current_elo: 1000,
-    matches_played: 0,
-    wins: 0,
-    losses: 0,
-    is_active: true,
-    rank: 6,
-    rank_change: 0,
-    created_at: '2026-11-01T10:00:00Z',
-  },
-  {
     id: 'p-f-adil-suleymanov',
     full_name: 'Adil Süleymanov',
+    slug: 'adil-suleymanov',
     email: 'adil.suleymanov.std@bhos.edu.az',
     major_faculty: 'Information Security',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand All-round',
     blade_equipment: 'Stiga Infinity VPS V',
     forehand_rubber: 'DHS Hurricane 3',
     backhand_rubber: 'Yasaka Rakza 7',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
-    rank: 7,
+    rank: 6,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
@@ -162,173 +176,528 @@ export const FOUNDATION_PLAYERS: PlayerProfile[] = [
   {
     id: 'p-f-meharet-kerimli',
     full_name: 'Məharət Kərimli',
+    slug: 'maharat-karimli',
     email: 'meharet.kerimli.std@bhos.edu.az',
     major_faculty: 'Computer Engineering',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand Offensive',
     blade_equipment: 'Butterfly Viscaria',
     forehand_rubber: 'Butterfly Dignics 05',
     backhand_rubber: 'Butterfly Tenergy 05',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
-    rank: 8,
+    rank: 7,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
   {
     id: 'p-f-kazim-fetelizade',
     full_name: 'Kazım Fətəlizadə',
+    slug: 'kazim-fatalizada',
     email: 'kazim.fetelizade.std@bhos.edu.az',
     major_faculty: 'Process Automation Engineering',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand All-round',
     blade_equipment: 'Yasaka Ma Lin Carbon',
     forehand_rubber: 'Yasaka Rakza 7',
     backhand_rubber: 'Yasaka Rakza 7',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
-    rank: 9,
+    rank: 8,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
   {
     id: 'p-f-qulam-rustemzade',
     full_name: 'Qulam Rüstəmzadə',
+    slug: 'qulam-rustamzada',
     email: 'qulam.rustemzade.std@bhos.edu.az',
     major_faculty: 'Petroleum Engineering',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand Defensive',
     blade_equipment: 'Butterfly Innershield Layer ZLF',
     forehand_rubber: 'Butterfly Tackiness Chop II',
     backhand_rubber: 'Butterfly Feint Long III',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
-    rank: 10,
+    rank: 9,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
   {
     id: 'p-f-faiq-huseynli',
     full_name: 'Faiq Hüseynli',
+    slug: 'faiq-huseynli',
     email: 'faiq.huseynli.std@bhos.edu.az',
     major_faculty: 'Chemical Engineering',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand Offensive',
     blade_equipment: 'Donic Ovtcharov True Carbon',
     forehand_rubber: 'Donic Bluefire M2',
     backhand_rubber: 'Donic Bluefire M3',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
-    rank: 11,
+    rank: 10,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
   {
     id: 'p-f-rafiq-hesenli',
     full_name: 'Rafiq Həsənli',
+    slug: 'rafiq-hasanli',
     email: 'rafiq.hesenli.std@bhos.edu.az',
     major_faculty: 'Computer Engineering',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand Offensive',
     blade_equipment: 'Xiom Feel AX',
     forehand_rubber: 'Xiom Omega VII Pro',
     backhand_rubber: 'Xiom Vega X',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
-    rank: 12,
+    rank: 11,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
   {
     id: 'p-f-meherrem-mirzexanli',
     full_name: 'Məhərrəm Mirzəxanlı',
+    slug: 'maharram-mirzaxanli',
     email: 'meherrem.mirzexanli.std@bhos.edu.az',
     major_faculty: 'Process Automation Engineering',
+    department: 'Foundation',
+    group: 'Foundation / 2026',
     admission_year: 2026,
     user_type: 'student',
     gender: 'male',
     role: 'player',
+    playing_level: 'Beginner',
     playing_style: 'Shakehand All-round',
     blade_equipment: 'Butterfly Korbel',
     forehand_rubber: 'Butterfly Sriver EL',
     backhand_rubber: 'Butterfly Sriver FX',
-    current_elo: 1000,
+    current_elo: 500,
     matches_played: 0,
     wins: 0,
     losses: 0,
+    status: 'approved',
+    is_verified: true,
     is_active: true,
-    rank: 13,
+    rank: 12,
     rank_change: 0,
     created_at: '2026-11-01T10:00:00Z',
   },
 ];
 
-function buildInitialGroupMatches(groupId: string, players: PlayerProfile[]): GroupMatch[] {
-  const matches: GroupMatch[] = [];
-  let mIdx = 0;
-  for (let i = 0; i < players.length; i++) {
-    for (let j = i + 1; j < players.length; j++) {
-      matches.push({
-        id: `${groupId}-m${mIdx++}`,
-        groupId,
-        player1: players[i],
-        player2: players[j],
-        status: 'ready',
+// Official 38 Foundation Cup matches in chronological order
+const FOUNDATION_CUP_RAW_MATCHES: Array<{
+  p1Id: string;
+  p2Id: string;
+  s1: number;
+  s2: number;
+  stage: 'group_a' | 'group_b' | 'playoff_qf' | 'playoff_sf' | 'playoff_3rd' | 'playoff_final';
+  minutesOffset: number;
+}> = [
+  // Group A (15 matches, Adəm Rəhimli excluded)
+  { p1Id: 'p-f-ehed-zamanli',      p2Id: 'p-f-adil-suleymanov',  s1: 2, s2: 0, stage: 'group_a', minutesOffset: 5 },
+  { p1Id: 'p-f-mehemmed-esedov',   p2Id: 'p-f-kamran-aliev',     s1: 2, s2: 0, stage: 'group_a', minutesOffset: 10 },
+  { p1Id: 'p-f-yusif-xanlarov',    p2Id: 'p-f-adil-suleymanov',  s1: 2, s2: 0, stage: 'group_a', minutesOffset: 15 },
+  { p1Id: 'p-f-mehemmed-esedov',   p2Id: 'p-f-sabir-meherremli', s1: 0, s2: 2, stage: 'group_a', minutesOffset: 20 },
+  { p1Id: 'p-f-yusif-xanlarov',    p2Id: 'p-f-kamran-aliev',     s1: 2, s2: 0, stage: 'group_a', minutesOffset: 25 },
+  { p1Id: 'p-f-ehed-zamanli',      p2Id: 'p-f-mehemmed-esedov',  s1: 2, s2: 0, stage: 'group_a', minutesOffset: 30 },
+  { p1Id: 'p-f-kamran-aliev',      p2Id: 'p-f-sabir-meherremli', s1: 0, s2: 2, stage: 'group_a', minutesOffset: 35 },
+  { p1Id: 'p-f-adil-suleymanov',   p2Id: 'p-f-mehemmed-esedov',  s1: 2, s2: 0, stage: 'group_a', minutesOffset: 40 },
+  { p1Id: 'p-f-yusif-xanlarov',    p2Id: 'p-f-sabir-meherremli', s1: 2, s2: 0, stage: 'group_a', minutesOffset: 45 },
+  { p1Id: 'p-f-kamran-aliev',      p2Id: 'p-f-ehed-zamanli',     s1: 0, s2: 2, stage: 'group_a', minutesOffset: 50 },
+  { p1Id: 'p-f-yusif-xanlarov',    p2Id: 'p-f-mehemmed-esedov',  s1: 2, s2: 0, stage: 'group_a', minutesOffset: 55 },
+  { p1Id: 'p-f-sabir-meherremli',  p2Id: 'p-f-ehed-zamanli',     s1: 0, s2: 2, stage: 'group_a', minutesOffset: 60 },
+  { p1Id: 'p-f-kamran-aliev',      p2Id: 'p-f-adil-suleymanov',  s1: 0, s2: 2, stage: 'group_a', minutesOffset: 65 },
+  { p1Id: 'p-f-yusif-xanlarov',    p2Id: 'p-f-ehed-zamanli',     s1: 1, s2: 2, stage: 'group_a', minutesOffset: 70 },
+  { p1Id: 'p-f-sabir-meherremli',  p2Id: 'p-f-adil-suleymanov',  s1: 2, s2: 0, stage: 'group_a', minutesOffset: 75 },
+
+  // Group B (15 matches)
+  { p1Id: 'p-f-meharet-kerimli',     p2Id: 'p-f-meherrem-mirzexanli', s1: 2, s2: 0, stage: 'group_b', minutesOffset: 80 },
+  { p1Id: 'p-f-kazim-fetelizade',    p2Id: 'p-f-rafiq-hesenli',       s1: 2, s2: 0, stage: 'group_b', minutesOffset: 85 },
+  { p1Id: 'p-f-qulam-rustemzade',    p2Id: 'p-f-faiq-huseynli',       s1: 2, s2: 0, stage: 'group_b', minutesOffset: 90 },
+  { p1Id: 'p-f-meharet-kerimli',     p2Id: 'p-f-rafiq-hesenli',       s1: 2, s2: 0, stage: 'group_b', minutesOffset: 95 },
+  { p1Id: 'p-f-meherrem-mirzexanli', p2Id: 'p-f-faiq-huseynli',       s1: 0, s2: 2, stage: 'group_b', minutesOffset: 100 },
+  { p1Id: 'p-f-kazim-fetelizade',    p2Id: 'p-f-qulam-rustemzade',    s1: 1, s2: 2, stage: 'group_b', minutesOffset: 105 },
+  { p1Id: 'p-f-meharet-kerimli',     p2Id: 'p-f-faiq-huseynli',       s1: 2, s2: 0, stage: 'group_b', minutesOffset: 110 },
+  { p1Id: 'p-f-rafiq-hesenli',       p2Id: 'p-f-qulam-rustemzade',    s1: 0, s2: 2, stage: 'group_b', minutesOffset: 115 },
+  { p1Id: 'p-f-meherrem-mirzexanli', p2Id: 'p-f-kazim-fetelizade',    s1: 0, s2: 2, stage: 'group_b', minutesOffset: 120 },
+  { p1Id: 'p-f-meharet-kerimli',     p2Id: 'p-f-qulam-rustemzade',    s1: 1, s2: 2, stage: 'group_b', minutesOffset: 125 },
+  { p1Id: 'p-f-faiq-huseynli',       p2Id: 'p-f-kazim-fetelizade',    s1: 0, s2: 2, stage: 'group_b', minutesOffset: 130 },
+  { p1Id: 'p-f-rafiq-hesenli',       p2Id: 'p-f-meherrem-mirzexanli', s1: 0, s2: 2, stage: 'group_b', minutesOffset: 135 },
+  { p1Id: 'p-f-meharet-kerimli',     p2Id: 'p-f-kazim-fetelizade',    s1: 2, s2: 1, stage: 'group_b', minutesOffset: 140 },
+  { p1Id: 'p-f-qulam-rustemzade',    p2Id: 'p-f-meherrem-mirzexanli', s1: 2, s2: 0, stage: 'group_b', minutesOffset: 145 },
+  { p1Id: 'p-f-faiq-huseynli',       p2Id: 'p-f-rafiq-hesenli',       s1: 2, s2: 0, stage: 'group_b', minutesOffset: 150 },
+
+  // Playoffs (8 matches)
+  // Quarterfinals
+  { p1Id: 'p-f-ehed-zamanli',     p2Id: 'p-f-faiq-huseynli',    s1: 2, s2: 0, stage: 'playoff_qf',    minutesOffset: 180 },
+  { p1Id: 'p-f-meharet-kerimli',  p2Id: 'p-f-sabir-meherremli', s1: 2, s2: 1, stage: 'playoff_qf',    minutesOffset: 190 },
+  { p1Id: 'p-f-qulam-rustemzade', p2Id: 'p-f-adil-suleymanov',  s1: 2, s2: 0, stage: 'playoff_qf',    minutesOffset: 200 },
+  { p1Id: 'p-f-yusif-xanlarov',   p2Id: 'p-f-kazim-fetelizade', s1: 2, s2: 0, stage: 'playoff_qf',    minutesOffset: 210 },
+  // Semifinals
+  { p1Id: 'p-f-ehed-zamanli',     p2Id: 'p-f-meharet-kerimli',  s1: 1, s2: 3, stage: 'playoff_sf',    minutesOffset: 240 },
+  { p1Id: 'p-f-qulam-rustemzade', p2Id: 'p-f-yusif-xanlarov',   s1: 0, s2: 3, stage: 'playoff_sf',    minutesOffset: 255 },
+  // 3rd Place Match
+  { p1Id: 'p-f-ehed-zamanli',     p2Id: 'p-f-qulam-rustemzade', s1: 3, s2: 2, stage: 'playoff_3rd',   minutesOffset: 285 },
+  // Grand Final
+  { p1Id: 'p-f-meharet-kerimli',  p2Id: 'p-f-yusif-xanlarov',   s1: 0, s2: 3, stage: 'playoff_final', minutesOffset: 315 },
+];
+
+function buildFoundationCupData() {
+  const playerMap = new Map<string, PlayerProfile>();
+  BASE_FOUNDATION_PLAYERS.forEach((p) => {
+    playerMap.set(p.id, { ...p });
+  });
+
+  const baseDateMs = new Date('2026-11-07T06:00:00Z').getTime(); // 10:00+04:00
+  const matches: MatchRecord[] = [];
+  const groupAMatches: GroupMatch[] = [];
+  const groupBMatches: GroupMatch[] = [];
+
+  let groupAIdx = 0;
+  let groupBIdx = 0;
+
+  FOUNDATION_CUP_RAW_MATCHES.forEach((raw, idx) => {
+    const p1 = playerMap.get(raw.p1Id)!;
+    const p2 = playerMap.get(raw.p2Id)!;
+
+    const p1EloBefore = p1.current_elo;
+    const p2EloBefore = p2.current_elo;
+
+    const eloRes = calculateMatchElo({
+      player1Elo: p1EloBefore,
+      player2Elo: p2EloBefore,
+      player1Won: raw.s1 > raw.s2,
+      player1SetsWon: raw.s1,
+      player2SetsWon: raw.s2,
+    });
+    const p1EloAfter = eloRes.player1EloAfter;
+    const p2EloAfter = eloRes.player2EloAfter;
+
+    p1.current_elo = p1EloAfter;
+    p2.current_elo = p2EloAfter;
+    p1.matches_played += 1;
+    p2.matches_played += 1;
+
+    const winnerId = raw.s1 > raw.s2 ? p1.id : p2.id;
+    if (raw.s1 > raw.s2) {
+      p1.wins += 1;
+      p2.losses += 1;
+    } else {
+      p2.wins += 1;
+      p1.losses += 1;
+    }
+
+    const matchIso = new Date(baseDateMs + raw.minutesOffset * 60_000).toISOString();
+    const stageLabel =
+      raw.stage === 'group_a' || raw.stage === 'group_b'
+        ? 'group'
+        : raw.stage;
+
+    matches.push({
+      id: `m-fc2026-${String(idx + 1).padStart(2, '0')}`,
+      tournament_id: 'tourn-foundation-2026',
+      tournament_title: '"Zəfər Günü" Foundation Kuboku',
+      winner_id: winnerId,
+      player1_id: p1.id,
+      player1_name: p1.full_name,
+      player2_id: p2.id,
+      player2_name: p2.full_name,
+      logged_by: 'p-1',
+      logged_by_name: 'Ali Iskandarli',
+      player1_score: raw.s1,
+      player2_score: raw.s2,
+      set_scores: `${raw.s1}-${raw.s2}`,
+      player1_elo_before: p1EloBefore,
+      player2_elo_before: p2EloBefore,
+      player1_elo_after: p1EloAfter,
+      player2_elo_after: p2EloAfter,
+      elo_delta: eloRes.delta,
+      status: 'confirmed',
+      stage: stageLabel,
+      auto_approved: true,
+      approved_by: 'p-1',
+      approved_at: matchIso,
+      created_at: matchIso,
+      match_date: matchIso,
+    });
+
+    if (raw.stage === 'group_a') {
+      groupAMatches.push({
+        id: `g-tourn-foundation-2026-a-m${groupAIdx++}`,
+        groupId: 'g-tourn-foundation-2026-a',
+        player1: { ...p1 },
+        player2: { ...p2 },
+        player1_score: raw.s1,
+        player2_score: raw.s2,
+        set_scores: `${raw.s1}-${raw.s2}`,
+        winner_id: winnerId,
+        status: 'completed',
+      });
+    } else if (raw.stage === 'group_b') {
+      groupBMatches.push({
+        id: `g-tourn-foundation-2026-b-m${groupBIdx++}`,
+        groupId: 'g-tourn-foundation-2026-b',
+        player1: { ...p1 },
+        player2: { ...p2 },
+        player1_score: raw.s1,
+        player2_score: raw.s2,
+        set_scores: `${raw.s1}-${raw.s2}`,
+        winner_id: winnerId,
+        status: 'completed',
       });
     }
-  }
-  return matches;
+  });
+
+  const updatedPlayers = Array.from(playerMap.values());
+  const byId = (id: string) => ({ ...playerMap.get(id)! });
+
+  const groupAPlayers = [
+    byId('p-f-ehed-zamanli'),
+    byId('p-f-yusif-xanlarov'),
+    byId('p-f-sabir-meherremli'),
+    byId('p-f-adil-suleymanov'),
+    byId('p-f-mehemmed-esedov'),
+    byId('p-f-kamran-aliev'),
+  ];
+
+  const groupBPlayers = [
+    byId('p-f-qulam-rustemzade'),
+    byId('p-f-meharet-kerimli'),
+    byId('p-f-kazim-fetelizade'),
+    byId('p-f-faiq-huseynli'),
+    byId('p-f-meherrem-mirzexanli'),
+    byId('p-f-rafiq-hesenli'),
+  ];
+
+  const groups: TournamentGroup[] = [
+    {
+      id: 'g-tourn-foundation-2026-a',
+      name: 'Qrup A',
+      players: groupAPlayers,
+      matches: groupAMatches.map((m) => ({
+        ...m,
+        player1: byId(m.player1.id),
+        player2: byId(m.player2.id),
+      })),
+      top_seed_id: 'p-f-yusif-xanlarov',
+    },
+    {
+      id: 'g-tourn-foundation-2026-b',
+      name: 'Qrup B',
+      players: groupBPlayers,
+      matches: groupBMatches.map((m) => ({
+        ...m,
+        player1: byId(m.player1.id),
+        player2: byId(m.player2.id),
+      })),
+      top_seed_id: 'p-f-meharet-kerimli',
+    },
+  ];
+
+  const playoffRounds: { name: string; matches: BracketMatch[] }[] = [
+    {
+      name: '1/4 Final',
+      matches: [
+        {
+          id: 'playoff-r0-m0',
+          roundIndex: 0,
+          matchIndex: 0,
+          player1: byId('p-f-ehed-zamanli'),
+          player2: byId('p-f-faiq-huseynli'),
+          player1_score: 2,
+          player2_score: 0,
+          set_scores: '2-0',
+          winner_id: 'p-f-ehed-zamanli',
+          nextMatchId: 'playoff-r1-m0',
+          nextMatchSlot: 1,
+          status: 'completed',
+        },
+        {
+          id: 'playoff-r0-m1',
+          roundIndex: 0,
+          matchIndex: 1,
+          player1: byId('p-f-meharet-kerimli'),
+          player2: byId('p-f-sabir-meherremli'),
+          player1_score: 2,
+          player2_score: 1,
+          set_scores: '2-1',
+          winner_id: 'p-f-meharet-kerimli',
+          nextMatchId: 'playoff-r1-m0',
+          nextMatchSlot: 2,
+          status: 'completed',
+        },
+        {
+          id: 'playoff-r0-m2',
+          roundIndex: 0,
+          matchIndex: 2,
+          player1: byId('p-f-qulam-rustemzade'),
+          player2: byId('p-f-adil-suleymanov'),
+          player1_score: 2,
+          player2_score: 0,
+          set_scores: '2-0',
+          winner_id: 'p-f-qulam-rustemzade',
+          nextMatchId: 'playoff-r1-m1',
+          nextMatchSlot: 1,
+          status: 'completed',
+        },
+        {
+          id: 'playoff-r0-m3',
+          roundIndex: 0,
+          matchIndex: 3,
+          player1: byId('p-f-yusif-xanlarov'),
+          player2: byId('p-f-kazim-fetelizade'),
+          player1_score: 2,
+          player2_score: 0,
+          set_scores: '2-0',
+          winner_id: 'p-f-yusif-xanlarov',
+          nextMatchId: 'playoff-r1-m1',
+          nextMatchSlot: 2,
+          status: 'completed',
+        },
+      ],
+    },
+    {
+      name: 'Yarımfinal',
+      matches: [
+        {
+          id: 'playoff-r1-m0',
+          roundIndex: 1,
+          matchIndex: 0,
+          player1: byId('p-f-ehed-zamanli'),
+          player2: byId('p-f-meharet-kerimli'),
+          player1_score: 1,
+          player2_score: 3,
+          set_scores: '1-3',
+          winner_id: 'p-f-meharet-kerimli',
+          nextMatchId: 'playoff-r2-m0',
+          nextMatchSlot: 1,
+          status: 'completed',
+        },
+        {
+          id: 'playoff-r1-m1',
+          roundIndex: 1,
+          matchIndex: 1,
+          player1: byId('p-f-qulam-rustemzade'),
+          player2: byId('p-f-yusif-xanlarov'),
+          player1_score: 0,
+          player2_score: 3,
+          set_scores: '0-3',
+          winner_id: 'p-f-yusif-xanlarov',
+          nextMatchId: 'playoff-r2-m0',
+          nextMatchSlot: 2,
+          status: 'completed',
+        },
+      ],
+    },
+    {
+      name: 'Final',
+      matches: [
+        {
+          id: 'playoff-r2-m0',
+          roundIndex: 2,
+          matchIndex: 0,
+          player1: byId('p-f-meharet-kerimli'),
+          player2: byId('p-f-yusif-xanlarov'),
+          player1_score: 0,
+          player2_score: 3,
+          set_scores: '0-3',
+          winner_id: 'p-f-yusif-xanlarov',
+          status: 'completed',
+        },
+      ],
+    },
+  ];
+
+  const thirdPlaceMatch: BracketMatch = {
+    id: 'playoff-3rd-place',
+    roundIndex: 2,
+    matchIndex: 1,
+    player1: byId('p-f-ehed-zamanli'),
+    player2: byId('p-f-qulam-rustemzade'),
+    player1_score: 3,
+    player2_score: 2,
+    set_scores: '3-2',
+    winner_id: 'p-f-ehed-zamanli',
+    status: 'completed',
+  };
+
+  return {
+    players: updatedPlayers,
+    matches: matches.slice().reverse(), // Newest first for match feed
+    groups,
+    playoffRounds,
+    thirdPlaceMatch,
+    podium: {
+      first: byId('p-f-yusif-xanlarov'),
+      second: byId('p-f-meharet-kerimli'),
+      third: byId('p-f-ehed-zamanli'),
+    },
+  };
 }
 
-const foundationGroupAPlayers = FOUNDATION_PLAYERS.slice(0, 7);
-const foundationGroupBPlayers = FOUNDATION_PLAYERS.slice(7, 13);
+const FOUNDATION_CUP_SIMULATION = buildFoundationCupData();
 
-export const FOUNDATION_GROUPS: TournamentGroup[] = [
-  {
-    id: 'g-tourn-foundation-2026-a',
-    name: 'Qrup A',
-    players: foundationGroupAPlayers,
-    matches: buildInitialGroupMatches('g-tourn-foundation-2026-a', foundationGroupAPlayers),
-    top_seed_id: 'p-f-yusif-xanlarov',
-  },
-  {
-    id: 'g-tourn-foundation-2026-b',
-    name: 'Qrup B',
-    players: foundationGroupBPlayers,
-    matches: buildInitialGroupMatches('g-tourn-foundation-2026-b', foundationGroupBPlayers),
-    top_seed_id: 'p-f-meharet-kerimli',
-  },
-];
+export const FOUNDATION_PLAYERS: PlayerProfile[] = FOUNDATION_CUP_SIMULATION.players;
+export const FOUNDATION_GROUPS: TournamentGroup[] = FOUNDATION_CUP_SIMULATION.groups;
 
 export const INITIAL_PROFILES: PlayerProfile[] = [
   ...FOUNDATION_PLAYERS,
@@ -532,43 +901,48 @@ export const INITIAL_PROFILES: PlayerProfile[] = [
   },
 ];
 
-export const INITIAL_MATCHES: MatchRecord[] = [];
+export const INITIAL_MATCHES: MatchRecord[] = FOUNDATION_CUP_SIMULATION.matches;
 
 export const INITIAL_TOURNAMENTS: Tournament[] = [
   {
     id: 'tourn-foundation-2026',
-    title: 'Foundation Tələbələri Üçün Stolüstü Tennis Turniri',
+    title: '"Zəfər Günü" Foundation Kuboku',
     slug: 'foundation-kuboku-2026',
     description:
-      'Bibiheybət kampusunda 2026-cı il qəbul (Foundation) tələbələri üçün rəsmi stolüstü tennis turniri. Qeydiyyat başa çatıb. 13 iştirakçı 2 qrupda (Qrup A: 7 nəfər, Qrup B: 6 nəfər) dairəvi oyunlar keçirir və hər qrupdan ən yaxşı 4 oyunçu 1/4 Final (Olimpiya) mərhələsinə yüksəlir.',
-    custom_rules: `### Turnir Reqlamenti və Qaydalar
-- **Status:** Qeydiyyat rəsmi olaraq bağlanıb. Turnir Püşkatma (Draft) və Qrup Mərhələsindədir.
-- **Tarix və Saat:** 7 Noyabr 2026 (Şənbə), saat 10:00.
+      '7 Noyabr "Zəfər Günü" münasibətilə Bibiheybət kampusunda 2026-cı il qəbul (Foundation) tələbələri üçün keçirilmiş rəsmi stolüstü tennis turniri. 12 iştirakçı 2 qrupda (Qrup A: 6 nəfər, Qrup B: 6 nəfər) dairəvi oyunlar və Pley-off mərhələsində cəmi 38 rəsmi oyun keçirmişdir.',
+    custom_rules: `### Turnir Reqlamenti və Rəsmi Yekun Nəticələr
+- **Status:** Turnir rəsmi olaraq başa çatıb (Yekunlaşıb).
+- **Tarix:** 7 Noyabr 2026 (Şənbə), saat 10:00 – 16:00.
 - **Məkan:** Bibiheybət Kampusu, Əsas İdman Zalı.
-- **İştirakçı Sayı:** 13 nəfər (Qrup A: 7 oyunçu, Qrup B: 6 oyunçu).
-- **Mərhələ 1 (Qrup Mərhələsi):** 2 Qrup (A və B) dairəvi sistemlə (Round-Robin) mübarizə aparır.
-- **Pley-offa Yüksəliş:** Hər qrupdan ən yaxşı 4 oyunçu (cəmi 8 nəfər) 1/4 Final (Olimpiya) mərhələsinə vəsiqə qazanır.
-- **Pley-off Formatı:** Çarpaz sistem (A1 vs B4, B2 vs A3, A2 vs B3, B1 vs A4) ➔ Yarımfinal ➔ Final.
-- **Set Formatı:** Qrup mərhələsi oyunları 3 setdən (Best of 3, 2 set qazanan qalibdir), Pley-off və Final oyunları isə 5 setdən (Best of 5, 3 set qazanan qalibdir) ibarətdir.
-- **Xal Qaydası:** Hər set 11 xala qədər davam edir (10-10 bərabərlik halında 2 xal fərqinə qədər davam edir).
-- **Avadanlıq:** Rəsmi ITTF 40+ ağ toplardan istifadə olunur.`,
+- **İştirakçı Sayı:** 12 nəfər (Qrup A: 6 oyunçu, Qrup B: 6 oyunçu; Adəm Rəhimli iştirak etmədiyi üçün oyunları ləğv edilib).
+- **Rəsmi Fəxri Kürsü (Podium):**
+  - 🥇 **1-ci yer (Çempion):** Yusif Xanlarov (Finalda 3-0)
+  - 🥈 **2-ci yer (Gümüş):** Məharət Kərimli
+  - 🥉 **3-cü yer (Bürünc):** Əhəd Zamanlı (3-cü yer uğrunda oyunda 3-2)
+- **Mərhələ 1 (Qrup Mərhələsi):** 2 Qrup (A və B) dairəvi sistemlə (Round-Robin, 30 oyun, Best of 3) mübarizə aparıb.
+- **Mərhələ 2 (Pley-off):** Hər qrupdan ən yaxşı 4 oyunçu (cəmi 8 nəfər) 1/4 Final ➔ Yarımfinal ➔ 3-cü yer uğrunda oyun və Final mərhələsində mübarizə aparıb.`,
     format: 'groups_and_knockout',
-    max_participants: 13,
-    group_size: 7,
+    max_participants: 12,
+    group_size: 6,
     advance_per_group: 4,
     location: 'Bibiheybət Kampusu',
     allowed_admission_year: 2026,
-    status: 'ongoing',
+    status: 'completed',
+    winner_id: 'p-f-yusif-xanlarov',
+    runner_up_id: 'p-f-meharet-kerimli',
+    third_place_id: 'p-f-ehed-zamanli',
     start_date: '2026-11-07T10:00:00+04:00',
     end_date: '2026-11-07T16:00:00+04:00',
     created_by: 'p-1',
     participants: FOUNDATION_PLAYERS.map((p) => p.id),
     bracket_data: {
-      rounds: [],
+      rounds: FOUNDATION_CUP_SIMULATION.playoffRounds,
+      third_place_match: FOUNDATION_CUP_SIMULATION.thirdPlaceMatch,
+      podium: FOUNDATION_CUP_SIMULATION.podium,
       groups: FOUNDATION_GROUPS,
       settings: {
-        group_size: 7,
-        group_size_label: '7 nəfər',
+        group_size: 6,
+        group_size_label: '6 nəfər',
         advance_per_group: 4,
         location: 'Bibiheybət Kampusu',
         allowed_admission_year: 2026,

@@ -97,7 +97,34 @@ export default function TournamentDetailPage() {
           const cachedHasGroups = Boolean(cachedBracket?.groups && cachedBracket.groups.length > 0);
           const initHasGroups = Boolean(init?.bracket_data?.groups && init.bracket_data.groups.length > 0);
 
-          if (!cloudHasGroups) {
+          const isFoundation =
+            slug === 'foundation-kuboku-2026' ||
+            slug === 'tourn-foundation-2026' ||
+            data.slug === 'foundation-kuboku-2026' ||
+            data.id === 'tourn-foundation-2026';
+
+          if (isFoundation && init) {
+            data.status = 'completed';
+            data.title = init.title;
+            data.winner_id = data.winner_id || init.winner_id;
+            data.runner_up_id = data.runner_up_id || init.runner_up_id;
+            data.third_place_id = data.third_place_id || init.third_place_id;
+            data.max_participants = 12;
+            data.group_size = 6;
+            data.advance_per_group = 4;
+            data.custom_rules = init.custom_rules;
+            data.description = init.description;
+            const cloudHasCompletedBracket = Boolean(
+              data.bracket_data?.rounds &&
+                data.bracket_data.rounds.length >= 3 &&
+                data.bracket_data.third_place_match
+            );
+            if (!cloudHasCompletedBracket) {
+              data.bracket_data = init.bracket_data;
+            }
+            store.saveBracketDataToCache(slug, data.bracket_data);
+            store.saveBracketDataToCache(data.id, data.bracket_data);
+          } else if (!cloudHasGroups) {
             if (cachedHasGroups) {
               data.bracket_data = cachedBracket;
             } else if (localHasGroups) {
@@ -122,12 +149,15 @@ export default function TournamentDetailPage() {
           const rawParts = await store.fetchParticipantProfiles(combinedParticipantIds);
           let actualPlayers = rawParts.filter((p) => {
             const email = (p.email || '').trim().toLowerCase();
-            const name = (p.full_name || '').toLowerCase().replace(/[^a-z]/g, '');
+            const nameLower = (p.full_name || '').toLowerCase();
+            const name = nameLower.replace(/[^a-z]/g, '');
             return (
               email !== 'ali.iskandarli.std@bhos.edu.az' &&
               email !== 'ali.iskandarli@bhos.edu.az' &&
               name !== 'aliiskandarli' &&
-              name !== 'eliisgenderli'
+              name !== 'eliisgenderli' &&
+              !nameLower.includes('adəm rəhimli') &&
+              !nameLower.includes('adem rehimli')
             );
           });
 
@@ -490,6 +520,114 @@ export default function TournamentDetailPage() {
                 <span>İştirakçılar: {participants.length} / {tournament.max_participants || 16} Oyunçu</span>
               </span>
             </div>
+
+            {tournament.status === 'completed' && (
+              <div className="mt-4 rounded-2xl bg-gradient-to-r from-amber-500/15 via-slate-950/90 to-amber-500/5 border border-amber-500/40 p-4 sm:p-5 space-y-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-amber-400" />
+                    <span className="text-xs font-display font-black uppercase tracking-wider text-amber-300">
+                      Rəsmi Turnir Fəxri Kürsüsü (Podium)
+                    </span>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold">
+                    38 Rəsmi Oyun • Qrup A (15) + Qrup B (15) + Pley-off (8)
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* 1st Place */}
+                  {(() => {
+                    const p1 =
+                      tournament.bracket_data?.podium?.first ||
+                      (tournament.winner_id ? store.getProfile(tournament.winner_id) : undefined);
+                    const name1 = p1?.full_name || 'Yusif Xanlarov';
+                    const elo1 = p1?.current_elo ?? 601;
+                    return (
+                      <Link
+                        href={store.getPlayerHref(p1?.id || 'p-f-yusif-xanlarov', name1)}
+                        className="flex items-center gap-3.5 p-3.5 rounded-xl bg-amber-500/15 border border-amber-400/50 hover:border-amber-300 transition group"
+                      >
+                        <div className="w-11 h-11 rounded-xl bg-amber-500 text-slate-950 font-display font-black text-xl flex items-center justify-center shrink-0 shadow-md">
+                          🥇
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[10px] font-mono uppercase tracking-wider text-amber-300 font-bold">
+                            1-ci Yer • Çempion
+                          </div>
+                          <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-amber-300 transition">
+                            {name1}
+                          </div>
+                          <div className="text-[11px] font-mono text-amber-200/80">
+                            {elo1} ELO • Final: 3-0
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })()}
+
+                  {/* 2nd Place */}
+                  {(() => {
+                    const p2 =
+                      tournament.bracket_data?.podium?.second ||
+                      (tournament.runner_up_id ? store.getProfile(tournament.runner_up_id) : undefined);
+                    const name2 = p2?.full_name || 'Məharət Kərimli';
+                    const elo2 = p2?.current_elo ?? 560;
+                    return (
+                      <Link
+                        href={store.getPlayerHref(p2?.id || 'p-f-meharet-kerimli', name2)}
+                        className="flex items-center gap-3.5 p-3.5 rounded-xl bg-slate-800/70 border border-slate-600/50 hover:border-slate-400 transition group"
+                      >
+                        <div className="w-11 h-11 rounded-xl bg-slate-300 text-slate-950 font-display font-black text-xl flex items-center justify-center shrink-0 shadow-md">
+                          🥈
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[10px] font-mono uppercase tracking-wider text-slate-300 font-bold">
+                            2-ci Yer • Gümüş
+                          </div>
+                          <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-blue-300 transition">
+                            {name2}
+                          </div>
+                          <div className="text-[11px] font-mono text-slate-400">
+                            {elo2} ELO • Finalçı
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })()}
+
+                  {/* 3rd Place */}
+                  {(() => {
+                    const p3 =
+                      tournament.bracket_data?.podium?.third ||
+                      (tournament.third_place_id ? store.getProfile(tournament.third_place_id) : undefined);
+                    const name3 = p3?.full_name || 'Əhəd Zamanlı';
+                    const elo3 = p3?.current_elo ?? 586;
+                    return (
+                      <Link
+                        href={store.getPlayerHref(p3?.id || 'p-f-ehed-zamanli', name3)}
+                        className="flex items-center gap-3.5 p-3.5 rounded-xl bg-orange-950/40 border border-orange-500/40 hover:border-orange-400 transition group"
+                      >
+                        <div className="w-11 h-11 rounded-xl bg-orange-400 text-slate-950 font-display font-black text-xl flex items-center justify-center shrink-0 shadow-md">
+                          🥉
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-[10px] font-mono uppercase tracking-wider text-orange-300 font-bold">
+                            3-cü Yer • Bürünc
+                          </div>
+                          <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-orange-300 transition">
+                            {name3}
+                          </div>
+                          <div className="text-[11px] font-mono text-orange-200/80">
+                            {elo3} ELO • 3-cü yer: 3-2
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
 
             {/* Native 1-Click Registration / Withdraw Bar */}
             <div className="pt-3 border-t border-white/5 flex flex-wrap items-center justify-between gap-3">

@@ -83,6 +83,7 @@ export interface MatchRecord {
   player2_elo_after: number;
   elo_delta: number;
   status?: 'confirmed' | 'approved' | 'pending' | 'rejected' | 'waiting' | 'scheduled' | string;
+  stage?: string;
   is_disputed?: boolean;
   auto_approved?: boolean;
   approved_by?: string | null;
@@ -172,6 +173,8 @@ export interface Tournament {
   end_date?: string;
   created_by: string | null;
   winner_id?: string | null;
+  runner_up_id?: string | null;
+  third_place_id?: string | null;
   group_size?: number;
   advance_per_group?: number;
   location?: string;
@@ -182,6 +185,12 @@ export interface Tournament {
       name: string;
       matches: BracketMatch[];
     }[];
+    third_place_match?: BracketMatch;
+    podium?: {
+      first?: PlayerProfile;
+      second?: PlayerProfile;
+      third?: PlayerProfile;
+    };
     groups?: TournamentGroup[];
     settings?: TournamentSettingsConfig;
   };
