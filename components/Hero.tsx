@@ -59,60 +59,63 @@ export default function Hero({
           </p>
         </SmoothRevealItem>
 
-        <SmoothRevealItem className="flex flex-wrap items-center gap-3.5 pt-2">
+        <SmoothRevealItem className="flex flex-wrap items-center gap-3 pt-2">
           <Link
             href={currentUser ? '/log-match' : '/login'}
-            className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-rose-600 hover:bg-rose-500 font-semibold text-white text-sm shadow-lg shadow-rose-950/40 hover:scale-[1.02] transition"
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-medium bg-rose-600 hover:bg-rose-500 text-white shadow-sm transition"
           >
             <span>Qoşul və Reytinq Qazan →</span>
           </Link>
 
           <Link
             href="/leaderboard"
-            className="inline-flex items-center justify-center px-6 py-3 rounded-xl font-semibold text-slate-200 text-sm border border-slate-700 bg-slate-900/50 hover:bg-slate-800 transition"
+            className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition"
           >
-            <span>Liderlər Cədvəli 🏆</span>
+            <span>Liderlər Cədvəli</span>
           </Link>
         </SmoothRevealItem>
       </SmoothReveal>
 
-      <div className="relative z-20 pt-6 mt-4 grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 text-center">
-          <div className="text-2xl lg:text-3xl font-bold font-mono tracking-tight text-white">
+      <div className="relative z-20 pt-6 mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3 px-4 text-center flex flex-col items-center justify-center">
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight">
             <NumberTicker value={totalPlayersCount} startValue={0} durationMs={850} />
           </div>
-          <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase mt-1">
+          <div className="text-xs uppercase font-medium text-slate-400 mt-1">
             {t('hero_stats.players') || 'Aktiv Oyunçu'}
           </div>
         </div>
 
-        <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 text-center">
-          <div className="text-2xl lg:text-3xl font-bold font-mono tracking-tight text-white">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3 px-4 text-center flex flex-col items-center justify-center">
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight">
             <NumberTicker value={matchesCount} startValue={0} durationMs={850} />
           </div>
-          <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase mt-1">
+          <div className="text-xs uppercase font-medium text-slate-400 mt-1">
             {t('hero_stats.matches') || 'Oynanılmış Matç'}
           </div>
         </div>
 
-        <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 text-center">
-          <div className="text-2xl lg:text-3xl font-bold font-mono tracking-tight text-white">
-            {rootT('hero.stats_tables_sub') || '2 Masa'}
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3 px-4 text-center flex flex-col items-center justify-center">
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight">
+            4
           </div>
-          <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase mt-1">
-            {t('hero_stats.tables') || 'İdman Zalı Masaları'}
+          <div className="text-xs uppercase font-medium text-slate-400 mt-1">
+            {t('hero_stats.tables') || 'İdman Zalı Masaları'}{' '}
+            <span className="text-[10px] text-slate-500 normal-case font-normal block sm:inline">
+              (1 Xanımlar / 3 Ümumi)
+            </span>
           </div>
         </div>
 
-        <div className="bg-slate-900/60 backdrop-blur-md border border-slate-800/80 rounded-xl p-4 text-center">
-          <div className="text-2xl lg:text-3xl font-bold font-mono tracking-tight text-white">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3 px-4 text-center flex flex-col items-center justify-center">
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight">
             <NumberTicker
               value={leaderElo}
               startValue={Math.min(500, leaderElo)}
               durationMs={850}
             />
           </div>
-          <div className="text-[11px] font-semibold tracking-wider text-slate-400 uppercase mt-1">
+          <div className="text-xs uppercase font-medium text-slate-400 mt-1">
             {rootT('hero.stats_leader') || '#1 ELO Lideri'}
           </div>
         </div>
