@@ -15,7 +15,6 @@ import RecentResults from '../components/RecentResults';
 import NumberTicker from '../components/NumberTicker';
 import AnimatedCounter from '../components/AnimatedCounter';
 import CourtBackground from '../components/CourtBackground';
-import MagneticButton from '../components/MagneticButton';
 import LeaderboardSkeleton from '../components/LeaderboardSkeleton';
 import HoloCard from '../components/HoloCard';
 import TiltCard from '../components/TiltCard';
@@ -29,8 +28,6 @@ import {
   Award,
   Zap,
   ShieldCheck,
-  MessageCircle,
-  ExternalLink,
   Target,
   Flame,
   Users,
@@ -539,30 +536,6 @@ export default function HomePage() {
 
       <SmoothReveal delay={0.12}>
         <section id="about" className="pt-8 border-t border-slate-800 scroll-mt-28 space-y-6">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3 min-w-0">
-              <MessageCircle className="w-4 h-4 text-emerald-500 shrink-0" />
-              <div className="min-w-0">
-                <h2 className="text-sm font-display font-bold text-white">
-                  {t('sections.community_title')}
-                </h2>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  {t('sections.community_subtitle')}
-                </p>
-              </div>
-            </div>
-
-            <a
-              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg bg-slate-800/80 hover:bg-slate-800 border border-slate-700/80 text-emerald-400 hover:text-emerald-300 text-xs font-medium transition shrink-0 whitespace-nowrap"
-            >
-              <span>{t('sections.join_whatsapp')}</span>
-              <ExternalLink className="w-3 h-3" />
-            </a>
-          </div>
-
           <div className="rounded-3xl border border-slate-800 bg-slate-900 p-8 sm:p-10 shadow-sm relative overflow-hidden">
             <div className="max-w-3xl space-y-4 relative z-10">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-600/30 bg-blue-700/15 text-blue-300 text-xs font-semibold">

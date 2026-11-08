@@ -1,5 +1,6 @@
 'use client';
 
+import ScrollLock from './ScrollLock';
 import React, { useState, useMemo, useEffect } from 'react';
 import { Tournament, TournamentFormat, TournamentStatus, PlayerProfile } from '../lib/data/types';
 import { BHOSDataStore } from '../lib/data/store';
@@ -235,6 +236,7 @@ export default function EditTournamentModal({
       aria-modal="true"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 overflow-y-auto"
     >
+      <ScrollLock />
       <div className="relative w-full max-w-3xl rounded-3xl bg-slate-900 border-2 border-blue-700/80 p-5 sm:p-7 shadow-2xl space-y-5 my-8">
         <div className="flex items-start justify-between gap-4 border-b border-white/10 pb-4">
           <div className="flex items-center gap-3">

@@ -17,8 +17,6 @@ import {
   Sparkles,
   Clock,
   MapPin,
-  MessageCircle,
-  ExternalLink,
   CheckCircle2,
   ArrowRight,
   RefreshCw,
@@ -178,18 +176,6 @@ export default function HallRulesSection({ showGuideLink = false }: HallRulesSec
                   </Link>
                 </MagneticButton>
               )}
-              <MagneticButton>
-                <a
-                  href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-xs shadow-lg shadow-emerald-500/25 transition-all active:scale-95"
-                >
-                  <MessageCircle className="w-4 h-4 fill-slate-950" />
-                  <span>{t('sections.join_whatsapp')}</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
-                </a>
-              </MagneticButton>
             </div>
           </div>
 
@@ -236,6 +222,71 @@ export default function HallRulesSection({ showGuideLink = false }: HallRulesSec
               </div>
             </div>
           </div>
+        </div>
+      </SmoothReveal>
+
+      <SmoothReveal delay={0.12}>
+        <div
+          className="rounded-3xl bg-[#0F1623]/90 backdrop-blur-md p-6 sm:p-8 shadow-2xl space-y-6"
+          style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-5">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <ShieldAlert className="w-5 h-5" />
+              </div>
+              <div>
+                <h3 className="text-xl sm:text-2xl font-display font-black text-white">
+                  {t('hall_rules.rules_header')}
+                </h3>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  {t('hall_rules.rules_subheader')}
+                </p>
+              </div>
+            </div>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold uppercase tracking-wider w-fit">
+              {t('hall_rules.rules_count_badge')}
+            </span>
+          </div>
+
+          <SmoothReveal staggerChildren={0.1} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {officialHallRules.map((rule, index) => {
+              const IconComponent = rule.icon;
+              const isLastOdd = index === officialHallRules.length - 1 && officialHallRules.length % 2 !== 0;
+
+              return (
+                <SmoothRevealItem
+                  key={rule.id}
+                  direction="up"
+                  className={`rounded-2xl bg-[#131C2B] border border-white/5 p-5 flex items-start gap-4 hover:border-white/15 transition ${
+                    isLastOdd ? 'md:col-span-2' : ''
+                  }`}
+                >
+                  <div
+                    className={`w-11 h-11 rounded-2xl border flex items-center justify-center shrink-0 ${rule.accent}`}
+                  >
+                    <IconComponent className="w-5 h-5" />
+                  </div>
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-mono font-black text-cyan-400">
+                        0{rule.id}
+                      </span>
+                      <h4 className="text-sm sm:text-base font-display font-bold text-white">
+                        {rule.title}
+                      </h4>
+                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400 font-semibold uppercase">
+                        {rule.subtitle}
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                      {rule.description}
+                    </p>
+                  </div>
+                </SmoothRevealItem>
+              );
+            })}
+          </SmoothReveal>
         </div>
       </SmoothReveal>
 
@@ -339,70 +390,6 @@ export default function HallRulesSection({ showGuideLink = false }: HallRulesSec
         ))}
       </SmoothReveal>
 
-      <SmoothReveal delay={0.12}>
-        <div
-          className="rounded-3xl bg-[#0F1623]/90 backdrop-blur-md p-6 sm:p-8 shadow-2xl space-y-6"
-          style={{ border: '1px solid rgba(255, 255, 255, 0.06)' }}
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-white/10 pb-5">
-            <div className="flex items-center gap-3">
-              <div className="w-11 h-11 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
-                <ShieldAlert className="w-5 h-5" />
-              </div>
-              <div>
-                <h3 className="text-xl sm:text-2xl font-display font-black text-white">
-                  {t('hall_rules.rules_header')}
-                </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  {t('hall_rules.rules_subheader')}
-                </p>
-              </div>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold uppercase tracking-wider w-fit">
-              {t('hall_rules.rules_count_badge')}
-            </span>
-          </div>
-
-          <SmoothReveal staggerChildren={0.1} className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {officialHallRules.map((rule, index) => {
-              const IconComponent = rule.icon;
-              const isLastOdd = index === officialHallRules.length - 1 && officialHallRules.length % 2 !== 0;
-
-              return (
-                <SmoothRevealItem
-                  key={rule.id}
-                  direction="up"
-                  className={`rounded-2xl bg-[#131C2B] border border-white/5 p-5 flex items-start gap-4 hover:border-white/15 transition ${
-                    isLastOdd ? 'md:col-span-2' : ''
-                  }`}
-                >
-                  <div
-                    className={`w-11 h-11 rounded-2xl border flex items-center justify-center shrink-0 ${rule.accent}`}
-                  >
-                    <IconComponent className="w-5 h-5" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-mono font-black text-cyan-400">
-                        0{rule.id}
-                      </span>
-                      <h4 className="text-sm sm:text-base font-display font-bold text-white">
-                        {rule.title}
-                      </h4>
-                      <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 border border-white/10 text-slate-400 font-semibold uppercase">
-                        {rule.subtitle}
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-                      {rule.description}
-                    </p>
-                  </div>
-                </SmoothRevealItem>
-              );
-            })}
-          </SmoothReveal>
-        </div>
-      </SmoothReveal>
     </div>
   );
 }

@@ -1,5 +1,7 @@
 'use client';
 
+import ClickableAvatar from './ClickableAvatar';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -238,15 +240,13 @@ export default function LeaderboardTable({
                             : 'bg-slate-950 text-slate-200 border-slate-800'
                         }`}
                       >
-                        {player.avatar_url ? (
-                          <img
-                            src={player.avatar_url}
-                            alt={player.full_name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          player.full_name.charAt(0)
-                        )}
+                        <ClickableAvatar
+                          avatarUrl={player.avatar_url}
+                          name={player.full_name}
+                          department={player.department || player.major_faculty}
+                          rating={player.current_elo}
+                          fallback={<>{player.full_name.charAt(0)}</>}
+                        />
                       </div>
 
                       <div className="min-w-0">

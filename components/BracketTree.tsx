@@ -1,5 +1,6 @@
 'use client';
 
+import ScrollLock from './ScrollLock';
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { Tournament, BracketMatch } from '../lib/data/types';
@@ -784,7 +785,8 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
       </div>
 
       {activeMatchModal && activeMatchModal.match.player1 && activeMatchModal.match.player2 && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 overflow-y-auto bg-black/75 backdrop-blur-sm">
+          <ScrollLock />
           <div className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0F1623] p-6 shadow-2xl space-y-5">
             <div className="flex items-center justify-between pb-3 border-b border-white/10">
               <div className="flex items-center gap-2">

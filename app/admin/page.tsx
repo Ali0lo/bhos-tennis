@@ -1,5 +1,6 @@
 'use client';
 
+import ScrollLock from '../../components/ScrollLock';
 import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { BHOSDataStore } from '../../lib/data/store';
@@ -1935,7 +1936,8 @@ export default function AdminDashboardPage() {
         )}
 
         {voidTarget && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-black/80 backdrop-blur-sm">
+          <ScrollLock />
             <div className="relative w-full max-w-md p-6 rounded-3xl bg-[#0F1623] border border-[#EF4444]/30 shadow-2xl space-y-5">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-[#EF4444]/15 border border-[#EF4444]/30 flex items-center justify-center text-[#EF4444]">
@@ -1992,7 +1994,8 @@ export default function AdminDashboardPage() {
         )}
 
         {editingMatch && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fade-in">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-black/80 backdrop-blur-sm animate-fade-in">
+          <ScrollLock />
             <div className="relative w-full max-w-lg p-6 rounded-3xl bg-slate-900 border border-white/10 shadow-2xl space-y-5">
               <div className="flex items-center justify-between border-b border-white/10 pb-4">
                 <div className="flex items-center gap-2.5">
@@ -2135,7 +2138,8 @@ export default function AdminDashboardPage() {
         )}
 
         {badgeModalPlayer && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto bg-slate-950/80 backdrop-blur-sm">
+          <ScrollLock />
             <div className="w-full max-w-3xl rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl space-y-5 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between border-b border-slate-800 pb-4">
                 <div className="flex items-center gap-3">

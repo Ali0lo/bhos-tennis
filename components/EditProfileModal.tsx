@@ -1,5 +1,6 @@
 'use client';
 
+import ScrollLock from './ScrollLock';
 import React, { useState, useRef, useEffect } from 'react';
 import {
   X,
@@ -283,6 +284,7 @@ export default function EditProfileModal({
 
   return (
     <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-slate-950/85 animate-fadeIn overflow-y-auto overscroll-contain">
+      <ScrollLock />
       <div className="relative w-full max-w-2xl bg-slate-900 border border-slate-800 rounded-3xl shadow-lg overflow-hidden flex flex-col max-h-[calc(100dvh-1.5rem)] sm:max-h-[90vh]">
         <div className="flex items-center justify-between px-6 py-5 border-b border-slate-800 bg-slate-950">
           <div className="flex items-center gap-3">

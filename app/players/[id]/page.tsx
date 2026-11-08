@@ -1,5 +1,7 @@
 'use client';
 
+import ClickableAvatar from '../../../components/ClickableAvatar';
+
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -623,11 +625,15 @@ export default function PlayerProfilePage() {
             <div className="flex items-center gap-5">
               <div className="relative group shrink-0">
                 {profile.avatar_url ? (
-                  <img
-                    src={profile.avatar_url}
-                    alt={profile.full_name}
-                    className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover border-2 border-white/10 shadow-xl"
-                  />
+                  <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl overflow-hidden border-2 border-white/10 shadow-xl">
+                    <ClickableAvatar
+                      avatarUrl={profile.avatar_url}
+                      name={profile.full_name}
+                      department={profile.department || profile.major_faculty}
+                      rating={profile.current_elo}
+                      imgClassName="w-full h-full object-cover"
+                    />
+                  </div>
                 ) : (
                   <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-gradient-to-br from-[#3B82F6] to-[#1D4ED8] flex items-center justify-center text-white font-display font-black text-3xl sm:text-4xl shadow-xl shadow-blue-500/20 border-2 border-white/10">
                     {profile.full_name.charAt(0).toUpperCase()}
@@ -636,11 +642,11 @@ export default function PlayerProfilePage() {
                 {canEditProfile && (
                   <button
                     onClick={() => setIsEditModalOpen(true)}
-                    className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition rounded-2xl flex flex-col items-center justify-center text-white text-[10px] font-bold gap-1 cursor-pointer"
+                    className="absolute -bottom-1 -left-1 z-10 w-7 h-7 rounded-lg bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-md cursor-pointer transition"
                     title="Şəkli dəyiş"
+                    aria-label="Şəkli dəyiş"
                   >
-                    <Camera className="w-4 h-4 text-cyan-400" />
-                    <span>Dəyiş</span>
+                    <Camera className="w-3.5 h-3.5" />
                   </button>
                 )}
                 {profile.role === 'coach' && (
@@ -1049,7 +1055,7 @@ export default function PlayerProfilePage() {
                 return (
                   <div
                     key={rival.opponentId}
-                    className={`rounded-2xl bg-slate-900 p-4.5 border transition-all duration-300 flex flex-col justify-between gap-3.5 ${cardBorderClass}`}
+                    className={`rounded-2xl bg-slate-900 p-5 pb-6 border transition-all duration-300 flex flex-col justify-between gap-3.5 h-auto min-h-fit overflow-hidden ${cardBorderClass}`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">

@@ -1,5 +1,6 @@
 'use client';
 
+import ScrollLock from './ScrollLock';
 import React from 'react';
 import { X } from 'lucide-react';
 import MatchLogger from './MatchLogger';
@@ -11,6 +12,7 @@ interface MatchLoggerModalProps {
 export default function MatchLoggerModal({ onClose }: MatchLoggerModalProps) {
   return (
     <div className="fixed inset-0 z-[60] flex items-start sm:items-center justify-center p-3 sm:p-4 pt-[max(0.75rem,env(safe-area-inset-top))] pb-[max(0.75rem,env(safe-area-inset-bottom))] bg-slate-950/85 overflow-y-auto overscroll-contain">
+      <ScrollLock />
       <div className="relative w-full max-w-3xl my-auto">
         <button
           onClick={onClose}

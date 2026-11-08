@@ -2,6 +2,8 @@
 
 import React, { useEffect } from 'react';
 import Link from 'next/link';
+import ScrollLock from './ScrollLock';
+import ClickableAvatar from './ClickableAvatar';
 import { MatchRecord, isAutoApprovedMatch } from '../lib/data/types';
 import { BHOSDataStore, getPlayerHref } from '../lib/data/store';
 import { formatMatchStageAz, isPlayoffStage } from '../lib/data/matches';
@@ -58,6 +60,13 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
     store.getProfile(p2Id)?.major_faculty ||
     'BANM';
 
+  const p1Profile = store.getProfile(p1Id);
+  const p2Profile = store.getProfile(p2Id);
+  const p1Avatar = enriched.player1?.avatar_url || p1Profile?.avatar_url || null;
+  const p2Avatar = enriched.player2?.avatar_url || p2Profile?.avatar_url || null;
+  const p1Rating = enriched.player1_elo_after ?? p1Profile?.current_elo ?? null;
+  const p2Rating = enriched.player2_elo_after ?? p2Profile?.current_elo ?? null;
+
   const p1Href = getPlayerHref(p1Id, p1Name);
   const p2Href = getPlayerHref(p2Id, p2Name);
 
@@ -113,14 +122,15 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-fadeIn"
+      className="fixed inset-0 z-50 flex justify-center p-4 overflow-y-auto bg-black/75 backdrop-blur-sm animate-fadeIn"
       onClick={onClose}
       role="dialog"
       aria-modal="true"
       aria-label={`${p1Name} vs ${p2Name} — Oyun Təfərrüatları`}
     >
+      <ScrollLock />
       <div
-        className="relative w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden"
+        className="relative w-full max-w-xl my-auto rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
         <div
@@ -204,6 +214,15 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
                   </span>
                 )}
               </div>
+              <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-700 bg-slate-950 flex items-center justify-center text-sm font-bold text-slate-300 shrink-0 mb-2">
+                <ClickableAvatar
+                  avatarUrl={p1Avatar}
+                  name={p1Name}
+                  department={p1Dept}
+                  rating={p1Rating}
+                  fallback={<>{p1Name.charAt(0).toUpperCase()}</>}
+                />
+              </div>
               <Link
                 href={p1Href}
                 onClick={onClose}
@@ -249,6 +268,15 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
                     <span>Qalib</span>
                   </span>
                 )}
+              </div>
+              <div className="w-12 h-12 rounded-xl overflow-hidden border border-slate-700 bg-slate-950 flex items-center justify-center text-sm font-bold text-slate-300 shrink-0 mb-2">
+                <ClickableAvatar
+                  avatarUrl={p2Avatar}
+                  name={p2Name}
+                  department={p2Dept}
+                  rating={p2Rating}
+                  fallback={<>{p2Name.charAt(0).toUpperCase()}</>}
+                />
               </div>
               <Link
                 href={p2Href}

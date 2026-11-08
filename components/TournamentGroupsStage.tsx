@@ -1,5 +1,6 @@
 'use client';
 
+import ScrollLock from './ScrollLock';
 import React, { useState } from 'react';
 import { Tournament, TournamentGroup, GroupMatch, PlayerProfile } from '../lib/data/types';
 import { BHOSDataStore, getPlayerHref } from '../lib/data/store';
@@ -263,6 +264,7 @@ export default function TournamentGroupsStage({
         aria-modal="true"
         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm overflow-y-auto"
       >
+        <ScrollLock />
         <div className="relative w-full max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl bg-slate-900 border-2 border-blue-700/80 p-6 shadow-2xl space-y-6 text-left">
           <div className="flex items-center justify-between border-b border-white/10 pb-4">
             <div className="flex items-center gap-2.5">
@@ -825,6 +827,7 @@ export default function TournamentGroupsStage({
           aria-modal="true"
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80"
         >
+          <ScrollLock />
           <div className="relative w-full max-w-sm rounded-3xl bg-slate-900 border-2 border-blue-700/80 p-6 shadow-xl space-y-4">
             <div className="flex items-center justify-between">
               <h3 className="text-base font-display font-bold text-white">
