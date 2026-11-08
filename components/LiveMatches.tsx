@@ -4,6 +4,7 @@ import React, { useMemo } from 'react';
 import { MatchRecord } from '../lib/data/types';
 import { BHOSDataStore } from '../lib/data/store';
 import { formatMatchStageAz, isPlayoffStage } from '../lib/data/matches';
+import { useTranslation } from '../lib/i18n';
 
 interface LiveMatchesProps {
   matches: MatchRecord[];
@@ -12,6 +13,18 @@ interface LiveMatchesProps {
 
 export default function LiveMatches({ matches, onSelectMatch }: LiveMatchesProps) {
   const store = BHOSDataStore.getInstance();
+  const { locale } = useTranslation();
+
+  const liveLabel =
+    locale === 'en'
+      ? 'Live Results'
+      : locale === 'ru'
+      ? 'Live Результаты'
+      : 'Canlı Nəticələr';
+  const playoffLabel =
+    locale === 'en' ? 'Playoff' : locale === 'ru' ? 'Плей-офф' : 'Pley-off';
+  const groupLabel =
+    locale === 'en' ? 'Group' : locale === 'ru' ? 'Группа' : 'Qrup';
 
   const enrichedMatches = useMemo(() => {
     return matches.slice(0, 10).map((m) => store.enrichMatchRecord(m));
@@ -31,7 +44,7 @@ export default function LiveMatches({ matches, onSelectMatch }: LiveMatchesProps
           <span className="relative inline-flex rounded-full h-2 w-2 bg-rose-600" />
         </span>
         <span className="text-[11px] font-display font-extrabold uppercase tracking-wider text-white whitespace-nowrap">
-          Canlı Nəticələr
+          {liveLabel}
         </span>
       </div>
 
@@ -68,7 +81,7 @@ export default function LiveMatches({ matches, onSelectMatch }: LiveMatchesProps
               >
                 {stageLabel && (
                   <span className="px-1.5 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-slate-300 text-[9px] font-bold uppercase tracking-wider">
-                    {isPlayoff ? 'Pley-off' : 'Qrup'}
+                    {isPlayoff ? playoffLabel : groupLabel}
                   </span>
                 )}
 

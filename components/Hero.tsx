@@ -22,7 +22,14 @@ export default function Hero({
   leaderElo,
 }: HeroProps) {
   const t = useTranslations('home');
-  const { t: rootT } = useTranslation();
+  const { t: rootT, locale } = useTranslation();
+
+  const tablesSubCaption =
+    locale === 'en'
+      ? '(1 Ladies / 3 General)'
+      : locale === 'ru'
+      ? '(1 женский / 3 общих)'
+      : '(1 Xanımlar / 3 Ümumi)';
 
   return (
     <section className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-lg min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
@@ -64,14 +71,14 @@ export default function Hero({
             href={currentUser ? '/log-match' : '/login'}
             className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-medium bg-rose-600 hover:bg-rose-500 text-white shadow-sm transition"
           >
-            <span>Qoşul və Reytinq Qazan →</span>
+            <span>{t('cta_join') || 'Qoşul və Reytinq Qazan'} →</span>
           </Link>
 
           <Link
             href="/leaderboard"
             className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-medium bg-slate-800/80 hover:bg-slate-700 text-slate-200 border border-slate-700/80 transition"
           >
-            <span>Liderlər Cədvəli</span>
+            <span>{t('cta_view_leaderboard') || 'Liderlər Cədvəli'}</span>
           </Link>
         </SmoothRevealItem>
       </SmoothReveal>
@@ -102,7 +109,7 @@ export default function Hero({
           <div className="text-xs uppercase font-medium text-slate-400 mt-1">
             {t('hero_stats.tables') || 'İdman Zalı Masaları'}{' '}
             <span className="text-[10px] text-slate-500 normal-case font-normal block sm:inline">
-              (1 Xanımlar / 3 Ümumi)
+              {tablesSubCaption}
             </span>
           </div>
         </div>

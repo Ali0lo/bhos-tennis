@@ -23,7 +23,6 @@ import {
   LogIn,
   LogOut,
   Settings,
-  Globe,
 } from 'lucide-react';
 import MatchLoggerModal from './MatchLoggerModal';
 import EditProfileModal from './EditProfileModal';
@@ -38,11 +37,12 @@ export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
-  const [langDropdownOpen, setLangDropdownOpen] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [isNavHidden, setIsNavHidden] = useState(false);
 
   const navRef = useRef<HTMLDivElement>(null);
+  const lastScrollYRef = useRef<number>(0);
   const pendingMatchesCount = usePendingMatchesCount(currentUser?.id);
 
   useEffect(() => {
@@ -54,26 +54,62 @@ export default function Navbar() {
   }, [store]);
 
   useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const lastScrollY = lastScrollYRef.current;
+      const delta = currentScrollY - lastScrollY;
+
+      if (currentScrollY <= 60) {
+        setIsNavHidden(false);
+        lastScrollYRef.current = currentScrollY;
+        return;
+      }
+
+      if (delta > 10 && currentScrollY > 60) {
+        setIsNavHidden(true);
+        setUserDropdownOpen(false);
+        setMoreDropdownOpen(false);
+        setMobileMenuOpen(false);
+        lastScrollYRef.current = currentScrollY;
+      } else if (delta < -6) {
+        setIsNavHidden(false);
+        lastScrollYRef.current = currentScrollY;
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
       if (navRef.current && !navRef.current.contains(e.target as Node)) {
         setUserDropdownOpen(false);
         setMoreDropdownOpen(false);
-        setLangDropdownOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const moreLabel =
+    locale === 'en' ? 'More' : locale === 'ru' ? 'Ещё' : 'Daha çox';
+  const miniGameLabel =
+    locale === 'en'
+      ? '🏓 Mini-Game'
+      : locale === 'ru'
+      ? '🏓 Мини-игра'
+      : '🏓 Mini-Oyun';
+
   const primaryNavLinks: { href: string; label: string; showBadge?: boolean }[] = [
-    { href: '/leaderboard', label: 'Reytinq' },
+    { href: '/leaderboard', label: t('nav.leaderboard') || 'Reytinq Cədvəli' },
     { href: '/matches', label: t('nav.my_matches') || 'Oyunlarım', showBadge: true },
     { href: '/tournaments', label: t('nav.tournaments') || 'Turnirlər' },
-    { href: '/tables', label: 'Qaydalar' },
+    { href: '/tables', label: t('nav.tables') || 'Zal Qaydaları' },
   ];
 
   const moreNavLinks: { href: string; label: string }[] = [
-    { href: '/minigame', label: '🏓 Mini-Oyun' },
+    { href: '/minigame', label: miniGameLabel },
     { href: '/#about', label: t('nav.about') || 'Haqqında' },
   ];
 
@@ -82,7 +118,7 @@ export default function Navbar() {
     { href: '/matches', label: t('nav.my_matches') || 'Oyunlarım', showBadge: true },
     { href: '/tournaments', label: t('nav.tournaments') || 'Turnirlər' },
     { href: '/tables', label: t('nav.tables') || 'Zal Qaydaları' },
-    { href: '/minigame', label: '🏓 Mini-Oyun' },
+    { href: '/minigame', label: miniGameLabel },
     { href: '/#about', label: t('nav.about') || 'Haqqında' },
     ...(canAccessAdminPanel(currentUser)
       ? [{ href: '/admin', label: t('nav.admin') || 'Prezident Paneli' }]
@@ -114,9 +150,17 @@ export default function Navbar() {
     <>
       <header
         ref={navRef}
-        className="fixed top-4 sm:top-6 left-0 right-0 z-50 flex flex-col items-center px-3 sm:px-4 pointer-events-none"
+        className={`transition-all duration-300 ease-in-out fixed top-0 inset-x-0 z-50 pt-4 sm:pt-6 flex flex-col items-center px-3 sm:px-4 pointer-events-none ${
+          isNavHidden
+            ? '-translate-y-full opacity-0 pointer-events-none'
+            : 'translate-y-0 opacity-100'
+        }`}
       >
-        <div className="w-full max-w-6xl rounded-full border border-slate-800 bg-slate-900/95 backdrop-blur-md px-3.5 sm:px-5 py-2 shadow-md pointer-events-auto relative flex items-center justify-between flex-nowrap gap-3 transition-all">
+        <div
+          className={`w-full max-w-6xl rounded-full border border-slate-800 bg-slate-900/95 backdrop-blur-md px-3.5 sm:px-5 py-2 shadow-md relative flex items-center justify-between flex-nowrap gap-3 transition-all ${
+            isNavHidden ? 'pointer-events-none' : 'pointer-events-auto'
+          }`}
+        >
           {/* Left Zone: Brand + Navigation Links */}
           <div className="flex items-center gap-3 shrink-0">
             <Link
@@ -138,7 +182,6 @@ export default function Navbar() {
                 setMobileMenuOpen((prev) => !prev);
                 setUserDropdownOpen(false);
                 setMoreDropdownOpen(false);
-                setLangDropdownOpen(false);
               }}
               className="relative lg:hidden inline-flex items-center justify-center h-8 w-8 rounded-full border border-slate-700 bg-slate-800 text-slate-300 hover:text-white transition shrink-0"
             >
@@ -153,7 +196,7 @@ export default function Navbar() {
               )}
             </button>
 
-            <nav className="hidden lg:flex items-center gap-4 text-xs font-medium shrink-0 pl-1">
+            <nav className="hidden lg:flex items-center gap-3.5 text-xs font-medium shrink-0 pl-1">
               {primaryNavLinks.map((link) => {
                 const isActive = pathname === link.href;
                 const hasBadge = link.showBadge && pendingMatchesCount > 0;
@@ -180,14 +223,13 @@ export default function Navbar() {
                 );
               })}
 
-              {/* Compact "Daha çox" dropdown for secondary items */}
+              {/* Compact "Daha çox / More / Ещё" dropdown for secondary items */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => {
                     setMoreDropdownOpen((prev) => !prev);
                     setUserDropdownOpen(false);
-                    setLangDropdownOpen(false);
                   }}
                   className={`inline-flex items-center gap-1 whitespace-nowrap transition ${
                     moreNavLinks.some((l) => pathname === l.href)
@@ -195,7 +237,7 @@ export default function Navbar() {
                       : 'text-slate-300 hover:text-white'
                   }`}
                 >
-                  <span>Daha çox</span>
+                  <span>{moreLabel}</span>
                   <ChevronDown className="w-3 h-3 opacity-70" />
                 </button>
 
@@ -220,7 +262,7 @@ export default function Navbar() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Rəsmi WhatsApp İcması"
-                title="Rəsmi WhatsApp İcması"
+                title={t('nav.join_whatsapp') || 'WhatsApp'}
                 className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-800/70 transition shrink-0"
               >
                 <MessageCircle className="w-4 h-4" />
@@ -230,44 +272,29 @@ export default function Navbar() {
 
           {/* Right Zone: Actions & Profile (strictly inline, h-8 aligned, no wrap) */}
           <div className="flex items-center gap-2 shrink-0 ml-auto">
-            {/* Compact Language Dropdown (AZ ▾) */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => {
-                  setLangDropdownOpen((prev) => !prev);
-                  setUserDropdownOpen(false);
-                  setMoreDropdownOpen(false);
-                }}
-                aria-label="Dil seçimi"
-                className="inline-flex items-center justify-center gap-1 h-8 px-2.5 rounded-lg bg-slate-800/70 hover:bg-slate-800 border border-slate-700/80 text-[11px] font-semibold uppercase text-slate-300 hover:text-white transition whitespace-nowrap"
-              >
-                <Globe className="w-3 h-3 text-slate-400" />
-                <span>{locale}</span>
-                <ChevronDown className="w-2.5 h-2.5 opacity-60" />
-              </button>
-
-              {langDropdownOpen && (
-                <div className="absolute right-0 mt-2 w-24 rounded-xl border border-slate-800 bg-slate-900 p-1 shadow-xl z-50">
-                  {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
-                    <button
-                      key={loc}
-                      type="button"
-                      onClick={() => {
-                        setLocale(loc);
-                        setLangDropdownOpen(false);
-                      }}
-                      className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs uppercase font-semibold transition flex items-center justify-between ${
-                        locale === loc
-                          ? 'bg-blue-700 text-white'
-                          : 'text-slate-300 hover:text-white hover:bg-slate-800'
-                      }`}
-                    >
-                      <span>{loc}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
+            {/* Multi-Language Switcher (AZ | EN | RU) */}
+            <div
+              role="group"
+              aria-label="Language switcher"
+              className="inline-flex items-center gap-0.5 h-8 px-1.5 rounded-lg bg-slate-950/70 border border-slate-800/80 text-[11px] uppercase shrink-0"
+            >
+              {(['az', 'en', 'ru'] as Locale[]).map((loc) => {
+                const isActive = locale === loc;
+                return (
+                  <button
+                    key={loc}
+                    type="button"
+                    onClick={() => setLocale(loc)}
+                    className={`uppercase transition whitespace-nowrap ${
+                      isActive
+                        ? 'text-white font-bold bg-slate-800/90 rounded px-1.5 py-0.5'
+                        : 'text-slate-400 hover:text-slate-200 px-1.5 py-0.5 font-medium'
+                    }`}
+                  >
+                    {loc}
+                  </button>
+                );
+              })}
             </div>
 
             {currentUser && currentUser.is_verified !== false && (
@@ -299,7 +326,6 @@ export default function Navbar() {
                     setUserDropdownOpen((prev) => !prev);
                     setMobileMenuOpen(false);
                     setMoreDropdownOpen(false);
-                    setLangDropdownOpen(false);
                   }}
                   className={`relative inline-flex items-center justify-center gap-1.5 h-8 px-3 rounded-full border text-xs font-medium transition whitespace-nowrap ${getRoleBadgeColor(
                     currentUser

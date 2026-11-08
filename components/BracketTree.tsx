@@ -418,7 +418,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                 </span>
               </div>
 
-              <div className="flex flex-col justify-around gap-8 h-full">
+              <div className="relative flex flex-col flex-1">
                 {round.matches.map((match, mIndex) => {
                   const isCompleted = match.status === 'completed' || match.status === 'approved';
                   const isReady =
@@ -433,15 +433,11 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                       : false;
                   const isClickable = Boolean(isAdmin && match.player1 && match.player2 && !match.is_bye && canAdvanceNode);
 
-                  const isEven = mIndex % 2 === 0;
-                  const pairHasWinner = isCompleted;
-                  const siblingHasWinner = Boolean(round.matches[mIndex + 1]?.winner_id);
-                  const branchActive = pairHasWinner || siblingHasWinner;
                   const slot1Pulsing = Boolean(pulsingSlots[`${rIndex}-${mIndex}-1`]);
                   const slot2Pulsing = Boolean(pulsingSlots[`${rIndex}-${mIndex}-2`]);
 
                   return (
-                    <div key={match.id} className="relative group">
+                    <div key={match.id} className="relative group flex-1 flex flex-col justify-center py-3">
                       <div
                         onClick={() => isClickable && handleOpenScoreModal(rIndex, mIndex, match)}
                         className={`rounded-2xl p-3.5 bg-slate-900 border transition-all duration-300 relative z-10 ${
@@ -597,64 +593,112 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                           </div>
                         )}
                       </div>
-
-                      {!isFinal && (
-                        <svg
-                          className="hidden md:block absolute -right-10 sm:-right-14 top-1/2 -translate-y-1/2 w-10 sm:w-14 h-4 overflow-visible pointer-events-none"
-                          viewBox="0 0 56 16"
-                          preserveAspectRatio="none"
-                        >
-                          <motion.path
-                            d="M 0 8 L 56 8"
-                            fill="none"
-                            stroke={pairHasWinner ? '#3B82F6' : 'rgba(255, 255, 255, 0.16)'}
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            initial={{ pathLength: 0 }}
-                            animate={{ pathLength: 1 }}
-                            transition={{
-                              duration: 0.75,
-                              delay: rIndex * 0.18 + mIndex * 0.08,
-                              ease: 'easeOut',
-                            }}
-                            style={{
-                              filter: pairHasWinner ? 'drop-shadow(0px 0px 6px #3B82F6)' : undefined,
-                            }}
-                          />
-                        </svg>
-                      )}
-
-                      {!isFinal && isEven && (
-                        <svg
-                          className="hidden md:block absolute -right-10 sm:-right-14 top-1/2 w-4 h-[calc(100%+2rem)] overflow-visible pointer-events-none"
-                          viewBox="0 0 16 100"
-                          preserveAspectRatio="none"
-                        >
-                          <motion.path
-                            d="M 16 0 L 16 100"
-                            fill="none"
-                            stroke={branchActive ? '#3B82F6' : 'rgba(255, 255, 255, 0.16)'}
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            initial={{ pathLength: 0 }}
-                            animate={{ pathLength: 1 }}
-                            transition={{
-                              duration: 0.85,
-                              delay: rIndex * 0.2 + mIndex * 0.1,
-                              ease: 'easeOut',
-                            }}
-                            style={{
-                              filter: branchActive ? 'drop-shadow(0px 0px 6px #3B82F6)' : undefined,
-                            }}
-                          />
-                        </svg>
-                      )}
                     </div>
                   );
                 })}
 
+                {!isFinal && matchCount >= 2 && (
+                  <svg
+                    className="hidden md:block absolute -right-10 sm:-right-14 inset-y-0 w-10 sm:w-14 h-full overflow-visible pointer-events-none"
+                    viewBox="0 0 100 100"
+                    preserveAspectRatio="none"
+                  >
+                    {rIndex === rounds.length - 2 && matchCount === 2 && thirdPlaceMatch ? (
+                      <>
+                        {/* Semifinal #1 & #2 Winners -> Championship Final (y=25) */}
+                        <motion.path
+                          d="M 0 25 L 100 25"
+                          fill="none"
+                          stroke={
+                            round.matches[0]?.status === 'completed' ||
+                            round.matches[0]?.status === 'approved'
+                              ? '#3B82F6'
+                              : 'rgba(255, 255, 255, 0.16)'
+                          }
+                          strokeWidth="2"
+                          vectorEffect="non-scaling-stroke"
+                          strokeLinecap="round"
+                        />
+                        <motion.path
+                          d="M 0 75 L 50 75 L 50 25"
+                          fill="none"
+                          stroke={
+                            round.matches[1]?.status === 'completed' ||
+                            round.matches[1]?.status === 'approved'
+                              ? '#3B82F6'
+                              : 'rgba(255, 255, 255, 0.16)'
+                          }
+                          strokeWidth="2"
+                          vectorEffect="non-scaling-stroke"
+                          strokeLinejoin="round"
+                          strokeLinecap="round"
+                        />
+                        {/* Semifinal Losers -> 3-cü Yer Uğrunda (y=75) */}
+                        <motion.path
+                          d="M 50 75 L 100 75"
+                          fill="none"
+                          stroke={
+                            thirdPlaceMatch.winner_id
+                              ? 'rgba(249, 115, 22, 0.65)'
+                              : 'rgba(255, 255, 255, 0.16)'
+                          }
+                          strokeWidth="2"
+                          vectorEffect="non-scaling-stroke"
+                          strokeDasharray="4 3"
+                          strokeLinecap="round"
+                        />
+                      </>
+                    ) : (
+                      Array.from({ length: Math.floor(matchCount / 2) }).map((_, pairIdx) => {
+                        const mEven = round.matches[pairIdx * 2];
+                        const mOdd = round.matches[pairIdx * 2 + 1];
+                        const evenDone =
+                          mEven?.status === 'completed' || mEven?.status === 'approved';
+                        const oddDone =
+                          mOdd?.status === 'completed' || mOdd?.status === 'approved';
+                        const anyDone = evenDone || oddDone;
+
+                        const y1 = ((pairIdx * 2 + 0.5) / matchCount) * 100;
+                        const y2 = ((pairIdx * 2 + 1.5) / matchCount) * 100;
+                        const yMid = (y1 + y2) / 2;
+
+                        return (
+                          <g key={`pair-${rIndex}-${pairIdx}`}>
+                            <motion.path
+                              d={`M 0 ${y1} L 50 ${y1} L 50 ${yMid}`}
+                              fill="none"
+                              stroke={evenDone ? '#3B82F6' : 'rgba(255, 255, 255, 0.16)'}
+                              strokeWidth="2"
+                              vectorEffect="non-scaling-stroke"
+                              strokeLinejoin="round"
+                              strokeLinecap="round"
+                            />
+                            <motion.path
+                              d={`M 0 ${y2} L 50 ${y2} L 50 ${yMid}`}
+                              fill="none"
+                              stroke={oddDone ? '#3B82F6' : 'rgba(255, 255, 255, 0.16)'}
+                              strokeWidth="2"
+                              vectorEffect="non-scaling-stroke"
+                              strokeLinejoin="round"
+                              strokeLinecap="round"
+                            />
+                            <motion.path
+                              d={`M 50 ${yMid} L 100 ${yMid}`}
+                              fill="none"
+                              stroke={anyDone ? '#3B82F6' : 'rgba(255, 255, 255, 0.16)'}
+                              strokeWidth="2"
+                              vectorEffect="non-scaling-stroke"
+                              strokeLinecap="round"
+                            />
+                          </g>
+                        );
+                      })
+                    )}
+                  </svg>
+                )}
+
                 {isFinal && thirdPlaceMatch && (
-                  <div className="relative group mt-4">
+                  <div className="relative group flex-1 flex flex-col justify-center py-3">
                     <div className="rounded-2xl p-3.5 bg-slate-900 border border-orange-500/50 shadow-md ring-1 ring-orange-500/20 relative z-10">
                       <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-2 pb-1.5 border-b border-slate-800">
                         <span className="flex items-center gap-1.5 text-orange-400 font-bold">

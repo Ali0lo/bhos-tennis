@@ -236,26 +236,31 @@ export default function LeaderboardPage() {
 
         {top3Podium.length >= 3 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
-            <HoloCard className="order-2 md:order-1 rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-sm">
-              <div className="w-10 h-10 rounded-full bg-slate-300 text-slate-950 border-2 border-white flex items-center justify-center font-display font-black text-base absolute -top-4 left-6 shadow-sm z-30">
+            <HoloCard className="order-2 md:order-1 rounded-3xl border border-slate-300/40 shadow-sm shadow-slate-300/10 bg-gradient-to-b from-slate-800/60 to-slate-900/80 p-6">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 via-slate-400 to-slate-500 text-slate-950 font-bold shadow-inner border border-slate-200/80 flex items-center justify-center font-display text-base absolute -top-4 left-6 z-30">
                 2
               </div>
               <div className="pt-2 relative z-10">
-                <Link
-                  href={getPlayerHref(top3Podium[1].id)}
-                  className="font-display font-bold text-base text-white hover:text-blue-400 transition"
-                >
-                  {top3Podium[1].full_name}
-                </Link>
-                <p className="text-xs text-slate-400 truncate mt-0.5">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Link
+                    href={getPlayerHref(top3Podium[1].id)}
+                    className="font-display font-bold text-base text-white hover:text-slate-200 transition"
+                  >
+                    {top3Podium[1].full_name}
+                  </Link>
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-slate-200/10 text-slate-200 border-slate-400/30">
+                    🥈 #2
+                  </span>
+                </div>
+                <p className="text-xs text-slate-300/80 truncate mt-0.5">
                   {top3Podium[1].major_faculty || 'BANM'}
                 </p>
                 <div className="mt-4 flex items-baseline justify-between">
-                  <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
+                  <div className="font-mono text-2xl font-extrabold text-slate-100 flex items-baseline gap-1">
                     <AnimatedCounter value={top3Podium[1].current_elo} />
-                    <span className="text-xs text-slate-400 font-sans">ELO</span>
+                    <span className="text-xs text-slate-300 font-sans">ELO</span>
                   </div>
-                  <span className="text-xs text-emerald-500 font-semibold">
+                  <span className="text-xs text-emerald-400 font-semibold">
                     {top3Podium[1].matches_played > 0
                       ? Math.round((top3Podium[1].wins / top3Podium[1].matches_played) * 100)
                       : 0}
