@@ -166,7 +166,7 @@ export default function LoginPage() {
             const resolvedOrigin = isSeed ? 'İlkin Heyət' : 'Qeydiyyat';
             const metaSkill = meta.skill_level || 'beginner';
             const defaultStartingElo = metaSkill === 'advanced' ? 400 : metaSkill === 'intermediate' ? 250 : 100;
-            const resolvedElo = isCoach ? 999 : (meta.current_elo !== undefined ? Math.min(999, Math.max(0, Number(meta.current_elo))) : defaultStartingElo);
+            const resolvedElo = isCoach ? 966 : (meta.current_elo !== undefined ? Math.min(999, Math.max(0, Number(meta.current_elo))) : defaultStartingElo);
 
             const linked = await store.linkProfileByEmail(data.user.email);
             if (!linked) {
@@ -241,7 +241,7 @@ export default function LoginPage() {
         const resolvedPlayingLevel: PlayingLevel =
           skillLevel === 'advanced' ? 'Advanced' : skillLevel === 'intermediate' ? 'Intermediate' : 'Beginner';
         const resolvedElo = isCoach
-          ? 999
+          ? 966
           : skillLevel === 'advanced'
           ? 400
           : skillLevel === 'intermediate'

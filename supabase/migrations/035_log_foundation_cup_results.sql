@@ -758,3 +758,4 @@ BEGIN
   ALTER TABLE public.matches ENABLE TRIGGER USER;
   ALTER TABLE public.tournaments ENABLE TRIGGER USER;
 END $$;
+  

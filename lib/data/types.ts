@@ -47,6 +47,7 @@ export interface PlayerProfile {
   forehand_rubber: string;
   backhand_rubber: string;
   current_elo: number;
+  elo_rating?: number;
   peak_elo?: number;
   matches_played: number;
   wins: number;

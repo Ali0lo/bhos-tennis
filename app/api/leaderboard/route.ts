@@ -48,8 +48,22 @@ export async function GET(request: Request) {
       row.group?.toLowerCase().startsWith('f-') ||
       row.group?.toLowerCase().startsWith('fnd-');
 
+    const emailLower = (row.email || '').trim().toLowerCase();
+    const nameLower = (row.full_name || '').trim().toLowerCase();
+    const isCoachIftixar =
+      row.role === 'coach' ||
+      emailLower === 'iftixar.coach@gmail.com' ||
+      emailLower === 'iftixar@bhos.edu.az' ||
+      nameLower.includes('iftixar') ||
+      nameLower.includes('i̇ftixar');
+
+    const rawElo = Number(row.current_elo ?? row.elo_rating ?? 0);
+    const currentElo = isCoachIftixar && (rawElo === 999 || rawElo === 0) ? 966 : rawElo;
+
     return {
       ...row,
+      current_elo: currentElo,
+      elo_rating: currentElo,
       matches_played: matchesPlayed,
       wins,
       losses,
@@ -65,7 +79,9 @@ export async function GET(request: Request) {
   };
 
   const applyFilterAndSlice = (rows: any[]) => {
-    const normalizedRows = rows.map(normalizeRow);
+    const normalizedRows = rows
+      .map(normalizeRow)
+      .sort((a, b) => Number(b.current_elo ?? 0) - Number(a.current_elo ?? 0));
     const filtered = hasDepartmentFilter
       ? normalizedRows.filter((row) => matchesDepartmentFilter(row, departmentParam))
       : normalizedRows;

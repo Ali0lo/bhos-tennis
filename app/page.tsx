@@ -45,14 +45,13 @@ export default function HomePage() {
     const cached = store.getCachedLeaderboard();
     const verified = store.getVerifiedProfiles();
     const all = store.getProfiles();
-    if (cached.length >= verified.length && cached.length > 0) return cached;
+    if (cached.length > 0) return cached;
     return verified.length > 0 ? verified : all;
   });
   const [totalPlayersCount, setTotalPlayersCount] = useState<number>(() => {
-    const all = store.getProfiles();
     const verified = store.getVerifiedProfiles();
     const cached = store.getCachedLeaderboard();
-    return Math.max(all.length, verified.length, cached.length);
+    return cached.length > 0 ? cached.length : verified.length;
   });
   const [matches, setMatches] = useState<MatchRecord[]>(() => {
     const resolved = store.getResolvedMatchIds();
@@ -71,17 +70,11 @@ export default function HomePage() {
       const cached = store.getCachedLeaderboard();
       const verified = store.getVerifiedProfiles();
       const all = store.getProfiles();
-      const maxCount = Math.max(all.length, verified.length, cached.length);
-      setTotalPlayersCount(maxCount);
+      const activeList = cached.length > 0 ? cached : verified.length > 0 ? verified : all;
+      setTotalPlayersCount(activeList.length);
+      setProfiles(activeList);
 
       const resolved = store.getResolvedMatchIds();
-      if (cached.length >= maxCount && cached.length > 0) {
-        setProfiles(cached);
-      } else if (verified.length > 0) {
-        setProfiles(verified);
-      } else {
-        setProfiles(all);
-      }
       setMatches(store.getMatches().filter((m) => isApprovedMatch(m, resolved)));
       setTournaments(store.getTournaments());
       setCurrentUser(store.getCurrentUser());
@@ -93,15 +86,9 @@ export default function HomePage() {
       if (isMounted) {
         const verified = store.getVerifiedProfiles();
         const all = store.getProfiles();
-        const maxCount = Math.max(all.length, verified.length, allRows.length);
-        setTotalPlayersCount(maxCount);
-        if (allRows.length >= maxCount) {
-          setProfiles(allRows);
-        } else if (verified.length > 0) {
-          setProfiles(verified);
-        } else {
-          setProfiles(all);
-        }
+        const activeList = allRows.length > 0 ? allRows : verified.length > 0 ? verified : all;
+        setTotalPlayersCount(activeList.length);
+        setProfiles(activeList);
       }
     });
 
@@ -328,7 +315,7 @@ export default function HomePage() {
               </span>
               <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 flex items-baseline gap-1">
                 <NumberTicker
-                  value={top3[0]?.current_elo ?? 999}
+                  value={top3[0]?.current_elo ?? 966}
                   startValue={Math.min(500, top3[0]?.current_elo ?? 500)}
                   durationMs={850}
                 />

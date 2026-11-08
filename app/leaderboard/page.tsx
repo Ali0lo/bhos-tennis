@@ -83,7 +83,7 @@ export default function LeaderboardPage() {
       if (!isMounted) return;
       const latest = store.getCachedLeaderboard();
       const verified = store.getVerifiedProfiles();
-      const source = latest.length >= verified.length && latest.length > 0 ? latest : verified;
+      const source = latest.length > 0 ? latest : verified;
       setProfiles(
         source.map((p) => {
           const total =

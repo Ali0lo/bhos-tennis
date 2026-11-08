@@ -36,7 +36,7 @@ import { buildSlugMap, generateSlug, isUuid, normalizeForSearch, shortIdSuffix }
 import { hydrateMatchCompetitors } from './matches';
 
 const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v13',
+  PROFILES: 'bhos_tt_profiles_v14',
   MATCHES: 'bhos_tt_matches_v13',
   TOURNAMENTS: 'bhos_tt_tournaments_v13',
   RESERVATIONS: 'bhos_tt_reservations_v8',
@@ -157,9 +157,125 @@ const OBSOLETE_TOURNAMENT_IDENTIFIERS = new Set([
   'inter-faculty-engineering-cup-2026',
 ]);
 
-const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v4';
+const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v5';
 const SESSION_RECENT_MATCHES_KEY = 'bhos_tt_recent_matches';
 const LEADERBOARD_TTL_MS = 60_000;
+
+export function isCoachIftixarProfile(raw: any): boolean {
+  if (!raw) return false;
+  const email = typeof raw.email === 'string' ? raw.email.trim().toLowerCase() : '';
+  if (email === 'iftixar.coach@gmail.com' || email === 'iftixar@bhos.edu.az') return true;
+  if (raw.role === 'coach') return true;
+  if (raw.id === 'p-2' || raw.id === '00000000-0000-0000-0000-000000000002') return true;
+  const norm = normalizeForSearch(raw.full_name || '');
+  return norm.includes('iftixar');
+}
+
+export function resolvePlayerRealElo(
+  raw: any,
+  rawMatches: number,
+  prev?: PlayerProfile,
+  prevMatches: number = 0,
+  seed?: PlayerProfile,
+  seedMatches: number = 0,
+  matches?: MatchRecord[]
+): number {
+  const isCoach =
+    isCoachIftixarProfile(raw) || isCoachIftixarProfile(prev) || isCoachIftixarProfile(seed);
+
+  if (matches && matches.length > 0) {
+    const rawId = raw?.id || prev?.id;
+    const rawNorm = normalizeForSearch(raw?.full_name || prev?.full_name || '');
+    const playerMatches = matches
+      .filter((m) => {
+        if (rawId && (m.player1_id === rawId || m.player2_id === rawId)) return true;
+        if (rawNorm) {
+          const p1Norm = normalizeForSearch(m.player1_name || '');
+          const p2Norm = normalizeForSearch(m.player2_name || '');
+          if (p1Norm === rawNorm || p2Norm === rawNorm) return true;
+          if (isCoach && (p1Norm.includes('iftixar') || p2Norm.includes('iftixar'))) return true;
+        }
+        return false;
+      })
+      .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime());
+
+    if (playerMatches.length > 0) {
+      const latest = playerMatches[0];
+      const isP1 =
+        (rawId && latest.player1_id === rawId) ||
+        (rawNorm && normalizeForSearch(latest.player1_name || '') === rawNorm) ||
+        (isCoach && normalizeForSearch(latest.player1_name || '').includes('iftixar'));
+      const eloAfter = isP1 ? latest.player1_elo_after : latest.player2_elo_after;
+      if (typeof eloAfter === 'number' && eloAfter > 0) {
+        if (isCoach || Number(raw?.current_elo ?? 0) === 999 || Number(raw?.current_elo ?? 0) === 0) {
+          return eloAfter;
+        }
+      }
+    }
+  }
+
+  const rawElo = Number(raw?.current_elo ?? raw?.elo_rating ?? 0);
+  if (isCoach) {
+    if (rawElo > 0 && rawElo < 999) return rawElo;
+    const prevElo = Number(prev?.current_elo ?? 0);
+    if (prevElo > 0 && prevElo < 999) return prevElo;
+    return 966;
+  }
+
+  if (rawMatches === 0 && (prevMatches > 0 || seedMatches > 0)) {
+    return Math.max(
+      rawElo,
+      Number(prev?.current_elo ?? 0),
+      Number(seed?.current_elo ?? 0)
+    );
+  }
+
+  return Number(raw?.current_elo ?? raw?.elo_rating ?? prev?.current_elo ?? seed?.current_elo ?? 0);
+}
+
+function deduplicatePlayerProfiles(profiles: PlayerProfile[]): PlayerProfile[] {
+  const result: PlayerProfile[] = [];
+  const byKey = new Map<string, number>();
+
+  for (const p of profiles) {
+    const emailKey = (p.email || '').trim().toLowerCase();
+    const normName = normalizeForSearch(p.full_name || '');
+    const isCoach = isCoachIftixarProfile(p);
+    const key = isCoach
+      ? 'coach:iftixar'
+      : emailKey || (normName ? `name:${normName}` : `id:${p.id}`);
+
+    const existingIdx = byKey.get(key);
+    if (existingIdx === undefined) {
+      byKey.set(key, result.length);
+      result.push(p);
+    } else {
+      const existing = result[existingIdx];
+      const preferNew =
+        (isUuid(p.id) && !isUuid(existing.id)) ||
+        (isCoach && p.current_elo !== 999 && existing.current_elo === 999) ||
+        ((p.matches_played || 0) > (existing.matches_played || 0));
+
+      if (preferNew) {
+        result[existingIdx] = {
+          ...existing,
+          ...p,
+          current_elo: isCoach && p.current_elo === 999 ? existing.current_elo : p.current_elo,
+        };
+      } else if (isCoach && existing.current_elo === 999 && p.current_elo !== 999 && p.current_elo > 0) {
+        result[existingIdx] = {
+          ...existing,
+          current_elo: p.current_elo,
+          matches_played: Math.max(existing.matches_played || 0, p.matches_played || 0),
+          wins: Math.max(existing.wins || 0, p.wins || 0),
+          losses: Math.max(existing.losses || 0, p.losses || 0),
+        };
+      }
+    }
+  }
+
+  return result;
+}
 
 function findMatchingSeedProfile(raw: any): PlayerProfile | undefined {
   if (!raw) return undefined;
@@ -363,6 +479,7 @@ export class BHOSDataStore {
   private constructor() {
     if (typeof window !== 'undefined') {
       const oldKeys = [
+        'bhos_tt_profiles_v13',
         'bhos_tt_matches_v12',
         'bhos_tt_profiles_v12',
         'bhos_tt_profiles_v11',
@@ -393,6 +510,7 @@ export class BHOSDataStore {
       });
       try {
         sessionStorage.removeItem('bhos_tt_leaderboard_cache_v3');
+        sessionStorage.removeItem('bhos_tt_leaderboard_cache_v4');
       } catch {}
 
       this.leaderboardCache = getSessionLeaderboardCache();
@@ -582,7 +700,7 @@ export class BHOSDataStore {
     const all = this.profiles;
     const bestLocal = verified.length > 0 ? verified : all;
 
-    if (cached && cached.data.length >= bestLocal.length && cached.data.length > 0) {
+    if (cached && cached.data.length > 0 && (cached.isFull || cached.data.length >= bestLocal.length)) {
       this.leaderboardCache = cached;
       return limit ? cached.data.slice(0, limit) : cached.data;
     }
@@ -601,7 +719,7 @@ export class BHOSDataStore {
     const verified = this.getVerifiedProfiles();
     const bestLocal = verified.length > 0 ? verified : this.profiles;
 
-    if (cached && cached.data.length >= bestLocal.length && cached.data.length > 0) {
+    if (cached && cached.data.length > 0 && (cached.isFull || cached.data.length >= bestLocal.length)) {
       this.leaderboardCache = cached;
       const isFresh = now - cached.timestamp < LEADERBOARD_TTL_MS;
       const satisfiesScope = cached.isFull || (Boolean(limit) && cached.data.length >= limit!);
@@ -755,14 +873,15 @@ export class BHOSDataStore {
                   .toLowerCase()
                   .includes('foundation');
 
-              const resolvedElo =
-                rawMatches === 0 && (prevMatches > 0 || seedMatches > 0)
-                  ? Math.max(
-                      Number(row.current_elo ?? 0),
-                      Number(prev?.current_elo ?? 0),
-                      Number(seed?.current_elo ?? 0)
-                    )
-                  : Number(row.current_elo ?? prev?.current_elo ?? seed?.current_elo ?? 0);
+              const resolvedElo = resolvePlayerRealElo(
+                row,
+                rawMatches,
+                prev,
+                prevMatches,
+                seed,
+                seedMatches,
+                this.matches
+              );
 
               return {
                 id: row.id,
@@ -814,6 +933,7 @@ export class BHOSDataStore {
                 backhand_rubber:
                   row.backhand_rubber || prev?.backhand_rubber || seed?.backhand_rubber || 'Dignics 09C',
                 current_elo: resolvedElo,
+                elo_rating: resolvedElo,
                 matches_played: totalMatches,
                 wins,
                 losses,
@@ -850,13 +970,18 @@ export class BHOSDataStore {
             }
           }
 
-          mapped.sort((a, b) => b.current_elo - a.current_elo);
-          mapped.forEach((p, idx) => {
+          const deduped = deduplicatePlayerProfiles(mapped);
+          deduped.sort((a, b) => b.current_elo - a.current_elo);
+          deduped.forEach((p, idx) => {
             p.rank = idx + 1;
           });
 
           const localVerified = this.getVerifiedProfiles();
-          const bestList = mapped.length >= localVerified.length ? mapped : localVerified;
+          const bestList = !limit
+            ? deduped
+            : deduped.length >= localVerified.length
+            ? deduped
+            : deduped;
 
           if (!limit) {
             const unverified = this.profiles.filter((p) => isProfilePending(p));
@@ -911,6 +1036,15 @@ export class BHOSDataStore {
             const losses = rawMatches > 0 ? rawLosses : Number(seed?.losses ?? 0);
             const matchesPlayed = Math.max(rawMatches > 0 ? rawMatches : Number(seed?.matches_played ?? 0), wins + losses);
             const winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0;
+            const currentElo = resolvePlayerRealElo(
+              p,
+              rawMatches,
+              undefined,
+              0,
+              seed,
+              Number(seed?.matches_played ?? 0),
+              this.matches
+            );
             return {
               ...p,
               major_faculty: canonicalDept,
@@ -921,6 +1055,8 @@ export class BHOSDataStore {
               admission_year: admissionYear,
               year_of_study: yearOfStudy,
               is_foundation: isFoundation,
+              current_elo: currentElo,
+              elo_rating: currentElo,
               matches_played: matchesPlayed,
               wins,
               losses,
@@ -929,9 +1065,13 @@ export class BHOSDataStore {
             };
           });
 
-          const verified = normalized
-            .filter((p) => !isProfilePending(p))
-            .map((p, idx) => ({ ...p, rank: idx + 1 }));
+          const verified = deduplicatePlayerProfiles(
+            normalized.filter((p) => !isProfilePending(p))
+          );
+          verified.sort((a, b) => b.current_elo - a.current_elo);
+          verified.forEach((p, idx) => {
+            p.rank = idx + 1;
+          });
 
           if (!limit) {
             this.profiles = normalized;
@@ -1010,10 +1150,15 @@ export class BHOSDataStore {
             const losses = rawMatches > 0 ? rawLosses : Number(seed?.losses ?? 0);
             const matchesPlayed = Math.max(rawMatches > 0 ? rawMatches : Number(seed?.matches_played ?? 0), wins + losses);
             const winRate = matchesPlayed > 0 ? Math.round((wins / matchesPlayed) * 100) : 0;
-            const currentElo =
-              rawMatches === 0 && Number(seed?.matches_played ?? 0) > 0
-                ? Math.max(Number(p.current_elo ?? 0), Number(seed?.current_elo ?? 0))
-                : Number(p.current_elo ?? 0);
+            const currentElo = resolvePlayerRealElo(
+              p,
+              rawMatches,
+              undefined,
+              0,
+              seed,
+              Number(seed?.matches_played ?? 0),
+              this.matches
+            );
             return {
               ...p,
               major_faculty: canonicalDept,
@@ -1025,6 +1170,7 @@ export class BHOSDataStore {
               year_of_study: yearOfStudy,
               is_foundation: isFoundation,
               current_elo: currentElo,
+              elo_rating: currentElo,
               matches_played: matchesPlayed,
               wins,
               losses,
@@ -1056,7 +1202,7 @@ export class BHOSDataStore {
           }
         }
 
-        this.profiles = cloudProfiles;
+        this.profiles = deduplicatePlayerProfiles(cloudProfiles);
         this.recalculateRanks();
         setStored(STORAGE_KEYS.PROFILES, this.profiles);
 
@@ -1194,6 +1340,30 @@ export class BHOSDataStore {
           (a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime()
         );
         setStored(STORAGE_KEYS.MATCHES, this.matches);
+        this.recalculateRanks();
+        setStored(STORAGE_KEYS.PROFILES, this.profiles);
+        if (this.leaderboardCache?.data) {
+          this.leaderboardCache.data.forEach((p) => {
+            if (isCoachIftixarProfile(p)) {
+              const resolvedElo = resolvePlayerRealElo(
+                p,
+                Number(p.matches_played || 0),
+                undefined,
+                0,
+                undefined,
+                0,
+                this.matches
+              );
+              p.current_elo = resolvedElo;
+              p.elo_rating = resolvedElo;
+            }
+          });
+          this.leaderboardCache.data.sort((a, b) => b.current_elo - a.current_elo);
+          this.leaderboardCache.data.forEach((p, idx) => {
+            p.rank = idx + 1;
+          });
+          setSessionLeaderboardCache(this.leaderboardCache);
+        }
         this.notify();
       }
     } catch (err) {
@@ -1600,6 +1770,21 @@ export class BHOSDataStore {
   }
 
   private recalculateRanks() {
+    this.profiles.forEach((p) => {
+      if (isCoachIftixarProfile(p)) {
+        const resolvedElo = resolvePlayerRealElo(
+          p,
+          Number(p.matches_played || 0),
+          undefined,
+          0,
+          undefined,
+          0,
+          this.matches
+        );
+        p.current_elo = resolvedElo;
+        p.elo_rating = resolvedElo;
+      }
+    });
     this.profiles.sort((a, b) => b.current_elo - a.current_elo);
     this.profiles.forEach((p, idx) => {
       p.rank = idx + 1;
@@ -3883,14 +4068,15 @@ function mapRawProfileToPlayerProfile(
     (raw.group || fallback?.group || seed?.group || '').toLowerCase().startsWith('f-') ||
     (raw.group || fallback?.group || seed?.group || '').toLowerCase().startsWith('fnd-');
 
-  const resolvedElo =
-    rawMatches === 0 && (fbMatches > 0 || seedMatches > 0)
-      ? Math.max(
-          Number(raw.current_elo ?? 0),
-          Number(fallback?.current_elo ?? 0),
-          Number(seed?.current_elo ?? 0)
-        )
-      : Number(raw.current_elo ?? fallback?.current_elo ?? seed?.current_elo ?? 0);
+  const resolvedElo = resolvePlayerRealElo(
+    raw,
+    rawMatches,
+    fallback,
+    fbMatches,
+    seed,
+    seedMatches,
+    BHOSDataStore.getInstance().getMatches()
+  );
 
   return {
     id: raw.id || fallback?.id || '',
@@ -3932,6 +4118,7 @@ function mapRawProfileToPlayerProfile(
     forehand_rubber: raw.forehand_rubber || fallback?.forehand_rubber || 'Tenergy 05',
     backhand_rubber: raw.backhand_rubber || fallback?.backhand_rubber || 'Dignics 09C',
     current_elo: resolvedElo,
+    elo_rating: resolvedElo,
     matches_played: totalMatches,
     wins,
     losses,
