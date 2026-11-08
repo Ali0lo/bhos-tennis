@@ -2,6 +2,15 @@
 
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import { Trophy, Play, RotateCcw, Flame, Sparkles } from 'lucide-react';
+import {
+  playHitSound,
+  playWinSound,
+  playLoseSound,
+  unlockAudio,
+  isSoundMuted,
+  setSoundMuted,
+  loadSoundMutedPreference,
+} from '../lib/audio/minigameSounds';
 
 type Difficulty = 'easy' | 'medium' | 'hard';
 
@@ -59,6 +68,20 @@ const TABLE_HEIGHT = CANVAS_HEIGHT - TABLE_MARGIN_Y * 2;
 const PADDLE_HEIGHT = 12;
 const BALL_RADIUS = 6.5;
 
+/**
+ * Physics are frame-rate independent. All velocities / speeds in this file are
+ * expressed in pixels per 60 Hz reference frame (i.e. `5` == 300 px/sec) and are
+ * scaled each tick by `elapsedSeconds * PHYSICS_REFERENCE_FPS`, so the game runs
+ * at identical speed on 60 Hz, 120 Hz, 144 Hz or 240 Hz displays.
+ */
+const PHYSICS_REFERENCE_FPS = 60;
+/** Clamp so a background tab / long stall never teleports the ball (seconds). */
+const MAX_FRAME_DELTA_SEC = 0.1;
+/** Max physics sub-step (in reference frames) to avoid tunnelling through paddles. */
+const MAX_SUBSTEP_FRAMES = 1.5;
+/** Window used to estimate paddle velocity independent of refresh rate (ms). */
+const PADDLE_VELOCITY_WINDOW_MS = 34;
+
 interface TrailPoint {
   x: number;
   y: number;
@@ -74,6 +97,7 @@ export default function RallyMiniGame() {
   const [gameState, setGameState] = useState<'idle' | 'playing' | 'gameover'>('idle');
   const [lastOutcomeText, setLastOutcomeText] = useState<string>('');
   const [isNewRecord, setIsNewRecord] = useState<boolean>(false);
+  const [soundMuted, setSoundMutedState] = useState<boolean>(false);
 
   const highScoreRef = useRef<number>(0);
   const difficultyRef = useRef<Difficulty>(difficulty);
@@ -94,12 +118,25 @@ export default function RallyMiniGame() {
     ballSpin: 0,
     trail: [] as TrailPoint[],
     hitFlash: 0,
+    trailAccum: 0,
+    posHistory: [] as { t: number; x: number }[],
     lastFrameTime: 0,
   });
 
   useEffect(() => {
     difficultyRef.current = difficulty;
   }, [difficulty]);
+
+  useEffect(() => {
+    setSoundMutedState(loadSoundMutedPreference());
+  }, []);
+
+  const toggleSound = () => {
+    const next = !isSoundMuted();
+    setSoundMuted(next);
+    setSoundMutedState(next);
+    if (!next) unlockAudio();
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -151,8 +188,11 @@ export default function RallyMiniGame() {
       st.ballSpin = 0;
       st.trail = [];
       st.hitFlash = 0;
+      st.trailAccum = 0;
+      st.posHistory = [];
       st.lastFrameTime = performance.now();
 
+      unlockAudio();
       setCurrentRally(0);
       setIsNewRecord(false);
       setLastOutcomeText('');
@@ -183,6 +223,10 @@ export default function RallyMiniGame() {
     engineRef.current.playerX = Math.max(minX, Math.min(maxX, relX));
   }, []);
 
+  const handleMouseDown = () => {
+    unlockAudio();
+  };
+
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     updatePointerPosition(e.clientX);
   };
@@ -194,6 +238,7 @@ export default function RallyMiniGame() {
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    unlockAudio();
     if (e.touches && e.touches.length > 0) {
       updatePointerPosition(e.touches[0].clientX);
     }
@@ -225,26 +270,10 @@ export default function RallyMiniGame() {
       ctx.closePath();
     };
 
-    const step = (now: number) => {
+    const updatePhysics = (dt: number, cfg: DifficultyConfig) => {
       const st = engineRef.current;
-      const cfg = DIFFICULTY_SETTINGS[difficultyRef.current];
-      const dtRaw = st.lastFrameTime ? (now - st.lastFrameTime) / 16.6667 : 1;
-      const dt = Math.min(2.2, Math.max(0.5, dtRaw));
-      st.lastFrameTime = now;
-
-      st.playerVx = (st.playerX - st.prevPlayerX) / dt;
-      st.prevPlayerX = st.playerX;
-
-      if (st.hitFlash > 0) {
-        st.hitFlash = Math.max(0, st.hitFlash - 0.08 * dt);
-      }
 
       if (st.status === 'playing') {
-        st.trail.push({ x: st.ballX, y: st.ballY });
-        if (st.trail.length > 9) {
-          st.trail.shift();
-        }
-
         st.ballVx += st.ballSpin * 0.035 * dt;
         st.ballSpin *= Math.pow(0.988, dt);
 
@@ -257,9 +286,11 @@ export default function RallyMiniGame() {
         if (st.ballX <= leftWall) {
           st.ballX = leftWall;
           st.ballVx = Math.abs(st.ballVx);
+          playHitSound('wall');
         } else if (st.ballX >= rightWall) {
           st.ballX = rightWall;
           st.ballVx = -Math.abs(st.ballVx);
+          playHitSound('wall');
         }
 
         const halfPaddle = cfg.paddleWidth / 2;
@@ -310,6 +341,7 @@ export default function RallyMiniGame() {
             );
             st.ballY = playerPaddleY - BALL_RADIUS - 0.5;
             st.hitFlash = 1;
+            playHitSound('paddle');
             st.aiTargetOffset =
               (Math.random() - 0.5) * 2 * cfg.aiErrorMargin;
           }
@@ -347,6 +379,7 @@ export default function RallyMiniGame() {
             );
             st.ballY = aiPaddleY + PADDLE_HEIGHT + BALL_RADIUS + 0.5;
             st.hitFlash = 0.7;
+            playHitSound('paddle');
           }
         }
 
@@ -354,6 +387,7 @@ export default function RallyMiniGame() {
           st.status = 'gameover';
           setLastOutcomeText('Ralli başa çatdı! Yenidən cəhd edin.');
           setGameState('gameover');
+          playLoseSound();
         } else if (st.ballY + BALL_RADIUS < 10) {
           const bonusRally = st.rally + 2;
           st.rally = bonusRally;
@@ -362,6 +396,51 @@ export default function RallyMiniGame() {
           st.status = 'gameover';
           setLastOutcomeText('Bot topu qaytara bilmədi! (+2 Bonus Ralli)');
           setGameState('gameover');
+          playWinSound();
+        }
+      }
+
+    };
+
+    const step = (now: number) => {
+      const st = engineRef.current;
+      const cfg = DIFFICULTY_SETTINGS[difficultyRef.current];
+
+      // Delta time in seconds (clamped), converted to 60 Hz reference frames.
+      const last = st.lastFrameTime || now;
+      const dtSec = Math.min(Math.max((now - last) / 1000, 0), MAX_FRAME_DELTA_SEC);
+      st.lastFrameTime = now;
+      const frames = dtSec * PHYSICS_REFERENCE_FPS;
+
+      // Paddle velocity (px per reference frame) over a short time window.
+      st.posHistory.push({ t: now, x: st.playerX });
+      while (st.posHistory.length > 1 && now - st.posHistory[0].t > PADDLE_VELOCITY_WINDOW_MS) {
+        st.posHistory.shift();
+      }
+      const oldest = st.posHistory[0];
+      const spanFrames = ((now - oldest.t) / 1000) * PHYSICS_REFERENCE_FPS;
+      st.playerVx = spanFrames > 0.05 ? (st.playerX - oldest.x) / spanFrames : 0;
+      st.prevPlayerX = st.playerX;
+
+      if (st.hitFlash > 0) {
+        st.hitFlash = Math.max(0, st.hitFlash - 0.08 * frames);
+      }
+
+      if (st.status === 'playing' && frames > 0) {
+        // Time-based ball trail (one point per reference frame, not per display frame)
+        st.trailAccum += frames;
+        if (st.trailAccum >= 1) {
+          st.trail.push({ x: st.ballX, y: st.ballY });
+          if (st.trail.length > 9) {
+            st.trail.shift();
+          }
+          st.trailAccum %= 1;
+        }
+
+        const steps = Math.max(1, Math.ceil(frames / MAX_SUBSTEP_FRAMES));
+        const subDt = frames / steps;
+        for (let i = 0; i < steps && st.status === 'playing'; i++) {
+          updatePhysics(subDt, cfg);
         }
       }
 
@@ -486,9 +565,24 @@ export default function RallyMiniGame() {
       rafRef.current = requestAnimationFrame(step);
     };
 
+    // Reset the time base when the tab/window regains focus so the ball
+    // doesn't jump after the page was in the background.
+    const resetTimeBase = () => {
+      const st = engineRef.current;
+      st.lastFrameTime = performance.now();
+      st.posHistory = [];
+    };
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') resetTimeBase();
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', resetTimeBase);
+
     rafRef.current = requestAnimationFrame(step);
 
     return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', resetTimeBase);
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
       }
@@ -579,11 +673,23 @@ export default function RallyMiniGame() {
           width={CANVAS_WIDTH}
           height={CANVAS_HEIGHT}
           onMouseMove={handleMouseMove}
+          onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           style={{ touchAction: 'none' }}
           className="w-full h-auto block select-none touch-none cursor-ew-resize"
         />
+
+        <button
+          type="button"
+          onClick={toggleSound}
+          aria-label={soundMuted ? 'Səsi aç' : 'Səsi söndür'}
+          aria-pressed={soundMuted}
+          title={soundMuted ? 'Səsi aç' : 'Səsi söndür'}
+          className="absolute top-2 right-2 z-10 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-900/70 hover:bg-slate-800 border border-slate-700/70 text-base leading-none opacity-80 hover:opacity-100 transition"
+        >
+          <span aria-hidden="true">{soundMuted ? '🔇' : '🔊'}</span>
+        </button>
 
         {gameState !== 'playing' && (
           <div className="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-6 text-center">
@@ -631,7 +737,7 @@ export default function RallyMiniGame() {
 
       <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
         <span>Raket: Qırmızı (Aşağı) • Rəqib: Bot (Yuxarı)</span>
-        <span className="font-mono text-slate-300">60 FPS • Spin Fizikası</span>
+        <span className="font-mono text-slate-300">Hər ekranda eyni sürət • Spin Fizikası</span>
       </div>
     </div>
   );
