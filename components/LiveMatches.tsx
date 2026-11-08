@@ -64,35 +64,29 @@ export default function LiveMatches({ matches, onSelectMatch }: LiveMatchesProps
                 type="button"
                 onClick={() => onSelectMatch(m)}
                 title={`${p1Name} (${m.player1_score} : ${m.player2_score}) ${p2Name} — Təfərrüatlar üçün klikləyin`}
-                className="inline-flex items-center gap-2.5 px-3 py-1.5 rounded-xl bg-slate-950/90 border border-slate-800 hover:bg-slate-800/60 hover:border-blue-500/60 cursor-pointer transition text-xs shrink-0"
+                className="inline-flex items-center gap-2.5 bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5 hover:bg-slate-800/80 hover:border-slate-700 cursor-pointer transition text-xs shrink-0"
               >
                 {stageLabel && (
-                  <span
-                    className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase tracking-wider ${
-                      isPlayoff
-                        ? 'bg-rose-500/15 text-rose-300 border border-rose-500/30'
-                        : 'bg-blue-700/15 text-blue-300 border border-blue-600/30'
-                    }`}
-                  >
+                  <span className="px-1.5 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-slate-300 text-[9px] font-bold uppercase tracking-wider">
                     {isPlayoff ? 'Pley-off' : 'Qrup'}
                   </span>
                 )}
 
                 <span
                   className={`whitespace-nowrap ${
-                    p1Won ? 'font-bold text-emerald-400' : 'font-medium text-slate-300'
+                    p1Won ? 'font-bold text-white' : 'font-medium text-slate-400'
                   }`}
                 >
                   {p1Name}
                 </span>
 
-                <span className="px-2 py-0.5 rounded-md bg-blue-700/20 border border-blue-700/40 font-mono font-bold text-[11px] text-blue-300">
+                <span className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 font-mono font-bold text-[11px] text-slate-200">
                   {m.player1_score} : {m.player2_score}
                 </span>
 
                 <span
                   className={`whitespace-nowrap ${
-                    p2Won ? 'font-bold text-emerald-400' : 'font-medium text-slate-300'
+                    p2Won ? 'font-bold text-white' : 'font-medium text-slate-400'
                   }`}
                 >
                   {p2Name}

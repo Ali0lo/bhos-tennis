@@ -7,6 +7,7 @@ import { BHOSDataStore, isApprovedMatch, getPlayerHref } from '../lib/data/store
 import { PlayerProfile, MatchRecord, Tournament, canAccessAdminPanel } from '../lib/data/types';
 import { useTranslation, useTranslations } from '../lib/i18n';
 import HallRulesSection from '../components/HallRulesSection';
+import Hero from '../components/Hero';
 import MatchLoggerModal from '../components/MatchLoggerModal';
 import MatchDetailModal from '../components/MatchDetailModal';
 import LiveMatches from '../components/LiveMatches';
@@ -150,37 +151,6 @@ export default function HomePage() {
   return (
     <div className="relative space-y-12">
       <CourtBackground className="fixed" />
-      <SmoothReveal delay={0.01}>
-        <div className="flex justify-center -mt-3">
-          <div className="inline-flex flex-wrap sm:flex-nowrap items-center justify-center gap-1.5 sm:gap-2 p-1.5 rounded-2xl sm:rounded-full bg-slate-900 border border-slate-800 shadow-sm">
-            <Link
-              href="/leaderboard"
-              className="group inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-slate-200 hover:text-white bg-blue-700/15 hover:bg-blue-700/25 border border-blue-600/30 hover:border-blue-500/60 transition-all shadow-sm"
-            >
-              <Trophy className="w-3.5 h-3.5 text-blue-400 shrink-0 group-hover:scale-110 transition-transform" />
-              <span className="whitespace-nowrap">{t('cta_view_leaderboard')}</span>
-            </Link>
-
-            <Link
-              href="/tables"
-              className="group inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-slate-200 hover:text-white bg-rose-600/15 hover:bg-rose-600/25 border border-rose-600/30 hover:border-rose-500/60 transition-all shadow-sm"
-            >
-              <TableIcon className="w-3.5 h-3.5 text-rose-400 shrink-0 group-hover:scale-110 transition-transform" />
-              <span className="whitespace-nowrap">{t('sections.tables_title')}</span>
-            </Link>
-
-            <a
-              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center justify-center gap-2 px-4 py-2 rounded-full text-xs font-semibold text-slate-200 hover:text-white bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-600/30 hover:border-emerald-500/60 transition-all shadow-sm"
-            >
-              <MessageCircle className="w-3.5 h-3.5 text-emerald-400 fill-emerald-400/20 shrink-0 group-hover:scale-110 transition-transform" />
-              <span className="whitespace-nowrap">{t('sections.community_title')}</span>
-            </a>
-          </div>
-        </div>
-      </SmoothReveal>
 
       {matches.length > 0 && (
         <SmoothReveal delay={0.02}>
@@ -189,141 +159,12 @@ export default function HomePage() {
       )}
 
       <SmoothReveal delay={0.03}>
-        <section className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-lg min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
-          <div
-            className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-100"
-            style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}
-          />
-
-          <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/60 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-slate-950/65" />
-          <CourtBackground />
-
-          <div className="relative z-20 flex flex-wrap items-center justify-between gap-4">
-            <div className="inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-slate-700 bg-slate-900/90 text-xs font-semibold text-white shadow-sm">
-              <img
-                src="/images/bhos-crest.png"
-                alt="BHOS"
-                className="w-4 h-4 object-contain"
-              />
-              <span className="text-blue-400 font-bold tracking-wide">BHOS TABLE TENNIS</span>
-              <span className="text-slate-400">•</span>
-              <span className="text-slate-300">{t('badge')}</span>
-            </div>
-
-            <a
-              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full border border-emerald-600/40 bg-slate-900/90 text-xs font-semibold text-emerald-400 hover:bg-slate-800 transition-all shadow-sm"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <MessageCircle className="w-3.5 h-3.5 fill-emerald-500" />
-              <span>{rootT('hero.community_tag')}</span>
-              <ExternalLink className="w-3 h-3 opacity-60 group-hover:opacity-100 transition-opacity" />
-            </a>
-          </div>
-
-          <SmoothReveal staggerChildren={0.1} className="relative z-20 max-w-2xl space-y-6 pt-24 pb-2">
-            <SmoothRevealItem className="space-y-3">
-              <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black text-white tracking-tight leading-[1.08]">
-                <span className="block text-white">{t('hero_title_1')}</span>
-                <span className="block text-blue-400">
-                  {t('hero_title_2')}
-                </span>
-              </h1>
-              <p className="text-sm sm:text-base text-slate-200 leading-relaxed font-sans max-w-xl">
-                {t('hero_desc')}
-              </p>
-            </SmoothRevealItem>
-
-            <SmoothRevealItem className="flex flex-wrap items-center gap-3 pt-2">
-              <MagneticButton>
-                <Link
-                  href={currentUser ? '/log-match' : '/login'}
-                  className="group px-6 py-3 rounded-full bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition flex items-center gap-2"
-                >
-                  <UserPlus className="w-4 h-4" />
-                  <span>{t('cta_join')}</span>
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-                </Link>
-              </MagneticButton>
-
-              <MagneticButton>
-                <Link
-                  href="/leaderboard"
-                  className="group px-6 py-3 rounded-full bg-blue-700 hover:bg-blue-600 text-white font-display font-bold text-xs sm:text-sm shadow-sm active:scale-95 transition flex items-center gap-2"
-                >
-                  <Trophy className="w-4 h-4" />
-                  <span>{t('cta_view_leaderboard')}</span>
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-                </Link>
-              </MagneticButton>
-
-              <Link
-                href="/tables"
-                className="group px-6 py-3 rounded-full border border-slate-700 bg-slate-900 hover:bg-slate-800 text-white font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
-              >
-                <TableIcon className="w-4 h-4 text-rose-400" />
-                <span>{rootT('hero.hall_tables_btn')}</span>
-                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-white transition-transform duration-200 group-hover:translate-x-1" />
-              </Link>
-
-              {canAccessAdminPanel(currentUser) && (
-                <button
-                  onClick={() => setShowMatchModal(true)}
-                  className="group px-5 py-3 rounded-full border border-rose-600/40 bg-rose-600/15 hover:bg-rose-600/25 text-rose-300 font-display font-semibold text-xs sm:text-sm transition flex items-center gap-2"
-                >
-                  <Zap className="w-4 h-4" />
-                  <span>{rootT('nav.log_match')}</span>
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-                </button>
-              )}
-            </SmoothRevealItem>
-          </SmoothReveal>
-
-          <div className="relative z-20 pt-6 mt-4 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="space-y-0.5">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                {t('hero_stats.players')}
-              </span>
-              <div className="text-xl sm:text-2xl font-mono font-black text-white flex items-baseline gap-1.5">
-                <NumberTicker value={totalPlayersCount} startValue={0} durationMs={850} />
-                <span className="text-xs font-sans text-slate-400">{rootT('hero.players_count')}</span>
-              </div>
-            </div>
-            <div className="space-y-0.5">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                {t('hero_stats.matches')}
-              </span>
-              <div className="text-xl sm:text-2xl font-mono font-black text-blue-400 flex items-baseline gap-1.5">
-                <NumberTicker value={matches.length} startValue={0} durationMs={850} />
-                <span className="text-xs font-sans text-slate-400">{rootT('hero.official_count')}</span>
-              </div>
-            </div>
-            <div className="space-y-0.5">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                {t('hero_stats.tables')}
-              </span>
-              <div className="text-xl sm:text-2xl font-mono font-black text-rose-400">
-                {rootT('hero.stats_tables_sub')}
-              </div>
-            </div>
-            <div className="space-y-0.5">
-              <span className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">
-                {rootT('hero.stats_leader')}
-              </span>
-              <div className="text-xl sm:text-2xl font-mono font-black text-amber-400 flex items-baseline gap-1">
-                <NumberTicker
-                  value={top3[0]?.current_elo ?? 966}
-                  startValue={Math.min(500, top3[0]?.current_elo ?? 500)}
-                  durationMs={850}
-                />
-                <span className="text-xs font-sans text-slate-400">ELO</span>
-              </div>
-            </div>
-          </div>
-        </section>
+        <Hero
+          currentUser={currentUser}
+          totalPlayersCount={totalPlayersCount}
+          matchesCount={matches.length}
+          leaderElo={top3[0]?.current_elo ?? 966}
+        />
       </SmoothReveal>
 
       <SmoothReveal delay={0.04}>

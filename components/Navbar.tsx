@@ -122,7 +122,7 @@ export default function Navbar() {
               )}
             </button>
 
-            <nav className="hidden lg:flex items-center gap-1 bg-slate-950 border border-slate-800 rounded-full p-1">
+            <nav className="hidden lg:flex items-center gap-5 pl-2">
               {publicNavLinks.map((link) => {
                 const isActive = pathname === link.href;
                 const hasBadge = link.showBadge && pendingMatchesCount > 0;
@@ -130,10 +130,10 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`relative px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                    className={`relative text-sm font-medium transition flex items-center gap-1.5 whitespace-nowrap ${
                       isActive
-                        ? 'bg-blue-700 text-white font-bold shadow-sm'
-                        : 'text-slate-300 hover:text-white hover:bg-slate-800'
+                        ? 'text-white font-semibold'
+                        : 'text-slate-300 hover:text-white'
                     }`}
                   >
                     <span>{link.label}</span>
@@ -148,6 +148,16 @@ export default function Navbar() {
                   </Link>
                 );
               })}
+              <a
+                href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sm font-medium text-slate-300 hover:text-white transition inline-flex items-center gap-1.5 whitespace-nowrap"
+                title="Rəsmi WhatsApp İcması"
+              >
+                <MessageCircle className="w-3.5 h-3.5 text-slate-400" />
+                <span>WhatsApp</span>
+              </a>
             </nav>
           </div>
 
@@ -155,34 +165,20 @@ export default function Navbar() {
             {canAccessAdminPanel(currentUser) && (
               <Link
                 href="/admin"
-                className={`hidden lg:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-bold transition active:scale-95 shadow-sm ${
-                  pathname === '/admin'
-                    ? 'bg-amber-500 text-slate-950 shadow-sm'
-                    : 'bg-amber-500/15 hover:bg-amber-500/25 border border-amber-500/40 text-amber-300'
-                }`}
+                className="hidden lg:inline-flex items-center gap-1.5 bg-slate-800/80 hover:bg-slate-800 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-lg text-xs font-medium transition"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-400" />
                 <span>{t('nav.admin') || 'Prezident Paneli'}</span>
               </Link>
             )}
-            <a
-              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-600/15 hover:bg-emerald-600/25 border border-emerald-600/40 text-emerald-400 text-xs font-semibold transition active:scale-95 shadow-sm"
-              title="Rəsmi WhatsApp İcması"
-            >
-              <MessageCircle className="w-3.5 h-3.5 fill-emerald-500" />
-              <span className="hidden sm:inline font-bold">WhatsApp</span>
-            </a>
 
             {currentUser && currentUser.is_verified !== false && (
               <button
                 onClick={() => setShowMatchModal(true)}
-                className="hidden md:inline-flex items-center gap-1 px-3.5 py-1.5 rounded-full bg-rose-600 text-white text-xs font-bold hover:bg-rose-500 shadow-sm transition active:scale-95"
+                className="hidden md:inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-500 shadow-sm shadow-rose-950/40 transition active:scale-95"
               >
                 <PlusCircle className="w-3.5 h-3.5" />
-                <span>{t('nav.log_match') || 'Oyun Qeyd Et'}</span>
+                <span>{t('nav.log_match') || 'Oyun Qeydiyyatı'}</span>
               </button>
             )}
 
