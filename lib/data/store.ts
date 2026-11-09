@@ -4133,6 +4133,18 @@ function mapRawProfileToPlayerProfile(
   };
 }
 
+/** Drops cached profile summary (e.g. after arcade badges were awarded server-side). */
+export function invalidatePlayerProfileCache(playerId: string): void {
+  if (!playerId) return;
+  const cacheKey = `bhos_player_${playerId}`;
+  inMemoryPlayerCache.delete(cacheKey);
+  if (typeof window !== 'undefined') {
+    try {
+      sessionStorage.removeItem(cacheKey);
+    } catch {}
+  }
+}
+
 export function getCachedPlayerProfile(
   identifier: string
 ): PlayerProfileSummaryResult | null {

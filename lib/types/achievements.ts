@@ -20,9 +20,72 @@ export type AchievementBadgeId =
   | 'top_tier'
   | 'unstoppable_streak'
   | 'tournament_champion'
-  | 'founding_member';
+  | 'founding_member'
+  | 'rally_starter'
+  | 'rally_master'
+  | 'table_ruler';
 
-export type AchievementTierColor = 'blue' | 'crimson' | 'gold';
+export type AchievementTierColor = 'blue' | 'crimson' | 'gold' | 'bronze' | 'silver';
+
+export interface AchievementTierStyle {
+  /** Unlocked badge card (player profile) */
+  card: string;
+  iconBox: string;
+  statusPill: string;
+  progressFill: string;
+  tierText: string;
+  /** Compact admin list variants */
+  adminCard: string;
+  adminPill: string;
+}
+
+export const ACHIEVEMENT_TIER_STYLES: Record<AchievementTierColor, AchievementTierStyle> = {
+  blue: {
+    card: 'border-blue-700/60 bg-slate-900 text-blue-400 shadow-sm',
+    iconBox: 'bg-blue-700/15 border-blue-700/40 text-blue-400',
+    statusPill: 'bg-blue-700/15 text-blue-400 border border-blue-700/40',
+    progressFill: 'bg-blue-600',
+    tierText: 'text-blue-400',
+    adminCard: 'border-blue-700/60 bg-slate-950 text-blue-400',
+    adminPill: 'bg-blue-700/15 text-blue-400 border-blue-700/40',
+  },
+  crimson: {
+    card: 'border-rose-600/60 bg-slate-900 text-rose-400 shadow-sm',
+    iconBox: 'bg-rose-600/15 border-rose-600/40 text-rose-400',
+    statusPill: 'bg-rose-600/15 text-rose-400 border border-rose-600/30',
+    progressFill: 'bg-rose-600',
+    tierText: 'text-rose-400',
+    adminCard: 'border-rose-600/60 bg-slate-950 text-rose-400',
+    adminPill: 'bg-rose-600/15 text-rose-400 border-rose-600/30',
+  },
+  gold: {
+    card: 'border-amber-500/70 bg-slate-900 text-amber-400 shadow-sm',
+    iconBox: 'bg-amber-500/15 border-amber-500/40 text-amber-400',
+    statusPill: 'bg-amber-500/15 text-amber-400 border border-amber-500/30',
+    progressFill: 'bg-amber-500',
+    tierText: 'text-amber-400',
+    adminCard: 'border-amber-500/60 bg-slate-950 text-amber-400',
+    adminPill: 'bg-amber-500/15 text-amber-400 border-amber-500/30',
+  },
+  bronze: {
+    card: 'border-orange-700/60 bg-slate-900 text-orange-400 shadow-sm',
+    iconBox: 'bg-orange-700/15 border-orange-700/40 text-orange-400',
+    statusPill: 'bg-orange-700/15 text-orange-400 border border-orange-700/40',
+    progressFill: 'bg-orange-600',
+    tierText: 'text-orange-400',
+    adminCard: 'border-orange-700/60 bg-slate-950 text-orange-400',
+    adminPill: 'bg-orange-700/15 text-orange-400 border-orange-700/40',
+  },
+  silver: {
+    card: 'border-slate-300/50 bg-slate-900 text-slate-200 shadow-sm',
+    iconBox: 'bg-slate-300/10 border-slate-300/40 text-slate-200',
+    statusPill: 'bg-slate-300/10 text-slate-200 border border-slate-400/40',
+    progressFill: 'bg-slate-300',
+    tierText: 'text-slate-300',
+    adminCard: 'border-slate-300/50 bg-slate-950 text-slate-200',
+    adminPill: 'bg-slate-300/10 text-slate-200 border-slate-400/40',
+  },
+};
 
 export interface AchievementProgress {
   current: number;
@@ -193,6 +256,42 @@ export const ACHIEVEMENT_BADGES: AchievementBadgeDefinition[] = [
     descriptionAz: 'Klubun "İlkin Heyət" təsisçi üzvü statusu.',
     descriptionEn: 'Founding member of the initial BHOS club roster.',
     descriptionRu: 'Основатель из первоначального состава клуба БВШН.',
+    accentColor: 'gold',
+    tierLabelAz: 'Əfsanəvi',
+  },
+  {
+    id: 'rally_starter',
+    emoji: '🥉',
+    titleAz: 'Ralli Başlanğıcı',
+    titleEn: 'Rally Starter',
+    titleRu: 'Начало ралли',
+    descriptionAz: 'Mini-oyunda "Sonsuz Ralli" rejimində 15+ ralli əldə edin.',
+    descriptionEn: 'Reach a 15+ rally in the Infinity Rally mini-game mode.',
+    descriptionRu: 'Достигните 15+ розыгрышей в режиме «Бесконечное ралли».',
+    accentColor: 'bronze',
+    tierLabelAz: 'Bürünc',
+  },
+  {
+    id: 'rally_master',
+    emoji: '🥈',
+    titleAz: 'Ralli Ustası',
+    titleEn: 'Rally Master',
+    titleRu: 'Мастер ралли',
+    descriptionAz: 'Mini-oyunda "Sonsuz Ralli" rejimində 30+ ralli əldə edin.',
+    descriptionEn: 'Reach a 30+ rally in the Infinity Rally mini-game mode.',
+    descriptionRu: 'Достигните 30+ розыгрышей в режиме «Бесконечное ралли».',
+    accentColor: 'silver',
+    tierLabelAz: 'Gümüş',
+  },
+  {
+    id: 'table_ruler',
+    emoji: '🥇',
+    titleAz: 'Masa Hakimi',
+    titleEn: 'Table Ruler',
+    titleRu: 'Властелин стола',
+    descriptionAz: 'Mini-oyunda "Sonsuz Ralli" rejimində 50+ ralli əldə edin.',
+    descriptionEn: 'Reach a 50+ rally in the Infinity Rally mini-game mode.',
+    descriptionRu: 'Достигните 50+ розыгрышей в режиме «Бесконечное ралли».',
     accentColor: 'gold',
     tierLabelAz: 'Əfsanəvi',
   },
@@ -511,6 +610,22 @@ export function evaluatePlayerAchievements(
     founding_member: {
       unlocked: hasFoundingMember,
       unlockedAt: foundingMemberDate,
+      progress: null,
+    },
+    // Arcade badges are awarded server-side by submit_arcade_score() (migration 040)
+    rally_starter: {
+      unlocked: Boolean(dbUnlockedMap.rally_starter),
+      unlockedAt: dbUnlockedMap.rally_starter || null,
+      progress: null,
+    },
+    rally_master: {
+      unlocked: Boolean(dbUnlockedMap.rally_master),
+      unlockedAt: dbUnlockedMap.rally_master || null,
+      progress: null,
+    },
+    table_ruler: {
+      unlocked: Boolean(dbUnlockedMap.table_ruler),
+      unlockedAt: dbUnlockedMap.table_ruler || null,
       progress: null,
     },
   };

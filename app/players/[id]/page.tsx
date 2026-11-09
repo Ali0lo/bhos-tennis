@@ -29,7 +29,10 @@ import HeadToHeadDuel from '../../../components/HeadToHeadDuel';
 import PlayerProfileSkeleton from '../../../components/PlayerProfileSkeleton';
 import HoloCard from '../../../components/HoloCard';
 import RecentFormBadges from '../../../components/RecentFormBadges';
-import { evaluatePlayerAchievements } from '../../../lib/types/achievements';
+import {
+  evaluatePlayerAchievements,
+  ACHIEVEMENT_TIER_STYLES,
+} from '../../../lib/types/achievements';
 import {
   Trophy,
   ArrowLeft,
@@ -868,33 +871,11 @@ export default function PlayerProfilePage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
             {achievements.map((badge) => {
-              const tierCardClass =
-                badge.accentColor === 'gold'
-                  ? 'border-amber-500/70 bg-slate-900 text-amber-400 shadow-sm'
-                  : badge.accentColor === 'crimson'
-                  ? 'border-rose-600/60 bg-slate-900 text-rose-400 shadow-sm'
-                  : 'border-blue-700/60 bg-slate-900 text-blue-400 shadow-sm';
-
-              const tierIconBoxClass =
-                badge.accentColor === 'gold'
-                  ? 'bg-amber-500/15 border-amber-500/40 text-amber-400'
-                  : badge.accentColor === 'crimson'
-                  ? 'bg-rose-600/15 border-rose-600/40 text-rose-400'
-                  : 'bg-blue-700/15 border-blue-700/40 text-blue-400';
-
-              const tierStatusPillClass =
-                badge.accentColor === 'gold'
-                  ? 'bg-amber-500/15 text-amber-400 border border-amber-500/30'
-                  : badge.accentColor === 'crimson'
-                  ? 'bg-rose-600/15 text-rose-400 border border-rose-600/30'
-                  : 'bg-blue-700/15 text-blue-400 border border-blue-700/40';
-
-              const tierProgressFillClass =
-                badge.accentColor === 'gold'
-                  ? 'bg-amber-500'
-                  : badge.accentColor === 'crimson'
-                  ? 'bg-rose-600'
-                  : 'bg-blue-600';
+              const tierStyle = ACHIEVEMENT_TIER_STYLES[badge.accentColor];
+              const tierCardClass = tierStyle.card;
+              const tierIconBoxClass = tierStyle.iconBox;
+              const tierStatusPillClass = tierStyle.statusPill;
+              const tierProgressFillClass = tierStyle.progressFill;
 
               const progressPct = badge.progress
                 ? Math.min(
@@ -941,13 +922,7 @@ export default function PlayerProfilePage() {
                             </span>
                             <span className="text-slate-700">•</span>
                             <span
-                              className={`text-[9px] uppercase tracking-wider font-bold ${
-                                badge.accentColor === 'gold'
-                                  ? 'text-amber-400'
-                                  : badge.accentColor === 'crimson'
-                                  ? 'text-rose-400'
-                                  : 'text-blue-400'
-                              }`}
+                              className={`text-[9px] uppercase tracking-wider font-bold ${tierStyle.tierText}`}
                             >
                               {badge.tierLabelAz}
                             </span>

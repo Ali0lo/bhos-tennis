@@ -30,6 +30,7 @@ import {
 import { useTranslation } from '../../lib/i18n';
 import {
   ACHIEVEMENT_BADGES,
+  ACHIEVEMENT_TIER_STYLES,
   AchievementBadgeId,
   evaluatePlayerAchievements,
 } from '../../lib/types/achievements';
@@ -2192,12 +2193,7 @@ export default function AdminDashboardPage() {
                           ? badge.unlocked
                           : hasDbGrant || badge.unlocked;
 
-                      const tierBorderClass =
-                        badge.accentColor === 'gold'
-                          ? 'border-amber-500/60 bg-slate-950 text-amber-400'
-                          : badge.accentColor === 'crimson'
-                          ? 'border-rose-600/60 bg-slate-950 text-rose-400'
-                          : 'border-blue-700/60 bg-slate-950 text-blue-400';
+                      const tierBorderClass = ACHIEVEMENT_TIER_STYLES[badge.accentColor].adminCard;
 
                       return (
                         <div
@@ -2218,13 +2214,7 @@ export default function AdminDashboardPage() {
                                   {badge.titleAz}
                                 </span>
                                 <span
-                                  className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border ${
-                                    badge.accentColor === 'gold'
-                                      ? 'bg-amber-500/15 text-amber-400 border-amber-500/30'
-                                      : badge.accentColor === 'crimson'
-                                      ? 'bg-rose-600/15 text-rose-400 border-rose-600/30'
-                                      : 'bg-blue-700/15 text-blue-400 border-blue-700/40'
-                                  }`}
+                                  className={`text-[9px] uppercase font-bold px-1.5 py-0.5 rounded border ${ACHIEVEMENT_TIER_STYLES[badge.accentColor].adminPill}`}
                                 >
                                   {badge.tierLabelAz}
                                 </span>
