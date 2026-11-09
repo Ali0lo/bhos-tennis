@@ -381,6 +381,15 @@ export default function RallyMiniGame() {
       } catch {}
       if (cancelled) return;
       cloudBestRef.current = cloudBest;
+      if (cloudBest > highScoresRef.current.infinity) {
+        highScoresRef.current.infinity = cloudBest;
+        try {
+          localStorage.setItem(INFINITY_BEST_STORAGE_KEY, String(cloudBest));
+        } catch {}
+        if (difficultyRef.current === 'infinity') {
+          setHighScore(cloudBest);
+        }
+      }
 
       const pending = readPendingScore();
       if (pending > 0) {
