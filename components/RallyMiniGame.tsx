@@ -178,6 +178,7 @@ export default function RallyMiniGame() {
   const cloudBestRef = useRef<number | null>(null);
   const onInfinityGameOverRef = useRef<(score: number) => void>(() => {});
   const difficultyRef = useRef<Difficulty>(difficulty);
+  const lastDprRef = useRef<number>(1);
 
   const engineRef = useRef({
     status: 'idle' as 'idle' | 'playing' | 'gameover',
@@ -497,6 +498,41 @@ export default function RallyMiniGame() {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
+    /**
+     * Retina / High-DPI Scaling:
+     * Synchronize the internal pixel buffer with the physical device pixel ratio (DPR),
+     * keeping CSS layout dimensions in standard units so the table renders razor-sharp
+     * on Retina/mobile screens without any coordinate mismatches.
+     */
+    const syncCanvasDpi = () => {
+      const dpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+      const rect = canvas.getBoundingClientRect();
+      const parentWidth = canvas.parentElement?.clientWidth ?? CANVAS_WIDTH;
+      const cssWidth =
+        rect.width > 0 ? rect.width : (parentWidth > 0 ? parentWidth : CANVAS_WIDTH);
+      const cssHeight = Math.round((cssWidth * CANVAS_HEIGHT) / CANVAS_WIDTH);
+
+      const targetBufferWidth = Math.max(1, Math.floor(cssWidth * dpr));
+      const targetBufferHeight = Math.max(1, Math.floor(cssHeight * dpr));
+
+      if (canvas.width !== targetBufferWidth || canvas.height !== targetBufferHeight) {
+        canvas.width = targetBufferWidth;
+        canvas.height = targetBufferHeight;
+      }
+
+      canvas.style.width = `${cssWidth}px`;
+      canvas.style.height = `${cssHeight}px`;
+    };
+
+    syncCanvasDpi();
+
+    let resizeObserver: ResizeObserver | null = null;
+    if (typeof ResizeObserver !== 'undefined' && canvas.parentElement) {
+      resizeObserver = new ResizeObserver(() => syncCanvasDpi());
+      resizeObserver.observe(canvas.parentElement);
+    }
+    window.addEventListener('resize', syncCanvasDpi);
+
     const playerPaddleY = CANVAS_HEIGHT - TABLE_MARGIN_Y - 22;
     const aiPaddleY = TABLE_MARGIN_Y + 22 - PADDLE_HEIGHT;
 
@@ -754,9 +790,27 @@ export default function RallyMiniGame() {
         }
       }
 
-      ctx.fillStyle = '#0B0F19';
-      ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+      // Check if display DPR changed dynamically (e.g., dragged between screens or zoomed)
+      const currentDpr = typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1;
+      if (lastDprRef.current !== currentDpr) {
+        lastDprRef.current = currentDpr;
+        syncCanvasDpi();
+      }
 
+      const scaleX = canvas.width > 0 ? canvas.width / CANVAS_WIDTH : currentDpr;
+      const scaleY = canvas.height > 0 ? canvas.height / CANVAS_HEIGHT : currentDpr;
+
+      // Clear the physical canvas buffer cleanly
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.fillStyle = '#0B0F19';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Scale drawing context so all game coordinates stay in canonical 440x560 space
+      ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+
+      // Table ambient glow / outer base
       ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
       drawRoundedRect(
         TABLE_MARGIN_X - 6,
@@ -767,6 +821,7 @@ export default function RallyMiniGame() {
       );
       ctx.fill();
 
+      // Main table surface
       ctx.fillStyle = '#1D4ED8';
       drawRoundedRect(
         TABLE_MARGIN_X,
@@ -777,35 +832,42 @@ export default function RallyMiniGame() {
       );
       ctx.fill();
 
+      // Table inner half highlight (top court)
       ctx.fillStyle = '#1E3A8A';
       ctx.fillRect(
-        TABLE_MARGIN_X + 4,
-        TABLE_MARGIN_Y + 4,
-        TABLE_WIDTH - 8,
-        TABLE_HEIGHT / 2 - 4
+        TABLE_MARGIN_X + 3,
+        TABLE_MARGIN_Y + 3,
+        TABLE_WIDTH - 6,
+        TABLE_HEIGHT / 2 - 3
       );
 
+      // White table boundary line with matched rounded corners for crisp edges
       ctx.strokeStyle = '#F8FAFC';
-      ctx.lineWidth = 2.5;
-      ctx.strokeRect(
+      ctx.lineWidth = 2;
+      drawRoundedRect(
         TABLE_MARGIN_X + 1,
         TABLE_MARGIN_Y + 1,
         TABLE_WIDTH - 2,
-        TABLE_HEIGHT - 2
+        TABLE_HEIGHT - 2,
+        5
       );
+      ctx.stroke();
 
+      // Center dividing line (crisp vertical alignment)
       ctx.strokeStyle = 'rgba(248, 250, 252, 0.45)';
       ctx.lineWidth = 1.5;
       ctx.beginPath();
-      ctx.moveTo(CANVAS_WIDTH / 2, TABLE_MARGIN_Y + 2);
-      ctx.lineTo(CANVAS_WIDTH / 2, TABLE_MARGIN_Y + TABLE_HEIGHT - 2);
+      ctx.moveTo(CANVAS_WIDTH / 2, TABLE_MARGIN_Y + 3);
+      ctx.lineTo(CANVAS_WIDTH / 2, TABLE_MARGIN_Y + TABLE_HEIGHT - 3);
       ctx.stroke();
 
+      // Net posts and structure
       const netY = CANVAS_HEIGHT / 2;
       ctx.fillStyle = '#0F172A';
       ctx.fillRect(TABLE_MARGIN_X - 8, netY - 4, 8, 8);
       ctx.fillRect(CANVAS_WIDTH - TABLE_MARGIN_X, netY - 4, 8, 8);
 
+      // Net shadow
       ctx.strokeStyle = 'rgba(15, 23, 42, 0.45)';
       ctx.lineWidth = 4;
       ctx.beginPath();
@@ -813,8 +875,9 @@ export default function RallyMiniGame() {
       ctx.lineTo(CANVAS_WIDTH - TABLE_MARGIN_X + 4, netY + 3);
       ctx.stroke();
 
+      // White dashed net cord
       ctx.strokeStyle = '#FFFFFF';
-      ctx.lineWidth = 2.5;
+      ctx.lineWidth = 2;
       ctx.setLineDash([7, 5]);
       ctx.beginPath();
       ctx.moveTo(TABLE_MARGIN_X - 4, netY);
@@ -885,19 +948,6 @@ export default function RallyMiniGame() {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      if (isInfinity && st.status === 'playing') {
-        ctx.font = '600 11px ui-monospace, SFMono-Regular, Menlo, monospace';
-        ctx.textAlign = 'left';
-        ctx.fillStyle = `rgba(${tier.rgb}, 0.85)`;
-        ctx.fillText(
-          `♾ ${Math.round(st.ballSpeed * PHYSICS_REFERENCE_FPS)} px/s • ×${(
-            st.ballSpeed / cfg.initialSpeed
-          ).toFixed(2)}`,
-          TABLE_MARGIN_X + 8,
-          CANVAS_HEIGHT / 2 - 10
-        );
-      }
-
       rafRef.current = requestAnimationFrame(step);
     };
 
@@ -919,6 +969,10 @@ export default function RallyMiniGame() {
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('focus', resetTimeBase);
+      window.removeEventListener('resize', syncCanvasDpi);
+      if (resizeObserver) {
+        resizeObserver.disconnect();
+      }
       if (rafRef.current !== null) {
         cancelAnimationFrame(rafRef.current);
       }
@@ -1017,7 +1071,7 @@ export default function RallyMiniGame() {
         </span>
       </p>
 
-      <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+      <div className="relative rounded-xl overflow-hidden border border-slate-800 bg-slate-950 flex items-center justify-center">
         <canvas
           ref={canvasRef}
           width={CANVAS_WIDTH}
@@ -1026,7 +1080,11 @@ export default function RallyMiniGame() {
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
-          style={{ touchAction: 'none' }}
+          style={{
+            touchAction: 'none',
+            maxWidth: '100%',
+            aspectRatio: `${CANVAS_WIDTH} / ${CANVAS_HEIGHT}`,
+          }}
           className="w-full h-auto block select-none touch-none cursor-ew-resize"
         />
 
