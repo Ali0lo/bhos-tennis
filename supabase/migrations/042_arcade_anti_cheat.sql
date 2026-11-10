@@ -13,9 +13,6 @@
 -- 3. Input Telemetry Integrity:
 --    - `submit_arcade_score` verifies `p_is_natural_input` (paddle movement + contact point std dev).
 --    - Rejects synthetic snaps / dead-center solver bots.
---
--- 4. Rate Limiting:
---    - Enforces a 60-second cooldown on consecutive high-score submissions per user.
 -- ==============================================================================
 
 -- ------------------------------------------------------------------------------
@@ -108,7 +105,6 @@ DECLARE
   v_session_used BOOLEAN;
   v_elapsed_seconds NUMERIC;
   v_min_time NUMERIC;
-  v_last_submitted TIMESTAMPTZ;
   v_prev INT;
   v_best INT;
   v_is_new_best BOOLEAN := FALSE;
@@ -171,15 +167,6 @@ BEGIN
 
   IF p_score > 0 AND (v_elapsed_seconds < v_min_time OR (p_duration_seconds IS NOT NULL AND p_duration_seconds < v_min_time)) THEN
     RAISE EXCEPTION 'Keçərsiz oyun sessiyası (Vaxt uyğunsuzluğu)' USING ERRCODE = '22023';
-  END IF;
-
-  -- Layer 3: Rate Limiting (disallow consecutive high-score submissions within 60s)
-  SELECT updated_at INTO v_last_submitted
-  FROM public.arcade_highscores
-  WHERE user_id = v_uid AND mode = p_mode;
-
-  IF v_last_submitted IS NOT NULL AND (NOW() - v_last_submitted) < INTERVAL '60 seconds' THEN
-    RAISE EXCEPTION 'Çox tez-tez cəhd edilir. Zəhmət olmasa 60 saniyə gözləyin.' USING ERRCODE = '23514';
   END IF;
 
   -- Mark session as used immediately
