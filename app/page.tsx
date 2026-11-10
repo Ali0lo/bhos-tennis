@@ -146,16 +146,10 @@ export default function HomePage() {
   };
 
   return (
-    <div className="relative space-y-12">
+    <div className="relative space-y-10">
       <CourtBackground className="fixed" />
 
-      {matches.length > 0 && (
-        <SmoothReveal delay={0.02}>
-          <LiveMatches matches={matches} onSelectMatch={(m) => setSelectedMatch(m)} />
-        </SmoothReveal>
-      )}
-
-      <SmoothReveal delay={0.03}>
+      <SmoothReveal delay={0.02}>
         <Hero
           currentUser={currentUser}
           totalPlayersCount={totalPlayersCount}
@@ -164,15 +158,23 @@ export default function HomePage() {
         />
       </SmoothReveal>
 
-      <SmoothReveal delay={0.04}>
+      {matches.length > 0 && (
+        <SmoothReveal delay={0.04}>
+          <div className="my-6 sm:mt-8 sm:mb-10 w-full">
+            <LiveMatches matches={matches} onSelectMatch={(m) => setSelectedMatch(m)} />
+          </div>
+        </SmoothReveal>
+      )}
+
+      <SmoothReveal delay={0.06}>
         <FoundationTournamentBanner />
       </SmoothReveal>
 
-      <SmoothReveal delay={0.05}>
+      <SmoothReveal delay={0.08}>
         <OnboardingBanner />
       </SmoothReveal>
 
-      <SmoothReveal delay={0.08}>
+      <SmoothReveal delay={0.1}>
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
