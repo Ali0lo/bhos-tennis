@@ -125,6 +125,46 @@ interface SubmitState {
   best?: number;
   isNewBest?: boolean;
   badges?: string[];
+  errorMessage?: string;
+}
+
+interface TelemetrySession {
+  sessionId: string | null;
+  sessionStartTime: number;
+  moveEventsCount: number;
+  syntheticSnapCount: number;
+  contactOffsets: number[];
+  lastPointerX: number;
+  lastPointerTime: number;
+}
+
+function computeStdDev(values: number[]): number {
+  if (values.length <= 1) return 1;
+  const mean = values.reduce((sum, v) => sum + v, 0) / values.length;
+  const variance = values.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) / values.length;
+  return Math.sqrt(variance);
+}
+
+function evaluateNaturalInput(telemetry: TelemetrySession): boolean {
+  const { moveEventsCount, syntheticSnapCount, contactOffsets } = telemetry;
+  // For small samples, require at least 1 real movement event and 0 synthetic snaps
+  if (contactOffsets.length < 3) {
+    return moveEventsCount > 0 && syntheticSnapCount === 0;
+  }
+  const stdDev = computeStdDev(contactOffsets);
+  // Bot solvers hit dead-center with near-zero standard deviation
+  if (stdDev < 0.005) {
+    return false;
+  }
+  // Must have continuous pointer movements at least matching the number of hits
+  if (moveEventsCount < contactOffsets.length) {
+    return false;
+  }
+  // No excessive synthetic snaps
+  if (syntheticSnapCount > 3) {
+    return false;
+  }
+  return true;
 }
 
 const HIGH_SCORE_STORAGE_KEY = 'bhos_rally_high_score';
@@ -179,6 +219,17 @@ export default function RallyMiniGame() {
   const onInfinityGameOverRef = useRef<(score: number) => void>(() => {});
   const difficultyRef = useRef<Difficulty>(difficulty);
   const lastDprRef = useRef<number>(1);
+
+  const telemetryRef = useRef<TelemetrySession>({
+    sessionId: null,
+    sessionStartTime: 0,
+    moveEventsCount: 0,
+    syntheticSnapCount: 0,
+    contactOffsets: [],
+    lastPointerX: CANVAS_WIDTH / 2,
+    lastPointerTime: 0,
+  });
+  const sessionPromiseRef = useRef<Promise<string | null> | null>(null);
 
   const engineRef = useRef({
     status: 'idle' as 'idle' | 'playing' | 'gameover',
@@ -279,19 +330,56 @@ export default function RallyMiniGame() {
     } catch {}
   };
 
-  const submitInfinityScore = async (score: number, userId: string) => {
+  const startArcadeSession = useCallback(async (): Promise<string | null> => {
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) return null;
+      const { data, error } = await supabase.rpc('start_arcade_session', {
+        p_mode: ARCADE_INFINITY_MODE,
+      });
+      if (error) {
+        console.warn('[Arcade Anti-Cheat] Failed to start signed session:', error.message);
+        return null;
+      }
+      return (data as string) || null;
+    } catch {
+      return null;
+    }
+  }, []);
+
+  const submitInfinityScore = async (
+    score: number,
+    userId: string,
+    sessionId: string | null,
+    durationSeconds: number,
+    isNatural: boolean
+  ) => {
     const supabase = getSupabaseClient();
     if (!supabase) {
       writePendingScore(score);
-      setSubmitState({ status: 'error' });
+      setSubmitState({
+        status: 'error',
+        errorMessage: 'Serverlə əlaqə qurulmadı. Nəticə bu cihazda saxlanıldı.',
+      });
+      return;
+    }
+
+    if (!sessionId) {
+      setSubmitState({
+        status: 'error',
+        errorMessage: 'Oyun sessiyası tapılmadı. Zəhmət olmasa yeni oyun başladın.',
+      });
       return;
     }
 
     setSubmitState({ status: 'saving' });
     try {
       const { data, error } = await supabase.rpc('submit_arcade_score', {
+        p_session_id: sessionId,
         p_score: score,
         p_mode: ARCADE_INFINITY_MODE,
+        p_duration_seconds: Math.round(durationSeconds * 100) / 100,
+        p_is_natural_input: isNatural,
       });
       if (error) throw error;
 
@@ -322,13 +410,16 @@ export default function RallyMiniGame() {
       if (badges.length > 0) {
         invalidatePlayerProfileCache(userId);
       }
-    } catch {
-      writePendingScore(score);
-      setSubmitState({ status: 'error' });
+    } catch (err: any) {
+      const msg = err?.message || 'Nəticə göndərilərkən xəta baş verdi.';
+      setSubmitState({
+        status: 'error',
+        errorMessage: msg,
+      });
     }
   };
 
-  onInfinityGameOverRef.current = (score: number) => {
+  onInfinityGameOverRef.current = async (score: number) => {
     if (score <= 0) {
       setSubmitState({ status: 'idle' });
       return;
@@ -339,7 +430,17 @@ export default function RallyMiniGame() {
       return;
     }
     if (score > (cloudBestRef.current ?? 0)) {
-      void submitInfinityScore(score, authUserId);
+      const now = performance.now();
+      const tel = telemetryRef.current;
+      const durationSeconds = Math.max(0, (now - tel.sessionStartTime) / 1000);
+      const isNatural = evaluateNaturalInput(tel);
+
+      let sessionId = tel.sessionId;
+      if (!sessionId && sessionPromiseRef.current) {
+        sessionId = await sessionPromiseRef.current;
+      }
+
+      void submitInfinityScore(score, authUserId, sessionId, durationSeconds, isNatural);
     } else {
       setSubmitState({ status: 'idle' });
     }
@@ -393,11 +494,7 @@ export default function RallyMiniGame() {
 
       const pending = readPendingScore();
       if (pending > 0) {
-        if (pending > cloudBest) {
-          await submitInfinityScore(pending, authUserId);
-        } else {
-          clearPendingScore();
-        }
+        clearPendingScore();
       }
     })();
 
@@ -442,6 +539,29 @@ export default function RallyMiniGame() {
       st.posHistory = [];
       st.lastFrameTime = performance.now();
 
+      // Reset micro-telemetry and initiate signed session for Infinity mode
+      telemetryRef.current = {
+        sessionId: null,
+        sessionStartTime: performance.now(),
+        moveEventsCount: 0,
+        syntheticSnapCount: 0,
+        contactOffsets: [],
+        lastPointerX: CANVAS_WIDTH / 2,
+        lastPointerTime: performance.now(),
+      };
+
+      if (activeDiff === 'infinity') {
+        const p = startArcadeSession().then((sid) => {
+          if (sid) {
+            telemetryRef.current.sessionId = sid;
+          }
+          return sid;
+        });
+        sessionPromiseRef.current = p;
+      } else {
+        sessionPromiseRef.current = null;
+      }
+
       unlockAudio();
       setSubmitState({ status: 'idle' });
       setToast(null);
@@ -466,7 +586,7 @@ export default function RallyMiniGame() {
     }
   };
 
-  const updatePointerPosition = useCallback((clientX: number) => {
+  const updatePointerPosition = useCallback((clientX: number, isTrustedEvent: boolean = true) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -477,7 +597,25 @@ export default function RallyMiniGame() {
     const halfPaddle = cfg.paddleWidth / 2;
     const minX = TABLE_MARGIN_X + halfPaddle - 8;
     const maxX = CANVAS_WIDTH - TABLE_MARGIN_X - halfPaddle + 8;
-    engineRef.current.playerX = Math.max(minX, Math.min(maxX, relX));
+    const targetX = Math.max(minX, Math.min(maxX, relX));
+
+    // Telemetry tracking for anti-cheat verification
+    const now = performance.now();
+    const tel = telemetryRef.current;
+    if (!isTrustedEvent) {
+      tel.syntheticSnapCount++;
+    } else {
+      tel.moveEventsCount++;
+      const dt = now - tel.lastPointerTime;
+      const dx = Math.abs(targetX - tel.lastPointerX);
+      if (dt > 0 && dt < 12 && dx > 180) {
+        tel.syntheticSnapCount++;
+      }
+    }
+    tel.lastPointerX = targetX;
+    tel.lastPointerTime = now;
+
+    engineRef.current.playerX = targetX;
   }, []);
 
   const handleMouseDown = () => {
@@ -485,19 +623,19 @@ export default function RallyMiniGame() {
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    updatePointerPosition(e.clientX);
+    updatePointerPosition(e.clientX, e.isTrusted);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
     if (e.touches && e.touches.length > 0) {
-      updatePointerPosition(e.touches[0].clientX);
+      updatePointerPosition(e.touches[0].clientX, e.isTrusted);
     }
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     unlockAudio();
     if (e.touches && e.touches.length > 0) {
-      updatePointerPosition(e.touches[0].clientX);
+      updatePointerPosition(e.touches[0].clientX, e.isTrusted);
     }
   };
 
@@ -632,6 +770,9 @@ export default function RallyMiniGame() {
               -1,
               Math.min(1, (st.ballX - st.playerX) / halfPaddle)
             );
+            if (isInfinity) {
+              telemetryRef.current.contactOffsets.push(hitOffset);
+            }
             const nextRally = st.rally + 1;
             st.rally = nextRally;
             setCurrentRally(nextRally);
@@ -1167,7 +1308,8 @@ export default function RallyMiniGame() {
                     )}
                     {submitState.status === 'error' && (
                       <div className="rounded-xl bg-rose-600/10 border border-rose-600/30 px-3 py-2 text-xs text-rose-300">
-                        Nəticə göndərilə bilmədi. Bu cihazda saxlanıldı, növbəti dəfə yenidən cəhd olunacaq.
+                        {submitState.errorMessage ||
+                          'Nəticə göndərilə bilmədi. Bu cihazda saxlanıldı, növbəti dəfə yenidən cəhd olunacaq.'}
                       </div>
                     )}
                     {submitState.status === 'guest' && (

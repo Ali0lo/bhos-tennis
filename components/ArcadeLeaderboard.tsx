@@ -2,7 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Trophy, Crown, Medal, Loader2, RefreshCw, Infinity as InfinityIcon } from 'lucide-react';
+import { Trophy, Crown, Medal, Loader2, RefreshCw, Infinity as InfinityIcon, ShieldCheck } from 'lucide-react';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { getPlayerHref } from '../lib/data/store';
 
@@ -184,10 +184,17 @@ export default function ArcadeLeaderboard({
             <h3 className="text-sm font-display font-bold text-white leading-tight">
               Sonsuz Ralli Liderləri
             </h3>
-            <p className="text-[11px] text-slate-400 flex items-center gap-1">
-              <InfinityIcon className="w-3 h-3" />
-              <span>Ən yüksək ralli • Top 10</span>
-            </p>
+            <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
+              <p className="text-[11px] text-slate-400 flex items-center gap-1">
+                <InfinityIcon className="w-3 h-3 text-cyan-400" />
+                <span>Ən yüksək ralli • Top 10</span>
+              </p>
+              <span className="text-slate-600 hidden sm:inline">•</span>
+              <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
+                <ShieldCheck className="w-2.5 h-2.5" />
+                Doğrulanmış
+              </span>
+            </div>
           </div>
         </div>
         <button
