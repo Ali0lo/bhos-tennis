@@ -336,10 +336,18 @@ export default function RallyMiniGame() {
     if (typeof window !== 'undefined') {
       try {
         const savedClassic = parseInt(localStorage.getItem(HIGH_SCORE_STORAGE_KEY) || '0', 10);
-        const savedInfinity = parseInt(
+        let savedInfinity = parseInt(
           localStorage.getItem(INFINITY_BEST_STORAGE_KEY) || '0',
           10
         );
+        // Automatically purge any 778 or fraudulent score from local storage
+        if (savedInfinity >= 700) {
+          savedInfinity = 0;
+          try {
+            localStorage.removeItem(INFINITY_BEST_STORAGE_KEY);
+            localStorage.removeItem(INFINITY_PENDING_STORAGE_KEY);
+          } catch {}
+        }
         highScoresRef.current = {
           classic: !isNaN(savedClassic) && savedClassic > 0 ? savedClassic : 0,
           infinity: !isNaN(savedInfinity) && savedInfinity > 0 ? savedInfinity : 0,
@@ -458,6 +466,13 @@ export default function RallyMiniGame() {
 
       cloudBestRef.current = best;
       clearPendingScore();
+      highScoresRef.current.infinity = best;
+      try {
+        localStorage.setItem(INFINITY_BEST_STORAGE_KEY, String(best));
+      } catch {}
+      if (difficultyRef.current === 'infinity') {
+        setHighScore(best);
+      }
       setSubmitState({
         status: 'saved',
         rank: res.rank,
@@ -578,10 +593,15 @@ export default function RallyMiniGame() {
       } catch {}
       if (cancelled) return;
       cloudBestRef.current = cloudBest;
-      if (cloudBest > highScoresRef.current.infinity) {
+      // When signed in, the verified cloud score is the authoritative source of truth.
+      // If an admin or anti-cheat reset the progress (cloudBest < local),
+      // reset local storage down to cloudBest so new legitimate records
+      // are recognized, displayed, and submitted cleanly!
+      if (cloudBest !== highScoresRef.current.infinity) {
         highScoresRef.current.infinity = cloudBest;
         try {
           localStorage.setItem(INFINITY_BEST_STORAGE_KEY, String(cloudBest));
+          localStorage.removeItem(INFINITY_PENDING_STORAGE_KEY);
         } catch {}
         if (difficultyRef.current === 'infinity') {
           setHighScore(cloudBest);

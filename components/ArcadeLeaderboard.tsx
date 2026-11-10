@@ -130,21 +130,23 @@ export default function ArcadeLeaderboard({
       if (rpcError) throw rpcError;
 
       setRows(
-        ((data || []) as any[]).map((r) => ({
-          rank: Number(r.rank),
-          user_id: r.user_id,
-          full_name: r.full_name || 'Oyunçu',
-          slug: r.slug ?? null,
-          department: r.department ?? null,
-          year_of_study:
-            r.year_of_study != null
-              ? Number(r.year_of_study)
-              : r.admission_year != null
-              ? Number(r.admission_year)
-              : null,
-          avatar_url: r.avatar_url ?? null,
-          score: Number(r.score),
-        }))
+        ((data || []) as any[])
+          .filter((r) => Number(r.score) < 700)
+          .map((r, idx) => ({
+            rank: idx + 1,
+            user_id: r.user_id,
+            full_name: r.full_name || 'Oyunçu',
+            slug: r.slug ?? null,
+            department: r.department ?? null,
+            year_of_study:
+              r.year_of_study != null
+                ? Number(r.year_of_study)
+                : r.admission_year != null
+                ? Number(r.admission_year)
+                : null,
+            avatar_url: r.avatar_url ?? null,
+            score: Number(r.score),
+          }))
       );
 
       if (currentUserId) {
@@ -152,9 +154,10 @@ export default function ArcadeLeaderboard({
           p_mode: ARCADE_INFINITY_MODE,
         });
         const first = Array.isArray(mine) ? mine[0] : mine;
+        const myScore = first && first.score != null ? Number(first.score) : 0;
         setMyStanding(
-          first && first.rank != null
-            ? { rank: Number(first.rank), score: Number(first.score) }
+          first && first.rank != null && myScore > 0 && myScore < 700
+            ? { rank: Number(first.rank), score: myScore }
             : null
         );
       } else {

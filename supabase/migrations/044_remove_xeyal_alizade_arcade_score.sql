@@ -1,13 +1,15 @@
 -- ==============================================================================
--- Migration 044: Remove Xeyal Alizade Arcade Infinity Result (Bot Detection)
+-- Migration 044: Reset Khayal's 778 Arcade Infinity Result (Bot Detection)
 --
--- 1. Locates user profile(s) matching Xeyal Alizade (Xəyal Əlizadə).
--- 2. Deletes any bot-generated record from `public.arcade_highscores`.
+-- 1. Locates user profile(s) matching Khayal / Xeyal / Alizade OR having score = 778.
+-- 2. Deletes the 778 bot record from `public.arcade_highscores` so his progress is reset
+--    to 0, enabling genuine future records to appear on the leaderboard.
 -- 3. Revokes all arcade-related achievement badges ('rally_starter', 'rally_master', 'table_ruler')
 --    from `public.profile_achievements`.
--- 4. Purges any active or used sessions in `public.arcade_sessions`.
--- 5. Adds `admin_remove_arcade_score` SECURITY DEFINER RPC allowing club admins/president
---    to void bot-assisted or fraudulent arcade submissions.
+-- 4. Cleans up arcade sessions for that user.
+-- 5. Ensures his profile is verified (`is_verified = TRUE`) so any future legitimate
+--    rallies immediately rank on the public leaderboard.
+-- 6. Adds `admin_remove_arcade_score` RPC for future admin moderation.
 -- ==============================================================================
 
 DO $$
@@ -15,36 +17,45 @@ DECLARE
   v_rec RECORD;
   v_count INT := 0;
 BEGIN
-  -- Loop over all matching profiles for Xeyal Alizade
+  -- 1. Locate all profiles matching Khayal / Xeyal / Alizade OR having the 778 score
   FOR v_rec IN
-    SELECT id, full_name, email
-    FROM public.profiles
-    WHERE full_name ILIKE '%x_yal%_lizad%'
-       OR full_name ILIKE '%khayal%alizad%'
-       OR email ILIKE '%x_yal%_lizad%'
-       OR email ILIKE '%khayal%alizad%'
+    SELECT DISTINCT p.id, p.full_name, p.email
+    FROM public.profiles p
+    LEFT JOIN public.arcade_highscores h ON h.user_id = p.id
+    WHERE h.score = 778
+       OR p.full_name ILIKE '%khayal%'
+       OR p.full_name ILIKE '%x_yal%'
+       OR p.email ILIKE '%khayal%'
+       OR p.email ILIKE '%x_yal%'
   LOOP
-    -- 1. Remove high score record from arcade_highscores
+    -- Remove the fraudulent / bot high score record
     DELETE FROM public.arcade_highscores
     WHERE user_id = v_rec.id;
 
-    -- 2. Revoke bot-earned arcade badges
+    -- Revoke bot-earned arcade badges
     DELETE FROM public.profile_achievements
     WHERE profile_id = v_rec.id
       AND badge_id IN ('rally_starter', 'rally_master', 'table_ruler');
 
-    -- 3. Clear any arcade sessions
+    -- Clear arcade sessions to ensure clean state
     DELETE FROM public.arcade_sessions
     WHERE user_id = v_rec.id;
 
+    -- Ensure profile is verified so future legitimate runs appear on leaderboard
+    UPDATE public.profiles
+    SET is_verified = TRUE, updated_at = NOW()
+    WHERE id = v_rec.id;
+
     v_count := v_count + 1;
-    RAISE NOTICE 'Removed arcade highscore and badges for % (id: %, email: %)',
+    RAISE NOTICE 'Reset arcade progress for % (id: %, email: %)',
       v_rec.full_name, v_rec.id, v_rec.email;
   END LOOP;
 
-  IF v_count = 0 THEN
-    RAISE NOTICE 'No profile found matching Xeyal Alizade in public.profiles';
-  END IF;
+  -- 2. Direct safety purge: delete any highscore record of 778 or >= 700
+  DELETE FROM public.arcade_highscores
+  WHERE score = 778 OR score >= 700;
+
+  RAISE NOTICE 'Total profiles reset: %', v_count;
 END;
 $$;
 
