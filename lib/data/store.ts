@@ -34,6 +34,7 @@ import {
 import { getSupabaseClient } from '../supabase/client';
 import { buildSlugMap, generateSlug, isUuid, normalizeForSearch, shortIdSuffix } from '../utils/slug';
 import { hydrateMatchCompetitors } from './matches';
+import { isCustomRacket } from '../utils/equipment';
 
 const STORAGE_KEYS = {
   PROFILES: 'bhos_tt_profiles_v14',
@@ -923,8 +924,13 @@ export class BHOSDataStore {
                   row.playing_level || prev?.playing_level || seed?.playing_level || 'Advanced',
                 playing_style:
                   row.playing_style || prev?.playing_style || seed?.playing_style || 'Shakehand Attack',
+                racket:
+                  row.racket !== undefined
+                    ? (isCustomRacket(row.racket) ? row.racket : null)
+                    : (prev?.racket ?? (isCustomRacket(row.blade_equipment) ? row.blade_equipment : null)),
                 blade_equipment:
                   row.blade_equipment ||
+                  row.racket ||
                   prev?.blade_equipment ||
                   seed?.blade_equipment ||
                   'Butterfly Viscaria',
@@ -2093,6 +2099,9 @@ export class BHOSDataStore {
       full_name: cleanName,
       major_faculty: sanitizeTextInput(profile.major_faculty, 80) || 'Computer Engineering',
       playing_style: sanitizeTextInput(profile.playing_style, 60) || 'Shakehand All-round',
+      racket: isCustomRacket(profile.racket)
+        ? profile.racket
+        : (isCustomRacket(profile.blade_equipment) ? profile.blade_equipment : null),
       blade_equipment: sanitizeTextInput(profile.blade_equipment, 80) || 'Standard Club Racket',
       forehand_rubber: sanitizeTextInput(profile.forehand_rubber, 80) || 'Standard Red',
       backhand_rubber: sanitizeTextInput(profile.backhand_rubber, 80) || 'Standard Black',
@@ -2145,9 +2154,19 @@ export class BHOSDataStore {
       safeUpdates.playing_style =
         sanitizeTextInput(safeUpdates.playing_style, 60) || 'Shakehand Offensive';
     }
+    if (safeUpdates.racket !== undefined) {
+      const cleanedRacket = safeUpdates.racket ? sanitizeTextInput(safeUpdates.racket, 100) : '';
+      safeUpdates.racket = isCustomRacket(cleanedRacket) ? cleanedRacket : null;
+      if (!safeUpdates.blade_equipment && safeUpdates.racket) {
+        safeUpdates.blade_equipment = safeUpdates.racket;
+      }
+    }
     if (safeUpdates.blade_equipment !== undefined) {
       safeUpdates.blade_equipment =
         sanitizeTextInput(safeUpdates.blade_equipment, 80) || 'Standard Club Racket';
+      if (safeUpdates.racket === undefined && isCustomRacket(safeUpdates.blade_equipment)) {
+        safeUpdates.racket = safeUpdates.blade_equipment;
+      }
     }
     if (safeUpdates.forehand_rubber !== undefined) {
       safeUpdates.forehand_rubber =
@@ -2177,6 +2196,7 @@ export class BHOSDataStore {
         role: 'player',
         playing_level: 'Intermediate',
         playing_style: 'Shakehand All-round',
+        racket: safeUpdates.racket || null,
         blade_equipment: 'Standard Club Racket',
         forehand_rubber: 'Standard Red',
         backhand_rubber: 'Standard Black',
@@ -4114,6 +4134,10 @@ function mapRawProfileToPlayerProfile(
         : 'player'),
     playing_level: raw.playing_level || fallback?.playing_level || 'Intermediate',
     playing_style: raw.playing_style || fallback?.playing_style || 'Shakehand Attack',
+    racket:
+      raw.racket !== undefined
+        ? (isCustomRacket(raw.racket) ? raw.racket : null)
+        : (fallback?.racket ?? (isCustomRacket(raw.blade_equipment) ? raw.blade_equipment : null)),
     blade_equipment: raw.blade_equipment || fallback?.blade_equipment || 'Butterfly Viscaria',
     forehand_rubber: raw.forehand_rubber || fallback?.forehand_rubber || 'Tenergy 05',
     backhand_rubber: raw.backhand_rubber || fallback?.backhand_rubber || 'Dignics 09C',

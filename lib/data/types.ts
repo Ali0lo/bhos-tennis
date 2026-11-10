@@ -43,6 +43,7 @@ export interface PlayerProfile {
   role: UserRole;
   playing_level?: PlayingLevel | string;
   playing_style: PlayingStyle | string;
+  racket?: string | null;
   blade_equipment: string;
   forehand_rubber: string;
   backhand_rubber: string;

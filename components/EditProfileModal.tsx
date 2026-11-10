@@ -21,6 +21,7 @@ import { PlayerProfile, PlayingStyle, PlayingLevel, BHOSFaculty } from '../lib/d
 import { BHOSDataStore } from '../lib/data/store';
 import { sanitizeTextInput, sanitizeSafeAvatarUrl } from '../lib/security/sanitize';
 import { getSupabaseClient } from '../lib/supabase/client';
+import { getCustomRacket, isCustomRacket } from '../lib/utils/equipment';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -124,6 +125,7 @@ export default function EditProfileModal({
   const [isProcessingImage, setIsProcessingImage] = useState(false);
 
   const [playingStyle, setPlayingStyle] = useState<string>(profile.playing_style || 'Shakehand Offensive');
+  const [racket, setRacket] = useState<string>(getCustomRacket(profile) || '');
   const [bladeEquipment, setBladeEquipment] = useState<string>(profile.blade_equipment || '');
   const [forehandRubber, setForehandRubber] = useState<string>(profile.forehand_rubber || '');
   const [backhandRubber, setBackhandRubber] = useState<string>(profile.backhand_rubber || '');
@@ -139,6 +141,7 @@ export default function EditProfileModal({
     if (isOpen) {
       setAvatarUrl(profile.avatar_url || '');
       setPlayingStyle(profile.playing_style || 'Shakehand Offensive');
+      setRacket(getCustomRacket(profile) || '');
       setBladeEquipment(profile.blade_equipment || '');
       setForehandRubber(profile.forehand_rubber || '');
       setBackhandRubber(profile.backhand_rubber || '');
@@ -260,10 +263,14 @@ export default function EditProfileModal({
         throw new Error('Profil şəkli linki təhlükəsizlik tələblərinə uyğun deyil.');
       }
 
+      const cleanedRacket = sanitizeTextInput(racket, 100);
+      const customRacketVal = isCustomRacket(cleanedRacket) ? cleanedRacket : null;
+
       const updates: Partial<PlayerProfile> = {
         avatar_url: safeAvatar || undefined,
         playing_style: sanitizeTextInput(playingStyle, 60) || 'Shakehand Offensive',
-        blade_equipment: sanitizeTextInput(bladeEquipment, 80) || 'Standard Club Racket',
+        racket: customRacketVal,
+        blade_equipment: customRacketVal || sanitizeTextInput(bladeEquipment, 80) || 'Standard Club Racket',
         forehand_rubber: sanitizeTextInput(forehandRubber, 80) || 'Standard Red',
         backhand_rubber: sanitizeTextInput(backhandRubber, 80) || 'Standard Black',
         playing_level: playingLevel,
@@ -479,7 +486,26 @@ export default function EditProfileModal({
               Avadanlıq & Raket Spesifikasiyası
             </span>
 
-            <div className="space-y-3.5">
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-300 mb-1">
+                  Fərdi Raket / İnventar (İstəyə bağlı)
+                </label>
+                <p className="text-[11px] text-slate-400 mb-1.5">
+                  Boş saxlasanız, profilinizdə raket bölməsi görünməyəcək.
+                </p>
+                <input
+                  type="text"
+                  value={racket}
+                  onChange={(e) => {
+                    setRacket(e.target.value);
+                    if (!bladeEquipment) setBladeEquipment(e.target.value);
+                  }}
+                  placeholder="Məs: Butterfly Primorac Carbon / Donic Waldner"
+                  className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
+                />
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
                   Raket Taxtası (Blade)

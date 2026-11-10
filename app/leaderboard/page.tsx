@@ -160,6 +160,7 @@ export default function LeaderboardPage() {
         p.full_name.toLowerCase().includes(q) ||
         (dept && dept.toLowerCase().includes(q)) ||
         matchesDepartmentFilter(p, q) ||
+        (p.racket && p.racket.toLowerCase().includes(q)) ||
         (p.blade_equipment && p.blade_equipment.toLowerCase().includes(q));
 
       const matchesFaculty = isAllDepartmentsFilter(selectedFaculty)

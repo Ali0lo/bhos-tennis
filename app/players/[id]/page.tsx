@@ -29,6 +29,7 @@ import HeadToHeadDuel from '../../../components/HeadToHeadDuel';
 import PlayerProfileSkeleton from '../../../components/PlayerProfileSkeleton';
 import HoloCard from '../../../components/HoloCard';
 import RecentFormBadges from '../../../components/RecentFormBadges';
+import { getCustomRacket, translatePlayingStyle } from '../../../lib/utils/equipment';
 import {
   evaluatePlayerAchievements,
   ACHIEVEMENT_TIER_STYLES,
@@ -608,6 +609,9 @@ export default function PlayerProfilePage() {
     );
   }
 
+  const customRacket = getCustomRacket(profile);
+  const hasCustomRacket = Boolean(customRacket);
+
   return (
     <div className="space-y-8 max-w-5xl mx-auto pb-16">
       <div className="flex items-center justify-between">
@@ -703,6 +707,20 @@ export default function PlayerProfilePage() {
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                       {profile.playing_level === 'Beginner' ? 'Başlanğıc' : profile.playing_level === 'Intermediate' ? 'Orta' : profile.playing_level === 'Advanced' ? 'Yüksək' : profile.playing_level}
                     </span>
+                  )}
+
+                  {profile.playing_style && (
+                    <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-violet-500/15 text-violet-300 border border-violet-500/30">
+                      {translatePlayingStyle(profile.playing_style)}
+                    </span>
+                  )}
+
+                  {hasCustomRacket && (
+                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-xs text-slate-200">
+                      <span className="text-rose-400">🏓</span>
+                      <span className="text-slate-400 font-medium">Raket:</span>
+                      <span className="font-semibold text-white">{customRacket}</span>
+                    </div>
                   )}
                 </div>
 
