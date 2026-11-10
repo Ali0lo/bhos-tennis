@@ -14,9 +14,43 @@ interface ArcadeRow {
   full_name: string;
   slug: string | null;
   department: string | null;
+  year_of_study?: number | null;
   avatar_url: string | null;
   score: number;
 }
+
+const DEPARTMENT_LABELS: Record<string, string> = {
+  'computer engineering': 'Kompüter mühəndisliyi',
+  'process automation engineering': 'Proseslərin avtomatlaşdırılması',
+  'process automation': 'Proseslərin avtomatlaşdırılması',
+  'information security': 'İnformasiya təhlükəsizliyi',
+  'chemical engineering': 'Kimya mühəndisliyi',
+  'petroleum engineering': 'Neft-qaz mühəndisliyi',
+  'business administration': 'Biznesin idarə edilməsi',
+  'idman klubu': 'İdman Klubu',
+};
+
+const formatPlayerDepartment = (player: {
+  department?: string | null;
+  year_of_study?: number | null;
+}) => {
+  if (
+    player.year_of_study &&
+    player.year_of_study !== 2026 &&
+    player.department?.toLowerCase() === 'foundation'
+  ) {
+    return 'Tələbə';
+  }
+  if (player.year_of_study === 2026 || player.department?.toLowerCase() === 'foundation') {
+    return 'Foundation';
+  }
+  if (player.department && player.department.trim() !== '') {
+    const raw = player.department.trim();
+    const mapped = DEPARTMENT_LABELS[raw.toLowerCase()];
+    return mapped || raw;
+  }
+  return 'Tələbə';
+};
 
 interface MyStanding {
   rank: number;
@@ -102,6 +136,12 @@ export default function ArcadeLeaderboard({
           full_name: r.full_name || 'Oyunçu',
           slug: r.slug ?? null,
           department: r.department ?? null,
+          year_of_study:
+            r.year_of_study != null
+              ? Number(r.year_of_study)
+              : r.admission_year != null
+              ? Number(r.admission_year)
+              : null,
           avatar_url: r.avatar_url ?? null,
           score: Number(r.score),
         }))
@@ -203,7 +243,7 @@ export default function ArcadeLeaderboard({
                       )}
                     </div>
                     <div className="text-[10px] text-slate-400 truncate">
-                      {row.department || 'BANM'}
+                      {formatPlayerDepartment(row)}
                     </div>
                   </div>
                   <div className="text-right shrink-0">
