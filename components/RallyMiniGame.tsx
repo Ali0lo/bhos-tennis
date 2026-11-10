@@ -132,8 +132,10 @@ interface TelemetrySession {
   sessionId: string | null;
   sessionStartTime: number;
   moveEventsCount: number;
+  untrustedEventsCount: number;
   syntheticSnapCount: number;
   contactOffsets: number[];
+  clientYSamples: number[];
   lastPointerX: number;
   lastPointerTime: number;
 }
@@ -146,7 +148,10 @@ function computeStdDev(values: number[]): number {
 }
 
 function evaluateNaturalInput(telemetry: TelemetrySession): boolean {
-  const { moveEventsCount, syntheticSnapCount, contactOffsets } = telemetry;
+  const { moveEventsCount, untrustedEventsCount, syntheticSnapCount, contactOffsets } = telemetry;
+  if (untrustedEventsCount > 0) {
+    return false;
+  }
   // For small samples, require at least 1 real movement event and 0 synthetic snaps
   if (contactOffsets.length < 3) {
     return moveEventsCount > 0 && syntheticSnapCount === 0;
@@ -165,6 +170,60 @@ function evaluateNaturalInput(telemetry: TelemetrySession): boolean {
     return false;
   }
   return true;
+}
+
+function detectAutoPaddleUserscript(telemetry: TelemetrySession): { isCheat: boolean; reason?: string } {
+  // 1. Untrusted synthetic mouse/pointer event spam
+  if (telemetry.untrustedEventsCount > 3) {
+    return { isCheat: true, reason: 'untrusted_events_exceeded' };
+  }
+
+  // 2. Monkey-patched CanvasRenderingContext2D.prototype.arc
+  if (typeof window !== 'undefined' && typeof CanvasRenderingContext2D !== 'undefined') {
+    try {
+      const arcFn = CanvasRenderingContext2D.prototype.arc;
+      const arcStr = Function.prototype.toString.call(arcFn);
+      if (!arcStr.includes('[native code]')) {
+        return { isCheat: true, reason: 'monkey_patched_arc' };
+      }
+    } catch {
+      return { isCheat: true, reason: 'arc_integrity_failure' };
+    }
+  }
+
+  // 3. DOM check for injected userscript UI (e.g. 'AUTO PADDLE:')
+  if (typeof document !== 'undefined') {
+    try {
+      const bodyText = (document.body?.innerText || '').toUpperCase();
+      if (bodyText.includes('AUTO PADDLE')) {
+        return { isCheat: true, reason: 'dom_button_detected' };
+      }
+      const buttons = document.querySelectorAll('button, div, span');
+      for (let i = 0; i < buttons.length; i++) {
+        if ((buttons[i].textContent || '').toUpperCase().includes('AUTO PADDLE')) {
+          return { isCheat: true, reason: 'dom_element_detected' };
+        }
+      }
+    } catch {}
+  }
+
+  // 4. Hit-offset standard deviation check over 15+ rallies
+  if (telemetry.contactOffsets.length >= 15) {
+    const stdDev = computeStdDev(telemetry.contactOffsets);
+    if (stdDev < 0.015) {
+      return { isCheat: true, reason: 'zero_hit_variance' };
+    }
+  }
+
+  // 5. clientY zero-variance check (the userscript hardcodes clientY = rect.top + rect.height * 0.9)
+  if (telemetry.clientYSamples.length >= 25) {
+    const yStdDev = computeStdDev(telemetry.clientYSamples);
+    if (yStdDev < 0.001) {
+      return { isCheat: true, reason: 'hardcoded_client_y' };
+    }
+  }
+
+  return { isCheat: false };
 }
 
 const HIGH_SCORE_STORAGE_KEY = 'bhos_rally_high_score';
@@ -210,9 +269,12 @@ export default function RallyMiniGame() {
   const [authUserId, setAuthUserId] = useState<string | null>(null);
   const [leaderboardRefreshKey, setLeaderboardRefreshKey] = useState<number>(0);
   const [submitState, setSubmitState] = useState<SubmitState>({ status: 'idle' });
-  const [toast, setToast] = useState<{ score: number; rank?: number; badges: string[] } | null>(
-    null
-  );
+  const [toast, setToast] = useState<{
+    score: number;
+    rank?: number;
+    badges: string[];
+    customMessage?: string;
+  } | null>(null);
 
   const highScoresRef = useRef<{ classic: number; infinity: number }>({ classic: 0, infinity: 0 });
   const cloudBestRef = useRef<number | null>(null);
@@ -224,8 +286,10 @@ export default function RallyMiniGame() {
     sessionId: null,
     sessionStartTime: 0,
     moveEventsCount: 0,
+    untrustedEventsCount: 0,
     syntheticSnapCount: 0,
     contactOffsets: [],
+    clientYSamples: [],
     lastPointerX: CANVAS_WIDTH / 2,
     lastPointerTime: 0,
   });
@@ -424,6 +488,24 @@ export default function RallyMiniGame() {
       setSubmitState({ status: 'idle' });
       return;
     }
+
+    // Countermeasure 3: Check for auto-paddle userscript and synthetic manipulation
+    const cheatCheck = detectAutoPaddleUserscript(telemetryRef.current);
+    if (cheatCheck.isCheat) {
+      console.warn('[Anti-Cheat] Auto-paddle userscript detected:', cheatCheck.reason);
+      setSubmitState({
+        status: 'error',
+        errorMessage: 'Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!',
+      });
+      setToast({
+        score,
+        badges: [],
+        customMessage: 'Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!',
+      });
+      playLoseSound();
+      return; // Block submit_arcade_score call entirely!
+    }
+
     if (!authUserId) {
       writePendingScore(score);
       setSubmitState({ status: 'guest' });
@@ -434,6 +516,20 @@ export default function RallyMiniGame() {
       const tel = telemetryRef.current;
       const durationSeconds = Math.max(0, (now - tel.sessionStartTime) / 1000);
       const isNatural = evaluateNaturalInput(tel);
+
+      if (!isNatural) {
+        setSubmitState({
+          status: 'error',
+          errorMessage: 'Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!',
+        });
+        setToast({
+          score,
+          badges: [],
+          customMessage: 'Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!',
+        });
+        playLoseSound();
+        return;
+      }
 
       let sessionId = tel.sessionId;
       if (!sessionId && sessionPromiseRef.current) {
@@ -544,8 +640,10 @@ export default function RallyMiniGame() {
         sessionId: null,
         sessionStartTime: performance.now(),
         moveEventsCount: 0,
+        untrustedEventsCount: 0,
         syntheticSnapCount: 0,
         contactOffsets: [],
+        clientYSamples: [],
         lastPointerX: CANVAS_WIDTH / 2,
         lastPointerTime: performance.now(),
       };
@@ -586,7 +684,17 @@ export default function RallyMiniGame() {
     }
   };
 
-  const updatePointerPosition = useCallback((clientX: number, isTrustedEvent: boolean = true) => {
+  const checkEventTrust = (e: React.UIEvent | Event): boolean => {
+    const raw = e as any;
+    const trusted = raw.isTrusted ?? raw.nativeEvent?.isTrusted;
+    if (trusted !== true) {
+      telemetryRef.current.untrustedEventsCount++;
+      return false;
+    }
+    return true;
+  };
+
+  const updatePointerPosition = useCallback((clientX: number, clientY?: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
@@ -602,14 +710,16 @@ export default function RallyMiniGame() {
     // Telemetry tracking for anti-cheat verification
     const now = performance.now();
     const tel = telemetryRef.current;
-    if (!isTrustedEvent) {
+    tel.moveEventsCount++;
+    const dt = now - tel.lastPointerTime;
+    const dx = Math.abs(targetX - tel.lastPointerX);
+    if (dt > 0 && dt < 12 && dx > 180) {
       tel.syntheticSnapCount++;
-    } else {
-      tel.moveEventsCount++;
-      const dt = now - tel.lastPointerTime;
-      const dx = Math.abs(targetX - tel.lastPointerX);
-      if (dt > 0 && dt < 12 && dx > 180) {
-        tel.syntheticSnapCount++;
+    }
+    if (clientY !== undefined) {
+      tel.clientYSamples.push(clientY);
+      if (tel.clientYSamples.length > 100) {
+        tel.clientYSamples.shift();
       }
     }
     tel.lastPointerX = targetX;
@@ -618,24 +728,28 @@ export default function RallyMiniGame() {
     engineRef.current.playerX = targetX;
   }, []);
 
-  const handleMouseDown = () => {
+  const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!checkEventTrust(e)) return;
     unlockAudio();
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    updatePointerPosition(e.clientX, e.isTrusted);
+    if (!checkEventTrust(e)) return;
+    updatePointerPosition(e.clientX, e.clientY);
   };
 
   const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!checkEventTrust(e)) return;
     if (e.touches && e.touches.length > 0) {
-      updatePointerPosition(e.touches[0].clientX, e.isTrusted);
+      updatePointerPosition(e.touches[0].clientX, e.touches[0].clientY);
     }
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!checkEventTrust(e)) return;
     unlockAudio();
     if (e.touches && e.touches.length > 0) {
-      updatePointerPosition(e.touches[0].clientX, e.isTrusted);
+      updatePointerPosition(e.touches[0].clientX, e.touches[0].clientY);
     }
   };
 
@@ -1063,6 +1177,22 @@ export default function RallyMiniGame() {
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
+      const createCirclePath = (cx: number, cy: number, r: number): Path2D => {
+        const p = new Path2D();
+        if (typeof (p as any).roundRect === 'function') {
+          (p as any).roundRect(cx - r, cy - r, r * 2, r * 2, r);
+        } else {
+          const k = 0.552284749831 * r;
+          p.moveTo(cx, cy - r);
+          p.bezierCurveTo(cx + k, cy - r, cx + r, cy - k, cx + r, cy);
+          p.bezierCurveTo(cx + r, cy + k, cx + k, cy + r, cx, cy + r);
+          p.bezierCurveTo(cx - k, cy + r, cx - r, cy + k, cx - r, cy);
+          p.bezierCurveTo(cx - r, cy - k, cx - k, cy - r, cx, cy - r);
+          p.closePath();
+        }
+        return p;
+      };
+
       for (const pt of st.particles) {
         ctx.beginPath();
         ctx.arc(pt.x, pt.y, 1.2 + pt.life * 2.2, 0, Math.PI * 2);
@@ -1073,30 +1203,46 @@ export default function RallyMiniGame() {
       for (let i = 0; i < st.trail.length; i++) {
         const pt = st.trail[i];
         const ratio = (i + 1) / (st.trail.length + 1);
-        ctx.beginPath();
-        ctx.arc(pt.x, pt.y, BALL_RADIUS * ratio * 0.85, 0, Math.PI * 2);
+        const trailR = BALL_RADIUS * ratio * 0.85;
+        const trailPath = createCirclePath(pt.x, pt.y, trailR);
         ctx.fillStyle = `rgba(${tier.rgb}, ${ratio * (tierIdx > 0 ? 0.42 : 0.28)})`;
-        ctx.fill();
+        ctx.fill(trailPath);
       }
 
+      // Countermeasure 2: HONEYPOT DECOY
+      // Trigger Violentmonkey auto-paddle userscript hook (detects radius 6.5) with fake decoy
+      // coordinates oscillating on the opposite side of the table with alpha = 0.
+      ctx.save();
+      ctx.globalAlpha = 0;
+      const decoyOsc = now * 0.0035;
+      const decoyX =
+        st.ballX > CANVAS_WIDTH / 2
+          ? TABLE_MARGIN_X + 40 + Math.abs(Math.sin(decoyOsc)) * 75
+          : CANVAS_WIDTH - TABLE_MARGIN_X - 40 - Math.abs(Math.cos(decoyOsc)) * 75;
+      const decoyY = TABLE_MARGIN_Y + 120 + Math.sin(decoyOsc * 1.3) * 60;
       ctx.beginPath();
-      ctx.arc(st.ballX, st.ballY + 2.5, BALL_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(11, 15, 25, 0.38)';
-      ctx.fill();
+      ctx.arc(decoyX, decoyY, 6.5, 0, Math.PI * 2);
+      ctx.beginPath(); // Clears path immediately so nothing is drawn
+      ctx.restore();
 
-      ctx.beginPath();
-      ctx.arc(st.ballX, st.ballY, BALL_RADIUS, 0, Math.PI * 2);
+      // Countermeasure 2: REAL BALL DRAWING
+      // Draw real ball and shadow via Path2D without invoking CanvasRenderingContext2D.prototype.arc!
+      const shadowPath = createCirclePath(st.ballX, st.ballY + 2.5, BALL_RADIUS);
+      ctx.fillStyle = 'rgba(11, 15, 25, 0.38)';
+      ctx.fill(shadowPath);
+
+      const ballPath = createCirclePath(st.ballX, st.ballY, BALL_RADIUS);
       if (tierIdx > 0) {
         ctx.shadowColor = tier.hex;
         ctx.shadowBlur = 6 + tierIdx * 5;
       }
       ctx.fillStyle = tier.hex;
-      ctx.fill();
+      ctx.fill(ballPath);
       ctx.shadowBlur = 0;
       ctx.shadowColor = 'transparent';
       ctx.strokeStyle = tier.edge;
       ctx.lineWidth = 1;
-      ctx.stroke();
+      ctx.stroke(ballPath);
 
       rafRef.current = requestAnimationFrame(step);
     };
@@ -1230,6 +1376,14 @@ export default function RallyMiniGame() {
           onMouseDown={handleMouseDown}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
+          onPointerMove={(e) => {
+            if (!checkEventTrust(e)) return;
+            updatePointerPosition(e.clientX, e.clientY);
+          }}
+          onPointerDown={(e) => {
+            if (!checkEventTrust(e)) return;
+            unlockAudio();
+          }}
           style={{
             touchAction: 'none',
             maxWidth: '100%',
@@ -1246,8 +1400,9 @@ export default function RallyMiniGame() {
             <div className="flex items-center gap-2 text-amber-100 text-xs font-extrabold">
               <Sparkles className="w-4 h-4 text-amber-300 animate-pulse shrink-0" />
               <span>
-                🎉 Yeni Rekord: {toast.score} ralli
-                {toast.rank ? ` • Reytinqdə #${toast.rank}` : ''}
+                {toast.customMessage
+                  ? toast.customMessage
+                  : `🎉 Yeni Rekord: ${toast.score} ralli${toast.rank ? ` • Reytinqdə #${toast.rank}` : ''}`}
               </span>
             </div>
             {toast.badges.map((b) => (
