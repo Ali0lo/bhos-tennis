@@ -11,6 +11,7 @@ import Hero from '../components/Hero';
 import MatchLoggerModal from '../components/MatchLoggerModal';
 import MatchDetailModal from '../components/MatchDetailModal';
 import LiveMatches from '../components/LiveMatches';
+import ArcadeDiscoveryBanner from '../components/ArcadeDiscoveryBanner';
 import RecentResults from '../components/RecentResults';
 import NumberTicker from '../components/NumberTicker';
 import AnimatedCounter from '../components/AnimatedCounter';
@@ -165,6 +166,12 @@ export default function HomePage() {
           </div>
         </SmoothReveal>
       )}
+
+      <SmoothReveal delay={0.05}>
+        <div className="w-full">
+          <ArcadeDiscoveryBanner />
+        </div>
+      </SmoothReveal>
 
       <SmoothReveal delay={0.06}>
         <FoundationTournamentBanner />
@@ -529,6 +536,42 @@ export default function HomePage() {
                 </Link>
                 <span className="text-[10px] text-slate-500 font-mono">
                   {t('tournament_card.cta')}
+                </span>
+              </div>
+            </TiltCard>
+
+            {/* BHOS Arcade Discovery Card */}
+            <TiltCard className="p-5 rounded-2xl border border-rose-500/25 bg-gradient-to-b from-slate-900 via-slate-900 to-rose-950/20 hover:border-rose-500/40 transition shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase bg-rose-600/20 text-rose-300 border border-rose-500/30">
+                  🏓 BHOS ARCADE
+                </span>
+                <span className="text-[11px] text-amber-400 font-mono font-semibold flex items-center gap-1">
+                  <span>♾️ Sonsuz Ralli</span>
+                </span>
+              </div>
+
+              <Link
+                href="/minigame"
+                className="block font-display font-bold text-base text-white hover:text-rose-400 transition"
+              >
+                Masaüstü Ralli
+              </Link>
+
+              <p className="text-xs text-slate-400 line-clamp-2">
+                Sonsuz rejimdə rekordu qır, nailiyyət nişanlarını aç və BANM reytinqində 1-ci yerə yüksəl!
+              </p>
+
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
+                <Link
+                  href="/minigame"
+                  className="text-xs text-rose-400 font-semibold hover:underline flex items-center gap-1"
+                >
+                  <span>Oyna və Yarış</span>
+                  <ArrowRight className="w-3 h-3" />
+                </Link>
+                <span className="text-[10px] text-slate-500 font-mono">
+                  Online Reytinq
                 </span>
               </div>
             </TiltCard>

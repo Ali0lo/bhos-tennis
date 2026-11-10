@@ -92,34 +92,43 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  const leaderboardLabel =
+    locale === 'en' ? 'Ranking' : locale === 'ru' ? 'Рейтинг' : 'Reytinq';
+  const matchesLabel = t('nav.my_matches') || 'Oyunlarım';
+  const tournamentsLabel = t('nav.tournaments') || 'Turnirlər';
+  const miniGameLabel =
+    locale === 'en' ? 'Mini-Game' : locale === 'ru' ? 'Мини-игра' : 'Mini-Oyun';
+  const tablesLabel = t('nav.tables') || 'Zal Qaydaları';
+  const aboutLabel = t('nav.about') || 'Haqqında';
   const moreLabel =
     locale === 'en' ? 'More' : locale === 'ru' ? 'Ещё' : 'Daha çox';
-  const miniGameLabel =
-    locale === 'en'
-      ? '🏓 Mini-Game'
-      : locale === 'ru'
-      ? '🏓 Мини-игра'
-      : '🏓 Mini-Oyun';
 
-  const primaryNavLinks: { href: string; label: string; showBadge?: boolean }[] = [
-    { href: '/leaderboard', label: t('nav.leaderboard') || 'Reytinq Cədvəli' },
-    { href: '/matches', label: t('nav.my_matches') || 'Oyunlarım', showBadge: true },
-    { href: '/tournaments', label: t('nav.tournaments') || 'Turnirlər' },
-    { href: '/tables', label: t('nav.tables') || 'Zal Qaydaları' },
+  interface NavLinkItem {
+    href: string;
+    label: string;
+    showBadge?: boolean;
+    isArcade?: boolean;
+  }
+
+  const primaryNavLinks: NavLinkItem[] = [
+    { href: '/leaderboard', label: leaderboardLabel },
+    { href: '/matches', label: matchesLabel, showBadge: true },
+    { href: '/tournaments', label: tournamentsLabel },
+    { href: '/minigame', label: `🏓 ${miniGameLabel}`, isArcade: true },
   ];
 
   const moreNavLinks: { href: string; label: string }[] = [
-    { href: '/minigame', label: miniGameLabel },
-    { href: '/#about', label: t('nav.about') || 'Haqqında' },
+    { href: '/tables', label: tablesLabel },
+    { href: '/#about', label: aboutLabel },
   ];
 
   const allMobileNavLinks = [
-    { href: '/leaderboard', label: t('nav.leaderboard') || 'Reytinq Cədvəli' },
-    { href: '/matches', label: t('nav.my_matches') || 'Oyunlarım', showBadge: true },
-    { href: '/tournaments', label: t('nav.tournaments') || 'Turnirlər' },
-    { href: '/tables', label: t('nav.tables') || 'Zal Qaydaları' },
-    { href: '/minigame', label: miniGameLabel },
-    { href: '/#about', label: t('nav.about') || 'Haqqında' },
+    { href: '/leaderboard', label: leaderboardLabel },
+    { href: '/matches', label: matchesLabel, showBadge: true },
+    { href: '/tournaments', label: tournamentsLabel },
+    { href: '/minigame', label: `🏓 ${miniGameLabel}` },
+    { href: '/tables', label: tablesLabel },
+    { href: '/#about', label: aboutLabel },
     ...(canAccessAdminPanel(currentUser)
       ? [{ href: '/admin', label: t('nav.admin') || 'Prezident Paneli' }]
       : []),
@@ -205,7 +214,11 @@ export default function Navbar() {
                     key={link.href}
                     href={link.href}
                     className={`relative inline-flex items-center gap-1.5 whitespace-nowrap transition ${
-                      isActive
+                      link.isArcade
+                        ? isActive
+                          ? 'text-rose-400 font-semibold drop-shadow-sm'
+                          : 'text-rose-400/90 hover:text-white font-medium hover:drop-shadow-sm'
+                        : isActive
                         ? 'text-white font-semibold'
                         : 'text-slate-300 hover:text-white'
                     }`}
