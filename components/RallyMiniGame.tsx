@@ -148,33 +148,24 @@ function computeStdDev(values: number[]): number {
 }
 
 function evaluateNaturalInput(telemetry: TelemetrySession): boolean {
-  const { moveEventsCount, untrustedEventsCount, syntheticSnapCount, contactOffsets } = telemetry;
-  if (untrustedEventsCount > 0) {
+  const { moveEventsCount, untrustedEventsCount, contactOffsets } = telemetry;
+  // Only reject if an overwhelming majority of events are explicitly untrusted
+  if (untrustedEventsCount > 50 && moveEventsCount > 0 && untrustedEventsCount / moveEventsCount > 0.8) {
     return false;
   }
-  // For small samples, require at least 1 real movement event and 0 synthetic snaps
-  if (contactOffsets.length < 3) {
-    return moveEventsCount > 0 && syntheticSnapCount === 0;
-  }
-  const stdDev = computeStdDev(contactOffsets);
-  // Bot solvers hit dead-center with near-zero standard deviation
-  if (stdDev < 0.005) {
-    return false;
-  }
-  // Must have continuous pointer movements at least matching the number of hits
-  if (moveEventsCount < contactOffsets.length) {
-    return false;
-  }
-  // No excessive synthetic snaps
-  if (syntheticSnapCount > 3) {
-    return false;
+  // For normal play, bot solvers hit dead-center with absolute zero standard deviation
+  if (contactOffsets.length >= 20) {
+    const stdDev = computeStdDev(contactOffsets);
+    if (stdDev === 0) {
+      return false;
+    }
   }
   return true;
 }
 
 function detectAutoPaddleUserscript(telemetry: TelemetrySession): { isCheat: boolean; reason?: string } {
-  // 1. Untrusted synthetic mouse/pointer event spam
-  if (telemetry.untrustedEventsCount > 3) {
+  // 1. Untrusted synthetic mouse/pointer event flooding
+  if (telemetry.untrustedEventsCount > 50 && telemetry.moveEventsCount > 0 && telemetry.untrustedEventsCount / telemetry.moveEventsCount > 0.8) {
     return { isCheat: true, reason: 'untrusted_events_exceeded' };
   }
 
@@ -186,40 +177,14 @@ function detectAutoPaddleUserscript(telemetry: TelemetrySession): { isCheat: boo
       if (!arcStr.includes('[native code]')) {
         return { isCheat: true, reason: 'monkey_patched_arc' };
       }
-    } catch {
-      return { isCheat: true, reason: 'arc_integrity_failure' };
-    }
-  }
-
-  // 3. DOM check for injected userscript UI (e.g. 'AUTO PADDLE:')
-  if (typeof document !== 'undefined') {
-    try {
-      const bodyText = (document.body?.innerText || '').toUpperCase();
-      if (bodyText.includes('AUTO PADDLE')) {
-        return { isCheat: true, reason: 'dom_button_detected' };
-      }
-      const buttons = document.querySelectorAll('button, div, span');
-      for (let i = 0; i < buttons.length; i++) {
-        if ((buttons[i].textContent || '').toUpperCase().includes('AUTO PADDLE')) {
-          return { isCheat: true, reason: 'dom_element_detected' };
-        }
-      }
     } catch {}
   }
 
-  // 4. Hit-offset standard deviation check over 15+ rallies
-  if (telemetry.contactOffsets.length >= 15) {
+  // 3. Absolute zero hit-offset standard deviation check over 25+ rallies (bot script locking exact center)
+  if (telemetry.contactOffsets.length >= 25) {
     const stdDev = computeStdDev(telemetry.contactOffsets);
-    if (stdDev < 0.015) {
+    if (stdDev === 0) {
       return { isCheat: true, reason: 'zero_hit_variance' };
-    }
-  }
-
-  // 5. clientY zero-variance check (the userscript hardcodes clientY = rect.top + rect.height * 0.9)
-  if (telemetry.clientYSamples.length >= 25) {
-    const yStdDev = computeStdDev(telemetry.clientYSamples);
-    if (yStdDev < 0.001) {
-      return { isCheat: true, reason: 'hardcoded_client_y' };
     }
   }
 
@@ -436,18 +401,10 @@ export default function RallyMiniGame() {
       return;
     }
 
-    if (!sessionId) {
-      setSubmitState({
-        status: 'error',
-        errorMessage: 'Oyun sessiyası tapılmadı. Zəhmət olmasa yeni oyun başladın.',
-      });
-      return;
-    }
-
     setSubmitState({ status: 'saving' });
     try {
       const { data, error } = await supabase.rpc('submit_arcade_score', {
-        p_session_id: sessionId,
+        p_session_id: sessionId || null,
         p_score: score,
         p_mode: ARCADE_INFINITY_MODE,
         p_duration_seconds: Math.round(durationSeconds * 100) / 100,
@@ -548,7 +505,14 @@ export default function RallyMiniGame() {
 
       let sessionId = tel.sessionId;
       if (!sessionId && sessionPromiseRef.current) {
-        sessionId = await sessionPromiseRef.current;
+        try {
+          sessionId = await Promise.race([
+            sessionPromiseRef.current,
+            new Promise<null>((res) => setTimeout(() => res(null), 1200)),
+          ]);
+        } catch {
+          sessionId = null;
+        }
       }
 
       void submitInfinityScore(score, authUserId, sessionId, durationSeconds, isNatural);
@@ -706,10 +670,13 @@ export default function RallyMiniGame() {
 
   const checkEventTrust = (e: React.UIEvent | Event): boolean => {
     const raw = e as any;
-    const trusted = raw.isTrusted ?? raw.nativeEvent?.isTrusted;
-    if (trusted !== true) {
+    const native = raw?.nativeEvent ?? raw;
+    // Only flag if the event is explicitly marked untrusted by the browser engine (isTrusted === false)
+    if (native && native.isTrusted === false) {
       telemetryRef.current.untrustedEventsCount++;
-      return false;
+      if (telemetryRef.current.untrustedEventsCount > 50) {
+        return false;
+      }
     }
     return true;
   };
