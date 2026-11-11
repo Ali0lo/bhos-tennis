@@ -590,6 +590,24 @@ export default function RallyMiniGame() {
     return () => clearTimeout(t);
   }, [toast]);
 
+  const handleScoreDeleted = useCallback(
+    (deletedUserId: string) => {
+      if (authUserId === deletedUserId) {
+        cloudBestRef.current = 0;
+        highScoresRef.current.infinity = 0;
+        if (difficultyRef.current === 'infinity') {
+          setHighScore(0);
+        }
+        try {
+          localStorage.removeItem(INFINITY_BEST_STORAGE_KEY);
+          localStorage.removeItem(INFINITY_PENDING_STORAGE_KEY);
+        } catch {}
+      }
+      setLeaderboardRefreshKey((k) => k + 1);
+    },
+    [authUserId]
+  );
+
   const startOrResetGame = useCallback(
     (selectedDiff?: Difficulty) => {
       const activeDiff = selectedDiff ?? difficultyRef.current;
@@ -1505,7 +1523,11 @@ export default function RallyMiniGame() {
       </div>
     </div>
 
-    <ArcadeLeaderboard refreshKey={leaderboardRefreshKey} currentUserId={authUserId} />
+    <ArcadeLeaderboard
+      refreshKey={leaderboardRefreshKey}
+      currentUserId={authUserId}
+      onScoreDeleted={handleScoreDeleted}
+    />
     </div>
   );
 }

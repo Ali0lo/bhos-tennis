@@ -2,9 +2,21 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Trophy, Crown, Medal, Loader2, RefreshCw, Infinity as InfinityIcon, ShieldCheck } from 'lucide-react';
+import {
+  Trophy,
+  Crown,
+  Medal,
+  Loader2,
+  RefreshCw,
+  Infinity as InfinityIcon,
+  ShieldCheck,
+  Trash2,
+  AlertTriangle,
+  X,
+} from 'lucide-react';
 import { getSupabaseClient } from '../lib/supabase/client';
-import { getPlayerHref } from '../lib/data/store';
+import { getPlayerHref, BHOSDataStore } from '../lib/data/store';
+import { canAccessAdminPanel, PlayerProfile } from '../lib/data/types';
 
 export const ARCADE_INFINITY_MODE = 'infinity';
 
@@ -61,6 +73,7 @@ interface ArcadeLeaderboardProps {
   /** Bump to force a refetch (e.g. after a score submission) */
   refreshKey?: number;
   currentUserId?: string | null;
+  onScoreDeleted?: (userId: string) => void;
 }
 
 function RankBadge({ rank }: { rank: number }) {
@@ -104,11 +117,27 @@ function RankBadge({ rank }: { rank: number }) {
 export default function ArcadeLeaderboard({
   refreshKey = 0,
   currentUserId = null,
+  onScoreDeleted,
 }: ArcadeLeaderboardProps) {
+  const store = BHOSDataStore.getInstance();
+  const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(() => store.getCurrentUser());
+  const isAdmin = canAccessAdminPanel(currentUser);
+
   const [rows, setRows] = useState<ArcadeRow[]>([]);
   const [myStanding, setMyStanding] = useState<MyStanding | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ArcadeRow | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [actionNotice, setActionNotice] = useState<string | null>(null);
+
+  useEffect(() => {
+    setCurrentUser(store.getCurrentUser());
+    const unsub = store.subscribe(() => {
+      setCurrentUser(store.getCurrentUser());
+    });
+    return unsub;
+  }, [store]);
 
   const load = useCallback(async () => {
     const supabase = getSupabaseClient();
@@ -174,10 +203,57 @@ export default function ArcadeLeaderboard({
     void load();
   }, [load, refreshKey]);
 
+  const handleDeleteScore = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) throw new Error('Supabase client unavailable');
+      const { error: delError } = await supabase.rpc('delete_arcade_score', {
+        p_target_user_id: deleteTarget.user_id,
+        p_mode: ARCADE_INFINITY_MODE,
+        p_revoke_badges: true,
+      });
+      if (delError) throw delError;
+
+      if (currentUserId === deleteTarget.user_id) {
+        try {
+          localStorage.removeItem('bhos_rally_infinity_high_score');
+          localStorage.removeItem('bhos_rally_infinity_pending_score');
+        } catch {}
+      }
+
+      setActionNotice(`${deleteTarget.full_name} üçün nəticə (${deleteTarget.score} ralli) uğurla silindi.`);
+      setTimeout(() => setActionNotice(null), 4500);
+
+      onScoreDeleted?.(deleteTarget.user_id);
+      setDeleteTarget(null);
+      await load();
+    } catch (err: any) {
+      alert(err?.message || 'Nəticə silinərkən xəta baş verdi.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   const meInTop = currentUserId ? rows.find((r) => r.user_id === currentUserId) : undefined;
 
   return (
     <div className="w-full rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-5 shadow-sm space-y-3">
+      {/* Toast Notice */}
+      {actionNotice && (
+        <div className="p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center justify-between gap-2 animate-in fade-in">
+          <span>{actionNotice}</span>
+          <button
+            type="button"
+            onClick={() => setActionNotice(null)}
+            className="text-emerald-400 hover:text-white transition"
+          >
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-400 shrink-0">
@@ -256,17 +332,35 @@ export default function ArcadeLeaderboard({
                       {formatPlayerDepartment(row)}
                     </div>
                   </div>
-                  <div className="text-right shrink-0">
-                    <div
-                      className={`font-mono font-black text-sm ${
-                        row.rank === 1 ? 'text-amber-300' : 'text-white'
-                      }`}
-                    >
-                      {row.score}
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="text-right">
+                      <div
+                        className={`font-mono font-black text-sm ${
+                          row.rank === 1 ? 'text-amber-300' : 'text-white'
+                        }`}
+                      >
+                        {row.score}
+                      </div>
+                      <div className="text-[9px] uppercase tracking-wider text-slate-500">
+                        ralli
+                      </div>
                     </div>
-                    <div className="text-[9px] uppercase tracking-wider text-slate-500">
-                      ralli
-                    </div>
+
+                    {(isAdmin || isMe) && (
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setDeleteTarget(row);
+                        }}
+                        title={`${row.full_name} nəticəsini sil`}
+                        aria-label={`${row.full_name} nəticəsini sil`}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0 ml-0.5"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
                   </div>
                 </Link>
               </li>
@@ -281,9 +375,93 @@ export default function ArcadeLeaderboard({
             Sizin yeriniz:{' '}
             <span className="font-mono font-black text-blue-300">#{myStanding.rank}</span>
           </span>
-          <span className="font-mono font-bold text-white">
-            {myStanding.score} <span className="text-slate-500 font-normal">ralli</span>
-          </span>
+          <div className="flex items-center gap-2">
+            <span className="font-mono font-bold text-white">
+              {myStanding.score} <span className="text-slate-500 font-normal">ralli</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                setDeleteTarget({
+                  rank: myStanding.rank,
+                  user_id: currentUserId,
+                  full_name: currentUser?.full_name || 'Öz Nəticəniz',
+                  slug: null,
+                  department: currentUser?.major_faculty || null,
+                  avatar_url: currentUser?.avatar_url || null,
+                  score: myStanding.score,
+                });
+              }}
+              title="Öz nəticəni sil"
+              className="p-1 rounded-md text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal for Deleting Arcade Score */}
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in duration-150">
+          <div className="w-full max-w-sm rounded-2xl border border-rose-500/30 bg-slate-900 p-5 shadow-2xl space-y-4 animate-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-rose-500/15 border border-rose-500/30 flex items-center justify-center text-rose-400 shrink-0">
+                <Trash2 className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-sm font-display font-bold text-white">
+                  Arcade Rekordunu Sil
+                </h4>
+                <p className="text-[11px] text-slate-400">
+                  Bu əməliyyat geri qaytarılmır.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 space-y-1">
+              <div>
+                <span className="text-slate-400">Oyunçu:</span>{' '}
+                <strong className="text-white font-semibold">{deleteTarget.full_name}</strong>
+              </div>
+              <div>
+                <span className="text-slate-400">Mövcud Rekord:</span>{' '}
+                <strong className="text-rose-400 font-mono font-bold">{deleteTarget.score} ralli</strong>
+              </div>
+              <p className="text-[11px] text-slate-400 pt-1 border-t border-slate-800/80 mt-1">
+                Rekord silindikdən sonra liderlər lövhəsindən çıxarılacaq və oyunçu yeni nəticələri ilə yenidən yarışa biləcək.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => setDeleteTarget(null)}
+                disabled={isDeleting}
+                className="flex-1 py-2 px-3 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-semibold transition disabled:opacity-50"
+              >
+                Ləğv et
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteScore}
+                disabled={isDeleting}
+                className="flex-1 py-2 px-3 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-semibold transition flex items-center justify-center gap-1.5 shadow-sm shadow-rose-950/40 disabled:opacity-50"
+              >
+                {isDeleting ? (
+                  <>
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    <span>Silinir...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Bəli, Sil</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
