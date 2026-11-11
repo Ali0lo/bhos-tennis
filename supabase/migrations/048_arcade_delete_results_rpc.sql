@@ -1,27 +1,27 @@
 -- ==============================================================================
--- Migration 048: Allow Admins and Players to Delete / Reset Arcade Minigame Scores
+-- Migration 048: Allow Admins to Delete / Reset Arcade Minigame Scores
 --
 -- 1. Creates `public.delete_arcade_score(p_target_user_id, p_mode, p_revoke_badges)`:
---    - Verifies caller is either an admin (via `public.is_admin()`) or the score owner.
+--    - Verifies caller is an admin (via `public.is_admin()`). Regular users cannot delete scores.
 --    - Deletes target score from `public.arcade_highscores`.
 --    - Cleans up corresponding `public.arcade_sessions`.
 --    - Revokes arcade milestone badges (`rally_starter`, `rally_master`, `table_ruler`)
 --      so fraudulent/reset accounts don't keep unearned badges.
--- 2. Adds RLS policy on `public.arcade_highscores` for DELETE operations.
+-- 2. Adds RLS policy on `public.arcade_highscores` for DELETE operations strictly for admins.
 -- ==============================================================================
 
--- 1. Ensure RLS DELETE policy exists for arcade_highscores
+-- 1. Ensure RLS DELETE policy exists strictly for admins
 DROP POLICY IF EXISTS "Allow delete arcade score for owner or admin" ON public.arcade_highscores;
-CREATE POLICY "Allow delete arcade score for owner or admin"
+DROP POLICY IF EXISTS "Allow delete arcade score for admin only" ON public.arcade_highscores;
+CREATE POLICY "Allow delete arcade score for admin only"
   ON public.arcade_highscores
   FOR DELETE
   TO authenticated
   USING (
-    auth.uid() = user_id
-    OR public.is_admin(auth.uid())
+    public.is_admin(auth.uid())
   );
 
--- 2. Secure RPC function: delete_arcade_score
+-- 2. Secure RPC function: delete_arcade_score (Strictly Admin-Only)
 CREATE OR REPLACE FUNCTION public.delete_arcade_score(
   p_target_user_id UUID,
   p_mode TEXT DEFAULT 'infinity',
@@ -44,9 +44,9 @@ BEGIN
 
   v_is_adm := public.is_admin(v_caller);
 
-  -- Allowed only if caller is admin OR deleting own score
-  IF NOT v_is_adm AND v_caller <> p_target_user_id THEN
-    RAISE EXCEPTION 'İcazə verilmədi: Yalnız adminlər və ya istifadəçinin özü rekordu silə bilər.' USING ERRCODE = '42501';
+  -- Allowed strictly for admins only
+  IF NOT v_is_adm THEN
+    RAISE EXCEPTION 'İcazə verilmədi: Yalnız adminlər arcade rekordunu silə bilər.' USING ERRCODE = '42501';
   END IF;
 
   -- Capture existing score and player name before deletion

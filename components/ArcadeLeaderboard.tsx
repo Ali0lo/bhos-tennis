@@ -346,7 +346,7 @@ export default function ArcadeLeaderboard({
                       </div>
                     </div>
 
-                    {(isAdmin || isMe) && (
+                    {isAdmin && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -375,29 +375,9 @@ export default function ArcadeLeaderboard({
             Sizin yeriniz:{' '}
             <span className="font-mono font-black text-blue-300">#{myStanding.rank}</span>
           </span>
-          <div className="flex items-center gap-2">
-            <span className="font-mono font-bold text-white">
-              {myStanding.score} <span className="text-slate-500 font-normal">ralli</span>
-            </span>
-            <button
-              type="button"
-              onClick={() => {
-                setDeleteTarget({
-                  rank: myStanding.rank,
-                  user_id: currentUserId,
-                  full_name: currentUser?.full_name || 'Öz Nəticəniz',
-                  slug: null,
-                  department: currentUser?.major_faculty || null,
-                  avatar_url: currentUser?.avatar_url || null,
-                  score: myStanding.score,
-                });
-              }}
-              title="Öz nəticəni sil"
-              className="p-1 rounded-md text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          </div>
+          <span className="font-mono font-bold text-white">
+            {myStanding.score} <span className="text-slate-500 font-normal">ralli</span>
+          </span>
         </div>
       )}
 
