@@ -18,6 +18,7 @@ import { invalidatePlayerProfileCache } from '../lib/data/store';
 import { useTranslation } from '../lib/i18n';
 import {
   playHitSound,
+  playSmashSound,
   playWinSound,
   playLoseSound,
   unlockAudio,
@@ -104,6 +105,60 @@ const getTensionTierIndex = (rally: number) => {
   }
   return idx;
 };
+
+export type PaddleSkinId = 'default' | 'bronze' | 'silver' | 'gold';
+
+interface PaddleSkinConfig {
+  id: PaddleSkinId;
+  nameKey: string;
+  fallbackName: string;
+  minScore: number;
+  primaryColor: string;
+  borderActive: string;
+  borderIdle: string;
+}
+
+export const PADDLE_SKINS: Record<PaddleSkinId, PaddleSkinConfig> = {
+  default: {
+    id: 'default',
+    nameKey: 'arcade.skin_default',
+    fallbackName: 'Standart',
+    minScore: 0,
+    primaryColor: '#E11D48',
+    borderActive: '#FDA4AF',
+    borderIdle: '#FB7185',
+  },
+  bronze: {
+    id: 'bronze',
+    nameKey: 'arcade.skin_bronze',
+    fallbackName: 'Bürünc (15+)',
+    minScore: 15,
+    primaryColor: '#D97706',
+    borderActive: '#FDE68A',
+    borderIdle: '#F59E0B',
+  },
+  silver: {
+    id: 'silver',
+    nameKey: 'arcade.skin_silver',
+    fallbackName: 'Gümüş (30+)',
+    minScore: 30,
+    primaryColor: '#94A3B8',
+    borderActive: '#FFFFFF',
+    borderIdle: '#CBD5E1',
+  },
+  gold: {
+    id: 'gold',
+    nameKey: 'arcade.skin_gold',
+    fallbackName: 'Qızıl (50+)',
+    minScore: 50,
+    primaryColor: '#F59E0B',
+    borderActive: '#FEF08A',
+    borderIdle: '#FBBF24',
+  },
+};
+
+const SENSITIVITY_STORAGE_KEY = 'bhos_rally_sensitivity';
+const PADDLE_SKIN_STORAGE_KEY = 'bhos_rally_paddle_skin';
 
 const ARCADE_BADGE_NAMES: Record<string, string> = {
   rally_starter: 'Ralli Başlanğıcı',
@@ -245,6 +300,14 @@ export default function RallyMiniGame() {
     customMessage?: string;
   } | null>(null);
 
+  const [sensitivity, setSensitivity] = useState<number>(1.0);
+  const [selectedSkin, setSelectedSkin] = useState<PaddleSkinId>('default');
+
+  const sensitivityRef = useRef<number>(1.0);
+  const selectedSkinRef = useRef<PaddleSkinId>('default');
+  const lastInputXRef = useRef<number | null>(null);
+  const keysDownRef = useRef<{ left: boolean; right: boolean }>({ left: false, right: false });
+
   const highScoresRef = useRef<{ classic: number; infinity: number }>({ classic: 0, infinity: 0 });
   const cloudBestRef = useRef<number | null>(null);
   const onInfinityGameOverRef = useRef<(score: number) => void>(() => {});
@@ -270,6 +333,7 @@ export default function RallyMiniGame() {
     playerX: CANVAS_WIDTH / 2,
     prevPlayerX: CANVAS_WIDTH / 2,
     playerVx: 0,
+    paddleVx: 0,
     aiX: CANVAS_WIDTH / 2,
     aiTargetOffset: 0,
     ballX: CANVAS_WIDTH / 2,
@@ -284,6 +348,10 @@ export default function RallyMiniGame() {
     particles: [] as Particle[],
     posHistory: [] as { t: number; x: number }[],
     lastFrameTime: 0,
+    lastSmashTime: 0,
+    screenShake: 0,
+    shakeDuration: 0,
+    smashTextTimer: 0,
   });
 
   useEffect(() => {
@@ -293,6 +361,57 @@ export default function RallyMiniGame() {
   useEffect(() => {
     setSoundMutedState(loadSoundMutedPreference());
   }, []);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        keysDownRef.current.left = true;
+      } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        keysDownRef.current.right = true;
+      } else if (e.code === 'Space') {
+        if (engineRef.current.status === 'playing') {
+          e.preventDefault();
+          engineRef.current.lastSmashTime = performance.now();
+        }
+      }
+    };
+
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.code === 'ArrowLeft' || e.code === 'KeyA') {
+        keysDownRef.current.left = false;
+      } else if (e.code === 'ArrowRight' || e.code === 'KeyD') {
+        keysDownRef.current.right = false;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  const handleSensitivityChange = (val: number) => {
+    const clamped = Math.max(0.5, Math.min(2.5, Math.round(val * 10) / 10));
+    setSensitivity(clamped);
+    sensitivityRef.current = clamped;
+    try {
+      localStorage.setItem(SENSITIVITY_STORAGE_KEY, String(clamped));
+    } catch {}
+  };
+
+  const handleSkinChange = (skinId: PaddleSkinId) => {
+    const skin = PADDLE_SKINS[skinId];
+    if (!skin) return;
+    const infinityBest = Math.max(highScoresRef.current.infinity, cloudBestRef.current ?? 0);
+    if (infinityBest < skin.minScore) return;
+    setSelectedSkin(skinId);
+    selectedSkinRef.current = skinId;
+    try {
+      localStorage.setItem(PADDLE_SKIN_STORAGE_KEY, skinId);
+    } catch {}
+  };
 
   const toggleSound = () => {
     const next = !isSoundMuted();
@@ -326,6 +445,18 @@ export default function RallyMiniGame() {
             ? highScoresRef.current.infinity
             : highScoresRef.current.classic
         );
+
+        const savedSens = parseFloat(localStorage.getItem(SENSITIVITY_STORAGE_KEY) || '1.0');
+        if (!isNaN(savedSens) && savedSens >= 0.5 && savedSens <= 2.5) {
+          setSensitivity(savedSens);
+          sensitivityRef.current = savedSens;
+        }
+
+        const savedSkin = localStorage.getItem(PADDLE_SKIN_STORAGE_KEY) as PaddleSkinId;
+        if (savedSkin && PADDLE_SKINS[savedSkin]) {
+          setSelectedSkin(savedSkin);
+          selectedSkinRef.current = savedSkin;
+        }
       } catch {}
     }
   }, []);
@@ -628,6 +759,7 @@ export default function RallyMiniGame() {
       st.playerX = CANVAS_WIDTH / 2;
       st.prevPlayerX = CANVAS_WIDTH / 2;
       st.playerVx = 0;
+      st.paddleVx = 0;
       st.aiX = CANVAS_WIDTH / 2;
       st.aiTargetOffset = 0;
       st.ballX = CANVAS_WIDTH / 2;
@@ -642,6 +774,11 @@ export default function RallyMiniGame() {
       st.particles = [];
       st.posHistory = [];
       st.lastFrameTime = performance.now();
+      st.lastSmashTime = 0;
+      st.screenShake = 0;
+      st.shakeDuration = 0;
+      st.smashTextTimer = 0;
+      lastInputXRef.current = null;
 
       // Reset micro-telemetry and initiate signed session for Infinity mode
       telemetryRef.current = {
@@ -705,25 +842,35 @@ export default function RallyMiniGame() {
     return true;
   };
 
-  const updatePointerPosition = useCallback((clientX: number, clientY?: number) => {
+  const updatePointerDelta = useCallback((clientX: number, clientY?: number) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
     if (rect.width <= 0) return;
     const scaleX = CANVAS_WIDTH / rect.width;
-    const relX = (clientX - rect.left) * scaleX;
     const cfg = DIFFICULTY_SETTINGS[difficultyRef.current];
     const halfPaddle = cfg.paddleWidth / 2;
     const minX = TABLE_MARGIN_X + halfPaddle - 8;
     const maxX = CANVAS_WIDTH - TABLE_MARGIN_X - halfPaddle + 8;
-    const targetX = Math.max(minX, Math.min(maxX, relX));
+    const st = engineRef.current;
+
+    if (lastInputXRef.current === null) {
+      lastInputXRef.current = clientX;
+      return;
+    }
+
+    const deltaX = (clientX - lastInputXRef.current) * scaleX * sensitivityRef.current;
+    lastInputXRef.current = clientX;
+
+    const nextX = Math.max(minX, Math.min(maxX, st.playerX + deltaX));
+    st.playerX = nextX;
 
     // Telemetry tracking for anti-cheat verification
     const now = performance.now();
     const tel = telemetryRef.current;
     tel.moveEventsCount++;
     const dt = now - tel.lastPointerTime;
-    const dx = Math.abs(targetX - tel.lastPointerX);
+    const dx = Math.abs(nextX - tel.lastPointerX);
     if (dt > 0 && dt < 12 && dx > 180) {
       tel.syntheticSnapCount++;
     }
@@ -733,35 +880,42 @@ export default function RallyMiniGame() {
         tel.clientYSamples.shift();
       }
     }
-    tel.lastPointerX = targetX;
+    tel.lastPointerX = nextX;
     tel.lastPointerTime = now;
-
-    engineRef.current.playerX = targetX;
   }, []);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!checkEventTrust(e)) return;
     unlockAudio();
+    lastInputXRef.current = e.clientX;
+    if (e.button === 0) {
+      engineRef.current.lastSmashTime = performance.now();
+    }
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!checkEventTrust(e)) return;
-    updatePointerPosition(e.clientX, e.clientY);
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!checkEventTrust(e)) return;
-    if (e.touches && e.touches.length > 0) {
-      updatePointerPosition(e.touches[0].clientX, e.touches[0].clientY);
-    }
+    updatePointerDelta(e.clientX, e.clientY);
   };
 
   const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
     if (!checkEventTrust(e)) return;
     unlockAudio();
     if (e.touches && e.touches.length > 0) {
-      updatePointerPosition(e.touches[0].clientX, e.touches[0].clientY);
+      lastInputXRef.current = e.touches[0].clientX;
+      engineRef.current.lastSmashTime = performance.now();
     }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!checkEventTrust(e)) return;
+    if (e.touches && e.touches.length > 0) {
+      updatePointerDelta(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    lastInputXRef.current = null;
   };
 
   useEffect(() => {
@@ -830,11 +984,12 @@ export default function RallyMiniGame() {
       const isInfinity = difficultyRef.current === 'infinity';
 
       if (st.status === 'playing') {
-        st.ballVx += st.ballSpin * 0.035 * dt;
-        st.ballSpin *= Math.pow(0.988, dt);
-        if (isInfinity) {
-          // Spin must never push the ball past the speed cap (keeps collisions reliable)
-          st.ballVx = Math.max(-cfg.maxSpeed, Math.min(cfg.maxSpeed, st.ballVx));
+        if (!isInfinity) {
+          // Classic Modes: Curve ball horizontally according to Magnus spin
+          st.ballVx += st.ballSpin * (dt / PHYSICS_REFERENCE_FPS);
+        } else {
+          // Strictly disabled in Infinity mode for standardized leaderboard fairness
+          st.ballSpin = 0;
         }
 
         st.ballX += st.ballVx * dt;
@@ -846,10 +1001,12 @@ export default function RallyMiniGame() {
         if (st.ballX <= leftWall) {
           st.ballX = leftWall;
           st.ballVx = Math.abs(st.ballVx);
+          st.ballSpin *= 0.9;
           playHitSound('wall');
         } else if (st.ballX >= rightWall) {
           st.ballX = rightWall;
           st.ballVx = -Math.abs(st.ballVx);
+          st.ballSpin *= 0.9;
           playHitSound('wall');
         }
 
@@ -903,15 +1060,43 @@ export default function RallyMiniGame() {
             setCurrentRally(nextRally);
             persistHighScore(nextRally);
 
-            st.ballSpeed = Math.min(
-              cfg.maxSpeed,
-              isInfinity
-                ? st.ballSpeed * INFINITY_ACCEL
-                : st.ballSpeed + cfg.speedIncrement
-            );
+            const now = performance.now();
+            const timeSinceSmash = now - st.lastSmashTime;
+            const isSmash = !isInfinity && timeSinceSmash >= 0 && timeSinceSmash <= 90;
+
+            if (isSmash) {
+              st.lastSmashTime = 0;
+              const boostedSpeed = Math.min(
+                cfg.maxSpeed * 1.25,
+                (st.ballSpeed + cfg.speedIncrement) * 1.25
+              );
+              st.ballSpeed = boostedSpeed;
+              st.screenShake = 3;
+              st.shakeDuration = 0.16;
+              st.smashTextTimer = 0.45;
+              st.hitFlash = 1.6;
+              playSmashSound();
+            } else {
+              st.ballSpeed = Math.min(
+                cfg.maxSpeed,
+                isInfinity
+                  ? st.ballSpeed * INFINITY_ACCEL
+                  : st.ballSpeed + cfg.speedIncrement
+              );
+              st.hitFlash = 1;
+              playHitSound('paddle');
+            }
+
             const bounceAngle = hitOffset * (Math.PI / 3.1);
             const clampedVx = Math.max(-8, Math.min(8, st.playerVx));
-            st.ballSpin = clampedVx * 0.22 + hitOffset * 0.45;
+
+            if (!isInfinity) {
+              // Classic Mode: horizontal velocity over last 3 frames sets Magnus spin
+              st.ballSpin = Math.max(-240, Math.min(240, st.paddleVx * 0.35));
+            } else {
+              st.ballSpin = 0;
+            }
+
             st.ballVx =
               Math.sin(bounceAngle) * st.ballSpeed + clampedVx * 0.18;
             st.ballVy = -Math.max(
@@ -919,8 +1104,6 @@ export default function RallyMiniGame() {
               Math.cos(bounceAngle) * st.ballSpeed
             );
             st.ballY = playerPaddleY - BALL_RADIUS - 0.5;
-            st.hitFlash = 1;
-            playHitSound('paddle');
             st.aiTargetOffset =
               (Math.random() - 0.5) * 2 * cfg.aiErrorMargin;
           }
@@ -955,7 +1138,7 @@ export default function RallyMiniGame() {
             }
             const returnAngle =
               hitOffset * (Math.PI / 3.4) + (Math.random() - 0.5) * 0.14;
-            st.ballSpin = -hitOffset * 0.35;
+            st.ballSpin = !isInfinity ? st.ballSpin * 0.9 : 0;
             st.ballVx = Math.sin(returnAngle) * st.ballSpeed;
             st.ballVy = Math.max(
               3.8,
@@ -1003,15 +1186,56 @@ export default function RallyMiniGame() {
       st.lastFrameTime = now;
       const frames = dtSec * PHYSICS_REFERENCE_FPS;
 
-      // Paddle velocity (px per reference frame) over a short time window.
+      // Track last 3 frames for paddle velocity (px/sec and reference frame velocity)
       st.posHistory.push({ t: now, x: st.playerX });
-      while (st.posHistory.length > 1 && now - st.posHistory[0].t > PADDLE_VELOCITY_WINDOW_MS) {
+      if (st.posHistory.length > 4) {
         st.posHistory.shift();
       }
-      const oldest = st.posHistory[0];
-      const spanFrames = ((now - oldest.t) / 1000) * PHYSICS_REFERENCE_FPS;
-      st.playerVx = spanFrames > 0.05 ? (st.playerX - oldest.x) / spanFrames : 0;
+      if (st.posHistory.length >= 2) {
+        const oldest = st.posHistory[0];
+        const newest = st.posHistory[st.posHistory.length - 1];
+        const spanSec = (newest.t - oldest.t) / 1000;
+        st.paddleVx = spanSec > 0.001 ? (newest.x - oldest.x) / spanSec : 0;
+        const spanFrames = spanSec * PHYSICS_REFERENCE_FPS;
+        st.playerVx = spanFrames > 0.05 ? (newest.x - oldest.x) / spanFrames : 0;
+      }
       st.prevPlayerX = st.playerX;
+
+      // Keyboard & Gamepad input scaled by sensitivity
+      if (st.status === 'playing' && frames > 0) {
+        const halfPaddle = cfg.paddleWidth / 2;
+        const minX = TABLE_MARGIN_X + halfPaddle - 8;
+        const maxX = CANVAS_WIDTH - TABLE_MARGIN_X - halfPaddle + 8;
+        const keyMove = 8.5 * frames * sensitivityRef.current;
+        if (keysDownRef.current.left) {
+          st.playerX = Math.max(minX, Math.min(maxX, st.playerX - keyMove));
+        }
+        if (keysDownRef.current.right) {
+          st.playerX = Math.max(minX, Math.min(maxX, st.playerX + keyMove));
+        }
+
+        if (typeof navigator !== 'undefined' && typeof navigator.getGamepads === 'function') {
+          try {
+            const pads = navigator.getGamepads();
+            if (pads) {
+              for (let i = 0; i < pads.length; i++) {
+                const pad = pads[i];
+                if (!pad) continue;
+                let axis = pad.axes[0] ?? 0;
+                if (pad.buttons[14]?.pressed) axis = -1;
+                if (pad.buttons[15]?.pressed) axis = 1;
+                if (Math.abs(axis) > 0.15) {
+                  const padMove = axis * 8.5 * frames * sensitivityRef.current;
+                  st.playerX = Math.max(minX, Math.min(maxX, st.playerX + padMove));
+                }
+                if (pad.buttons[0]?.pressed || pad.buttons[2]?.pressed || pad.buttons[7]?.pressed) {
+                  st.lastSmashTime = performance.now();
+                }
+              }
+            }
+          } catch {}
+        }
+      }
 
       if (st.hitFlash > 0) {
         st.hitFlash = Math.max(0, st.hitFlash - 0.08 * frames);
@@ -1084,6 +1308,15 @@ export default function RallyMiniGame() {
       ctx.setTransform(scaleX, 0, 0, scaleY, 0, 0);
       ctx.imageSmoothingEnabled = true;
       ctx.imageSmoothingQuality = 'high';
+
+      // Screen shake translation (3px shake on Power Smash)
+      if (st.shakeDuration > 0) {
+        st.shakeDuration = Math.max(0, st.shakeDuration - dtSec);
+        const shakeIntensity = (st.shakeDuration / 0.16) * st.screenShake;
+        const shakeX = (Math.random() - 0.5) * 2 * shakeIntensity;
+        const shakeY = (Math.random() - 0.5) * 2 * shakeIntensity;
+        ctx.translate(shakeX, shakeY);
+      }
 
       // Table ambient glow / outer base
       ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
@@ -1175,7 +1408,8 @@ export default function RallyMiniGame() {
       ctx.lineWidth = 1;
       ctx.stroke();
 
-      ctx.fillStyle = '#E11D48';
+      const activeSkin = PADDLE_SKINS[selectedSkinRef.current] || PADDLE_SKINS.default;
+      ctx.fillStyle = activeSkin.primaryColor;
       drawRoundedRect(
         st.playerX - halfPaddle,
         playerPaddleY,
@@ -1184,7 +1418,7 @@ export default function RallyMiniGame() {
         6
       );
       ctx.fill();
-      ctx.strokeStyle = st.hitFlash > 0.2 ? '#FDA4AF' : '#FB7185';
+      ctx.strokeStyle = st.hitFlash > 0.2 ? activeSkin.borderActive : activeSkin.borderIdle;
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
@@ -1254,6 +1488,44 @@ export default function RallyMiniGame() {
       ctx.strokeStyle = tier.edge;
       ctx.lineWidth = 1;
       ctx.stroke(ballPath);
+
+      // Curved trail indicator when significant spin is active (Classic modes only)
+      if (!isInfinity && Math.abs(st.ballSpin) > 50) {
+        ctx.save();
+        ctx.beginPath();
+        const spinDirection = st.ballSpin > 0 ? 1 : -1;
+        const spinIntensity = Math.min(1, Math.abs(st.ballSpin) / 240);
+        ctx.strokeStyle =
+          st.ballSpin > 0
+            ? `rgba(56, 189, 248, ${0.4 + spinIntensity * 0.4})`
+            : `rgba(244, 63, 94, ${0.4 + spinIntensity * 0.4})`;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([4, 3]);
+        const curveOffset = spinDirection * (12 + spinIntensity * 18);
+        ctx.moveTo(st.ballX, st.ballY);
+        ctx.quadraticCurveTo(
+          st.ballX - st.ballVx * 1.6 + curveOffset,
+          st.ballY - st.ballVy * 1.6,
+          st.ballX - st.ballVx * 3.2 + curveOffset * 1.8,
+          st.ballY - st.ballVy * 3.2
+        );
+        ctx.stroke();
+        ctx.setLineDash([]);
+        ctx.restore();
+      }
+
+      // Floating smash indicator text
+      if (st.smashTextTimer > 0) {
+        st.smashTextTimer = Math.max(0, st.smashTextTimer - dtSec);
+        ctx.save();
+        ctx.font = 'bold 12px ui-monospace, SFMono-Regular, monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = `rgba(245, 158, 11, ${Math.min(1, st.smashTextTimer * 2.5)})`;
+        ctx.shadowColor = '#f59e0b';
+        ctx.shadowBlur = 8;
+        ctx.fillText('⚡ SMASH! 1.25x', st.playerX, playerPaddleY - 14);
+        ctx.restore();
+      }
 
       rafRef.current = requestAnimationFrame(step);
     };
@@ -1376,6 +1648,85 @@ export default function RallyMiniGame() {
         </button>
       </div>
 
+      {difficulty === 'infinity' ? (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-medium">
+          <InfinityIcon className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+          <span>{t('arcade.fair_play_notice', 'Ədalətli rəqabət üçün Sonsuz Rallidə Spin və Smash deaktivdir')}</span>
+        </div>
+      ) : (
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-500/10 border border-blue-500/30 text-blue-300 text-xs font-medium">
+          <Sparkles className="w-3.5 h-3.5 text-blue-400 shrink-0" />
+          <span>{t('arcade.spin_smash_active', 'Spin və Smash aktivdir (Space / Sol klik)')}</span>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        {/* Sensitivity slider */}
+        <div className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800">
+          <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-300 whitespace-nowrap">
+            <span>{t('arcade.sensitivity', 'Həssaslıq')}:</span>
+            <span className="font-mono text-amber-400 font-bold">{sensitivity.toFixed(1)}x</span>
+          </div>
+          <input
+            type="range"
+            min="0.5"
+            max="2.5"
+            step="0.1"
+            value={sensitivity}
+            onChange={(e) => handleSensitivityChange(parseFloat(e.target.value))}
+            className="w-24 sm:w-28 h-1.5 bg-slate-800 rounded-lg appearance-none cursor-pointer accent-rose-500"
+            aria-label={t('arcade.sensitivity', 'Həssaslıq')}
+          />
+        </div>
+
+        {/* Paddle skin selector */}
+        <div className="flex items-center justify-between gap-1.5 px-3 py-2 rounded-xl bg-slate-950 border border-slate-800">
+          <span className="text-xs font-semibold text-slate-300 whitespace-nowrap">
+            {t('arcade.paddle_skin', 'Raket Rəngi')}:
+          </span>
+          <div className="flex items-center gap-1">
+            {(['default', 'bronze', 'silver', 'gold'] as PaddleSkinId[]).map((skId) => {
+              const skin = PADDLE_SKINS[skId];
+              const infinityBest = Math.max(highScoresRef.current.infinity, cloudBestRef.current ?? 0);
+              const isUnlocked = infinityBest >= skin.minScore;
+              const isSelected = selectedSkin === skId;
+              return (
+                <button
+                  key={skId}
+                  type="button"
+                  disabled={!isUnlocked}
+                  onClick={() => handleSkinChange(skId)}
+                  title={
+                    isUnlocked
+                      ? t(skin.nameKey, skin.fallbackName)
+                      : t('arcade.skin_locked', 'Kilidlidir ({score}+ ralli)').replace('{score}', String(skin.minScore))
+                  }
+                  className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold transition border ${
+                    isSelected
+                      ? 'border-white/90 shadow-sm'
+                      : isUnlocked
+                      ? 'border-slate-700/60 opacity-80 hover:opacity-100 hover:border-slate-500'
+                      : 'border-slate-800/40 opacity-40 cursor-not-allowed'
+                  }`}
+                  style={{
+                    backgroundColor: isSelected ? `${skin.primaryColor}33` : 'transparent',
+                  }}
+                >
+                  <span
+                    className="w-2 h-2 rounded-full inline-block"
+                    style={{ backgroundColor: skin.primaryColor }}
+                  />
+                  <span className={isSelected ? 'text-white' : isUnlocked ? 'text-slate-300' : 'text-slate-500'}>
+                    {t(skin.nameKey, skin.fallbackName).split(' ')[0]}
+                  </span>
+                  {!isUnlocked && <span className="text-[9px]">🔒</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
       <p className="text-[11px] text-slate-400 -mt-1 flex items-center gap-1.5">
         <InfinityIcon className="w-3 h-3 text-amber-400 shrink-0" />
         <span>
@@ -1392,15 +1743,34 @@ export default function RallyMiniGame() {
           height={CANVAS_HEIGHT}
           onMouseMove={handleMouseMove}
           onMouseDown={handleMouseDown}
+          onMouseEnter={(e) => {
+            if (!checkEventTrust(e)) return;
+            lastInputXRef.current = e.clientX;
+          }}
+          onMouseLeave={() => {
+            lastInputXRef.current = null;
+          }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
           onPointerMove={(e) => {
             if (!checkEventTrust(e)) return;
-            updatePointerPosition(e.clientX, e.clientY);
+            updatePointerDelta(e.clientX, e.clientY);
           }}
           onPointerDown={(e) => {
             if (!checkEventTrust(e)) return;
             unlockAudio();
+            lastInputXRef.current = e.clientX;
+            if (e.button === 0) {
+              engineRef.current.lastSmashTime = performance.now();
+            }
+          }}
+          onPointerEnter={(e) => {
+            if (!checkEventTrust(e)) return;
+            lastInputXRef.current = e.clientX;
+          }}
+          onPointerLeave={() => {
+            lastInputXRef.current = null;
           }}
           style={{
             touchAction: 'none',

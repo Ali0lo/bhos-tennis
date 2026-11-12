@@ -108,6 +108,38 @@ export const playHitSound = (type: HitSoundType = 'paddle') => {
   osc.stop(now + 0.07);
 };
 
+export const playSmashSound = () => {
+  if (muted) return;
+  const ctx = getAudioContext();
+  if (!ctx) return;
+
+  const now = ctx.currentTime;
+  // High-impact sharp smash: dual oscillator (crisp attack + body punch)
+  const osc1 = ctx.createOscillator();
+  const osc2 = ctx.createOscillator();
+  const gain = ctx.createGain();
+
+  osc1.connect(gain);
+  osc2.connect(gain);
+  gain.connect(ctx.destination);
+
+  osc1.type = 'triangle';
+  osc1.frequency.setValueAtTime(880, now);
+  osc1.frequency.exponentialRampToValueAtTime(220, now + 0.08);
+
+  osc2.type = 'sawtooth';
+  osc2.frequency.setValueAtTime(440, now);
+  osc2.frequency.exponentialRampToValueAtTime(110, now + 0.08);
+
+  gain.gain.setValueAtTime(0.6, now);
+  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+
+  osc1.start(now);
+  osc2.start(now);
+  osc1.stop(now + 0.09);
+  osc2.stop(now + 0.09);
+};
+
 export const playWinSound = () => {
   if (muted) return;
   if (playRegisteredFile('win')) return;

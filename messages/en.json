@@ -739,7 +739,19 @@
     "rank_3": "3rd place",
     "anticheat_detected": "Auto-paddle detected! 🏓 Play with your own skills!",
     "offline_saved": "Could not reach server. Result saved locally on this device.",
-    "submit_error": "An error occurred while submitting the score."
+    "submit_error": "An error occurred while submitting the score.",
+    "infinity_notice": "Global ranking is only recorded in ♾️ Infinity Rally mode.",
+    "sensitivity": "Sensitivity",
+    "spin_smash_active": "Spin & Smash active (Space / Left click)",
+    "fair_play_notice": "Spin & Smash are disabled in Infinity Mode for leaderboard fairness",
+    "paddle_skin": "Paddle Skin",
+    "skin_default": "Standard",
+    "skin_bronze": "Bronze (15+)",
+    "skin_silver": "Silver (30+)",
+    "skin_gold": "Gold (50+)",
+    "skin_locked": "Locked ({score}+ rallies)",
+    "smash_indicator": "SMASH!",
+    "spin_indicator": "SPIN"
   },
   "match_detail": {
     "title": "Match Details",

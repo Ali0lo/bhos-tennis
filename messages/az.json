@@ -739,7 +739,19 @@
     "rank_3": "3-cü yer",
     "anticheat_detected": "Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!",
     "offline_saved": "Serverlə əlaqə qurulmadı. Nəticə bu cihazda saxlanıldı.",
-    "submit_error": "Nəticə göndərilərkən xəta baş verdi."
+    "submit_error": "Nəticə göndərilərkən xəta baş verdi.",
+    "infinity_notice": "Qlobal reytinq yalnız ♾️ Sonsuz Ralli rejimində qeydə alınır.",
+    "sensitivity": "Həssaslıq",
+    "spin_smash_active": "Spin və Smash aktivdir (Space / Sol klik)",
+    "fair_play_notice": "Ədalətli rəqabət üçün Sonsuz Rallidə Spin və Smash deaktivdir",
+    "paddle_skin": "Raket Rəngi",
+    "skin_default": "Standart",
+    "skin_bronze": "Bürünc (15+)",
+    "skin_silver": "Gümüş (30+)",
+    "skin_gold": "Qızıl (50+)",
+    "skin_locked": "Kilidlidir ({score}+ ralli)",
+    "smash_indicator": "SMASH!",
+    "spin_indicator": "SPIN"
   },
   "match_detail": {
     "title": "Oyun Təfərrüatları",
