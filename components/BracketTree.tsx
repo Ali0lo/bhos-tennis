@@ -9,6 +9,7 @@ import { getSupabaseClient } from '../lib/supabase/client';
 import { canAdvanceBracketMatch } from '../lib/tournament';
 import { parseSetScores, validateMatchSetSummary } from '../lib/elo';
 import { sanitizeTextInput } from '../lib/security/sanitize';
+import { useTranslation } from '../lib/i18n';
 import {
   Trophy,
   Award,
@@ -29,6 +30,7 @@ interface BracketTreeProps {
 }
 
 export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTreeProps) {
+  const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
   const [activeMatchModal, setActiveMatchModal] = useState<{
     roundIndex: number;
@@ -282,11 +284,11 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
             <div className="flex items-center gap-2">
               <Trophy className="w-4 h-4 text-amber-400" />
               <span className="text-xs font-mono uppercase tracking-widest text-amber-400 font-bold">
-                Rəsmi Pley-off Fəxri Kürsüsü (Podium)
+                {t('tournaments.podium_title')}
               </span>
             </div>
             <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[11px] font-mono font-bold">
-              Turnir Tamamlandı
+              {t('tournaments.tournament_completed')}
             </span>
           </div>
 
@@ -296,7 +298,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                 <span className="text-lg">🥇</span>
                 <div className="min-w-0">
                   <span className="block text-[10px] font-mono uppercase tracking-wider text-amber-300 font-bold">
-                    1-ci Yer • Çempion
+                    {t('tournaments.first_place')}
                   </span>
                   <span className="block text-sm font-display font-black text-white truncate">
                     {championProfile.full_name}
@@ -314,7 +316,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                   <span className="text-lg">🥈</span>
                   <div className="min-w-0">
                     <span className="block text-[10px] font-mono uppercase tracking-wider text-slate-300 font-bold">
-                      2-ci Yer • Gümüş
+                      {t('tournaments.second_place')}
                     </span>
                     <span className="block text-sm font-display font-black text-white truncate">
                       {runnerUpProfile.full_name}
@@ -333,7 +335,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                   <span className="text-lg">🥉</span>
                   <div className="min-w-0">
                     <span className="block text-[10px] font-mono uppercase tracking-wider text-orange-300 font-bold">
-                      3-cü Yer • Bürünc
+                      {t('tournaments.third_place_podium')}
                     </span>
                     <span className="block text-sm font-display font-black text-white truncate">
                       {thirdPlaceProfile.full_name}
@@ -354,7 +356,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
           <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-none">
             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 shrink-0">
               <Layers className="w-3.5 h-3.5 text-[#3B82F6]" />
-              <span>Mərhələ:</span>
+              <span>{t('tournaments.stage')}:</span>
             </span>
             {rounds.map((r, idx) => {
               const active = safeStartRound === idx;
@@ -369,7 +371,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                       : 'bg-[#0F1623] text-slate-400 hover:text-white border border-white/5'
                   }`}
                 >
-                  {idx === 0 ? `Hamısı (${r.name})` : r.name}
+                  {idx === 0 ? `${t('leaderboard.all')} (${r.name})` : r.name}
                 </button>
               );
             })}
@@ -455,22 +457,22 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                           <span className="flex items-center gap-1.5">
                             {isFinal && <Trophy className="w-3 h-3 text-amber-400 animate-pulse" />}
                             <span className={isFinal ? 'text-amber-400 font-bold' : ''}>
-                              {isFinal ? 'Championship' : `Match #${mIndex + 1}`}
+                              {isFinal ? t('tournaments.championship') : `${t('tournaments.match_number')} #${mIndex + 1}`}
                             </span>
                           </span>
                           {isCompleted ? (
                             <span className="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                              <Check className="w-3 h-3 text-emerald-500 stroke-[3]" /> Completed
+                              <Check className="w-3 h-3 text-emerald-500 stroke-[3]" /> {t('tournaments.completed')}
                             </span>
                           ) : isReady ? (
                             <span className="text-blue-400 font-bold uppercase tracking-wider flex items-center gap-1.5">
                               <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-ping" />
                               <Radio className="w-3 h-3" />
-                              <span>Live / Ready</span>
+                              <span>{t('tournaments.live_ready')}</span>
                             </span>
                           ) : (
                             <span className="text-slate-500 uppercase tracking-wider">
-                              Awaiting
+                              {t('tournaments.awaiting')}
                             </span>
                           )}
                         </div>
@@ -520,7 +522,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                                   {match.is_bye ? 'BYE' : 'TBD'}
                                 </span>
                                 <span className="text-slate-600 font-mono tracking-widest text-[11px]">
-                                  {match.is_bye ? 'Avto-keçid' : '— — — —'}
+                                  {match.is_bye ? t('tournaments.auto_pass') : '— — — —'}
                                 </span>
                               </div>
                               <span className="font-mono text-slate-600 text-xs">--</span>
@@ -571,7 +573,7 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                                   {match.is_bye ? 'BYE' : 'TBD'}
                                 </span>
                                 <span className="text-slate-600 font-mono tracking-widest text-[11px]">
-                                  {match.is_bye ? 'Avto-keçid' : '— — — —'}
+                                  {match.is_bye ? t('tournaments.auto_pass') : '— — — —'}
                                 </span>
                               </div>
                               <span className="font-mono text-slate-600 text-xs">--</span>
@@ -703,10 +705,10 @@ export default function BracketTree({ tournament, onUpdate, isAdmin }: BracketTr
                     <div className="rounded-2xl p-3.5 bg-slate-900 border border-orange-500/50 shadow-md ring-1 ring-orange-500/20 relative z-10">
                       <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mb-2 pb-1.5 border-b border-slate-800">
                         <span className="flex items-center gap-1.5 text-orange-400 font-bold">
-                          <span>🥉 3-cü Yer Uğrunda</span>
+                          <span>🥉 {t('tournaments.third_place')}</span>
                         </span>
                         <span className="text-slate-400 font-bold uppercase tracking-wider flex items-center gap-1">
-                          <Check className="w-3 h-3 text-emerald-500 stroke-[3]" /> Completed
+                          <Check className="w-3 h-3 text-emerald-500 stroke-[3]" /> {t('tournaments.completed')}
                         </span>
                       </div>
 

@@ -16,6 +16,7 @@ import {
 } from '../lib/utils/department';
 import AnimatedCounter from './AnimatedCounter';
 import { getPlayerHref } from '../lib/data/store';
+import { useTranslation } from '../lib/i18n';
 import {
   Crown,
   ArrowUpRight,
@@ -77,6 +78,7 @@ export default function LeaderboardTable({
   enablePagination = true,
   departmentFilter,
 }: LeaderboardTableProps) {
+  const { t } = useTranslation();
   const [pageSize, setPageSize] = useState<25 | 50>(defaultPageSize);
   const [currentPage, setCurrentPage] = useState<number>(1);
 
@@ -139,12 +141,12 @@ export default function LeaderboardTable({
         <table className="w-full text-left border-collapse">
           <thead>
             <tr className="border-b border-slate-800 bg-slate-950/60 text-[11px] uppercase font-bold tracking-wider text-slate-400">
-              <th className="py-3.5 px-4 sm:px-5 w-20">Sıra</th>
-              <th className="py-3.5 px-4">Oyunçu</th>
-              <th className="py-3.5 px-4 hidden md:table-cell">Fakültə / İxtisas</th>
-              <th className="py-3.5 px-4 text-center">Oyunlar</th>
-              <th className="py-3.5 px-4 text-center hidden sm:table-cell">Qələbə faizi</th>
-              <th className="py-3.5 px-4 sm:px-5 text-right">Xal</th>
+              <th className="py-3.5 px-4 sm:px-5 w-20">{t('leaderboard.rank', 'Sıra')}</th>
+              <th className="py-3.5 px-4">{t('leaderboard.player', 'Oyunçu')}</th>
+              <th className="py-3.5 px-4 hidden md:table-cell">{t('leaderboard.faculty', 'Fakültə / İxtisas')}</th>
+              <th className="py-3.5 px-4 text-center">{t('leaderboard.matches', 'Oyunlar')}</th>
+              <th className="py-3.5 px-4 text-center hidden sm:table-cell">{t('leaderboard.win_rate', 'Qələbə faizi')}</th>
+              <th className="py-3.5 px-4 sm:px-5 text-right">{t('leaderboard.points', 'Xal')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800">
@@ -261,13 +263,13 @@ export default function LeaderboardTable({
                           {isMe && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-700 text-white">
                               <UserCheck className="w-2.5 h-2.5" />
-                              <span>Siz</span>
+                              <span>{t('leaderboard.you', 'Siz')}</span>
                             </span>
                           )}
 
                           {staff && (
                             <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-950 text-blue-300 border border-blue-800">
-                              Müəllim / Əməkdaş
+                              {t('roles.staff_badge', 'Müəllim / Əməkdaş')}
                             </span>
                           )}
 
@@ -279,7 +281,7 @@ export default function LeaderboardTable({
                                   : 'bg-emerald-600/15 text-emerald-400 border-emerald-600/30'
                               }`}
                             >
-                              {isPresidentBadgeHolder(player) ? 'Prezident' : 'Məşqçi'}
+                              {isPresidentBadgeHolder(player) ? t('roles.president_badge', 'Prezident') : t('roles.coach', 'Məşqçi')}
                             </span>
                           )}
                         </div>
@@ -299,9 +301,9 @@ export default function LeaderboardTable({
 
                   <td className="py-3.5 px-4 text-center font-mono">
                     <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-xs">
-                      <span className="text-emerald-500 font-bold">{player.wins}Q</span>
+                      <span className="text-emerald-500 font-bold">{player.wins}{t('leaderboard.win_abbr', 'Q')}</span>
                       <span className="text-slate-600">/</span>
-                      <span className="text-rose-500 font-bold">{player.losses}M</span>
+                      <span className="text-rose-500 font-bold">{player.losses}{t('leaderboard.loss_abbr', 'M')}</span>
                     </div>
                   </td>
 
@@ -333,7 +335,7 @@ export default function LeaderboardTable({
                     <div className="inline-flex items-baseline gap-1 font-mono text-base sm:text-lg font-black text-white">
                       <AnimatedCounter value={player.current_elo} />
                       <span className="text-[10px] font-sans font-semibold text-blue-400">
-                        XAL
+                        {t('leaderboard.points_abbr', 'XAL')}
                       </span>
                     </div>
                   </td>
@@ -349,11 +351,10 @@ export default function LeaderboardTable({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-t border-slate-800 bg-slate-950/60">
           <div className="flex flex-wrap items-center gap-3 text-xs text-slate-400">
             <span>
-              Cəmi <strong className="text-white font-mono">{totalPlayers}</strong> oyunçudan{' '}
-              <strong className="text-white font-mono">
-                {startIndex + 1}–{endIndex}
-              </strong>{' '}
-              göstərilir
+              {t('leaderboard.showing_count', 'Cəmi {total} oyunçudan {start}–{end} göstərilir')
+                .replace('{total}', String(totalPlayers))
+                .replace('{start}', String(startIndex + 1))
+                .replace('{end}', String(endIndex))}
             </span>
 
             <div className="inline-flex items-center gap-1 p-0.5 rounded-lg bg-slate-900 border border-slate-800">
@@ -368,7 +369,7 @@ export default function LeaderboardTable({
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  {size} / səhifə
+                  {size} {t('leaderboard.per_page', '/ səhifə')}
                 </button>
               ))}
             </div>
@@ -383,7 +384,7 @@ export default function LeaderboardTable({
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition disabled:opacity-40 disabled:pointer-events-none"
               >
                 <ChevronLeft className="w-3.5 h-3.5" />
-                <span>Əvvəlki</span>
+                <span>{t('leaderboard.prev', 'Əvvəlki')}</span>
               </button>
 
               <div className="flex items-center gap-1">
@@ -418,7 +419,7 @@ export default function LeaderboardTable({
                 onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                 className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white transition disabled:opacity-40 disabled:pointer-events-none"
               >
-                <span>Növbəti</span>
+                <span>{t('leaderboard.next', 'Növbəti')}</span>
                 <ChevronRight className="w-3.5 h-3.5" />
               </button>
             </div>

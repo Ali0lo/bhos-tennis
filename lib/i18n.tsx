@@ -61,7 +61,9 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>('az');
 
   useEffect(() => {
-    const savedLocal = localStorage.getItem('bhos_tt_locale');
+    const savedLocal =
+      localStorage.getItem('NEXT_LOCALE') ||
+      localStorage.getItem('bhos_tt_locale');
     const cookieLoc = getCookieLocale();
     const initial = isValidLocale(savedLocal)
       ? savedLocal
@@ -70,12 +72,15 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     if (typeof document !== 'undefined') {
       document.documentElement.lang = initial;
       document.cookie = `NEXT_LOCALE=${initial}; path=/; max-age=31536000; SameSite=Lax`;
+      localStorage.setItem('NEXT_LOCALE', initial);
+      localStorage.setItem('bhos_tt_locale', initial);
     }
   }, []);
 
   const setLocale = useCallback((newLocale: Locale) => {
     setLocaleState(newLocale);
     if (typeof window !== 'undefined') {
+      localStorage.setItem('NEXT_LOCALE', newLocale);
       localStorage.setItem('bhos_tt_locale', newLocale);
       document.documentElement.lang = newLocale;
       document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;

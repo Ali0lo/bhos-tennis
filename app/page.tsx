@@ -186,9 +186,6 @@ export default function HomePage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
               <div className="flex items-center gap-2.5">
-                <span className="px-2.5 py-0.5 rounded-lg bg-blue-700/15 border border-blue-600/30 text-blue-400 font-mono text-xs font-black">
-                  {t('sections.leaderboard_num')}
-                </span>
                 <h2 className="text-xl md:text-2xl font-display font-bold text-white flex items-center gap-2">
                   <Award className="w-6 h-6 text-amber-400" />
                   <span>{t('sections.leaderboard_title')}</span>
@@ -490,9 +487,6 @@ export default function HomePage() {
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <div className="flex items-center gap-2">
-                <span className="px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 font-mono text-[11px] font-black">
-                  {t('sections.tournament_num')}
-                </span>
                 <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
                   <Trophy className="w-5 h-5 text-amber-400" />
                   <span>{t('sections.tournament_title')}</span>
@@ -544,10 +538,10 @@ export default function HomePage() {
             <TiltCard className="p-5 rounded-2xl border border-rose-500/25 bg-gradient-to-b from-slate-900 via-slate-900 to-rose-950/20 hover:border-rose-500/40 transition shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase bg-rose-600/20 text-rose-300 border border-rose-500/30">
-                  🏓 BHOS ARCADE
+                  {rootT('arcade.discovery_tag', '🏓 BHOS Arcade • Sonsuz Ralli')}
                 </span>
                 <span className="text-[11px] text-amber-400 font-mono font-semibold flex items-center gap-1">
-                  <span>♾️ Sonsuz Ralli</span>
+                  <span>{rootT('arcade.infinity_badge', '♾️ Sonsuz Ralli')}</span>
                 </span>
               </div>
 
@@ -555,11 +549,11 @@ export default function HomePage() {
                 href="/minigame"
                 className="block font-display font-bold text-base text-white hover:text-rose-400 transition"
               >
-                Masaüstü Ralli
+                {rootT('arcade.title', 'Masaüstü Ralli')}
               </Link>
 
               <p className="text-xs text-slate-400 line-clamp-2">
-                Sonsuz rejimdə rekordu qır, nailiyyət nişanlarını aç və BANM reytinqində 1-ci yerə yüksəl!
+                {rootT('arcade.discovery_desc', 'Bot rəqiblə sonsuz rallidə reflekslərini sına, sürətlənən topu masada saxla və BANM liderlər lövhəsində 1-ci pilləyə yüksəl!')}
               </p>
 
               <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
@@ -567,11 +561,11 @@ export default function HomePage() {
                   href="/minigame"
                   className="text-xs text-rose-400 font-semibold hover:underline flex items-center gap-1"
                 >
-                  <span>Oyna və Yarış</span>
+                  <span>{rootT('arcade.play_and_compete', 'Oyna və Yarış')}</span>
                   <ArrowRight className="w-3 h-3" />
                 </Link>
                 <span className="text-[10px] text-slate-500 font-mono">
-                  Online Reytinq
+                  {rootT('arcade.online_ranking', 'Online Reytinq')}
                 </span>
               </div>
             </TiltCard>
@@ -605,7 +599,7 @@ export default function HomePage() {
                   <p className="text-[11px] text-slate-400">{t('about.card2_desc')}</p>
                 </div>
                 <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
-                  <Users className="w-5 h-5 text-emerald-500" />
+                  <Trophy className="w-5 h-5 text-emerald-500" />
                   <h4 className="font-bold text-white text-xs">{t('about.card3_title')}</h4>
                   <p className="text-[11px] text-slate-400">{t('about.card3_desc')}</p>
                 </div>

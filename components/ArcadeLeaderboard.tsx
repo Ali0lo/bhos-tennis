@@ -17,6 +17,7 @@ import {
 import { getSupabaseClient } from '../lib/supabase/client';
 import { getPlayerHref, BHOSDataStore } from '../lib/data/store';
 import { canAccessAdminPanel, PlayerProfile } from '../lib/data/types';
+import { useTranslation } from '../lib/i18n';
 
 export const ARCADE_INFINITY_MODE = 'infinity';
 
@@ -119,6 +120,7 @@ export default function ArcadeLeaderboard({
   currentUserId = null,
   onScoreDeleted,
 }: ArcadeLeaderboardProps) {
+  const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(() => store.getCurrentUser());
   const isAdmin = canAccessAdminPanel(currentUser);
@@ -261,17 +263,17 @@ export default function ArcadeLeaderboard({
           </span>
           <div className="min-w-0">
             <h3 className="text-sm font-display font-bold text-white leading-tight">
-              Sonsuz Ralli Liderləri
+              {t('arcade.leaders_title', 'Sonsuz Ralli Liderləri')}
             </h3>
             <div className="flex items-center gap-1.5 flex-wrap mt-0.5">
               <p className="text-[11px] text-slate-400 flex items-center gap-1">
                 <InfinityIcon className="w-3 h-3 text-cyan-400" />
-                <span>Ən yüksək ralli • Top 10</span>
+                <span>{t('arcade.leaders_sub', 'Ən yüksək ralli • Top 10')}</span>
               </p>
               <span className="text-slate-600 hidden sm:inline">•</span>
               <span className="inline-flex items-center gap-1 text-[10px] text-emerald-400 font-medium bg-emerald-500/10 px-1.5 py-0.5 rounded border border-emerald-500/20">
                 <ShieldCheck className="w-2.5 h-2.5" />
-                Doğrulanmış
+                {t('arcade.verified', 'Doğrulanmış')}
               </span>
             </div>
           </div>
@@ -279,8 +281,8 @@ export default function ArcadeLeaderboard({
         <button
           type="button"
           onClick={() => void load()}
-          aria-label="Yenilə"
-          title="Yenilə"
+          aria-label={t('arcade.refresh', 'Yenilə')}
+          title={t('arcade.refresh', 'Yenilə')}
           className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-950 border border-slate-800 text-slate-400 hover:text-white transition shrink-0"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
@@ -290,7 +292,7 @@ export default function ArcadeLeaderboard({
       {loading && rows.length === 0 ? (
         <div className="py-8 flex items-center justify-center text-slate-400 text-xs gap-2">
           <Loader2 className="w-4 h-4 animate-spin" />
-          <span>Yüklənir...</span>
+          <span>{t('arcade.loading', 'Yüklənir...')}</span>
         </div>
       ) : error ? (
         <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center text-xs text-slate-400">
@@ -298,7 +300,7 @@ export default function ArcadeLeaderboard({
         </div>
       ) : rows.length === 0 ? (
         <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center text-xs text-slate-400">
-          Hələ heç kim rekord qeyd etməyib. İlk siz olun! 🏓
+          {t('arcade.empty', 'Hələ heç kim rekord qeyd etməyib. İlk siz olun! 🏓')}
         </div>
       ) : (
         <ol className="space-y-1.5">
@@ -324,7 +326,7 @@ export default function ArcadeLeaderboard({
                       </span>
                       {isMe && (
                         <span className="px-1.5 py-0.5 rounded-full bg-blue-700 text-white text-[9px] font-bold uppercase shrink-0">
-                          Siz
+                          {t('leaderboard.you', 'Siz')}
                         </span>
                       )}
                     </div>
@@ -342,7 +344,7 @@ export default function ArcadeLeaderboard({
                         {row.score}
                       </div>
                       <div className="text-[9px] uppercase tracking-wider text-slate-500">
-                        ralli
+                        {t('arcade.rallies', 'ralli')}
                       </div>
                     </div>
 
@@ -372,11 +374,11 @@ export default function ArcadeLeaderboard({
       {currentUserId && !meInTop && myStanding && !error && (
         <div className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-blue-700/10 border border-blue-600/40 text-xs">
           <span className="text-slate-300">
-            Sizin yeriniz:{' '}
+            {t('arcade.your_standing', 'Sizin yeriniz:')}{' '}
             <span className="font-mono font-black text-blue-300">#{myStanding.rank}</span>
           </span>
           <span className="font-mono font-bold text-white">
-            {myStanding.score} <span className="text-slate-500 font-normal">ralli</span>
+            {myStanding.score} <span className="text-slate-500 font-normal">{t('arcade.rallies', 'ralli')}</span>
           </span>
         </div>
       )}
@@ -391,10 +393,10 @@ export default function ArcadeLeaderboard({
               </div>
               <div>
                 <h4 className="text-sm font-display font-bold text-white">
-                  Arcade Rekordunu Sil
+                  {t('arcade.delete_title', 'Arcade Rekordunu Sil')}
                 </h4>
                 <p className="text-[11px] text-slate-400">
-                  Bu əməliyyat geri qaytarılmır.
+                  {t('arcade.delete_desc', 'Bu əməliyyat geri qaytarılmır.')}
                 </p>
               </div>
             </div>
@@ -406,7 +408,7 @@ export default function ArcadeLeaderboard({
               </div>
               <div>
                 <span className="text-slate-400">Mövcud Rekord:</span>{' '}
-                <strong className="text-rose-400 font-mono font-bold">{deleteTarget.score} ralli</strong>
+                <strong className="text-rose-400 font-mono font-bold">{deleteTarget.score} {t('arcade.rallies', 'ralli')}</strong>
               </div>
               <p className="text-[11px] text-slate-400 pt-1 border-t border-slate-800/80 mt-1">
                 Rekord silindikdən sonra liderlər lövhəsindən çıxarılacaq və oyunçu yeni nəticələri ilə yenidən yarışa biləcək.
@@ -420,7 +422,7 @@ export default function ArcadeLeaderboard({
                 disabled={isDeleting}
                 className="flex-1 py-2 px-3 rounded-xl border border-slate-700 hover:bg-slate-800 text-slate-300 text-xs font-semibold transition disabled:opacity-50"
               >
-                Ləğv et
+                {t('arcade.cancel', 'Ləğv et')}
               </button>
               <button
                 type="button"
@@ -431,12 +433,12 @@ export default function ArcadeLeaderboard({
                 {isDeleting ? (
                   <>
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                    <span>Silinir...</span>
+                    <span>{t('arcade.deleting', 'Silinir...')}</span>
                   </>
                 ) : (
                   <>
                     <Trash2 className="w-3.5 h-3.5" />
-                    <span>Bəli, Sil</span>
+                    <span>{t('arcade.confirm_delete', 'Bəli, Sil')}</span>
                   </>
                 )}
               </button>

@@ -2,11 +2,13 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useTranslation } from '../lib/i18n';
 import { X, ArrowRight, Trophy } from 'lucide-react';
 
 const DISMISS_STORAGE_KEY = 'bhos_foundation_tournament_banner_dismissed_v2';
 
 export default function FoundationTournamentBanner() {
+  const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
@@ -87,7 +89,7 @@ export default function FoundationTournamentBanner() {
             </div>
             <div className="min-w-0">
               <div className="text-[10px] font-mono uppercase tracking-wider text-amber-300 font-bold">
-                1-ci Yer • Çempion
+                {t('tournaments.first_place')}
               </div>
               <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-amber-300 transition">
                 Yusif Xanlarov
@@ -107,7 +109,7 @@ export default function FoundationTournamentBanner() {
             </div>
             <div className="min-w-0">
               <div className="text-[10px] font-mono uppercase tracking-wider text-slate-300 font-bold">
-                2-ci Yer • Gümüş
+                {t('tournaments.second_place')}
               </div>
               <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-blue-300 transition">
                 Məharət Kərimli
@@ -127,7 +129,7 @@ export default function FoundationTournamentBanner() {
             </div>
             <div className="min-w-0">
               <div className="text-[10px] font-mono uppercase tracking-wider text-orange-300 font-bold">
-                3-cü Yer • Bürünc
+                {t('tournaments.third_place_podium')}
               </div>
               <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-orange-300 transition">
                 Əhəd Zamanlı

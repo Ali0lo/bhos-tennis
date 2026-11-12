@@ -15,6 +15,7 @@ import {
 import ArcadeLeaderboard, { ARCADE_INFINITY_MODE } from './ArcadeLeaderboard';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { invalidatePlayerProfileCache } from '../lib/data/store';
+import { useTranslation } from '../lib/i18n';
 import {
   playHitSound,
   playWinSound,
@@ -221,6 +222,7 @@ interface TrailPoint {
 }
 
 export default function RallyMiniGame() {
+  const { t } = useTranslation();
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -1280,6 +1282,13 @@ export default function RallyMiniGame() {
     };
   }, [persistHighScore]);
 
+  const difficultyLabels: Record<Difficulty, string> = {
+    easy: t('arcade.easy', 'Asan'),
+    medium: t('arcade.medium', 'Orta'),
+    hard: t('arcade.hard', 'Çətin'),
+    infinity: t('arcade.infinity_badge', '♾️ Sonsuz Ralli'),
+  };
+
   return (
     <div className="w-full max-w-[520px] mx-auto space-y-4">
     <div className="w-full rounded-2xl border border-slate-800 bg-slate-900 p-4 sm:p-5 shadow-sm space-y-4">
@@ -1289,10 +1298,10 @@ export default function RallyMiniGame() {
             <span>BHOS Arcade</span>
           </div>
           <h2 className="text-lg font-display font-bold text-white">
-            Masaüstü Ralli
+            {t('arcade.title', 'Masaüstü Ralli')}
           </h2>
           <p className="text-xs text-slate-400">
-            Reketini idarə et, topu masada saxla və şəxsi rekordunu yenilə
+            {t('arcade.subtitle', 'Reketini idarə et, topu masada saxla və şəxsi rekordunu yenilə')}
           </p>
         </div>
 
@@ -1300,7 +1309,7 @@ export default function RallyMiniGame() {
           <div className="px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-center min-w-[84px]">
             <div className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-slate-400">
               <Flame className="w-3 h-3 text-rose-500" />
-              <span>Cari Ralli</span>
+              <span>{t('arcade.current_rally', 'Cari Ralli')}</span>
             </div>
             <div className="text-lg font-mono font-extrabold text-white mt-0.5">
               {currentRally}
@@ -1310,7 +1319,7 @@ export default function RallyMiniGame() {
           <div className="px-3 py-2 rounded-xl bg-slate-950 border border-amber-500/30 text-center min-w-[84px]">
             <div className="flex items-center justify-center gap-1 text-[10px] font-bold uppercase tracking-wider text-amber-400">
               <Trophy className="w-3 h-3 text-amber-400" />
-              <span>Rekord</span>
+              <span>{t('arcade.record', 'Rekord')}</span>
             </div>
             <div className="text-lg font-mono font-extrabold text-amber-400 mt-0.5">
               {highScore}
@@ -1338,7 +1347,7 @@ export default function RallyMiniGame() {
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                {DIFFICULTY_SETTINGS[lvl].labelAz}
+                {difficultyLabels[lvl]}
               </button>
             );
           })}
@@ -1352,12 +1361,12 @@ export default function RallyMiniGame() {
           {gameState === 'idle' ? (
             <>
               <Play className="w-3.5 h-3.5 fill-white" />
-              <span>Başla</span>
+              <span>{t('arcade.start', 'Başla')}</span>
             </>
           ) : (
             <>
               <RotateCcw className="w-3.5 h-3.5" />
-              <span>Yenidən</span>
+              <span>{t('arcade.restart', 'Yenidən')}</span>
             </>
           )}
         </button>
@@ -1367,8 +1376,8 @@ export default function RallyMiniGame() {
         <InfinityIcon className="w-3 h-3 text-amber-400 shrink-0" />
         <span>
           {difficulty === 'infinity'
-            ? 'Bot heç vaxt səhv etmir — top hər uğurlu qaytarışda 5% sürətlənir. Rekordlar qlobal cədvələ yazılır.'
-            : 'Qlobal reytinq yalnız ♾️ Sonsuz Ralli rejimində qeydə alınır.'}
+            ? t('arcade.challenge_desc_infinity', 'Bot heç vaxt səhv etmir — top hər uğurlu qaytarışda 5% sürətlənir. Rekordlar qlobal cədvələ yazılır.')
+            : t('arcade.infinity_notice', 'Qlobal reytinq yalnız ♾️ Sonsuz Ralli rejimində qeydə alınır.')}
         </span>
       </p>
 
@@ -1407,12 +1416,12 @@ export default function RallyMiniGame() {
               <span>
                 {toast.customMessage
                   ? toast.customMessage
-                  : `🎉 Yeni Rekord: ${toast.score} ralli${toast.rank ? ` • Reytinqdə #${toast.rank}` : ''}`}
+                  : `🎉 ${t('arcade.record', 'Rekord')}: ${toast.score} ${t('arcade.rallies', 'ralli')}${toast.rank ? ` • #${toast.rank}` : ''}`}
               </span>
             </div>
             {toast.badges.map((b) => (
               <div key={b} className="mt-1 text-[11px] font-bold text-amber-200">
-                🏅 Yeni nişan: {ARCADE_BADGE_NAMES[b] || b}
+                🏅 {b}
               </div>
             ))}
           </div>
@@ -1421,9 +1430,9 @@ export default function RallyMiniGame() {
         <button
           type="button"
           onClick={toggleSound}
-          aria-label={soundMuted ? 'Səsi aç' : 'Səsi söndür'}
+          aria-label={soundMuted ? t('arcade.sound_on', 'Səsi aç') : t('arcade.sound_off', 'Səsi söndür')}
           aria-pressed={soundMuted}
-          title={soundMuted ? 'Səsi aç' : 'Səsi söndür'}
+          title={soundMuted ? t('arcade.sound_on', 'Səsi aç') : t('arcade.sound_off', 'Səsi söndür')}
           className="absolute top-2 right-2 z-10 inline-flex items-center justify-center w-8 h-8 rounded-lg bg-slate-900/70 hover:bg-slate-800 border border-slate-700/70 text-base leading-none opacity-80 hover:opacity-100 transition"
         >
           <span aria-hidden="true">{soundMuted ? '🔇' : '🔊'}</span>
@@ -1432,13 +1441,13 @@ export default function RallyMiniGame() {
         {gameState !== 'playing' && (
           <div className="absolute inset-0 bg-slate-950/80 flex flex-col items-center justify-center p-6 text-center">
             <div className="w-12 h-12 rounded-2xl bg-blue-700/20 border border-blue-600/40 flex items-center justify-center text-2xl mb-3">
-              
+              🏓
             </div>
 
             {gameState === 'gameover' ? (
               <>
                 <h3 className="text-base font-display font-bold text-white">
-                  Oyun Bitdi — {currentRally} Zərbə
+                  {t('arcade.game_over', 'Oyun Bitdi')} — {currentRally} {t('arcade.hits', 'Zərbə')}
                 </h3>
                 <p className="text-xs text-slate-300 mt-1 max-w-xs">
                   {lastOutcomeText}
@@ -1446,7 +1455,7 @@ export default function RallyMiniGame() {
                 {isNewRecord && currentRally > 0 && (
                   <div className="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-400 text-xs font-bold">
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Yeni Şəxsi Rekord: {highScore}!</span>
+                    <span>{t('arcade.new_record', 'Yeni Şəxsi Rekord: {score}!').replace('{score}', String(highScore))}</span>
                   </div>
                 )}
 
@@ -1455,14 +1464,14 @@ export default function RallyMiniGame() {
                     {submitState.status === 'saving' && (
                       <div className="flex items-center justify-center gap-2 text-xs text-slate-300">
                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        <span>Nəticə göndərilir...</span>
+                        <span>{t('arcade.submitting', 'Nəticə göndərilir...')}</span>
                       </div>
                     )}
                     {submitState.status === 'saved' && (
                       <div className="rounded-xl bg-emerald-600/10 border border-emerald-600/30 px-3 py-2 text-xs text-emerald-300">
-                        Reytinqdə yeriniz:{' '}
+                        {t('arcade.your_standing', 'Reytinqdə yeriniz:')}{' '}
                         <span className="font-mono font-black">#{submitState.rank ?? '—'}</span>
-                        {' • '}Qlobal rekord:{' '}
+                        {' • '}{t('arcade.record', 'Qlobal rekord:')}{' '}
                         <span className="font-mono font-black">{submitState.best}</span>
                       </div>
                     )}
@@ -1475,17 +1484,17 @@ export default function RallyMiniGame() {
                     {submitState.status === 'guest' && (
                       <div className="rounded-xl bg-blue-700/15 border border-blue-600/40 px-3 py-2.5 space-y-2">
                         <p className="text-xs font-semibold text-blue-100">
-                          Reytinqdə yer almaq üçün daxil olun
+                          {t('arcade.login_to_compete', 'Reytinqdə yer almaq üçün daxil olun')}
                         </p>
                         <Link
                           href="/login?redirect=/minigame"
                           className="inline-flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition"
                         >
                           <LogIn className="w-3.5 h-3.5" />
-                          <span>Daxil ol</span>
+                          <span>{t('arcade.login_btn', 'Daxil ol')}</span>
                         </Link>
                         <p className="text-[10px] text-slate-400">
-                          Nəticəniz ({currentRally} ralli) bu cihazda saxlanıldı və daxil olduqdan sonra göndəriləcək.
+                          {t('arcade.guest_saved_notice', 'Nəticəniz ({score} ralli) bu cihazda saxlanıldı və daxil olduqdan sonra göndəriləcək.').replace('{score}', String(currentRally))}
                         </p>
                       </div>
                     )}
@@ -1495,12 +1504,12 @@ export default function RallyMiniGame() {
             ) : (
               <>
                 <h3 className="text-base font-display font-bold text-white">
-                  Masaüstü Ralli Çağırışı
+                  {t('arcade.challenge_title', 'Masaüstü Ralli Çağırışı')}
                 </h3>
                 <p className="text-xs text-slate-300 mt-1 max-w-xs">
                   {difficulty === 'infinity'
-                    ? 'Bot heç vaxt səhv etmir! Yalnız sən topu qaytara bilməyəndə oyun bitir. Hər qaytarışda top 5% sürətlənir — nə qədər davam edə bilərsən?'
-                    : 'Siçanı və ya barmağınızı sağa-sola hərəkət etdirərək qırmızı raketi idarə edin. Hər zərbədə top sürətlənir!'}
+                    ? t('arcade.challenge_desc_infinity', 'Bot heç vaxt səhv etmir! Yalnız sən topu qaytara bilməyəndə oyun bitir. Hər qaytarışda top 5% sürətlənir — nə qədər davam edə bilərsən?')
+                    : t('arcade.challenge_desc_classic', 'Siçanı və ya barmağınızı sağa-sola hərəkət etdirərək qırmızı raketi idarə edin. Hər zərbədə top sürətlənir!')}
                 </p>
               </>
             )}
@@ -1511,15 +1520,15 @@ export default function RallyMiniGame() {
               className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-bold transition shadow-sm active:scale-95"
             >
               <Play className="w-3.5 h-3.5 fill-white" />
-              <span>{gameState === 'gameover' ? 'Yenidən Oyna' : 'Oyuna Başla'}</span>
+              <span>{gameState === 'gameover' ? t('arcade.play_again', 'Yenidən Oyna') : t('arcade.start', 'Oyuna Başla')}</span>
             </button>
           </div>
         )}
       </div>
 
       <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
-        <span>Raket: Qırmızı (Aşağı) • Rəqib: Bot (Yuxarı)</span>
-        <span className="font-mono text-slate-300">Hər ekranda eyni sürət • Spin Fizikası</span>
+        <span>{t('arcade.controls_tip', 'Raket: Qırmızı (Aşağı) • Rəqib: Bot (Yuxarı)')}</span>
+        <span className="font-mono text-slate-300">{t('arcade.physics_tip', 'Hər ekranda eyni sürət • Spin Fizikası')}</span>
       </div>
     </div>
 

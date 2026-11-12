@@ -16,6 +16,7 @@ import TournamentParticipantsRoster from '../../components/TournamentParticipant
 import { getProfileDepartment } from '../../lib/utils/department';
 import { getSupabaseClient } from '../../lib/supabase/client';
 import { isTournamentRosterLocked } from '../../lib/tournament';
+import { useTranslation } from '../../lib/i18n';
 import {
   Trophy,
   Calendar,
@@ -40,6 +41,7 @@ function getInitials(name?: string): string {
 }
 
 export default function TournamentsPage() {
+  const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
 
   const [tournaments, setTournaments] = useState<Tournament[]>(() => store.getTournaments());
@@ -239,10 +241,10 @@ export default function TournamentsPage() {
               BANM Stolüstü Tennis Çempionatı
             </span>
             <h1 className="text-3xl sm:text-4xl font-display font-black text-white tracking-tight">
-              Turnirlər & Yarışlar
+              {t('tournaments.title')}
             </h1>
             <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
-              Rəsmi universitet çempionatları, hazırlıq (Foundation) kubokları və olimpiya sistemli turnirlərə birbaşa buradan qoşulun.
+              {t('tournaments.subtitle')}
             </p>
           </div>
 

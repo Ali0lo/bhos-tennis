@@ -30,6 +30,7 @@ import PlayerProfileSkeleton from '../../../components/PlayerProfileSkeleton';
 import HoloCard from '../../../components/HoloCard';
 import RecentFormBadges from '../../../components/RecentFormBadges';
 import { getCustomRacket, translatePlayingStyle } from '../../../lib/utils/equipment';
+import { useTranslation } from '../../../lib/i18n';
 import {
   evaluatePlayerAchievements,
   ACHIEVEMENT_TIER_STYLES,
@@ -110,6 +111,7 @@ const CustomTooltip = ({ active, payload }: any) => {
 };
 
 export default function PlayerProfilePage() {
+  const { t, locale } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const store = BHOSDataStore.getInstance();
@@ -594,16 +596,16 @@ export default function PlayerProfilePage() {
         <div className="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-red-400 mb-4 shadow-lg shadow-red-500/10">
           <ShieldAlert className="w-8 h-8" />
         </div>
-        <h1 className="text-2xl font-display font-black text-white mb-2">Oyunçu Tapılmadı</h1>
+        <h1 className="text-2xl font-display font-black text-white mb-2">{t('leaderboard.no_players_found')}</h1>
         <p className="text-sm text-slate-400 max-w-md mb-6 leading-relaxed">
-          Axtarılan oyunçu mövcud deyil və ya hesabı hazırda rəsmi Admin təsdiqi gözləyir.
+          {t('leaderboard.no_players_hint')}
         </p>
         <Link
           href="/leaderboard"
           className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#3B82F6] hover:bg-blue-600 text-white font-semibold text-xs transition shadow-lg shadow-blue-500/20"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Reytinq Cədvəlinə Qayıt</span>
+          <span>{t('arcade.back_to_leaderboard')}</span>
         </Link>
       </div>
     );
@@ -620,7 +622,7 @@ export default function PlayerProfilePage() {
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition px-3 py-1.5 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Reytinqə Qayıt</span>
+          <span>{t('arcade.back_to_leaderboard')}</span>
         </button>
       </div>
 
@@ -675,7 +677,7 @@ export default function PlayerProfilePage() {
                       className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-[#3B82F6]/15 hover:bg-[#3B82F6]/25 text-[#3B82F6] hover:text-blue-300 border border-[#3B82F6]/30 transition shadow-sm"
                     >
                       <Edit3 className="w-3.5 h-3.5" />
-                      <span>Profili Redaktə Et</span>
+                      <span>{t('profile.edit_profile')}</span>
                     </button>
                   )}
 
@@ -688,18 +690,18 @@ export default function PlayerProfilePage() {
                         : 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30'
                     }`}
                   >
-                    {isPresidentBadgeHolder(profile) ? 'Prezident' : profile.role === 'coach' ? 'Məşqçi' : 'Oyunçu'}
+                    {isPresidentBadgeHolder(profile) ? t('roles.president') : profile.role === 'coach' ? t('roles.coach') : t('roles.player')}
                   </span>
 
                   {(!profile.admission_year || profile.user_type === 'teacher' || profile.user_type === 'staff' || profile.role === 'coach') ? (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                       <Briefcase className="w-3 h-3" />
-                      <span>Müəllim / Əməkdaş</span>
+                      <span>{t('leaderboard.staff')}</span>
                     </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
                       <GraduationCap className="w-3 h-3" />
-                      <span>Tələbə • {profile.admission_year}</span>
+                      <span>{profile.admission_year}</span>
                     </span>
                   )}
 
@@ -718,7 +720,7 @@ export default function PlayerProfilePage() {
                   {hasCustomRacket && (
                     <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700/80 text-xs text-slate-200">
                       <span className="text-rose-400">🏓</span>
-                      <span className="text-slate-400 font-medium">Raket:</span>
+                      <span className="text-slate-400 font-medium">{t('profile.custom_racket')}:</span>
                       <span className="font-semibold text-white">{customRacket}</span>
                     </div>
                   )}
@@ -761,13 +763,13 @@ export default function PlayerProfilePage() {
 
             <div className="p-4 sm:p-5 rounded-2xl bg-[#131C2B] border border-white/10 text-center min-w-[140px] shadow-lg">
               <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block mb-1">
-                Rəsmi ELO
+                {t('profile.official_elo')}
               </span>
               <div className="text-3xl font-mono font-black text-[#3B82F6] flex items-center justify-center gap-1">
                 <NumberTicker value={profile.current_elo} />
               </div>
               <span className="text-[10px] text-slate-500 font-medium block mt-0.5">
-                BANM Təsdiqli
+                {t('profile.verified_bhos')}
               </span>
             </div>
           </div>
@@ -779,7 +781,7 @@ export default function PlayerProfilePage() {
           <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-5 backdrop-blur-md shadow-xl hover:border-white/20 transition">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
-                Hazırkı ELO
+                {t('profile.current_elo')}
               </span>
               <Activity className="w-4 h-4 text-[#3B82F6]" />
             </div>
@@ -792,7 +794,7 @@ export default function PlayerProfilePage() {
           <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-5 backdrop-blur-md shadow-xl hover:border-white/20 transition">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
-                Zirvə ELO
+                {t('profile.peak_elo')}
               </span>
               <Trophy className="w-4 h-4 text-amber-400" />
             </div>
@@ -805,7 +807,7 @@ export default function PlayerProfilePage() {
           <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-5 backdrop-blur-md shadow-xl hover:border-white/20 transition">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
-                Ümumi Oyunlar
+                {t('profile.total_matches')}
               </span>
               <Swords className="w-4 h-4 text-indigo-400" />
             </div>
@@ -813,14 +815,14 @@ export default function PlayerProfilePage() {
               <NumberTicker value={totalMatchesCount} />
             </div>
             <p className="text-[10px] text-slate-500 mt-1">
-              {effectiveWins}Q - {effectiveLosses}M Nəticə
+              {effectiveWins}{t('leaderboard.win_abbr')} - {effectiveLosses}{t('leaderboard.loss_abbr')}
             </p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-5 backdrop-blur-md shadow-xl hover:border-white/20 transition">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
-                Qələbə faizi
+                {t('profile.win_rate')}
               </span>
               <Flame className="w-4 h-4 text-[#22C55E]" />
             </div>
@@ -835,7 +837,7 @@ export default function PlayerProfilePage() {
               <>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
-                    Status / Vəzifə
+                    {t('profile.status_role')}
                   </span>
                   <Briefcase className="w-4 h-4 text-indigo-400" />
                 </div>
@@ -850,7 +852,7 @@ export default function PlayerProfilePage() {
               <>
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[11px] uppercase font-bold text-slate-400 tracking-wider">
-                    Qəbul İli
+                    {t('profile.admission_year')}
                   </span>
                   <GraduationCap className="w-4 h-4 text-cyan-400" />
                 </div>
@@ -875,10 +877,10 @@ export default function PlayerProfilePage() {
               </div>
               <div>
                 <h3 className="text-base font-display font-bold text-white">
-                  Nailiyyətlər və Nişanlar
+                  {t('profile.achievements_title')}
                 </h3>
                 <p className="text-[11px] text-slate-400">
-                  Rəsmi matç nəticələri ilə avtomatik qazanılan klub mükafatları
+                  {t('profile.achievements_sub')}
                 </p>
               </div>
             </div>
@@ -1022,7 +1024,7 @@ export default function PlayerProfilePage() {
             <div className="flex items-center gap-2">
               <Swords className="w-4 h-4 text-[#3B82F6]" />
               <h3 className="text-base font-display font-bold text-white">
-                Üzbəüz Rəqabətlər
+                {t('profile.h2h_title')}
               </h3>
             </div>
             <span className="text-xs text-slate-400 font-mono">
@@ -1137,7 +1139,7 @@ export default function PlayerProfilePage() {
             <div className="flex items-center gap-2">
               <Activity className="w-4 h-4 text-[#3B82F6]" />
               <h3 className="text-base font-display font-bold text-white">
-                ELO Reytinq Dinamikası
+                {t('profile.elo_dynamics')}
               </h3>
             </div>
             <span className="text-xs text-slate-400 font-mono">
@@ -1207,7 +1209,7 @@ export default function PlayerProfilePage() {
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-[#3B82F6]" />
               <h3 className="text-base font-display font-bold text-white">
-                Oyun Tarixçəsi və Nəticələr
+                {t('profile.match_history_title')}
               </h3>
             </div>
             <div className="flex items-center gap-4 flex-wrap">
@@ -1269,12 +1271,12 @@ export default function PlayerProfilePage() {
                             : 'bg-[#EF4444]/15 text-[#EF4444] border-[#EF4444]/30'
                         }`}
                       >
-                        {isPending ? 'TƏSDİQ GÖZLƏYİR' : won ? 'QƏLƏBƏ' : 'MƏĞLUBİYYƏT'}
+                        {isPending ? t('nav.pending').toUpperCase() : won ? t('leaderboard.wins').toUpperCase() : t('leaderboard.losses').toUpperCase()}
                       </span>
 
                       <div>
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xs text-slate-400">qarşı</span>
+                          <span className="text-xs text-slate-400">vs</span>
                           <Link
                             href={getPlayerHref(opponentId, opponentName)}
                             onClick={(e) => e.stopPropagation()}
@@ -1285,25 +1287,25 @@ export default function PlayerProfilePage() {
                           {!isPending && (
                             isAutoApprovedMatch(m) ? (
                               <span
-                                title="Rəqib 48 saat ərzində təsdiqləmədiyi üçün avtomatik təsdiqlənib"
+                                title="48h Auto-Approved"
                                 className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-amber-500/15 text-amber-300 border border-amber-500/30"
                               >
                                 <Clock className="w-3 h-3" />
-                                <span>Avto-təsdiq (48 saat)</span>
+                                <span>{t('match_detail.approved')}</span>
                               </span>
                             ) : (
                               <span
-                                title="Oyunçu tərəfindən rəsmi təsdiqlənib"
+                                title="Verified"
                                 className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold bg-cyan-500/10 text-cyan-300 border border-cyan-500/25"
                               >
                                 <CheckCheck className="w-3 h-3" />
-                                <span>Təsdiqlənib</span>
+                                <span>{t('match_detail.approved')}</span>
                               </span>
                             )
                           )}
                         </div>
                         <span className="text-[11px] text-slate-500 font-mono">
-                          {new Date(m.match_date).toLocaleDateString('az-AZ', {
+                          {new Date(m.match_date).toLocaleDateString(locale === 'az' ? 'az-AZ' : locale === 'ru' ? 'ru-RU' : 'en-US', {
                             month: 'short',
                             day: 'numeric',
                             year: 'numeric',

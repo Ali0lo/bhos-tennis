@@ -17,6 +17,7 @@ import LeaderboardSkeleton from '../../components/LeaderboardSkeleton';
 import AnimatedCounter from '../../components/AnimatedCounter';
 import HoloCard from '../../components/HoloCard';
 import FacultyFilterTabs from '../../components/FacultyFilterTabs';
+import { useTranslation } from '../../lib/i18n';
 import {
   Search,
   Trophy,
@@ -66,6 +67,7 @@ const COHORT_PILLS: { id: string; label: string }[] = [
 ];
 
 export default function LeaderboardPage() {
+  const { t, locale } = useTranslation();
   const store = BHOSDataStore.getInstance();
 
   const [profiles, setProfiles] = useState<PlayerProfile[]>(() => store.getCachedLeaderboard());
@@ -195,13 +197,13 @@ export default function LeaderboardPage() {
             <div className="space-y-2">
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-slate-950 border border-slate-800 text-blue-400 text-xs font-bold uppercase tracking-wider">
                 <Trophy className="w-3.5 h-3.5" />
-                <span>Rəsmi Universitet Reytinqi</span>
+                <span>{t('leaderboard.official_title', 'Rəsmi Universitet Reytinqi')}</span>
               </div>
               <h1 className="text-2xl sm:text-4xl font-display font-black text-white tracking-tight">
-                BANM Canlı ELO Reytinq Cədvəli
+                {t('leaderboard.page_title', 'BANM Canlı ELO Reytinq Cədvəli')}
               </h1>
               <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
-                Bakı Ali Neft Məktəbinin təsdiqlənmiş stolüstü tennis oyunçularının rəsmi reytinq siyahısı. Dinamik ELO hesablama sistemi (K=32).
+                {t('leaderboard.page_subtitle', 'Bakı Ali Neft Məktəbinin təsdiqlənmiş stolüstü tennis oyunçularının rəsmi reytinq siyahısı. Dinamik ELO hesablama sistemi (K=32).')}
               </p>
             </div>
 
@@ -213,7 +215,7 @@ export default function LeaderboardPage() {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-[10px] uppercase font-bold tracking-wider text-blue-400">
-                      Sizin Reytinqiniz
+                      {t('leaderboard.your_rank', 'Sizin Reytinqiniz')}
                     </span>
                     {currentUser.rank && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-blue-700 text-white">
@@ -226,8 +228,8 @@ export default function LeaderboardPage() {
                     <strong className="text-white">
                       <AnimatedCounter value={currentUser.current_elo} />
                     </strong>{' '}
-                    ELO • <span className="text-emerald-500">{currentUser.wins}Q</span> -{' '}
-                    <span className="text-rose-500">{currentUser.losses}M</span>
+                    {t('leaderboard.points_abbr', 'ELO')} • <span className="text-emerald-500">{currentUser.wins}{t('leaderboard.win_abbr', 'Q')}</span> -{' '}
+                    <span className="text-rose-500">{currentUser.losses}{t('leaderboard.loss_abbr', 'M')}</span>
                   </div>
                 </div>
               </div>
@@ -265,7 +267,7 @@ export default function LeaderboardPage() {
                     {top3Podium[1].matches_played > 0
                       ? Math.round((top3Podium[1].wins / top3Podium[1].matches_played) * 100)
                       : 0}
-                    % Qələbə
+                    {' '}{t('leaderboard.win_rate_label')}
                   </span>
                 </div>
               </div>
@@ -277,7 +279,7 @@ export default function LeaderboardPage() {
               </div>
               <div className="pt-4 text-center relative z-10">
                 <span className="inline-block px-3 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider mb-2 border border-amber-500/30">
-                  Lider • #1
+                  {t('leaderboard.leader')} • #1
                 </span>
                 <Link
                   href={getPlayerHref(top3Podium[0].id)}
@@ -296,7 +298,7 @@ export default function LeaderboardPage() {
                   {top3Podium[0].matches_played > 0
                     ? Math.round((top3Podium[0].wins / top3Podium[0].matches_played) * 100)
                     : 0}
-                  % Qələbə
+                  {' '}{t('leaderboard.win_rate_label')}
                 </div>
               </div>
             </HoloCard>
@@ -324,7 +326,7 @@ export default function LeaderboardPage() {
                     {top3Podium[2].matches_played > 0
                       ? Math.round((top3Podium[2].wins / top3Podium[2].matches_played) * 100)
                       : 0}
-                    % Qələbə
+                    {' '}{t('leaderboard.win_rate_label')}
                   </span>
                 </div>
               </div>
@@ -340,7 +342,7 @@ export default function LeaderboardPage() {
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Oyunçu adı və ya ixtisas üzrə axtarış..."
+                placeholder={t('leaderboard.search_placeholder')}
                 className="w-full pl-11 pr-4 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs sm:text-sm text-white placeholder:text-slate-500 focus:outline-none focus:border-blue-600 transition shadow-sm"
               />
             </div>
@@ -354,7 +356,7 @@ export default function LeaderboardPage() {
               >
                 {FACULTIES.map((fac) => (
                   <option key={fac} value={fac} className="bg-slate-900 text-white">
-                    {fac === 'Hamısı' ? 'Bütün Fakültələr / Kafedralar' : fac}
+                    {fac === 'Hamısı' ? t('leaderboard.all_faculties') : fac}
                   </option>
                 ))}
               </select>
@@ -372,7 +374,7 @@ export default function LeaderboardPage() {
                       : 'text-slate-400 hover:text-white'
                   }`}
                 >
-                  {g === 'ALL' ? 'Hamısı' : g === 'male' ? 'Oğlan' : 'Qız'}
+                  {g === 'ALL' ? t('leaderboard.all') : g === 'male' ? t('leaderboard.male') : t('leaderboard.female')}
                 </button>
               ))}
             </div>
@@ -408,7 +410,7 @@ export default function LeaderboardPage() {
                   ) : pill.id !== 'ALL' ? (
                     <GraduationCap className="w-3.5 h-3.5" />
                   ) : null}
-                  <span>{pill.label}</span>
+                  <span>{pill.id === 'ALL' ? t('leaderboard.all') : pill.id === 'STAFF' ? t('leaderboard.staff') : pill.label}</span>
                 </button>
               );
             })}
@@ -421,9 +423,9 @@ export default function LeaderboardPage() {
           ) : filteredProfiles.length === 0 ? (
             <div className="p-12 text-center space-y-2">
               <Sparkles className="w-8 h-8 text-slate-500 mx-auto" />
-              <div className="text-sm font-bold text-white">Uyğun oyunçu tapılmadı</div>
+              <div className="text-sm font-bold text-white">{t('leaderboard.no_players_found')}</div>
               <p className="text-xs text-slate-400">
-                Axtarış sorğusunu və ya filtrləri dəyişərək yenidən yoxlayın.
+                {t('leaderboard.no_players_hint')}
               </p>
             </div>
           ) : (

@@ -7,6 +7,7 @@ import ClickableAvatar from './ClickableAvatar';
 import { MatchRecord, isAutoApprovedMatch } from '../lib/data/types';
 import { BHOSDataStore, getPlayerHref } from '../lib/data/store';
 import { formatMatchStageAz, isPlayoffStage } from '../lib/data/matches';
+import { useTranslation } from '../lib/i18n';
 import {
   X,
   Trophy,
@@ -27,6 +28,7 @@ interface MatchDetailModalProps {
 }
 
 export default function MatchDetailModal({ match, onClose }: MatchDetailModalProps) {
+  const { t, locale } = useTranslation();
   useEffect(() => {
     if (!match) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -106,12 +108,13 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
     .filter(Boolean);
 
   const matchDateObj = new Date(enriched.match_date || enriched.created_at || Date.now());
-  const formattedDate = matchDateObj.toLocaleDateString('az-AZ', {
+  const dateLocale = locale === 'az' ? 'az-AZ' : locale === 'ru' ? 'ru-RU' : 'en-US';
+  const formattedDate = matchDateObj.toLocaleDateString(dateLocale, {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
   });
-  const formattedTime = matchDateObj.toLocaleTimeString('az-AZ', {
+  const formattedTime = matchDateObj.toLocaleTimeString(dateLocale, {
     hour: '2-digit',
     minute: '2-digit',
   });
@@ -126,7 +129,7 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label={`${p1Name} vs ${p2Name} — Oyun Təfərrüatları`}
+      aria-label={`${p1Name} vs ${p2Name} — ${t('match_detail.title')}`}
     >
       <ScrollLock />
       <div
@@ -154,7 +157,7 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
               ) : (
                 <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-blue-700/20 border border-blue-600/35 text-blue-300 text-[11px] font-bold">
                   <Swords className="w-3 h-3 text-blue-400 shrink-0" />
-                  <span>Klub Reytinq Oyunu</span>
+                  <span>{t('match_detail.club_match')}</span>
                 </span>
               )}
 
@@ -187,7 +190,7 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
           <button
             type="button"
             onClick={onClose}
-            aria-label="Bağla"
+            aria-label={t('match_detail.close')}
             className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition shrink-0"
           >
             <X className="w-4 h-4" />
@@ -210,7 +213,7 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
                 {p1Won && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider">
                     <Award className="w-3 h-3" />
-                    <span>Qalib</span>
+                    <span>{t('match_detail.winner')}</span>
                   </span>
                 )}
               </div>
@@ -249,7 +252,7 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
                 </span>
               </div>
               <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 mt-1.5">
-                Yekun Hesab
+                {t('match_detail.final_score')}
               </span>
             </div>
 
@@ -265,7 +268,7 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
                 {p2Won && (
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 text-[10px] font-extrabold uppercase tracking-wider">
                     <Award className="w-3 h-3" />
-                    <span>Qalib</span>
+                    <span>{t('match_detail.winner')}</span>
                   </span>
                 )}
               </div>
@@ -297,7 +300,7 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
           <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-2.5">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Setlər üzrə Təfərrüat
+                {t('match_detail.set_breakdown')}
               </span>
               <span className="text-xs font-mono font-bold text-blue-400">
                 {enriched.player1_score} - {enriched.player2_score} ({rawSetList.length} set)
@@ -317,7 +320,7 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
                     className="inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs font-mono"
                   >
                     <span className="text-[10px] text-slate-500 uppercase font-bold">
-                      Set {i + 1}:
+                      {t('match_detail.set_num', 'Set {num}:').replace('{num}', String(i + 1))}
                     </span>
                     <span className={`font-bold ${p1WonSet ? 'text-emerald-400' : 'text-white'}`}>
                       {setStr}
@@ -332,17 +335,17 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
           <div className="p-4 rounded-2xl bg-slate-950/80 border border-slate-800 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                Oyunsonrası ELO Reytinq Dəyişikliyi
+                {t('match_detail.elo_changes')}
               </span>
               {isAutoApprovedMatch(enriched) ? (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[10px] font-semibold">
                   <Clock className="w-3 h-3" />
-                  <span>Rəsmi Təsdiqlənib</span>
+                  <span>{t('match_detail.approved')}</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-semibold">
                   <CheckCheck className="w-3 h-3" />
-                  <span>Təsdiqlənib</span>
+                  <span>{t('match_detail.approved')}</span>
                 </span>
               )}
             </div>
@@ -441,7 +444,7 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
             onClick={onClose}
             className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-700/20 hover:bg-blue-700/30 border border-blue-600/40 text-xs font-bold text-blue-300 hover:text-white transition"
           >
-            <span>Bütün Oyunlar</span>
+            <span>{t('match_detail.all_matches')}</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
         </div>

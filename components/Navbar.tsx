@@ -92,16 +92,13 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const leaderboardLabel =
-    locale === 'en' ? 'Ranking' : locale === 'ru' ? 'Рейтинг' : 'Reytinq';
-  const matchesLabel = t('nav.my_matches') || 'Oyunlarım';
-  const tournamentsLabel = t('nav.tournaments') || 'Turnirlər';
-  const miniGameLabel =
-    locale === 'en' ? 'Mini-Game' : locale === 'ru' ? 'Мини-игра' : 'Mini-Oyun';
-  const tablesLabel = t('nav.tables') || 'Zal Qaydaları';
-  const aboutLabel = t('nav.about') || 'Haqqında';
-  const moreLabel =
-    locale === 'en' ? 'More' : locale === 'ru' ? 'Ещё' : 'Daha çox';
+  const leaderboardLabel = t('nav.ranking', 'Reytinq');
+  const matchesLabel = t('nav.my_matches', 'Oyunlarım');
+  const tournamentsLabel = t('nav.tournaments', 'Turnirlər');
+  const miniGameLabel = t('nav.minigame', 'Mini-Oyun');
+  const tablesLabel = t('nav.tables', 'Zal Qaydaları');
+  const aboutLabel = t('nav.about', 'Haqqında');
+  const moreLabel = t('nav.more', 'Daha çox');
 
   interface NavLinkItem {
     href: string;
@@ -380,13 +377,13 @@ export default function Navbar() {
                           )}`}
                         >
                           {isPresidentBadgeHolder(currentUser)
-                            ? 'Prezident'
+                            ? t('roles.president_badge', 'Prezident')
                             : currentUser.role === 'coach'
-                            ? 'Məşqçi'
-                            : 'Oyunçu'}
+                            ? t('roles.coach', 'Məşqçi')
+                            : t('roles.player', 'Oyunçu')}
                         </span>
                         <span className="text-[11px] font-bold text-blue-400">
-                          {currentUser.current_elo.toLocaleString()} XAL
+                          {currentUser.current_elo.toLocaleString()} {t('leaderboard.points_abbr', 'XAL')}
                         </span>
                       </div>
                     </div>
@@ -403,7 +400,7 @@ export default function Navbar() {
                         </span>
                         {pendingMatchesCount > 0 && (
                           <span className="inline-flex items-center justify-center rounded-full bg-rose-600 px-1.5 py-0.5 text-[10px] font-black text-white">
-                            {pendingMatchesCount} gözləyir
+                            {pendingMatchesCount} {t('nav.pending', 'gözləyir')}
                           </span>
                         )}
                       </Link>
@@ -426,7 +423,7 @@ export default function Navbar() {
                         className="w-full text-left px-2.5 py-2 rounded-xl text-xs flex items-center gap-2 text-slate-300 hover:text-white hover:bg-slate-800 transition"
                       >
                         <Settings className="w-3.5 h-3.5 text-blue-400" />
-                        <span>Profili Fərdiləşdir</span>
+                        <span>{t('nav.customize_profile', 'Profili Fərdiləşdir')}</span>
                       </button>
 
                       {canAccessAdminPanel(currentUser) && (
@@ -525,10 +522,10 @@ export default function Navbar() {
                       )}`}
                     >
                       {isPresidentBadgeHolder(currentUser)
-                        ? 'Prezident'
+                        ? t('roles.president_badge', 'Prezident')
                         : currentUser.role === 'coach'
-                        ? 'Məşqçi'
-                        : 'Oyunçu'}
+                        ? t('roles.coach', 'Məşqçi')
+                        : t('roles.player', 'Oyunçu')}
                     </span>
                   </div>
                   <Link
@@ -546,7 +543,7 @@ export default function Navbar() {
                     }}
                     className="w-full text-center py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold"
                   >
-                    Profili Fərdiləşdir
+                    {t('nav.customize_profile', 'Profili Fərdiləşdir')}
                   </button>
                   <button
                     type="button"
