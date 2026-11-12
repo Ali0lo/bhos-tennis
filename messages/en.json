@@ -722,7 +722,7 @@
     "login_btn": "Sign In",
     "guest_saved_notice": "Your score ({score} rallies) has been saved on this device and will be submitted once you sign in.",
     "controls_tip": "Paddle: Red (Bottom) • Opponent: Bot (Top)",
-    "physics_tip": "Normalized speed across screens • Spin Physics",
+    "physics_tip": "Normalized speed across screens • Rally Physics",
     "cheating_detected": "Auto-paddle detected! 🏓 Play with your own skill!",
     "outcome_rally_ended": "Rally ended! Try again.",
     "outcome_bot_missed": "Bot missed the ball! (+2 Bonus Rallies)",
@@ -742,16 +742,12 @@
     "submit_error": "An error occurred while submitting the score.",
     "infinity_notice": "Global ranking is only recorded in ♾️ Infinity Rally mode.",
     "sensitivity": "Sensitivity",
-    "spin_smash_active": "Spin & Smash active (Space / Left click)",
-    "fair_play_notice": "Spin & Smash are disabled in Infinity Mode for leaderboard fairness",
     "paddle_skin": "Paddle Skin",
     "skin_default": "Standard",
     "skin_bronze": "Bronze (15+)",
     "skin_silver": "Silver (30+)",
     "skin_gold": "Gold (50+)",
-    "skin_locked": "Locked ({score}+ rallies)",
-    "smash_indicator": "SMASH!",
-    "spin_indicator": "SPIN"
+    "skin_locked": "Locked ({score}+ rallies)"
   },
   "match_detail": {
     "title": "Match Details",

@@ -722,7 +722,7 @@
     "login_btn": "Daxil ol",
     "guest_saved_notice": "Nəticəniz ({score} ralli) bu cihazda saxlanıldı və daxil olduqdan sonra göndəriləcək.",
     "controls_tip": "Raket: Qırmızı (Aşağı) • Rəqib: Bot (Yuxarı)",
-    "physics_tip": "Hər ekranda eyni sürət • Spin Fizikası",
+    "physics_tip": "Hər ekranda eyni sürət • Ralli Fizikası",
     "cheating_detected": "Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!",
     "outcome_rally_ended": "Ralli başa çatdı! Yenidən cəhd edin.",
     "outcome_bot_missed": "Bot topu qaytara bilmədi! (+2 Bonus Ralli)",
@@ -742,16 +742,12 @@
     "submit_error": "Nəticə göndərilərkən xəta baş verdi.",
     "infinity_notice": "Qlobal reytinq yalnız ♾️ Sonsuz Ralli rejimində qeydə alınır.",
     "sensitivity": "Həssaslıq",
-    "spin_smash_active": "Spin və Smash aktivdir (Space / Sol klik)",
-    "fair_play_notice": "Ədalətli rəqabət üçün Sonsuz Rallidə Spin və Smash deaktivdir",
     "paddle_skin": "Raket Rəngi",
     "skin_default": "Standart",
     "skin_bronze": "Bürünc (15+)",
     "skin_silver": "Gümüş (30+)",
     "skin_gold": "Qızıl (50+)",
-    "skin_locked": "Kilidlidir ({score}+ ralli)",
-    "smash_indicator": "SMASH!",
-    "spin_indicator": "SPIN"
+    "skin_locked": "Kilidlidir ({score}+ ralli)"
   },
   "match_detail": {
     "title": "Oyun Təfərrüatları",
