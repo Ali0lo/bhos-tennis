@@ -175,9 +175,12 @@ export default function LeaderboardTable({
                     : 'Foundation'
                   : rawDeptLabel;
               const yearSuffix = player.admission_year ? ` • ${player.admission_year}` : '';
+              const localizedDept = departmentLabel
+                ? t(`faculties.${departmentLabel}`, departmentLabel)
+                : '';
               const facultySubtitle = staff
-                ? `${departmentLabel || 'İdman Klubu'} • Müəllim`
-                : `${departmentLabel || 'Mühəndislik'}${yearSuffix}`;
+                ? `${localizedDept || t('faculties.Sports Club', 'İdman Klubu')} • ${t('roles.teacher', 'Müəllim')}`
+                : `${localizedDept || t('faculties.Engineering', 'Mühəndislik')}${yearSuffix}`;
 
               return (
                 <motion.tr

@@ -19,6 +19,7 @@ import {
 } from '../lib/elo/calculator';
 import MagneticButton from './MagneticButton';
 import { BHOSDataStore } from '../lib/data/store';
+import { useTranslation } from '../lib/i18n';
 
 export interface DuelPlayerSummary {
   id: string;
@@ -36,6 +37,7 @@ export default function HeadToHeadDuel({
   currentUser,
   targetPlayer,
 }: HeadToHeadDuelProps) {
+  const { t } = useTranslation();
   const safeUserElo = Math.min(
     MAX_ELO,
     Math.max(MIN_ELO, Number(currentUser.current_elo) || 0)
@@ -69,14 +71,14 @@ export default function HeadToHeadDuel({
           <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 text-[11px] font-mono font-bold uppercase tracking-widest text-blue-400">
               <Zap className="w-3.5 h-3.5" />
-              DUEL PROQNOZU
+              {t('rivalry.duel_projection', 'DUEL PROQNOZU')}
             </span>
             <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-slate-950 text-slate-400 border border-slate-800">
               K=32 • 0–{MAX_ELO} ELO
             </span>
           </div>
           <h3 className="text-lg sm:text-xl font-display font-black text-white tracking-tight">
-            Siz vs. {targetPlayer.full_name}
+            {t('rivalry.you_vs', 'Siz vs. {name}').replace('{name}', targetPlayer.full_name)}
           </h3>
         </div>
 
@@ -95,7 +97,7 @@ export default function HeadToHeadDuel({
             )}
             <div className="text-xs">
               <span className="text-slate-400 block text-[10px] leading-none">
-                Siz
+                {t('leaderboard.you', 'Siz')}
               </span>
               <span className="font-mono font-bold text-white">
                 {safeUserElo}
@@ -136,11 +138,11 @@ export default function HeadToHeadDuel({
           <div className="flex items-center gap-2 min-w-0">
             <span className="w-2.5 h-2.5 rounded-full bg-blue-600 shrink-0" />
             <span className="font-bold text-white truncate">
-              Siz ({currentUser.full_name.split(' ')[0]})
+              {t('leaderboard.you', 'Siz')} ({currentUser.full_name.split(' ')[0]})
             </span>
           </div>
           <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 shrink-0">
-            ELO Fərqi: {eloDiff >= 0 ? `+${eloDiff}` : eloDiff}
+            {t('rivalry.elo_diff_label', 'ELO Fərqi: {diff}').replace('{diff}', eloDiff >= 0 ? `+${eloDiff}` : String(eloDiff))}
           </span>
           <div className="flex items-center gap-2 min-w-0">
             <span className="font-bold text-white truncate">
@@ -175,10 +177,10 @@ export default function HeadToHeadDuel({
 
         <div className="flex items-center justify-between text-xs font-mono">
           <span className="font-bold text-blue-400">
-            {projection.userWinPercent}% Ehtimal
+            {projection.userWinPercent}% {t('whatif.chance', 'Ehtimal')}
           </span>
           <span className="font-bold text-rose-400">
-            {projection.targetWinPercent}% Ehtimal
+            {projection.targetWinPercent}% {t('whatif.chance', 'Ehtimal')}
           </span>
         </div>
       </div>
@@ -188,11 +190,11 @@ export default function HeadToHeadDuel({
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
               <TrendingUp className="w-4 h-4 text-emerald-500" />
-              Qələbə Qazansanız
+              {t('whatif.if_you_win', 'Qələbə Qazansanız')}
             </span>
             {projection.projectedWinElo >= MAX_ELO && (
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                {MAX_ELO} Maksimum
+                {MAX_ELO} {t('whatif.maximum', 'Maksimum')}
               </span>
             )}
           </div>
@@ -202,7 +204,7 @@ export default function HeadToHeadDuel({
             </span>
             <div className="text-right">
               <span className="text-[10px] uppercase text-slate-400 block">
-                Yeni Reytinq
+                {t('whatif.new_rating', 'Yeni Reytinq')}
               </span>
               <span className="text-sm font-mono font-bold text-white">
                 {safeUserElo} &rarr;{' '}
@@ -218,11 +220,11 @@ export default function HeadToHeadDuel({
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
               <TrendingDown className="w-4 h-4 text-rose-500" />
-              Məğlub Olsanız
+              {t('whatif.if_you_lose', 'Məğlub Olsanız')}
             </span>
             {projection.projectedLossElo === MIN_ELO && (
               <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                <ShieldAlert className="w-3 h-3" />0 Minimum
+                <ShieldAlert className="w-3 h-3" />0 {t('whatif.minimum', 'Minimum')}
               </span>
             )}
           </div>
@@ -232,7 +234,7 @@ export default function HeadToHeadDuel({
             </span>
             <div className="text-right">
               <span className="text-[10px] uppercase text-slate-400 block">
-                Yeni Reytinq
+                {t('whatif.new_rating', 'Yeni Reytinq')}
               </span>
               <span className="text-sm font-mono font-bold text-white">
                 {safeUserElo} &rarr;{' '}
@@ -251,7 +253,7 @@ export default function HeadToHeadDuel({
           className="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-sm"
         >
           <Swords className="w-4 h-4" />
-          <span>Meydan Oxu / Matç Qeyd Et</span>
+          <span>{t('whatif.log_match_with', 'Meydan Oxu / Matç Qeyd Et')}</span>
           <ChevronRight className="w-4 h-4" />
         </Link>
       </MagneticButton>

@@ -132,7 +132,7 @@ export default function LoginPage() {
     try {
       if (mode === 'signin') {
         if (!cleanEmail || !password) {
-          throw new Error('Zəhmət olmasa e-poçt və şifrənizi daxil edin.');
+          throw new Error(t('login.err_enter_email_password', 'Zəhmət olmasa e-poçt və şifrənizi daxil edin.'));
         }
         if (!isAllowedAuthEmail(cleanEmail)) {
           throw new Error(ALLOWED_EMAIL_ERROR);
@@ -149,7 +149,7 @@ export default function LoginPage() {
               error.message.toLowerCase().includes('invalid login credentials') ||
               error.message.toLowerCase().includes('database error querying schema')
             ) {
-              throw new Error('E-poçt və ya şifrə yanlışdır. Əgər bu e-poçtla ilk dəfə daxil olursunuzsa, zəhmət olmasa "Qeydiyyatdan Keç" bölməsinə keçib qeydiyyatdan keçin.');
+              throw new Error(t('login.err_invalid_credentials', 'E-poçt və ya şifrə yanlışdır. Əgər bu e-poçtla ilk dəfə daxil olursunuzsa, zəhmət olmasa "Qeydiyyatdan Keç" bölməsinə keçib qeydiyyatdan keçin.'));
             }
             throw new Error(error.message);
           }
@@ -212,7 +212,7 @@ export default function LoginPage() {
         } else {
           const linked = await store.linkProfileByEmail(cleanEmail);
           if (!linked) {
-            throw new Error('Bu e-poçt ünvanı ilə oyunçu profili tapılmadı. Zəhmət olmasa qeydiyyatdan keçin.');
+            throw new Error(t('login.err_player_not_found', 'Bu e-poçt ünvanı ilə oyunçu profili tapılmadı. Zəhmət olmasa qeydiyyatdan keçin.'));
           }
           setSuccessMsg(t('auth.login_success'));
           setTimeout(() => router.push('/'), 800);
@@ -220,7 +220,7 @@ export default function LoginPage() {
         }
       } else {
         if (!cleanFullName || cleanFullName.length < 2 || !cleanEmail || !password) {
-          throw new Error('Zəhmət olmasa ad, soyad (ən azı 2 hərf), e-poçt və şifrənizi düzgün daxil edin.');
+          throw new Error(t('login.err_fill_all_fields', 'Zəhmət olmasa ad, soyad (ən azı 2 hərf), e-poçt və şifrənizi düzgün daxil edin.'));
         }
 
         if (!isAllowedAuthEmail(cleanEmail)) {
@@ -280,7 +280,7 @@ export default function LoginPage() {
               );
             }
             if (error.message.toLowerCase().includes('user already registered')) {
-              throw new Error('Bu e-poçt ünvanı ilə artıq qeydiyyatdan keçilib. Zəhmət olmasa "Daxil Ol" bölməsinə keçin.');
+              throw new Error(t('login.err_email_taken', 'Bu e-poçt ünvanı ilə artıq qeydiyyatdan keçilib. Zəhmət olmasa "Daxil Ol" bölməsinə keçin.'));
             }
             throw new Error(error.message);
           }
@@ -378,7 +378,7 @@ export default function LoginPage() {
           setMode('signin');
           setPassword('');
           setSuccessMsg(
-            'Qeydiyyatınız qəbul edildi! Klub rəhbərliyi hesabınızı təsdiqlədikdən sonra platformaya tam giriş əldə edəcəksiniz.'
+            t('login.registered_pending_approval', 'Qeydiyyatınız qəbul edildi! Klub rəhbərliyi hesabınızı təsdiqlədikdən sonra platformaya tam giriş əldə edəcəksiniz.')
           );
           return;
         } else {
@@ -411,7 +411,7 @@ export default function LoginPage() {
           setMode('signin');
           setPassword('');
           setSuccessMsg(
-            'Qeydiyyatınız qəbul edildi! Klub rəhbərliyi hesabınızı təsdiqlədikdən sonra platformaya tam giriş əldə edəcəksiniz.'
+            t('login.registered_pending_approval', 'Qeydiyyatınız qəbul edildi! Klub rəhbərliyi hesabınızı təsdiqlədikdən sonra platformaya tam giriş əldə edəcəksiniz.')
           );
           return;
         }
@@ -426,7 +426,7 @@ export default function LoginPage() {
 
   const handleSignOut = async () => {
     await store.signOut();
-    setSuccessMsg('Hesabdan uğurla çıxış edildi.');
+    setSuccessMsg(t('login.logout_success', 'Hesabdan uğurla çıxış edildi.'));
   };
 
   return (
@@ -550,7 +550,7 @@ export default function LoginPage() {
                   onClick={handleSwitchToSignup}
                   className="px-3.5 py-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-display font-bold text-xs shrink-0 shadow transition"
                 >
-                  Qeydiyyata Keç
+                  {t('login.switch_to_register', 'Qeydiyyata Keç')}
                 </button>
               )}
             </div>
@@ -568,7 +568,7 @@ export default function LoginPage() {
               <>
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Üzvlük Kateqoriyası
+                    {t('login.membership_category', 'Üzvlük Kateqoriyası')}
                   </label>
                   <div className="grid grid-cols-2 gap-2 p-1 rounded-xl bg-slate-950/90 border border-slate-800">
                     <button
@@ -581,7 +581,7 @@ export default function LoginPage() {
                       }`}
                     >
                       <GraduationCap className="w-3.5 h-3.5" />
-                      <span>Tələbə</span>
+                      <span>{t('roles.player', 'Tələbə')}</span>
                     </button>
                     <button
                       type="button"
@@ -593,7 +593,7 @@ export default function LoginPage() {
                       }`}
                     >
                       <Briefcase className="w-3.5 h-3.5" />
-                      <span>Müəllim / Əməkdaş</span>
+                      <span>{t('roles.staff_badge', 'Müəllim / Əməkdaş')}</span>
                     </button>
                   </div>
                 </div>
@@ -622,7 +622,7 @@ export default function LoginPage() {
                         <Briefcase className="w-3.5 h-3.5 text-indigo-400" />
                       )}
                       <span>
-                        {userType === 'student' ? 'Fakültə / İxtisas' : 'Kafedra / Departament'}
+                        {userType === 'student' ? t('auth.faculty', 'Fakültə / İxtisas') : t('leaderboard.faculty', 'Kafedra / Departament')}
                       </span>
                     </label>
                     <select
@@ -638,7 +638,7 @@ export default function LoginPage() {
                           ))
                         : STAFF_DEPARTMENTS.map((dept) => (
                             <option key={dept} value={dept}>
-                              {dept}
+                              {t(`faculties.${dept}`, dept)}
                             </option>
                           ))}
                     </select>
@@ -648,7 +648,7 @@ export default function LoginPage() {
                     <div>
                       <label className="block text-xs font-semibold text-slate-300 mb-1.5 flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-cyan-400" />
-                        <span>Qəbul İli</span>
+                        <span>{t('auth.admission_year', 'Qəbul İli')}</span>
                       </label>
                       <select
                         required
@@ -700,7 +700,7 @@ export default function LoginPage() {
                   <div className="flex items-center justify-between">
                     <label className="block text-xs font-semibold text-slate-300 flex items-center gap-1.5">
                       <Award className="w-3.5 h-3.5 text-amber-400" />
-                      <span>Təcrübə Səviyyəsi (Başlanğıc ELO)</span>
+                      <span>{t('auth.playing_level', 'Təcrübə Səviyyəsi (Başlanğıc ELO)')}</span>
                     </label>
                     <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
                       {skillLevel === 'advanced' ? '400 Xal' : skillLevel === 'intermediate' ? '250 Xal' : '100 Xal'}
@@ -721,13 +721,13 @@ export default function LoginPage() {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-display font-bold text-white">Başlanğıc</span>
+                        <span className="text-xs font-display font-bold text-white">{t('login.skill_beginner', 'Başlanğıc')}</span>
                         <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30">
                           100 PTS
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400 leading-snug">
-                        Həvəskar / Yeni başlayan
+                        {t('login.skill_beginner_sub', 'Həvəskar / Yeni başlayan')}
                       </p>
                     </button>
 
@@ -744,13 +744,13 @@ export default function LoginPage() {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-display font-bold text-white">Orta Səviyyə</span>
+                        <span className="text-xs font-display font-bold text-white">{t('login.skill_intermediate', 'Orta Səviyyə')}</span>
                         <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
                           250 PTS
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400 leading-snug">
-                        Əsas vuruşları bilən / Stabil oyun
+                        {t('login.skill_intermediate_sub', 'Əsas vuruşları bilən / Stabil oyun')}
                       </p>
                     </button>
 
@@ -767,13 +767,13 @@ export default function LoginPage() {
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-display font-bold text-white">Təcrübəli</span>
+                        <span className="text-xs font-display font-bold text-white">{t('login.skill_advanced', 'Təcrübəli')}</span>
                         <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/30">
                           400 PTS
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400 leading-snug">
-                        Turnir iştirakçısı / Peşəkar
+                        {t('login.skill_advanced_sub', 'Turnir iştirakçısı / Peşəkar')}
                       </p>
                     </button>
                   </div>
@@ -815,7 +815,7 @@ export default function LoginPage() {
                   type="button"
                   onClick={() => setShowPassword((prev) => !prev)}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-cyan-300 transition p-1"
-                  aria-label={showPassword ? 'Şifrəni gizlə' : 'Şifrəni göstər'}
+                  aria-label={showPassword ? t('login.hide_password', 'Şifrəni gizlə') : t('login.show_password', 'Şifrəni göstər')}
                 >
                   {showPassword ? (
                     <EyeOff className="w-4 h-4" />
@@ -848,8 +848,8 @@ export default function LoginPage() {
               <span>
                 {loading
                   ? mode === 'signin'
-                    ? 'Giriş edilir...'
-                    : 'Qeydiyyat tamamlanır...'
+                    ? t('login.signing_in', 'Giriş edilir...')
+                    : t('login.registering_btn', 'Qeydiyyat tamamlanır...')
                   : mode === 'signin'
                   ? t('auth.signin_btn')
                   : t('auth.signup_btn')}

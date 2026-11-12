@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { PlayerProfile, Tournament, isTournamentOrganizerOrAdmin } from '../lib/data/types';
 import { BHOSDataStore, getPlayerHref } from '../lib/data/store';
 import { getProfileDepartment } from '../lib/utils/department';
+import { useTranslation } from '../lib/i18n';
 import {
   Users,
   Trophy,
@@ -64,6 +65,7 @@ export default function TournamentParticipantsRoster({
   showAdminControls = false,
   compact = false,
 }: TournamentParticipantsRosterProps) {
+  const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
   const [searchQuery, setSearchQuery] = useState('');
   const [removingId, setRemovingId] = useState<string | null>(null);
@@ -147,7 +149,7 @@ export default function TournamentParticipantsRoster({
 
   const handleRemove = async (pid: string) => {
     if (!onRemoveParticipant) return;
-    if (window.confirm('Bu tələbəni turnir iştirakçı siyahısından çıxarmaq istədiyinizə əminsiniz?')) {
+    if (window.confirm(t('tournaments.remove_participant', 'Bu tələbəni turnir iştirakçı siyahısından çıxarmaq istədiyinizə əminsiniz?'))) {
       setRemovingId(pid);
       try {
         await onRemoveParticipant(pid);
@@ -162,7 +164,7 @@ export default function TournamentParticipantsRoster({
     if (count >= maxCapacity) {
       setAddFeedback({
         type: 'error',
-        text: `Maksimum tutuma çatılıb (${maxCapacity} iştirakçı).`,
+        text: `${t('tournaments.roster_full', 'Maksimum tutuma çatılıb')} (${maxCapacity} ${t('tournaments.participants_badge', 'iştirakçı')}).`,
       });
       return;
     }
@@ -174,12 +176,12 @@ export default function TournamentParticipantsRoster({
       const student = allProfiles.find((p) => p.id === candidateId);
       setAddFeedback({
         type: 'success',
-        text: `"${student?.full_name || 'Tələbə'}" turnir siyahısına uğurla əlavə edildi!`,
+        text: `"${student?.full_name || t('roles.player', 'Tələbə')}" ${t('tournaments.auto_sync', 'turnir siyahısına uğurla əlavə edildi!')}`,
       });
     } catch (err: any) {
       setAddFeedback({
         type: 'error',
-        text: err.message || 'Xəta baş verdi',
+        text: err.message || t('common.error', 'Xəta baş verdi'),
       });
     } finally {
       setAddingId(null);
@@ -200,14 +202,14 @@ export default function TournamentParticipantsRoster({
               <Users className="w-4 h-4" />
             </div>
             <h3 className="text-lg sm:text-xl font-display font-black text-white tracking-tight">
-              Qeydiyyatdan Keçən Tələbələr
+              {t('tournaments.registered_students', 'Qeydiyyatdan Keçən Tələbələr')}
             </h3>
             <span className="px-2.5 py-0.5 rounded-full bg-blue-700/20 border border-blue-600/30 text-blue-300 font-mono text-xs font-bold">
-              {count} İştirakçı
+              {count} {t('tournaments.participants_badge', 'İştirakçı')}
             </span>
           </div>
           <p className="text-xs text-slate-400">
-            Rəsmi çempionatda iştirakı təsdiqlənmiş tələbələr və onların ELO reytinqi
+            {t('tournaments.official_roster_desc', 'Rəsmi çempionatda iştirakı təsdiqlənmiş tələbələr və onların ELO reytinqi')}
           </p>
         </div>
 
@@ -227,7 +229,7 @@ export default function TournamentParticipantsRoster({
               }`}
             >
               <UserPlus className="w-3.5 h-3.5" />
-              <span>{showAddStudentPanel ? 'Paneli Bağla ✕' : '➕ Tələbə Əlavə Et (Admin)'}</span>
+              <span>{showAddStudentPanel ? t('tournaments.close_panel', 'Paneli Bağla ✕') : t('tournaments.add_student_admin', '➕ Tələbə Əlavə Et (Admin)')}</span>
             </button>
           )}
 
@@ -239,7 +241,7 @@ export default function TournamentParticipantsRoster({
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="İştirakçılarda axtar..."
+                placeholder={t('tournaments.search_participants', 'İştirakçılarda axtar...')}
                 className="w-full bg-[#131C2B] border border-white/10 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-600"
               />
             </div>
@@ -255,11 +257,11 @@ export default function TournamentParticipantsRoster({
               <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                 <h4 className="text-sm font-display font-black text-white">
-                  Tələbə Əlavə Et (Admin Səlahiyyəti)
+                  {t('tournaments.add_student_admin', 'Tələbə Əlavə Et (Admin Səlahiyyəti)')}
                 </h4>
               </div>
               <p className="text-[11px] text-slate-400">
-                Cavab verməyən və ya birbaşa qoşula bilməyən tələbələri siyahıdan axtarıb 1-kliklə turnirə əlavə edin.
+                {t('tournaments.add_student_admin_desc', 'Cavab verməyən və ya birbaşa qoşula bilməyən tələbələri siyahıdan axtarıb 1-kliklə turnirə əlavə edin.')}
               </p>
             </div>
 
@@ -273,7 +275,7 @@ export default function TournamentParticipantsRoster({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                🎓 Foundation (2026)
+                {t('tournaments.filter_foundation', '🎓 Foundation (2026)')}
               </button>
               <button
                 type="button"
@@ -284,7 +286,7 @@ export default function TournamentParticipantsRoster({
                     : 'text-slate-400 hover:text-white'
                 }`}
               >
-                🌐 Bütün Tələbələr
+                {t('tournaments.filter_all_students', '🌐 Bütün Tələbələr')}
               </button>
             </div>
           </div>
@@ -323,7 +325,7 @@ export default function TournamentParticipantsRoster({
               type="text"
               value={addSearchQuery}
               onChange={(e) => setAddSearchQuery(e.target.value)}
-              placeholder="Tələbənin adı, soyadı, ixtisası və ya qrupu üzrə axtar..."
+              placeholder={t('tournaments.search_candidate_placeholder', 'Tələbənin adı, soyadı, ixtisası və ya qrupu üzrə axtar...')}
               className="w-full bg-slate-950 border border-white/10 rounded-xl pl-8 pr-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-600"
             />
           </div>
@@ -332,7 +334,7 @@ export default function TournamentParticipantsRoster({
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
             {candidateStudents.length === 0 ? (
               <div className="p-4 rounded-xl bg-slate-950 border border-white/5 text-center text-xs text-slate-400">
-                Axtarışa uyğun tələbə tapılmadı və ya bütün seçilmiş tələbələr artıq turnirdədir.
+                {t('tournaments.no_candidate_found', 'Axtarışa uyğun tələbə tapılmadı və ya bütün seçilmiş tələbələr artıq turnirdədir.')}
               </div>
             ) : (
               candidateStudents.map((candidate) => {
@@ -391,12 +393,12 @@ export default function TournamentParticipantsRoster({
                         {isAdding ? (
                           <>
                             <Loader2 className="w-3 h-3 animate-spin" />
-                            <span>Əlavə olunur...</span>
+                            <span>{t('tournaments.adding', 'Əlavə olunur...')}</span>
                           </>
                         ) : (
                           <>
                             <UserPlus className="w-3 h-3" />
-                            <span>Turnirə Əlavə Et</span>
+                            <span>{t('tournaments.add_participant_btn', 'Turnirə Əlavə Et')}</span>
                           </>
                         )}
                       </button>
@@ -412,8 +414,8 @@ export default function TournamentParticipantsRoster({
       {/* Progress Capacity Bar */}
       <div className="space-y-1.5">
         <div className="flex items-center justify-between text-[11px] font-mono text-slate-400">
-          <span>Qeydiyyat Tutumu: {count} yer dolub</span>
-          <span>{maxCapacity - count > 0 ? `${maxCapacity - count} boş yer qalır` : 'Siyahı dolub'}</span>
+          <span>{t('tournaments.participants_badge', 'İştirakçı')}: {count} / {maxCapacity}</span>
+          <span>{maxCapacity - count > 0 ? `${maxCapacity - count} ${t('tournaments.spots_left', 'boş yer qalır')}` : t('tournaments.roster_full', 'Siyahı dolub')}</span>
         </div>
         <div className="h-2 w-full bg-slate-950 rounded-full overflow-hidden border border-white/5">
           <div
@@ -437,11 +439,10 @@ export default function TournamentParticipantsRoster({
           </div>
           <div className="space-y-1.5 max-w-md mx-auto">
             <h4 className="text-base font-display font-bold text-white">
-              Hələ heç bir tələbə qeydiyyatdan keçməyib
+              {t('tournaments.no_students_yet', 'Hələ heç bir tələbə qeydiyyatdan keçməyib')}
             </h4>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Turnir <strong>7 Noyabr 2026 (Şənbə) saat 10:00-da</strong> Bibiheybət kampusunda keçiriləcək.
-              İlk qeydiyyatdan keçən tələbə siz olun!
+              {t('tournaments.be_the_first', 'İlk qeydiyyatdan keçən tələbə siz olun!')}
             </p>
           </div>
 
@@ -452,7 +453,7 @@ export default function TournamentParticipantsRoster({
               onClick={onRegister}
               className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs shadow-md transition active:scale-95 cursor-pointer"
             >
-              <span>{actionLoading ? 'Qeydiyyat aparılır...' : 'İlk Qeydiyyatdan Keçən Siz Olun →'}</span>
+              <span>{actionLoading ? t('tournaments.registering', 'Qeydiyyat aparılır...') : t('tournaments.register_now_btn', 'İlk Qeydiyyatdan Keçən Siz Olun →')}</span>
             </button>
           )}
         </div>
@@ -516,16 +517,16 @@ export default function TournamentParticipantsRoster({
 
                         {isSelf && (
                           <span className="px-1.5 py-0.5 rounded-md bg-emerald-600/20 border border-emerald-500/40 text-emerald-400 text-[10px] font-bold">
-                            Siz ✓
+                            {t('tournaments.you_badge', 'Siz ✓')}
                           </span>
                         )}
 
                         {isOrganizer && (
                           <span
-                            title="Turnir Təşkilatçısı"
+                            title={t('tournaments.organizer', 'Turnir Təşkilatçısı')}
                             className="px-1.5 py-0.5 rounded-md bg-amber-500/20 border border-amber-500/40 text-amber-300 text-[10px] font-bold"
                           >
-                            👑 Təşkilatçı
+                            👑 {t('tournaments.organizer_badge', 'Təşkilatçı')}
                           </span>
                         )}
                       </div>
@@ -562,7 +563,7 @@ export default function TournamentParticipantsRoster({
                         type="button"
                         disabled={removingId === player.id}
                         onClick={() => handleRemove(player.id)}
-                        title="İştirakçını xaric et"
+                        title={t('tournaments.remove_participant_title', 'İştirakçını xaric et')}
                         className="p-1 rounded-lg hover:bg-rose-600/20 text-slate-500 hover:text-rose-400 transition text-[10px] cursor-pointer"
                       >
                         <Trash2 className="w-3.5 h-3.5" />

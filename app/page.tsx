@@ -238,7 +238,7 @@ export default function HomePage() {
                           </div>
                           {streak2 >= 3 && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600/15 border border-rose-600/40 text-rose-400 text-[10px] font-bold animate-pulse shrink-0">
-                              <span>🔥 {streak2} Qələbə Seriyası</span>
+                              <span>🔥 {streak2} {rootT('common.streak', 'Qələbə Seriyası')}</span>
                             </span>
                           )}
                         </div>
@@ -302,7 +302,7 @@ export default function HomePage() {
                           </div>
                           {streak1 >= 3 && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600/15 border border-rose-600/40 text-rose-400 text-[10px] font-bold animate-pulse">
-                              <span>🔥 {streak1} Qələbə Seriyası</span>
+                              <span>🔥 {streak1} {rootT('common.streak', 'Qələbə Seriyası')}</span>
                             </span>
                           )}
                         </div>
@@ -372,7 +372,7 @@ export default function HomePage() {
                           </div>
                           {streak3 >= 3 && (
                             <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600/15 border border-rose-600/40 text-rose-400 text-[10px] font-bold animate-pulse shrink-0">
-                              <span>🔥 {streak3} Qələbə Seriyası</span>
+                              <span>🔥 {streak3} {rootT('common.streak', 'Qələbə Seriyası')}</span>
                             </span>
                           )}
                         </div>

@@ -223,6 +223,8 @@ interface TrailPoint {
 
 export default function RallyMiniGame() {
   const { t } = useTranslation();
+  const tRef = useRef(t);
+  tRef.current = t;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const rafRef = useRef<number | null>(null);
 
@@ -398,7 +400,7 @@ export default function RallyMiniGame() {
       writePendingScore(score);
       setSubmitState({
         status: 'error',
-        errorMessage: 'Serverlə əlaqə qurulmadı. Nəticə bu cihazda saxlanıldı.',
+        errorMessage: t('arcade.offline_saved', 'Serverlə əlaqə qurulmadı. Nəticə bu cihazda saxlanıldı.'),
       });
       return;
     }
@@ -449,7 +451,7 @@ export default function RallyMiniGame() {
         invalidatePlayerProfileCache(userId);
       }
     } catch (err: any) {
-      const msg = err?.message || 'Nəticə göndərilərkən xəta baş verdi.';
+      const msg = err?.message || t('arcade.submit_error', 'Nəticə göndərilərkən xəta baş verdi.');
       setSubmitState({
         status: 'error',
         errorMessage: msg,
@@ -467,14 +469,15 @@ export default function RallyMiniGame() {
     const cheatCheck = detectAutoPaddleUserscript(telemetryRef.current);
     if (cheatCheck.isCheat) {
       console.warn('[Anti-Cheat] Auto-paddle userscript detected:', cheatCheck.reason);
+      const anticheatMsg = t('arcade.anticheat_detected', 'Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!');
       setSubmitState({
         status: 'error',
-        errorMessage: 'Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!',
+        errorMessage: anticheatMsg,
       });
       setToast({
         score,
         badges: [],
-        customMessage: 'Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!',
+        customMessage: anticheatMsg,
       });
       playLoseSound();
       return; // Block submit_arcade_score call entirely!
@@ -492,14 +495,15 @@ export default function RallyMiniGame() {
       const isNatural = evaluateNaturalInput(tel);
 
       if (!isNatural) {
+        const anticheatMsg = t('arcade.anticheat_detected', 'Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!');
         setSubmitState({
           status: 'error',
-          errorMessage: 'Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!',
+          errorMessage: anticheatMsg,
         });
         setToast({
           score,
           badges: [],
-          customMessage: 'Avto-raket aşkarlandı! 🏓 Öz gücünlə oyna!',
+          customMessage: anticheatMsg,
         });
         playLoseSound();
         return;
@@ -965,7 +969,7 @@ export default function RallyMiniGame() {
 
         if (st.ballY - BALL_RADIUS > CANVAS_HEIGHT - 10) {
           st.status = 'gameover';
-          setLastOutcomeText('Ralli başa çatdı! Yenidən cəhd edin.');
+          setLastOutcomeText(tRef.current('arcade.outcome_rally_ended', 'Ralli başa çatdı! Yenidən cəhd edin.'));
           setGameState('gameover');
           playLoseSound();
           if (isInfinity) {
@@ -981,7 +985,7 @@ export default function RallyMiniGame() {
           setCurrentRally(bonusRally);
           persistHighScore(bonusRally);
           st.status = 'gameover';
-          setLastOutcomeText('Bot topu qaytara bilmədi! (+2 Bonus Ralli)');
+          setLastOutcomeText(tRef.current('arcade.outcome_bot_missed', 'Bot topu qaytara bilmədi! (+2 Bonus Ralli)'));
           setGameState('gameover');
           playWinSound();
         }
@@ -1478,7 +1482,7 @@ export default function RallyMiniGame() {
                     {submitState.status === 'error' && (
                       <div className="rounded-xl bg-rose-600/10 border border-rose-600/30 px-3 py-2 text-xs text-rose-300">
                         {submitState.errorMessage ||
-                          'Nəticə göndərilə bilmədi. Bu cihazda saxlanıldı, növbəti dəfə yenidən cəhd olunacaq.'}
+                          t('arcade.submit_error_saved_locally', 'Nəticə göndərilə bilmədi. Bu cihazda saxlanıldı, növbəti dəfə yenidən cəhd olunacaq.')}
                       </div>
                     )}
                     {submitState.status === 'guest' && (

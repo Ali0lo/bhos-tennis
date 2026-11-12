@@ -32,7 +32,7 @@ export default function ArcadeDiscoveryBanner() {
           const score = Number(leader.score);
           if (score > 0 && score < 700) {
             setTopScorer({
-              full_name: leader.full_name || 'Oyunçu',
+              full_name: leader.full_name || t('roles.player', 'Oyunçu'),
               score,
             });
           }

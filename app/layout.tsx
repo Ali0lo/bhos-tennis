@@ -1,10 +1,11 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
+import { cookies } from 'next/headers';
 import './globals.css';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import PWARegistration from '../components/PWARegistration';
-import { I18nProvider } from '../lib/i18n';
+import { I18nProvider, Locale } from '../lib/i18n';
 
 const inter = Inter({
   subsets: ['latin', 'latin-ext'],
@@ -81,10 +82,14 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookieStore = cookies();
+  const rawLocale = cookieStore.get('NEXT_LOCALE')?.value;
+  const initialLocale: Locale = rawLocale === 'en' || rawLocale === 'ru' ? rawLocale : 'az';
+
   return (
-    <html lang="az" className={`dark ${inter.variable}`}>
+    <html lang={initialLocale} className={`dark ${inter.variable}`}>
       <body className={`${inter.className} font-sans min-h-screen flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-blue-700 selection:text-white`}>
-        <I18nProvider>
+        <I18nProvider initialLocale={initialLocale}>
           <PWARegistration />
           <Navbar />
           <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

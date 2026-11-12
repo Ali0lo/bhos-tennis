@@ -11,10 +11,12 @@ import {
   X,
   Sparkles,
 } from 'lucide-react';
+import { useTranslation } from '../lib/i18n';
 
 const STORAGE_KEY = 'bhos_onboarding_dismissed_v1';
 
 export default function OnboardingBanner() {
+  const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -50,10 +52,10 @@ export default function OnboardingBanner() {
           <div className="flex items-center gap-2.5">
             <span className="px-2.5 py-0.5 rounded-full bg-[#3B82F6]/15 border border-[#3B82F6]/30 text-[#3B82F6] font-mono text-[11px] font-bold uppercase tracking-wider flex items-center gap-1.5">
               <Sparkles className="w-3 h-3 text-[#3B82F6]" />
-              Necə İşləyir?
+              {t('onboarding.badge', 'Necə İşləyir?')}
             </span>
             <h3 className="text-sm sm:text-base font-display font-bold text-white">
-              3 Sadə Addımda BANM Liqasına Qoşulun
+              {t('onboarding.title', '3 Sadə Addımda BANM Liqasına Qoşulun')}
             </h3>
           </div>
 
@@ -65,7 +67,7 @@ export default function OnboardingBanner() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 border border-emerald-500/30 text-emerald-300 text-xs font-semibold transition"
             >
               <MessageCircle className="w-3.5 h-3.5 fill-emerald-400/20" />
-              <span>Rəsmi WhatsApp Qrupu</span>
+              <span>{t('onboarding.whatsapp_group', 'Rəsmi WhatsApp Qrupu')}</span>
               <ExternalLink className="w-3 h-3 opacity-60" />
             </a>
 
@@ -73,7 +75,7 @@ export default function OnboardingBanner() {
               type="button"
               onClick={handleDismiss}
               className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition"
-              aria-label="Bildirişi bağla"
+              aria-label={t('onboarding.close_alert', 'Bildirişi bağla')}
             >
               <X className="w-4 h-4" />
             </button>
@@ -87,10 +89,10 @@ export default function OnboardingBanner() {
             </div>
             <div className="space-y-0.5 min-w-0">
               <h4 className="text-xs font-display font-bold text-white">
-                1. Qeydiyyatdan Keçin
+                {t('onboarding.step1_title', '1. Qeydiyyatdan Keçin')}
               </h4>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                Tələbə e-poçtunuzla profil yaradın və təcrübənizə uyğun başlanğıc ELO seçin.
+                {t('onboarding.step1_desc', 'Tələbə e-poçtunuzla profil yaradın və təcrübənizə uyğun başlanğıc ELO seçin.')}
               </p>
             </div>
           </div>
@@ -101,10 +103,10 @@ export default function OnboardingBanner() {
             </div>
             <div className="space-y-0.5 min-w-0">
               <h4 className="text-xs font-display font-bold text-white">
-                2. Oyunu Oynayın
+                {t('onboarding.step2_title', '2. Oyunu Oynayın')}
               </h4>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                İdman zalında rəqibinizlə matçı keçirin və ya WhatsApp qrupunda oyunçu tapın.
+                {t('onboarding.step2_desc', 'İdman zalında rəqibinizlə matçı keçirin və ya WhatsApp qrupunda oyunçu tapın.')}
               </p>
             </div>
           </div>
@@ -115,10 +117,10 @@ export default function OnboardingBanner() {
             </div>
             <div className="space-y-0.5 min-w-0">
               <h4 className="text-xs font-display font-bold text-white">
-                3. Nəticəni Qeyd Edin
+                {t('onboarding.step3_title', '3. Nəticəni Qeyd Edin')}
               </h4>
               <p className="text-[11px] text-slate-400 leading-relaxed">
-                Xal qazanın, nişanlar açın və rəsmi BANM liderlər cədvəlində pillə-pillə irəliləyin!
+                {t('onboarding.step3_desc', 'Xal qazanın, nişanlar açın və rəsmi BANM liderlər cədvəlində pillə-pillə irəliləyin!')}
               </p>
             </div>
           </div>

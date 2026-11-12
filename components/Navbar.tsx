@@ -271,7 +271,7 @@ export default function Navbar() {
                 href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
                 target="_blank"
                 rel="noopener noreferrer"
-                aria-label="Rəsmi WhatsApp İcması"
+                aria-label={t('common.whatsapp_community', 'Rəsmi WhatsApp İcması')}
                 title={t('nav.join_whatsapp') || 'WhatsApp'}
                 className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-800/70 transition shrink-0"
               >

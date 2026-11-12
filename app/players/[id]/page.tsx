@@ -76,6 +76,7 @@ interface ChartPoint {
 }
 
 const CustomTooltip = ({ active, payload }: any) => {
+  const { t } = useTranslation();
   if (active && payload && payload.length) {
     const data: ChartPoint = payload[0].payload;
     return (
@@ -91,7 +92,7 @@ const CustomTooltip = ({ active, payload }: any) => {
         </div>
         {data.opponent && (
           <div className="mt-2 pt-2 border-t border-white/10 text-xs">
-            <span className="text-slate-400">qarşı </span>
+            <span className="text-slate-400">{t('rivalry.against', 'qarşı')} </span>
             <span className="font-semibold text-white">{data.opponent}</span>
             {data.delta !== undefined && (
               <span
@@ -377,15 +378,15 @@ export default function PlayerProfilePage() {
     if (validMatches.length === 0) {
       return [
         {
-          date: 'Başlanğıc',
+          date: t('profile.initial_date', 'Başlanğıc'),
           elo: baselineElo,
-          fullDate: 'İlkin Qeydiyyat',
+          fullDate: t('profile.initial_registration', 'İlkin Qeydiyyat'),
           opponent: null,
         },
         {
-          date: 'Hazırkı',
+          date: t('profile.current_date', 'Hazırkı'),
           elo: profile.current_elo,
-          fullDate: 'Hazırkı Aktiv Reytinq',
+          fullDate: t('profile.current_active_rating', 'Hazırkı Aktiv Reytinq'),
           opponent: null,
         },
       ];
@@ -409,9 +410,9 @@ export default function PlayerProfilePage() {
 
     const points: ChartPoint[] = [
       {
-        date: 'Başlanğıc',
+        date: t('profile.initial_date', 'Başlanğıc'),
         elo: initialElo,
-        fullDate: 'İlkin Reytinq',
+        fullDate: t('profile.initial_rating', 'İlkin Reytinq'),
         opponent: null,
       },
     ];
@@ -424,7 +425,7 @@ export default function PlayerProfilePage() {
           ? m.player1_name?.trim().toLowerCase() === profile.full_name.trim().toLowerCase()
           : false);
       const eloAfter = isPlayer1 ? m.player1_elo_after : m.player2_elo_after;
-      const opponentName = isPlayer1 ? (m.player2_name || 'Rəqib') : (m.player1_name || 'Rəqib');
+      const opponentName = isPlayer1 ? (m.player2_name || t('common.opponent', 'Rəqib')) : (m.player1_name || t('common.opponent', 'Rəqib'));
       const won = isPlayer1
         ? m.player1_score > m.player2_score
         : m.player2_score > m.player1_score;
@@ -528,8 +529,8 @@ export default function PlayerProfilePage() {
           : false);
       const oppId = isP1 ? m.player2_id : m.player1_id;
       const oppName = isP1
-        ? m.player2_name || 'Rəqib'
-        : m.player1_name || 'Rəqib';
+        ? m.player2_name || t('common.opponent', 'Rəqib')
+        : m.player1_name || t('common.opponent', 'Rəqib');
       const won = isP1
         ? m.player1_score > m.player2_score
         : m.player2_score > m.player1_score;
@@ -652,8 +653,8 @@ export default function PlayerProfilePage() {
                   <button
                     onClick={() => setIsEditModalOpen(true)}
                     className="absolute -bottom-1 -left-1 z-10 w-7 h-7 rounded-lg bg-slate-900 hover:bg-slate-800 border border-cyan-500/40 flex items-center justify-center text-cyan-400 shadow-md cursor-pointer transition"
-                    title="Şəkli dəyiş"
-                    aria-label="Şəkli dəyiş"
+                    title={t('profile.change_photo', 'Şəkli dəyiş')}
+                    aria-label={t('profile.change_photo', 'Şəkli dəyiş')}
                   >
                     <Camera className="w-3.5 h-3.5" />
                   </button>
@@ -707,7 +708,7 @@ export default function PlayerProfilePage() {
 
                   {profile.playing_level && (
                     <span className="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-                      {profile.playing_level === 'Beginner' ? 'Başlanğıc' : profile.playing_level === 'Intermediate' ? 'Orta' : profile.playing_level === 'Advanced' ? 'Yüksək' : profile.playing_level}
+                      {profile.playing_level === 'Beginner' ? t('levels.Beginner', 'Başlanğıc') : profile.playing_level === 'Intermediate' ? t('levels.Intermediate', 'Orta') : profile.playing_level === 'Advanced' ? t('levels.Advanced', 'Yüksək') : profile.playing_level}
                     </span>
                   )}
 
@@ -728,8 +729,8 @@ export default function PlayerProfilePage() {
 
                 <p className="text-xs sm:text-sm text-slate-400 font-medium">
                   {(!profile.admission_year || profile.user_type === 'teacher' || profile.user_type === 'staff' || profile.role === 'coach')
-                    ? `${profile.major_faculty || 'İdman Klubu'} • ${profile.user_type === 'staff' ? 'Əməkdaş' : 'Müəllim'}`
-                    : `${profile.major_faculty || 'Mühəndislik Fakültəsi'} • ${profile.admission_year} Qəbul ili`}
+                    ? `${profile.major_faculty || 'İdman Klubu'} • ${profile.user_type === 'staff' ? t('roles.staff_badge', 'Əməkdaş') : t('roles.coach', 'Müəllim')}`
+                    : `${profile.major_faculty || 'Mühəndislik Fakültəsi'} • ${profile.admission_year} ${t('roles.admission_suffix', 'Qəbul')}`}
                 </p>
                 <div className="flex items-center gap-2.5 text-xs text-slate-400 font-medium flex-wrap pt-0.5">
                   <span className="text-xs text-slate-500 font-mono">{profile.email}</span>
@@ -737,7 +738,7 @@ export default function PlayerProfilePage() {
                     <span className="inline-flex items-center gap-1 text-slate-400">
                       <Calendar className="w-3.5 h-3.5 text-cyan-400" />
                       <span>
-                        Qoşulub: {new Date(profile.created_at).toLocaleDateString('az-AZ', {
+                        {t('profile.joined', 'Qoşulub:')} {new Date(profile.created_at).toLocaleDateString(locale === 'az' ? 'az-AZ' : locale === 'ru' ? 'ru-RU' : 'en-US', {
                           day: '2-digit',
                           month: '2-digit',
                           year: 'numeric',
@@ -747,11 +748,11 @@ export default function PlayerProfilePage() {
                   )}
                   {isDefaultMember(profile.id, profile.email) ? (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-500/10 text-amber-300 border border-amber-500/25">
-                      İlkin Heyət
+                      {t('profile.initial_roster', 'İlkin Heyət')}
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-500/10 text-emerald-300 border border-emerald-500/25">
-                      Rəsmi Qeydiyyat
+                      {t('profile.registered', 'Rəsmi Qeydiyyat')}
                     </span>
                   )}
                 </div>
@@ -788,7 +789,7 @@ export default function PlayerProfilePage() {
             <div className="text-2xl sm:text-3xl font-mono font-black text-white">
               <NumberTicker value={profile.current_elo} />
             </div>
-            <p className="text-[10px] text-slate-500 mt-1">Canlı portal reytinqi</p>
+            <p className="text-[10px] text-slate-500 mt-1">{t('profile.live_portal_rating', 'Canlı portal reytinqi')}</p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-5 backdrop-blur-md shadow-xl hover:border-white/20 transition">
@@ -801,7 +802,7 @@ export default function PlayerProfilePage() {
             <div className="text-2xl sm:text-3xl font-mono font-black text-amber-400">
               <NumberTicker value={peakElo} />
             </div>
-            <p className="text-[10px] text-slate-500 mt-1">Tarixin ən yüksək xalı</p>
+            <p className="text-[10px] text-slate-500 mt-1">{t('profile.all_time_peak', 'Tarixin ən yüksək xalı')}</p>
           </div>
 
           <div className="rounded-2xl border border-white/10 bg-[#0F1623] p-5 backdrop-blur-md shadow-xl hover:border-white/20 transition">
@@ -829,7 +830,7 @@ export default function PlayerProfilePage() {
             <div className="text-2xl sm:text-3xl font-mono font-black text-[#22C55E]">
               <NumberTicker value={winRatePercent} suffix="%" />
             </div>
-            <p className="text-[10px] text-slate-500 mt-1">Rəsmi oyun nisbəti</p>
+            <p className="text-[10px] text-slate-500 mt-1">{t('profile.official_match_ratio', 'Rəsmi oyun nisbəti')}</p>
           </div>
 
           <div className="col-span-2 lg:col-span-1 rounded-2xl border border-white/10 bg-[#0F1623] p-5 backdrop-blur-md shadow-xl hover:border-white/20 transition">
@@ -842,10 +843,10 @@ export default function PlayerProfilePage() {
                   <Briefcase className="w-4 h-4 text-indigo-400" />
                 </div>
                 <div className="text-xl sm:text-2xl font-display font-black text-indigo-300">
-                  {profile.user_type === 'staff' ? 'Əməkdaş' : 'Müəllim'}
+                  {profile.user_type === 'staff' ? t('roles.staff_badge', 'Əməkdaş') : t('roles.coach', 'Müəllim')}
                 </div>
                 <p className="text-[10px] text-slate-500 mt-1 truncate">
-                  {profile.major_faculty || 'BANM Heyəti'}
+                  {profile.major_faculty || t('whatif.bhos_member', 'BANM Heyəti')}
                 </p>
               </>
             ) : (
@@ -860,7 +861,7 @@ export default function PlayerProfilePage() {
                   {profile.admission_year}
                 </div>
                 <p className="text-[10px] text-slate-500 mt-1 truncate">
-                  {profile.major_faculty || 'Tələbə'}
+                  {profile.major_faculty || t('roles.player', 'Tələbə')}
                 </p>
               </>
             )}
@@ -910,7 +911,7 @@ export default function PlayerProfilePage() {
               return (
                 <div
                   key={badge.id}
-                  title={`Şərt: ${badge.descriptionAz}`}
+                  title={badge.descriptionAz}
                   className={`group relative rounded-xl p-4 border transition-all duration-200 flex flex-col justify-between ${
                     badge.unlocked
                       ? tierCardClass
@@ -955,7 +956,7 @@ export default function PlayerProfilePage() {
                           className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider shrink-0 ${tierStatusPillClass}`}
                         >
                           <CheckCircle2 className="w-3 h-3" />
-                          Qazanılıb
+                          {t('achievements.unlocked', 'Qazanılıb')}
                         </span>
                       ) : (
                         <span
@@ -963,7 +964,7 @@ export default function PlayerProfilePage() {
                           className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-900 text-slate-400 border border-slate-800 shrink-0"
                         >
                           <Lock className="w-3 h-3 text-slate-400" />
-                          Kilidli
+                          {t('achievements.locked', 'Kilidli')}
                         </span>
                       )}
                     </div>
@@ -977,7 +978,7 @@ export default function PlayerProfilePage() {
                     <div className="mt-3.5 pt-2.5 border-t border-slate-800/80 space-y-1.5">
                       <div className="flex items-center justify-between text-[10px] font-mono">
                         <span className="text-slate-400 uppercase tracking-wider">
-                          İrəliləyiş
+                          {t('achievements.progress', 'İrəliləyiş')}
                         </span>
                         <span className="font-bold text-slate-200">
                           {badge.progress.current} / {badge.progress.target}
@@ -1006,13 +1007,13 @@ export default function PlayerProfilePage() {
         ) : (
           <div className="p-6 rounded-2xl bg-[#0F1623] border border-white/5 text-center">
             <p className="text-sm text-slate-400 mb-3">
-              Bu oyunçu ilə potensial ELO dəyişikliklərini görmək və meydan oxumaq üçün daxil olun.
+              {t('profile.login_to_challenge', 'Bu oyunçu ilə potensial ELO dəyişikliklərini görmək və meydan oxumaq üçün daxil olun.')}
             </p>
             <Link
               className="inline-flex items-center px-4 py-2 rounded-xl bg-[#131C2B] hover:bg-[#1A263B] text-blue-400 text-sm font-semibold border border-blue-500/20 transition-colors"
               href="/login"
             >
-              Giriş Edin &rarr;
+              {t('profile.login_btn', 'Giriş Edin →')}
             </Link>
           </div>
         )}
@@ -1028,13 +1029,13 @@ export default function PlayerProfilePage() {
               </h3>
             </div>
             <span className="text-xs text-slate-400 font-mono">
-              {rivalries.length} Rəqiblə Qarşılaşma
+              {rivalries.length} {t('rivalry.encounters_count', 'Rəqiblə Qarşılaşma')}
             </span>
           </div>
 
           {rivalries.length === 0 ? (
             <div className="p-8 rounded-xl bg-[#131C2B] border border-white/5 text-center text-xs text-slate-500">
-              Bu oyunçu üçün üzbəüz oyun qeydləri tapılmadı.
+              {t('rivalry.no_rivalries', 'Bu oyunçu üçün üzbəüz oyun qeydləri tapılmadı.')}
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1069,18 +1070,18 @@ export default function PlayerProfilePage() {
                         {rival.isNemesis && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-[#EF4444]/15 text-[#EF4444] border border-[#EF4444]/30">
                             <Skull className="w-3 h-3" />
-                            <span>Əsas Rəqib</span>
+                            <span>{t('rivalry.nemesis', 'Əsas Rəqib')}</span>
                           </span>
                         )}
                         {rival.isTopTarget && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-amber-400/15 text-amber-300 border border-amber-400/30">
                             <Target className="w-3 h-3" />
-                            <span>Ən Çox Məğlub Etdiyi</span>
+                            <span>{t('rivalry.top_target', 'Ən Çox Məğlub Etdiyi')}</span>
                           </span>
                         )}
                         {!rival.isNemesis && !rival.isTopTarget && rival.isFavorable && (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#22C55E]/15 text-[#22C55E] border border-[#22C55E]/30">
-                            <span>Müsbət Balans</span>
+                            <span>{t('rivalry.favorable', 'Müsbət Balans')}</span>
                           </span>
                         )}
                       </div>
@@ -1088,7 +1089,7 @@ export default function PlayerProfilePage() {
 
                     <div className="p-3 rounded-xl bg-[#131C2B] border border-white/5 flex items-center justify-between">
                       <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
-                        Üzbəüz Hesab
+                        {t('rivalry.head_to_head_score', 'Üzbəüz Hesab')}
                       </span>
                       <span className="text-base font-mono font-black text-white">
                         <span className="text-[#22C55E]">{rival.wins}</span>
@@ -1099,7 +1100,7 @@ export default function PlayerProfilePage() {
 
                     <div className="space-y-1.5">
                       <div className="flex items-center justify-between text-[11px] font-mono">
-                        <span className="text-slate-400">Qələbə faizi</span>
+                        <span className="text-slate-400">{t('profile.win_rate', 'Qələbə faizi')}</span>
                         <span
                           className={`font-bold ${
                             rival.isNemesis
@@ -1143,7 +1144,7 @@ export default function PlayerProfilePage() {
               </h3>
             </div>
             <span className="text-xs text-slate-400 font-mono">
-              {chartData.length} Məlumat Nöqtəsi
+              {chartData.length} {t('profile.data_points', 'Məlumat Nöqtəsi')}
             </span>
           </div>
 
@@ -1196,7 +1197,7 @@ export default function PlayerProfilePage() {
               </ResponsiveContainer>
             ) : (
               <div className="h-full flex items-center justify-center text-xs text-slate-500">
-                Göstəricilər yüklənir...
+                {t('common.loading_metrics', 'Göstəricilər yüklənir...')}
               </div>
             )}
           </div>
@@ -1215,7 +1216,7 @@ export default function PlayerProfilePage() {
             <div className="flex items-center gap-4 flex-wrap">
               <RecentFormBadges matches={matches} player={profile} playerId={playerId} />
               <span className="text-xs text-slate-400 font-mono">
-                {recentMatchesFeed.length} Qeydə Alınmış Oyun
+                {recentMatchesFeed.length} {t('profile.recorded_matches', 'Qeydə Alınmış Oyun')}
               </span>
             </div>
           </div>
@@ -1223,13 +1224,13 @@ export default function PlayerProfilePage() {
           <div className="max-h-96 overflow-y-auto space-y-2.5 pr-1 divide-y divide-transparent">
             {recentMatchesFeed.length === 0 ? (
               <div className="p-8 rounded-xl bg-[#131C2B] border border-white/5 text-center text-xs text-slate-500">
-                Bu oyunçu üçün hələ rəsmi oyun qeydə alınmayıb.
+                {t('profile.no_matches', 'Bu oyunçu üçün hələ rəsmi oyun qeydə alınmayıb.')}
               </div>
             ) : (
               recentMatchesFeed.map((rawM) => {
                 const m = store.enrichMatchRecord(rawM);
-                const p1Name = m.player1?.full_name || m.player1_name || 'Rəqib';
-                const p2Name = m.player2?.full_name || m.player2_name || 'Rəqib';
+                const p1Name = m.player1?.full_name || m.player1_name || t('common.opponent', 'Rəqib');
+                const p2Name = m.player2?.full_name || m.player2_name || t('common.opponent', 'Rəqib');
                 const isPlayer1 =
                   m.player1_id === playerId ||
                   m.player1_id === profile?.id ||
@@ -1329,7 +1330,7 @@ export default function PlayerProfilePage() {
                       <div className="text-right min-w-[60px]">
                         {isPending ? (
                           <span className="font-mono text-xs font-semibold text-amber-400">
-                            Gözləmədə
+                            {t('matches.pending_badge', 'Gözləmədə')}
                           </span>
                         ) : (
                           <>

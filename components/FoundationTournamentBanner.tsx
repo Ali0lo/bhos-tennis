@@ -32,7 +32,7 @@ export default function FoundationTournamentBanner() {
 
   return (
     <section
-      aria-label='"Zəfər Günü" Foundation Kuboku — Rəsmi Yekun Nəticələr'
+      aria-label={`${t('tournaments.foundation_title', '"Zəfər Günü" Foundation Kuboku')} — ${t('tournaments.podium_title', 'Rəsmi Yekun Nəticələr')}`}
       className="relative w-full rounded-3xl bg-slate-900 border-2 border-amber-500/60 p-5 sm:p-7 shadow-xl overflow-hidden"
     >
       <div
@@ -43,8 +43,8 @@ export default function FoundationTournamentBanner() {
       <button
         type="button"
         onClick={handleDismiss}
-        aria-label="Elanı bağla"
-        title="Bağla"
+        aria-label={t('tournaments.dismiss_banner', 'Elanı bağla')}
+        title={t('common.cancel', 'Bağla')}
         className="absolute top-3.5 right-3.5 z-20 inline-flex items-center justify-center w-8 h-8 rounded-xl bg-slate-950/90 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition"
       >
         <X className="w-4 h-4" />
@@ -56,16 +56,16 @@ export default function FoundationTournamentBanner() {
             <div className="flex flex-wrap items-center gap-2">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/50 text-amber-300 text-[11px] font-display font-extrabold uppercase tracking-wider">
                 <Trophy className="w-3.5 h-3.5 text-amber-400" />
-                <span>🏆 RƏSMİ YEKUN NƏTİCƏLƏR • TURNİR BAŞA ÇATDI</span>
+                <span>{t('tournaments.foundation_banner_tag', '🏆 RƏSMİ YEKUN NƏTİCƏLƏR • TURNİR BAŞA ÇATDI')}</span>
               </span>
 
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-600/15 border border-emerald-600/40 text-emerald-300 text-[11px] font-bold">
-                <span>✓ 38 Oyun • 7 Noyabr 2026</span>
+                <span>{t('tournaments.foundation_banner_stats', '✓ 38 Oyun • 7 Noyabr 2026')}</span>
               </span>
             </div>
 
             <h2 className="text-xl sm:text-2xl lg:text-3xl font-display font-black text-white tracking-tight leading-snug">
-              &ldquo;Zəfər Günü&rdquo; Foundation Kuboku — Fəxri Kürsü
+              {t('tournaments.foundation_banner_title', '“Zəfər Günü” Foundation Kuboku — Fəxri Kürsü')}
             </h2>
           </div>
 
@@ -73,7 +73,7 @@ export default function FoundationTournamentBanner() {
             href="/tournaments/foundation-kuboku-2026"
             className="group inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-display font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition whitespace-nowrap self-start lg:self-center"
           >
-            <span>Tam Turnir Cədvəli və Oyunlar →</span>
+            <span>{t('tournaments.foundation_banner_cta', 'Tam Turnir Cədvəli və Oyunlar →')}</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
@@ -95,7 +95,7 @@ export default function FoundationTournamentBanner() {
                 Yusif Xanlarov
               </div>
               <div className="text-[11px] font-mono text-amber-200/80">
-                462 ELO • 7Q - 1M (Final: 3-0)
+                462 ELO • 7{t('leaderboard.win_abbr', 'Q')} - 1{t('leaderboard.loss_abbr', 'M')} ({t('tournaments.final', 'Final')}: 3-0)
               </div>
             </div>
           </Link>
@@ -115,7 +115,7 @@ export default function FoundationTournamentBanner() {
                 Məharət Kərimli
               </div>
               <div className="text-[11px] font-mono text-slate-400">
-                441 ELO • 6Q - 2M (Finalçı)
+                441 ELO • 6{t('leaderboard.win_abbr', 'Q')} - 2{t('leaderboard.loss_abbr', 'M')} ({t('tournaments.finalist', 'Finalçı')})
               </div>
             </div>
           </Link>
@@ -135,7 +135,7 @@ export default function FoundationTournamentBanner() {
                 Əhəd Zamanlı
               </div>
               <div className="text-[11px] font-mono text-orange-200/80">
-                458 ELO • 7Q - 1M (3-cü yer: 3-2)
+                458 ELO • 7{t('leaderboard.win_abbr', 'Q')} - 1{t('leaderboard.loss_abbr', 'M')} ({t('tournaments.third_place_stat', '3-cü yer')}: 3-2)
               </div>
             </div>
           </Link>

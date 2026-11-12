@@ -16,7 +16,7 @@ interface RecentResultsProps {
 
 export default function RecentResults({ matches, onSelectMatch }: RecentResultsProps) {
   const t = useTranslations('home');
-  const { t: rootT } = useTranslation();
+  const { t: rootT, locale } = useTranslation();
   const store = BHOSDataStore.getInstance();
 
   const recentMatches = useMemo(() => {
@@ -54,8 +54,8 @@ export default function RecentResults({ matches, onSelectMatch }: RecentResultsP
           recentMatches.map((m) => {
             const p1Id = m.player1?.id || m.player1_id;
             const p2Id = m.player2?.id || m.player2_id;
-            const p1Name = m.player1?.full_name || m.player1_name || 'Oyunçu 1';
-            const p2Name = m.player2?.full_name || m.player2_name || 'Oyunçu 2';
+            const p1Name = m.player1?.full_name || m.player1_name || rootT('matches.player1_fallback', 'Oyunçu 1');
+            const p2Name = m.player2?.full_name || m.player2_name || rootT('matches.player2_fallback', 'Oyunçu 2');
 
             const p1Won = m.winner_id
               ? m.winner_id === p1Id || m.player1_score > m.player2_score
@@ -100,7 +100,7 @@ export default function RecentResults({ matches, onSelectMatch }: RecentResultsP
                       </span>
                     </div>
                     <span className="text-[9px] uppercase tracking-wider text-slate-500 font-sans font-bold mt-0.5">
-                      Set
+                      {rootT('matches.set_label', 'Set')}
                     </span>
                   </div>
 
@@ -162,7 +162,7 @@ export default function RecentResults({ matches, onSelectMatch }: RecentResultsP
 
                   <span className="text-[10px] text-slate-400 font-mono inline-flex items-center gap-1 mt-0.5">
                     <Calendar className="w-3 h-3 text-slate-500" />
-                    <span>{new Date(m.match_date).toLocaleDateString('az-AZ')}</span>
+                    <span>{new Date(m.match_date).toLocaleDateString(locale === 'az' ? 'az-AZ' : locale === 'ru' ? 'ru-RU' : 'en-US')}</span>
                   </span>
 
                   {m.tournament_title && (

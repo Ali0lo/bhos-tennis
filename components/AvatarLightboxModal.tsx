@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import ScrollLock from './ScrollLock';
+import { useTranslation } from '../lib/i18n';
 
 interface AvatarLightboxModalProps {
   isOpen: boolean;
@@ -22,6 +23,7 @@ export default function AvatarLightboxModal({
   department,
   rating,
 }: AvatarLightboxModalProps) {
+  const { t } = useTranslation();
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -47,7 +49,7 @@ export default function AvatarLightboxModal({
       className="fixed inset-0 z-[80] flex items-center justify-center p-4 overflow-y-auto bg-black/80 backdrop-blur-sm animate-fadeIn"
       role="dialog"
       aria-modal="true"
-      aria-label={`${name} — profil şəkli`}
+      aria-label={`${name} — ${t('profile.avatar_title', 'profil şəkli')}`}
       onClick={(e) => {
         // Prevent bubbling to parent links/rows (React events bubble through portals)
         e.stopPropagation();
@@ -62,7 +64,7 @@ export default function AvatarLightboxModal({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Bağla"
+          aria-label={t('common.close', 'Bağla')}
           className="absolute -top-3 -right-3 z-10 inline-flex items-center justify-center w-9 h-9 rounded-full bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:border-slate-500 shadow-lg transition"
         >
           <X className="w-4 h-4" />

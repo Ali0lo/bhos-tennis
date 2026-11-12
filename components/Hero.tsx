@@ -22,14 +22,9 @@ export default function Hero({
   leaderElo,
 }: HeroProps) {
   const t = useTranslations('home');
-  const { t: rootT, locale } = useTranslation();
+  const { t: rootT } = useTranslation();
 
-  const tablesSubCaption =
-    locale === 'en'
-      ? '(1 Ladies / 3 General)'
-      : locale === 'ru'
-      ? '(1 женский / 3 общих)'
-      : '(1 Xanımlar / 3 Ümumi)';
+  const tablesSubCaption = rootT('hero.tables_distribution', '(1 Xanımlar / 3 Ümumi)');
 
   return (
     <section className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-lg min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">

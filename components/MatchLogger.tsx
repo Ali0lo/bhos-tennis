@@ -9,6 +9,7 @@ import { calculateEloDelta, getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '
 import { parseSetScores, validateMatchSetSummary } from '../lib/elo';
 import { sanitizeTextInput } from '../lib/security/sanitize';
 import AthleteCombobox from './AthleteCombobox';
+import { useTranslation } from '../lib/i18n';
 import {
   Swords,
   CheckCircle2,
@@ -97,6 +98,7 @@ function ScoreStepper({
   value: number;
   onChange: (v: number) => void;
 }) {
+  const { t } = useTranslation();
   return (
     <div className="flex-1 p-3 rounded-xl bg-[#131C2B] border border-white/5">
       <span className="block text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-2 truncate">
@@ -105,7 +107,7 @@ function ScoreStepper({
       <div className="flex items-center justify-between gap-2">
         <button
           type="button"
-          aria-label={`${label} azalt`}
+          aria-label={`${label} ${t('matches.stepper_dec', 'azalt')}`}
           onClick={() => onChange(Math.max(0, value - 1))}
           className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 transition active:scale-95"
         >
@@ -114,7 +116,7 @@ function ScoreStepper({
         <span className="font-mono text-2xl font-black text-white w-8 text-center">{value}</span>
         <button
           type="button"
-          aria-label={`${label} artır`}
+          aria-label={`${label} ${t('matches.stepper_inc', 'artır')}`}
           onClick={() => onChange(Math.min(MAX_SETS, value + 1))}
           className="w-8 h-8 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 flex items-center justify-center text-slate-300 transition active:scale-95"
         >
@@ -129,6 +131,7 @@ export default function MatchLogger({
   onMatchLogged,
   initialOpponentId,
 }: MatchLoggerProps) {
+  const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
@@ -306,30 +309,30 @@ export default function MatchLogger({
     setErrorMessage(null);
 
     if (!currentUser) {
-      setErrorMessage('Matç qeyd etmək üçün daxil olmalısınız.');
+      setErrorMessage(t('matches.err_login_required', 'Matç qeyd etmək üçün daxil olmalısınız.'));
       return;
     }
 
     if (isPendingApproval) {
       setErrorMessage(
-        'Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.'
+        t('matches.pending_approval_desc', 'Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.')
       );
       return;
     }
 
     if (!sideA || !sideB) {
-      setErrorMessage('Zəhmət olmasa hər iki oyunçunu seçin.');
+      setErrorMessage(t('matches.err_both_players', 'Zəhmət olmasa hər iki oyunçunu seçin.'));
       return;
     }
 
     if (sideA.id === sideB.id) {
-      setErrorMessage('Oyunçu özü ilə oynaya bilməz.');
+      setErrorMessage(t('matches.err_same_player', 'Oyunçu özü ilə oynaya bilməz.'));
       return;
     }
 
     if (!scoresValid || !effectiveWinner || !effectiveLoser) {
       setErrorMessage(
-        setValidation.errorMessage || 'Etibarlı set hesabı seçin (2-0, 2-1, 3-0, 3-1, 3-2, 4-0, 4-1, 4-2, 4-3).'
+        setValidation.errorMessage || t('matches.err_valid_sets', 'Etibarlı set hesabı seçin (2-0, 2-1, 3-0, 3-1, 3-2, 4-0, 4-1, 4-2, 4-3).')
       );
       return;
     }
@@ -338,13 +341,13 @@ export default function MatchLogger({
     if (cleanDetailed) {
       const parsedCheck = parseSetScores(cleanDetailed, scoreA, scoreB);
       if (!parsedCheck.isValid) {
-        setErrorMessage(parsedCheck.errorMessage || 'Set detalları masaüstü tennis qaydalarına uyğun deyil.');
+        setErrorMessage(parsedCheck.errorMessage || t('matches.err_set_details_rules', 'Set detalları masaüstü tennis qaydalarına uyğun deyil.'));
         return;
       }
     }
 
     if (!isAdminOrCoach && effectiveWinner.id !== currentUser.id && effectiveLoser.id !== currentUser.id) {
-      setErrorMessage('Yalnız iştirak etdiyiniz matçı qeyd edə bilərsiniz.');
+      setErrorMessage(t('matches.err_must_be_participant', 'Yalnız iştirak etdiyiniz matçı qeyd edə bilərsiniz.'));
       return;
     }
 
@@ -355,7 +358,7 @@ export default function MatchLogger({
       lastSubmissionRef.current.signature === submissionSig &&
       nowMs - lastSubmissionRef.current.timestamp < 15_000
     ) {
-      setErrorMessage('Bu matç nəticəsi artıq göndərilib. Təkrar göndərişin qarşısı alındı.');
+      setErrorMessage(t('matches.err_already_submitted', 'Bu matç nəticəsi artıq göndərilib. Təkrar göndərişin qarşısı alındı.'));
       return;
     }
 
@@ -365,7 +368,7 @@ export default function MatchLogger({
     try {
       const supabase = getSupabaseClient();
       if (!supabase) {
-        throw new Error('Supabase bağlantısı mövcud deyil.');
+        throw new Error(t('common.error', 'Supabase bağlantısı mövcud deyil.'));
       }
 
       const { data: authData } = await supabase.auth.getUser();
@@ -379,7 +382,7 @@ export default function MatchLogger({
           (authEmail === effectiveWinner.email?.toLowerCase() ||
             authEmail === effectiveLoser.email?.toLowerCase());
         if (!isParticipantById && !isParticipantByEmail) {
-          throw new Error('Sessiya təsdiqi uğursuz oldu: yalnız iştirak etdiyiniz matçı qeyd edə bilərsiniz.');
+          throw new Error(t('matches.err_must_be_participant', 'Sessiya təsdiqi uğursuz oldu: yalnız iştirak etdiyiniz matçı qeyd edə bilərsiniz.'));
         }
       }
 
@@ -470,7 +473,7 @@ export default function MatchLogger({
         ]);
 
         setSuccessToast({
-          message: 'Matç təsdiqləndi və reytinqlər dərhal yeniləndi!',
+          message: t('matches.toast_approved_instant', 'Matç təsdiqləndi və reytinqlər dərhal yeniləndi!'),
           winnerName: effectiveWinner.full_name,
           loserName: effectiveLoser.full_name,
           points: delta,
@@ -506,7 +509,7 @@ export default function MatchLogger({
         await store.fetchMatchesFromCloud();
 
         setSuccessToast({
-          message: 'Matç göndərildi! Rəqibinizin təsdiqi gözlənilir.',
+          message: t('matches.toast_submitted_pending', 'Matç göndərildi! Rəqibinizin təsdiqi gözlənilir.'),
           winnerName: effectiveWinner.full_name,
           loserName: effectiveLoser.full_name,
           scoreSummary: `${setsWon}-${setsLost}`,
@@ -524,7 +527,7 @@ export default function MatchLogger({
       await fetchActivePlayers();
       onMatchLogged?.();
     } catch (err: any) {
-      setErrorMessage(err.message || 'Matç qeyd edilərkən xəta baş verdi.');
+      setErrorMessage(err.message || t('profile.err_save_failed', 'Matç qeyd edilərkən xəta baş verdi.'));
     } finally {
       submittingLockRef.current = false;
       setIsSubmitting(false);
@@ -535,16 +538,16 @@ export default function MatchLogger({
     return (
       <div className="p-8 rounded-2xl border border-white/10 bg-[#0F1623] text-center space-y-3">
         <AlertCircle className="w-8 h-8 text-amber-400 mx-auto" />
-        <h3 className="text-base font-display font-bold text-white">Giriş Tələb Olunur</h3>
+        <h3 className="text-base font-display font-bold text-white">{t('matches.login_required_title', 'Giriş Tələb Olunur')}</h3>
         <p className="text-xs text-slate-400 max-w-sm mx-auto">
-          Matç nəticəsi göndərmək və ya təsdiqləmək üçün BANM hesabınızla daxil olmalısınız.
+          {t('matches.login_required_desc', 'Matç nəticəsi göndərmək və ya təsdiqləmək üçün BANM hesabınızla daxil olmalısınız.')}
         </p>
       </div>
     );
   }
 
-  const labelA = isAdminOrCoach ? sideA?.full_name || 'Oyunçu 1' : 'Siz';
-  const labelB = isAdminOrCoach ? sideB?.full_name || 'Oyunçu 2' : sideB?.full_name || 'Rəqib';
+  const labelA = isAdminOrCoach ? sideA?.full_name || t('common.player_1', 'Oyunçu 1') : t('common.you', 'Siz');
+  const labelB = isAdminOrCoach ? sideB?.full_name || t('common.player_2', 'Oyunçu 2') : sideB?.full_name || t('common.opponent', 'Rəqib');
   const userIsWinner = !isAdminOrCoach && scoresValid && aWins;
 
   const presetChip = (a: number, b: number, tone: 'win' | 'loss') => {
@@ -576,9 +579,9 @@ export default function MatchLogger({
         <div className="mb-6 p-4 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-start gap-3 text-xs text-amber-300">
           <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <span className="font-bold text-amber-200 block">Hesabınız təsdiq gözləyir</span>
+            <span className="font-bold text-amber-200 block">{t('matches.pending_approval_title', 'Hesabınız təsdiq gözləyir')}</span>
             <span>
-              Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.
+              {t('matches.pending_approval_desc', 'Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.')}
             </span>
           </div>
         </div>
@@ -591,15 +594,15 @@ export default function MatchLogger({
           </div>
           <div>
             <h2 className="text-lg font-display font-black text-white flex items-center gap-2">
-              Matç Qeydiyyatı
+              {t('matches.match_registration', 'Matç Qeydiyyatı')}
               <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30">
                 K=32
               </span>
             </h2>
             <p className="text-xs text-slate-400 mt-0.5">
               {isAdminOrCoach
-                ? 'Məşqçi/Admin: nəticə dərhal təsdiqlənir və reytinqlər yenilənir.'
-                : 'Oyunçu: nəticə rəqibinizin təsdiqindən sonra rəsmiləşir.'}
+                ? t('matches.coach_admin_hint', 'Məşqçi/Admin: nəticə dərhal təsdiqlənir və reytinqlər yenilənir.')
+                : t('matches.player_hint', 'Oyunçu: nəticə rəqibinizin təsdiqindən sonra rəsmiləşir.')}
             </p>
           </div>
         </div>
@@ -625,11 +628,11 @@ export default function MatchLogger({
           <div className="space-y-1 text-xs">
             <div className="font-bold text-white text-sm">{successToast.message}</div>
             <div className="text-slate-300">
-              <strong>{successToast.winnerName}</strong> qalib gəldi — <strong>{successToast.loserName}</strong> ({successToast.scoreSummary})
+              <strong>{successToast.winnerName}</strong> {t('common.win', 'qalib gəldi')} — <strong>{successToast.loserName}</strong> ({successToast.scoreSummary})
             </div>
             {!successToast.isPending && successToast.points && (
               <div className="font-mono text-emerald-400 font-semibold pt-1">
-                Qalibə +{successToast.points} XAL / Məğluba -{successToast.points} XAL
+                {t('matches.toast_points_summary', 'Qalibə +{points} XAL / Məğluba -{points} XAL').replace(/\{points\}/g, String(successToast.points))}
               </div>
             )}
           </div>
@@ -647,7 +650,7 @@ export default function MatchLogger({
         {isAdminOrCoach ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <AthleteCombobox
-              label="Oyunçu 1"
+              label={t('common.player_1', 'Oyunçu 1')}
               players={players}
               value={adminP1Id}
               onChange={setAdminP1Id}
@@ -655,7 +658,7 @@ export default function MatchLogger({
               disabled={loadingPlayers}
             />
             <AthleteCombobox
-              label="Oyunçu 2"
+              label={t('common.player_2', 'Oyunçu 2')}
               players={players}
               value={adminP2Id}
               onChange={setAdminP2Id}
@@ -665,24 +668,24 @@ export default function MatchLogger({
           </div>
         ) : (
           <AthleteCombobox
-            label="Rəqib"
+            label={t('common.opponent', 'Rəqib')}
             players={players}
             value={opponentId}
             onChange={setOpponentId}
             excludeIds={[currentUser.id]}
             disabled={loadingPlayers}
-            placeholder={loadingPlayers ? 'Oyunçular yüklənir...' : 'Rəqibin adı və ya fakültəsi üzrə axtar...'}
+            placeholder={loadingPlayers ? t('matches.players_loading', 'Oyunçular yüklənir...') : t('matches.search_opponent_placeholder', 'Rəqibin adı və ya fakültəsi üzrə axtar...')}
           />
         )}
 
         <div className="space-y-3">
           <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-            Set Hesabı ({labelA} – {labelB})
+            {t('matches.set_score_label', 'Set Hesabı')} ({labelA} – {labelB})
           </label>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <span className="text-[10px] uppercase tracking-wider font-bold text-[#22C55E]">
-                {isAdminOrCoach ? 'Oyunçu 1 qalib' : 'Qələbə'}
+                {isAdminOrCoach ? `${t('common.player_1', 'Oyunçu 1')} ${t('common.win', 'qalib')}` : t('matches.winner_badge', 'Qələbə')}
               </span>
               <div className="grid grid-cols-4 gap-1.5">
                 {WIN_PRESETS.map(([a, b]) => presetChip(a, b, 'win'))}
@@ -690,7 +693,7 @@ export default function MatchLogger({
             </div>
             <div className="space-y-1.5">
               <span className="text-[10px] uppercase tracking-wider font-bold text-[#EF4444]">
-                {isAdminOrCoach ? 'Oyunçu 2 qalib' : 'Məğlubiyyət'}
+                {isAdminOrCoach ? `${t('common.player_2', 'Oyunçu 2')} ${t('common.win', 'qalib')}` : t('matches.loser_badge', 'Məğlubiyyət')}
               </span>
               <div className="grid grid-cols-4 gap-1.5">
                 {LOSS_PRESETS.map(([a, b]) => presetChip(a, b, 'loss'))}
@@ -705,19 +708,19 @@ export default function MatchLogger({
 
           {(scoreA > 0 || scoreB > 0) && !scoresValid && (
             <p className="text-[11px] text-amber-300">
-              {setValidation.errorMessage || 'Etibarlı set hesabı seçin (2-0, 2-1, 3-0, 3-1, 3-2, 4-0, 4-1, 4-2, 4-3).'}
+              {setValidation.errorMessage || t('matches.err_valid_sets', 'Etibarlı set hesabı seçin (2-0, 2-1, 3-0, 3-1, 3-2, 4-0, 4-1, 4-2, 4-3).')}
             </p>
           )}
         </div>
 
         <div>
           <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
-            Set Detalları (İstəyə bağlı)
+            {t('matches.set_details_label', 'Set Detalları (İstəyə bağlı)')}
           </label>
           <input
             type="text"
             maxLength={120}
-            placeholder="məs. 11-9, 8-11, 11-6, 12-10"
+            placeholder="11-9, 8-11, 11-6, 12-10"
             value={detailedScores}
             onChange={(e) => setDetailedScores(e.target.value)}
             className="w-full px-3.5 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-white text-xs placeholder:text-slate-600 focus:outline-none focus:border-[#3B82F6]"
@@ -742,11 +745,11 @@ export default function MatchLogger({
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400 font-semibold uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                   <Zap className="w-3.5 h-3.5 text-amber-400" />
-                  {isAdminOrCoach ? 'Dərhal ELO Kalibrasiyası' : 'Təsdiqdən Sonra Gözlənilən ELO'}
+                  {isAdminOrCoach ? t('matches.instant_calibration', 'Dərhal ELO Kalibrasiyası') : t('matches.expected_after_approval', 'Təsdiqdən Sonra Gözlənilən ELO')}
                 </span>
                 {winProbabilityA !== null && (
                   <span className="font-mono text-[11px] text-slate-400">
-                    Qələbə ehtimalı ({isAdminOrCoach ? labelA : 'Siz'}):{' '}
+                    {t('matches.win_probability', 'Qələbə ehtimalı')} ({isAdminOrCoach ? labelA : t('common.you', 'Siz')}):{' '}
                     <strong className="text-white">{Math.round(winProbabilityA * 100)}%</strong>
                   </span>
                 )}
@@ -812,11 +815,11 @@ export default function MatchLogger({
           {isPendingApproval ? (
             <span className="text-xs text-amber-300 flex items-center gap-1.5">
               <Clock className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-              Matç göndərmək üçün hesabınız Klub Prezidenti tərəfindən təsdiqlənməlidir.
+              {t('matches.must_be_approved_to_submit', 'Matç göndərmək üçün hesabınız Klub Prezidenti tərəfindən təsdiqlənməlidir.')}
             </span>
           ) : !canSubmit && !isSubmitting ? (
             <span className="text-[11px] text-slate-500">
-              {!sideA || !sideB ? 'Rəqib seçin' : 'Etibarlı set hesabı seçin'}
+              {!sideA || !sideB ? t('matches.select_opponent_help', 'Rəqib seçin') : t('matches.select_valid_sets_help', 'Etibarlı set hesabı seçin')}
             </span>
           ) : (
             <span />
@@ -829,12 +832,12 @@ export default function MatchLogger({
             {isSubmitting ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Qeyd edilir...</span>
+                <span>{t('common.saving', 'Qeyd edilir...')}</span>
               </>
             ) : (
               <>
                 <ShieldCheck className="w-4 h-4" />
-                <span>{isAdminOrCoach ? 'Təsdiqlə və Qeyd Et' : 'Təsdiqə Göndər'}</span>
+                <span>{isAdminOrCoach ? t('matches.approve_and_log', 'Təsdiqlə və Qeyd Et') : t('matches.submit_for_approval', 'Təsdiqə Göndər')}</span>
               </>
             )}
           </button>

@@ -20,6 +20,7 @@ import { PlayerProfile } from '../lib/data/types';
 import { BHOSDataStore } from '../lib/data/store';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { calculateWhatIf, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
+import { useTranslation } from '../lib/i18n';
 
 interface WhatIfSimulatorProps {
   player?: PlayerProfile;
@@ -103,6 +104,7 @@ export default function WhatIfSimulator({
   athlete,
   roster: initialRoster,
 }: WhatIfSimulatorProps) {
+  const { t } = useTranslation();
   const player = (athlete || playerProp)!;
   const store = BHOSDataStore.getInstance();
   const [roster, setRoster] = useState<PlayerProfile[]>(() =>
@@ -280,7 +282,7 @@ export default function WhatIfSimulator({
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h3 className="text-base sm:text-lg font-display font-bold text-white">
-                Rəqib Seç &amp; ELO Proqnozu
+                {t('whatif.title', 'Rəqib Seç & ELO Proqnozu')}
               </h3>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30">
                 <Zap className="w-2.5 h-2.5" />
@@ -288,7 +290,7 @@ export default function WhatIfSimulator({
               </span>
             </div>
             <p className="text-xs text-slate-400">
-              İstənilən klub üzvünə qarşı ehtimal olunan qələbə şansı və set dominantlığına görə ELO dəyişikliyini hesablayın
+              {t('whatif.subtitle', 'İstənilən klub üzvünə qarşı ehtimal olunan qələbə şansı və set dominantlığına görə ELO dəyişikliyini hesablayın')}
             </p>
           </div>
         </div>
@@ -325,7 +327,7 @@ export default function WhatIfSimulator({
                 </div>
               </div>
             ) : (
-              <span className="text-xs text-slate-400">Rəqib seçin...</span>
+              <span className="text-xs text-slate-400">{t('whatif.select_opponent', 'Rəqib seçin...')}</span>
             )}
             <ChevronDown
               className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
@@ -350,7 +352,7 @@ export default function WhatIfSimulator({
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Ad, fakültə və ya ELO axtar..."
+                      placeholder={t('whatif.search_placeholder', 'Ad, fakültə və ya ELO axtar...')}
                       className="w-full pl-8 pr-3 py-1.5 rounded-lg bg-[#131C2B] border border-white/10 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-[#3B82F6]"
                       autoFocus
                     />
@@ -360,7 +362,7 @@ export default function WhatIfSimulator({
                 <div className="max-h-60 overflow-y-auto divide-y divide-white/5">
                   {filteredOpponents.length === 0 ? (
                     <div className="p-4 text-center text-xs text-slate-500">
-                      Uyğun oyunçu tapılmadı
+                      {t('whatif.no_player_found', 'Uyğun oyunçu tapılmadı')}
                     </div>
                   ) : (
                     filteredOpponents.map((op) => {
@@ -385,12 +387,12 @@ export default function WhatIfSimulator({
                               <span>{op.full_name}</span>
                               {op.role === 'coach' && (
                                 <span className="px-1.5 py-0.2 rounded text-[9px] font-bold uppercase bg-amber-500/20 text-amber-300 border border-amber-500/30">
-                                  Məşqçi
+                                  {t('roles.coach', 'Məşqçi')}
                                 </span>
                               )}
                             </div>
                             <div className="text-[10px] text-slate-400 truncate">
-                              {op.major_faculty || 'BANM Üzvü'}
+                              {op.major_faculty || t('whatif.bhos_member', 'BANM Üzvü')}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
@@ -417,10 +419,10 @@ export default function WhatIfSimulator({
           <Flame className="w-4 h-4 text-[#EAB308]" />
           <div>
             <span className="text-xs font-bold text-white block">
-              Set Dominantlığı Əmsalı (M)
+              {t('whatif.set_dominance', 'Set Dominantlığı Əmsalı (M)')}
             </span>
             <span className="text-[10px] text-slate-400">
-              Set fərqi böyük olduqca (məs. 4–0) reytinq artımı daha yüksək olur
+              {t('whatif.dominance_help', 'Set fərqi böyük olduqca (məs. 4–0) reytinq artımı daha yüksək olur')}
             </span>
           </div>
         </div>
@@ -428,6 +430,14 @@ export default function WhatIfSimulator({
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 rounded-xl bg-[#080D16] border border-white/10">
           {SET_PRESETS.map((preset) => {
             const active = preset.id === selectedSetPresetId;
+            const sublabel =
+              preset.id === 'clean_sweep'
+                ? t('whatif.clean_sweep', 'Təmiz Üstünlük')
+                : preset.id === 'sweep'
+                ? t('whatif.dominant_win', 'Dominant Qələbə')
+                : preset.id === 'standard'
+                ? t('whatif.clear_advantage', 'Aydın Üstünlük')
+                : t('whatif.tight_battle', 'Gərgin Mübarizə');
             return (
               <button
                 key={preset.id}
@@ -452,7 +462,7 @@ export default function WhatIfSimulator({
                   </span>
                 </div>
                 <div className="text-[9px] text-slate-400 truncate">
-                  {preset.sublabel}
+                  {sublabel}
                 </div>
               </button>
             );
@@ -482,7 +492,7 @@ export default function WhatIfSimulator({
                   </span>
                 </div>
                 <span className="text-[10px] uppercase tracking-widest font-bold text-slate-400">
-                  Qələbə Ehtimalı
+                  {t('whatif.win_probability', 'Qələbə Ehtimalı')}
                 </span>
                 <div className="flex items-center gap-2">
                   <span className="text-[11px] font-mono text-slate-400">
@@ -524,12 +534,12 @@ export default function WhatIfSimulator({
                     {formatProbabilityDisplay(playerWinPctRaw)}
                   </span>
                   <span className="text-[10px] uppercase font-bold text-slate-500">
-                    Şans
+                    %
                   </span>
                 </div>
 
                 <div className="text-[11px] font-mono text-slate-400">
-                  ELO Fərqi:{' '}
+                  {t('whatif.elo_diff', 'ELO Fərqi:')}{' '}
                   <span
                     className={`font-bold ${
                       safePlayerElo - selectedOpponent.current_elo >= 0
@@ -545,7 +555,7 @@ export default function WhatIfSimulator({
 
                 <div className="flex items-baseline gap-1.5">
                   <span className="text-[10px] uppercase font-bold text-slate-500">
-                    Şans
+                    %
                   </span>
                   <span className="text-lg sm:text-xl font-mono font-black text-pink-400">
                     {formatProbabilityDisplay(opponentWinPctRaw)}
@@ -559,11 +569,11 @@ export default function WhatIfSimulator({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-emerald-300 flex items-center gap-1.5">
                     <TrendingUp className="w-4 h-4 text-emerald-400" />
-                    Qələbə Qazansanız
+                    {t('whatif.if_you_win', 'Qələbə Qazansanız')}
                   </span>
                   {projectedPlayerWinElo >= MAX_ELO ? (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                      {MAX_ELO} Maksimum Həddi
+                      {MAX_ELO} {t('whatif.max_limit', 'Maksimum Həddi')}
                     </span>
                   ) : (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
@@ -581,7 +591,7 @@ export default function WhatIfSimulator({
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] uppercase text-slate-400 block">
-                      Yeni ELO Reytinqi
+                      {t('profile.current_elo', 'Yeni ELO Reytinqi')}
                     </span>
                     <span className="text-sm font-mono font-bold text-white">
                       {safePlayerElo} →{' '}
@@ -597,15 +607,15 @@ export default function WhatIfSimulator({
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold uppercase tracking-wider text-rose-300 flex items-center gap-1.5">
                     <TrendingDown className="w-4 h-4 text-rose-400" />
-                    Məğlub Olsanız
+                    {t('whatif.if_you_lose', 'Məğlub Olsanız')}
                   </span>
                   {safePlayerElo === 0 || projectedPlayerLossElo === 0 ? (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-500/15 text-amber-300 border border-amber-500/30 flex items-center gap-1">
-                      <ShieldAlert className="w-3 h-3" />0 Minimum Həddi
+                      <ShieldAlert className="w-3 h-3" />0 {t('whatif.min_limit', 'Minimum Həddi')}
                     </span>
                   ) : (
                     <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-rose-500/15 text-rose-300 border border-rose-500/30">
-                      {player.full_name.split(' ')[0]} Məğlub
+                      {player.full_name.split(' ')[0]} {t('common.loss', 'Məğlub')}
                     </span>
                   )}
                 </div>
@@ -619,7 +629,7 @@ export default function WhatIfSimulator({
                   </div>
                   <div className="text-right">
                     <span className="text-[10px] uppercase text-slate-400 block">
-                      Yeni ELO Reytinqi
+                      {t('profile.current_elo', 'Yeni ELO Reytinqi')}
                     </span>
                     <span className="text-sm font-mono font-bold text-white">
                       {safePlayerElo} →{' '}
@@ -634,7 +644,7 @@ export default function WhatIfSimulator({
               <div className="p-3.5 rounded-xl bg-[#080D16] border border-white/[0.06] flex items-center justify-between">
                 <div>
                   <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                    Rəqib Qalib Gəlsə ({selectedOpponent.full_name.split(' ')[0]})
+                    {t('whatif.opponent_wins', 'Rəqib Qalib Gəlsə')} ({selectedOpponent.full_name.split(' ')[0]})
                   </span>
                   <span className="text-xs font-mono text-slate-300">
                     {selectedOpponent.current_elo} →{' '}
@@ -655,7 +665,7 @@ export default function WhatIfSimulator({
               <div className="p-3.5 rounded-xl bg-[#080D16] border border-white/[0.06] flex items-center justify-between">
                 <div>
                   <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 block">
-                    Rəqib Məğlub Olsa ({selectedOpponent.full_name.split(' ')[0]})
+                    {t('whatif.opponent_loses', 'Rəqib Məğlub Olsa')} ({selectedOpponent.full_name.split(' ')[0]})
                   </span>
                   <span className="text-xs font-mono text-slate-300">
                     {selectedOpponent.current_elo} →{' '}
@@ -678,7 +688,7 @@ export default function WhatIfSimulator({
               <div className="flex items-center gap-2 text-[11px] text-slate-400">
                 <Sparkles className="w-3.5 h-3.5 text-[#3B82F6] shrink-0" />
                 <span>
-                  Rəsmi ITTF loqistik ELO düsturu (K=32, M={prediction.setMultiplier.toFixed(2)}, 0–{MAX_ELO} ELO aralığı)
+                  {t('whatif.formula_note', 'Rəsmi ITTF loqistik ELO düsturu (K=32, M={mult}, 0–{max} ELO aralığı)').replace('{mult}', prediction.setMultiplier.toFixed(2)).replace('{max}', String(MAX_ELO))}
                 </span>
               </div>
 
@@ -687,14 +697,14 @@ export default function WhatIfSimulator({
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs transition-all shadow-sm shrink-0"
               >
                 <Swords className="w-3.5 h-3.5" />
-                Bu Oyunçu ilə Matç Qeyd Et
+                {t('whatif.log_match_with', 'Bu Oyunçu ilə Matç Qeyd Et')}
               </Link>
             </div>
           </motion.div>
         </AnimatePresence>
       ) : (
         <div className="p-8 rounded-xl bg-[#080D16] border border-white/5 text-center text-xs text-slate-500">
-          ELO proqnozunu görmək üçün siyahıdan rəqib seçin.
+          {t('whatif.select_prompt', 'ELO proqnozunu görmək üçün siyahıdan rəqib seçin.')}
         </div>
       )}
     </div>

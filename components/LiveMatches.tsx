@@ -13,7 +13,7 @@ interface LiveMatchesProps {
 
 export default function LiveMatches({ matches, onSelectMatch }: LiveMatchesProps) {
   const store = BHOSDataStore.getInstance();
-  const { locale } = useTranslation();
+  const { locale, t } = useTranslation();
 
   const liveLabel =
     locale === 'en'
@@ -53,8 +53,8 @@ export default function LiveMatches({ matches, onSelectMatch }: LiveMatchesProps
           {tickerMatches.map((m, idx) => {
             const p1Id = m.player1?.id || m.player1_id;
             const p2Id = m.player2?.id || m.player2_id;
-            const p1Name = m.player1?.full_name || m.player1_name || 'Oyunçu 1';
-            const p2Name = m.player2?.full_name || m.player2_name || 'Oyunçu 2';
+            const p1Name = m.player1?.full_name || m.player1_name || t('common.player_1', 'Oyunçu 1');
+            const p2Name = m.player2?.full_name || m.player2_name || t('common.player_2', 'Oyunçu 2');
 
             const p1Won = m.winner_id
               ? m.winner_id === p1Id || m.player1_score > m.player2_score
@@ -76,7 +76,7 @@ export default function LiveMatches({ matches, onSelectMatch }: LiveMatchesProps
                 key={`${m.id}-${idx}`}
                 type="button"
                 onClick={() => onSelectMatch(m)}
-                title={`${p1Name} (${m.player1_score} : ${m.player2_score}) ${p2Name} — Təfərrüatlar üçün klikləyin`}
+                title={`${p1Name} (${m.player1_score} : ${m.player2_score}) ${p2Name}`}
                 className="inline-flex items-center gap-2.5 bg-slate-900/90 border border-slate-800 rounded-lg px-3 py-1.5 hover:bg-slate-800/80 hover:border-slate-700 cursor-pointer transition text-xs shrink-0"
               >
                 {stageLabel && (

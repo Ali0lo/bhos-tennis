@@ -7,8 +7,10 @@ import PendingApprovals from '../../components/PendingApprovals';
 import { BHOSDataStore } from '../../lib/data/store';
 import { PlayerProfile, isProfilePending } from '../../lib/data/types';
 import { Clock } from 'lucide-react';
+import { useTranslation } from '../../lib/i18n';
 
 function LogMatchContent() {
+  const { t } = useTranslation();
   const searchParams = useSearchParams();
   // `?opponent=<slug>` is the clean form; legacy `?opponentId=<uuid>` links keep working.
   const opponentParam = searchParams.get('opponent') || searchParams.get('opponentId');
@@ -35,10 +37,10 @@ function LogMatchContent() {
           <Clock className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
           <div className="space-y-0.5">
             <span className="font-bold text-amber-200 block">
-              Təsdiq Gözləyir (Pending Approval)
+              {t('matches.pending_approval_title', 'Hesabınız təsdiq gözləyir')}
             </span>
             <span>
-              Hesabınız təsdiq gözləyir. Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.
+              {t('matches.pending_approval_desc', 'Yalnız rəhbərlik təsdiqindən sonra rəsmi matç qeyd edə bilərsiniz.')}
             </span>
           </div>
         </div>

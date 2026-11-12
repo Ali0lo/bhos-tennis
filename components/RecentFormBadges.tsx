@@ -3,6 +3,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { MatchRecord, PlayerProfile } from '../lib/data/types';
+import { useTranslation } from '../lib/i18n';
 
 interface RecentFormBadgesProps {
   matches: MatchRecord[];
@@ -42,6 +43,7 @@ export default function RecentFormBadges({
   player,
   playerId,
 }: RecentFormBadgesProps) {
+  const { t } = useTranslation();
   const recentFive = React.useMemo(() => {
     const confirmed = matches.filter(
       (m) =>
@@ -81,14 +83,14 @@ export default function RecentFormBadges({
           const opScore = isPlayer1 ? m.player2_score : m.player1_score;
           const won = myScore > opScore;
           const opponentName = isPlayer1
-            ? m.player2_name || 'Rəqib'
-            : m.player1_name || 'Rəqib';
+            ? m.player2_name || t('common.opponent', 'Rəqib')
+            : m.player1_name || t('common.opponent', 'Rəqib');
 
           return (
             <motion.span
               key={m.id}
               variants={badgeVariants}
-              title={`${won ? 'Qələbə (W)' : 'Məğlubiyyət (L)'} vs ${opponentName} (${myScore}-${opScore})`}
+              title={`${won ? `${t('common.win', 'Qələbə')} (W)` : `${t('common.loss', 'Məğlubiyyət')} (L)`} vs ${opponentName} (${myScore}-${opScore})`}
               className={`w-6 h-6 rounded-lg font-mono text-[11px] font-black flex items-center justify-center border select-none will-change-transform ${
                 won
                   ? 'bg-emerald-600/15 text-emerald-500 border-emerald-600/40 shadow-sm'

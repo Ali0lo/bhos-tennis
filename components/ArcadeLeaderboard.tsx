@@ -32,37 +32,29 @@ interface ArcadeRow {
   score: number;
 }
 
-const DEPARTMENT_LABELS: Record<string, string> = {
-  'computer engineering': 'Kompüter mühəndisliyi',
-  'process automation engineering': 'Proseslərin avtomatlaşdırılması',
-  'process automation': 'Proseslərin avtomatlaşdırılması',
-  'information security': 'İnformasiya təhlükəsizliyi',
-  'chemical engineering': 'Kimya mühəndisliyi',
-  'petroleum engineering': 'Neft-qaz mühəndisliyi',
-  'business administration': 'Biznesin idarə edilməsi',
-  'idman klubu': 'İdman Klubu',
-};
-
-const formatPlayerDepartment = (player: {
-  department?: string | null;
-  year_of_study?: number | null;
-}) => {
+const formatPlayerDepartment = (
+  player: {
+    department?: string | null;
+    year_of_study?: number | null;
+  },
+  t?: (key: string, fallback?: string) => string
+) => {
+  const translate = t || ((_k: string, fb?: string) => fb || '');
   if (
     player.year_of_study &&
     player.year_of_study !== 2026 &&
     player.department?.toLowerCase() === 'foundation'
   ) {
-    return 'Tələbə';
+    return translate('roles.player', 'Tələbə');
   }
   if (player.year_of_study === 2026 || player.department?.toLowerCase() === 'foundation') {
     return 'Foundation';
   }
   if (player.department && player.department.trim() !== '') {
     const raw = player.department.trim();
-    const mapped = DEPARTMENT_LABELS[raw.toLowerCase()];
-    return mapped || raw;
+    return translate(`faculties.${raw}`, raw);
   }
-  return 'Tələbə';
+  return translate('roles.player', 'Tələbə');
 };
 
 interface MyStanding {
@@ -77,12 +69,12 @@ interface ArcadeLeaderboardProps {
   onScoreDeleted?: (userId: string) => void;
 }
 
-function RankBadge({ rank }: { rank: number }) {
+function RankBadge({ rank, t }: { rank: number; t: (k: string, fallback?: string) => string }) {
   if (rank === 1) {
     return (
       <span
         className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-amber-500/15 border border-amber-400/50 text-amber-300"
-        title="1-ci yer"
+        title={t('arcade.rank_1', '1-ci yer')}
       >
         <Crown className="w-3.5 h-3.5" />
       </span>
@@ -92,7 +84,7 @@ function RankBadge({ rank }: { rank: number }) {
     return (
       <span
         className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-300/10 border border-slate-300/50 text-slate-200"
-        title="2-ci yer"
+        title={t('arcade.rank_2', '2-ci yer')}
       >
         <Medal className="w-3.5 h-3.5" />
       </span>
@@ -102,7 +94,7 @@ function RankBadge({ rank }: { rank: number }) {
     return (
       <span
         className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-orange-700/20 border border-orange-500/50 text-orange-400"
-        title="3-cü yer"
+        title={t('arcade.rank_3', '3-cü yer')}
       >
         <Medal className="w-3.5 h-3.5" />
       </span>
@@ -225,14 +217,18 @@ export default function ArcadeLeaderboard({
         } catch {}
       }
 
-      setActionNotice(`${deleteTarget.full_name} üçün nəticə (${deleteTarget.score} ralli) uğurla silindi.`);
+      setActionNotice(
+        t('arcade.score_deleted_success', '{name} üçün nəticə ({score} ralli) uğurla silindi.')
+          .replace('{name}', deleteTarget.full_name)
+          .replace('{score}', String(deleteTarget.score))
+      );
       setTimeout(() => setActionNotice(null), 4500);
 
       onScoreDeleted?.(deleteTarget.user_id);
       setDeleteTarget(null);
       await load();
     } catch (err: any) {
-      alert(err?.message || 'Nəticə silinərkən xəta baş verdi.');
+      alert(err?.message || t('arcade.delete_error', 'Nəticə silinərkən xəta baş verdi.'));
     } finally {
       setIsDeleting(false);
     }
@@ -296,7 +292,7 @@ export default function ArcadeLeaderboard({
         </div>
       ) : error ? (
         <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center text-xs text-slate-400">
-          Reytinq cədvəli hazırda əlçatan deyil.
+          {t('arcade.leaderboard_unavailable', 'Reytinq cədvəli hazırda əlçatan deyil.')}
         </div>
       ) : rows.length === 0 ? (
         <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-center text-xs text-slate-400">
@@ -318,7 +314,7 @@ export default function ArcadeLeaderboard({
                       : 'bg-slate-950/70 border-slate-800 hover:border-slate-700'
                   }`}
                 >
-                  <RankBadge rank={row.rank} />
+                  <RankBadge rank={row.rank} t={t} />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <span className="text-xs font-bold text-white truncate">
@@ -331,7 +327,7 @@ export default function ArcadeLeaderboard({
                       )}
                     </div>
                     <div className="text-[10px] text-slate-400 truncate">
-                      {formatPlayerDepartment(row)}
+                      {formatPlayerDepartment(row, t)}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -356,8 +352,8 @@ export default function ArcadeLeaderboard({
                           e.stopPropagation();
                           setDeleteTarget(row);
                         }}
-                        title={`${row.full_name} nəticəsini sil`}
-                        aria-label={`${row.full_name} nəticəsini sil`}
+                        title={t('arcade.delete_player_result', '{name} nəticəsini sil').replace('{name}', row.full_name)}
+                        aria-label={t('arcade.delete_player_result', '{name} nəticəsini sil').replace('{name}', row.full_name)}
                         className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition shrink-0 ml-0.5"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -403,15 +399,15 @@ export default function ArcadeLeaderboard({
 
             <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 text-xs text-slate-300 space-y-1">
               <div>
-                <span className="text-slate-400">Oyunçu:</span>{' '}
+                <span className="text-slate-400">{t('arcade.player', 'Oyunçu:')}</span>{' '}
                 <strong className="text-white font-semibold">{deleteTarget.full_name}</strong>
               </div>
               <div>
-                <span className="text-slate-400">Mövcud Rekord:</span>{' '}
+                <span className="text-slate-400">{t('arcade.current_record', 'Mövcud Rekord:')}</span>{' '}
                 <strong className="text-rose-400 font-mono font-bold">{deleteTarget.score} {t('arcade.rallies', 'ralli')}</strong>
               </div>
               <p className="text-[11px] text-slate-400 pt-1 border-t border-slate-800/80 mt-1">
-                Rekord silindikdən sonra liderlər lövhəsindən çıxarılacaq və oyunçu yeni nəticələri ilə yenidən yarışa biləcək.
+                {t('arcade.delete_notice', 'Rekord silindikdən sonra liderlər lövhəsindən çıxarılacaq və oyunçu yeni nəticələri ilə yenidən yarışa biləcək.')}
               </p>
             </div>
 

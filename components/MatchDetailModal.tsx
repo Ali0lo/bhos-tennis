@@ -45,8 +45,8 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
   const store = BHOSDataStore.getInstance();
   const enriched = store.enrichMatchRecord(match);
 
-  const p1Name = enriched.player1?.full_name || enriched.player1_name || 'Oyunçu 1';
-  const p2Name = enriched.player2?.full_name || enriched.player2_name || 'Oyunçu 2';
+  const p1Name = enriched.player1?.full_name || enriched.player1_name || t('matches.player1_fallback', 'Oyunçu 1');
+  const p2Name = enriched.player2?.full_name || enriched.player2_name || t('matches.player2_fallback', 'Oyunçu 2');
   const p1Id = enriched.player1?.id || enriched.player1_id;
   const p2Id = enriched.player2?.id || enriched.player2_id;
   const p1Dept =
@@ -121,7 +121,7 @@ export default function MatchDetailModal({ match, onClose }: MatchDetailModalPro
 
   const tournamentTitle =
     enriched.tournament_title ||
-    (enriched.tournament_id ? '"Zəfər Günü" Foundation Kuboku' : null);
+    (enriched.tournament_id ? t('tournaments.foundation_title', '"Zəfər Günü" Foundation Kuboku') : null);
 
   return (
     <div

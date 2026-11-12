@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { useTranslation } from '../lib/i18n';
 import {
   Trophy,
   ShieldCheck,
@@ -36,13 +37,13 @@ function getIconForTitle(title: string): RuleItem['iconType'] {
   return 'check';
 }
 
-function parseRules(text?: string | null): RuleItem[] {
+function parseRules(text?: string | null, defaultRuleText?: string): RuleItem[] {
   if (!text || !text.trim()) {
     return [
       {
         id: 'default',
         type: 'paragraph',
-        body: 'Standart ITTF və BANM Stolüstü Tennis Klubu rəsmi reqlamenti və oyun qaydaları tətbiq olunur.',
+        body: defaultRuleText || 'Standart ITTF və BANM Stolüstü Tennis Klubu rəsmi reqlamenti və oyun qaydaları tətbiq olunur.',
       },
     ];
   }
@@ -99,7 +100,11 @@ export default function TournamentRulesViewer({
   rules,
   className = '',
 }: TournamentRulesViewerProps) {
-  const parsed = parseRules(rules);
+  const { t } = useTranslation();
+  const parsed = parseRules(
+    rules,
+    t('tournaments.default_rules', 'Standart ITTF və BANM Stolüstü Tennis Klubu rəsmi reqlamenti və oyun qaydaları tətbiq olunur.')
+  );
 
   const renderIcon = (type?: RuleItem['iconType']) => {
     switch (type) {

@@ -22,6 +22,7 @@ import { BHOSDataStore } from '../lib/data/store';
 import { sanitizeTextInput, sanitizeSafeAvatarUrl } from '../lib/security/sanitize';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { getCustomRacket, isCustomRacket } from '../lib/utils/equipment';
+import { useTranslation } from '../lib/i18n';
 
 interface EditProfileModalProps {
   isOpen: boolean;
@@ -116,6 +117,7 @@ export default function EditProfileModal({
   profile,
   onProfileUpdated,
 }: EditProfileModalProps) {
+  const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -160,12 +162,12 @@ export default function EditProfileModal({
     if (!file) return;
 
     if (!file.type.startsWith('image/')) {
-      setErrorMsg('Zəhmət olmasa düzgün şəkil formatı seçin (JPEG, PNG, WebP).');
+      setErrorMsg(t('profile.err_image_format', 'Zəhmət olmasa düzgün şəkil formatı seçin (JPEG, PNG, WebP).'));
       return;
     }
 
     if (file.size > 8 * 1024 * 1024) {
-      setErrorMsg('Şəkil həcmi 8 MB-dan çox ola bilməz.');
+      setErrorMsg(t('profile.err_image_size', 'Şəkil həcmi 8 MB-dan çox ola bilməz.'));
       return;
     }
 
@@ -229,7 +231,7 @@ export default function EditProfileModal({
     };
     reader.onerror = () => {
       setIsProcessingImage(false);
-      setErrorMsg('Şəkil oxunarkən xəta baş verdi.');
+      setErrorMsg(t('profile.err_image_read', 'Şəkil oxunarkən xəta baş verdi.'));
     };
     reader.readAsDataURL(file);
   };
@@ -238,7 +240,7 @@ export default function EditProfileModal({
     if (!urlInput.trim()) return;
     const safeUrl = sanitizeSafeAvatarUrl(urlInput);
     if (!safeUrl) {
-      setErrorMsg('Yalnız təhlükəsiz HTTPS/HTTP şəkil linkləri qəbul edilir.');
+      setErrorMsg(t('profile.err_image_url', 'Yalnız təhlükəsiz HTTPS/HTTP şəkil linkləri qəbul edilir.'));
       return;
     }
     setErrorMsg(null);
@@ -260,7 +262,7 @@ export default function EditProfileModal({
     try {
       const safeAvatar = avatarUrl ? sanitizeSafeAvatarUrl(avatarUrl) : undefined;
       if (avatarUrl && !safeAvatar) {
-        throw new Error('Profil şəkli linki təhlükəsizlik tələblərinə uyğun deyil.');
+        throw new Error(t('profile.err_image_sec', 'Profil şəkli linki təhlükəsizlik tələblərinə uyğun deyil.'));
       }
 
       const cleanedRacket = sanitizeTextInput(racket, 100);
@@ -282,7 +284,7 @@ export default function EditProfileModal({
       onProfileUpdated(updated);
       onClose();
     } catch (err: any) {
-      setErrorMsg(err?.message || 'Yadda saxlanarkən xəta baş verdi.');
+      setErrorMsg(err?.message || t('profile.err_save_failed', 'Yadda saxlanarkən xəta baş verdi.'));
     } finally {
       setSaving(false);
       savingLockRef.current = false;
@@ -300,10 +302,10 @@ export default function EditProfileModal({
             </div>
             <div>
               <h2 className="text-lg font-display font-black text-white tracking-tight">
-                Profili Fərdiləşdir
+                {t('profile.customize_title', 'Profili Fərdiləşdir')}
               </h2>
               <p className="text-xs text-slate-400">
-                Profil şəklinizi, raketinizi və oyun stilinizi yeniləyin
+                {t('profile.customize_sub', 'Profil şəklinizi, raketinizi və oyun stilinizi yeniləyin')}
               </p>
             </div>
           </div>
@@ -327,7 +329,7 @@ export default function EditProfileModal({
             <div className="flex items-center justify-between">
               <span className="text-xs uppercase font-bold text-slate-400 tracking-wider flex items-center gap-2">
                 <Camera className="w-4 h-4 text-blue-400" />
-                Profil Şəkli / Avatar
+                {t('profile.avatar_title', 'Profil Şəkli / Avatar')}
               </span>
 
               {avatarUrl && (
@@ -337,7 +339,7 @@ export default function EditProfileModal({
                   className="inline-flex items-center gap-1.5 text-[11px] text-rose-400 hover:text-rose-300 font-semibold transition"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
-                  <span>Şəkli Sil</span>
+                  <span>{t('profile.remove_photo', 'Şəkli Sil')}</span>
                 </button>
               )}
             </div>
@@ -375,7 +377,7 @@ export default function EditProfileModal({
                     }`}
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Yüklə</span>
+                    <span>{t('profile.tab_upload', 'Yüklə')}</span>
                   </button>
 
                   <button
@@ -388,7 +390,7 @@ export default function EditProfileModal({
                     }`}
                   >
                     <Sparkles className="w-3.5 h-3.5" />
-                    <span>Presetlər</span>
+                    <span>{t('profile.tab_presets', 'Presetlər')}</span>
                   </button>
 
                   <button
@@ -401,7 +403,7 @@ export default function EditProfileModal({
                     }`}
                   >
                     <LinkIcon className="w-3.5 h-3.5" />
-                    <span>Link</span>
+                    <span>{t('profile.tab_link', 'Link')}</span>
                   </button>
                 </div>
 
@@ -421,7 +423,7 @@ export default function EditProfileModal({
                       className="w-full flex items-center justify-center gap-2 py-3 px-4 rounded-xl border border-dashed border-slate-700 bg-slate-900 hover:bg-slate-800 hover:border-blue-500 text-slate-300 text-xs font-semibold transition"
                     >
                       <Upload className="w-4 h-4 text-blue-400" />
-                      <span>Cihazdan şəkil seçin (PNG, JPG, WebP)</span>
+                      <span>{t('profile.upload_hint', 'Cihazdan şəkil seçin (PNG, JPG, WebP)')}</span>
                     </button>
                   </div>
                 )}
@@ -472,7 +474,7 @@ export default function EditProfileModal({
                       onClick={handleApplyUrl}
                       className="px-3.5 py-2 bg-blue-700 hover:bg-blue-600 text-white rounded-xl text-xs font-semibold transition"
                     >
-                      Tətbiq et
+                      {t('profile.apply', 'Tətbiq et')}
                     </button>
                   </div>
                 )}
@@ -483,16 +485,16 @@ export default function EditProfileModal({
           <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-4">
             <span className="text-xs uppercase font-bold text-slate-400 tracking-wider flex items-center gap-2">
               <Swords className="w-4 h-4 text-blue-400" />
-              Avadanlıq & Raket Spesifikasiyası
+              {t('profile.equipment_specs', 'Avadanlıq & Raket Spesifikasiyası')}
             </span>
 
             <div className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1">
-                  Fərdi Raket / İnventar (İstəyə bağlı)
+                  {t('profile.custom_racket_opt', 'Fərdi Raket / İnventar (İstəyə bağlı)')}
                 </label>
                 <p className="text-[11px] text-slate-400 mb-1.5">
-                  Boş saxlasanız, profilinizdə raket bölməsi görünməyəcək.
+                  {t('profile.custom_racket_help', 'Boş saxlasanız, profilinizdə raket bölməsi görünməyəcək.')}
                 </p>
                 <input
                   type="text"
@@ -501,20 +503,20 @@ export default function EditProfileModal({
                     setRacket(e.target.value);
                     if (!bladeEquipment) setBladeEquipment(e.target.value);
                   }}
-                  placeholder="Məs: Butterfly Primorac Carbon / Donic Waldner"
+                  placeholder="Butterfly Primorac Carbon / Donic Waldner"
                   className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Raket Taxtası (Blade)
+                  {t('profile.blade_title', 'Raket Taxtası (Blade)')}
                 </label>
                 <input
                   type="text"
                   value={bladeEquipment}
                   onChange={(e) => setBladeEquipment(e.target.value)}
-                  placeholder="Məsələn: Butterfly Viscaria ALC"
+                  placeholder="Butterfly Viscaria ALC"
                   className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
                 />
                 <div className="flex flex-wrap gap-1.5 mt-2">
@@ -534,13 +536,13 @@ export default function EditProfileModal({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Forehand Rezini (Qırmızı)
+                    {t('profile.fh_rubber_title', 'Forehand Rezini (Qırmızı)')}
                   </label>
                   <input
                     type="text"
                     value={forehandRubber}
                     onChange={(e) => setForehandRubber(e.target.value)}
-                    placeholder="Məsələn: Butterfly Dignics 09C"
+                    placeholder="Butterfly Dignics 09C"
                     className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
                   />
                   <div className="flex flex-wrap gap-1 mt-2">
@@ -559,13 +561,13 @@ export default function EditProfileModal({
 
                 <div>
                   <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                    Backhand Rezini (Qara)
+                    {t('profile.bh_rubber_title', 'Backhand Rezini (Qara)')}
                   </label>
                   <input
                     type="text"
                     value={backhandRubber}
                     onChange={(e) => setBackhandRubber(e.target.value)}
-                    placeholder="Məsələn: Butterfly Tenergy 05"
+                    placeholder="Butterfly Tenergy 05"
                     className="w-full px-3.5 py-2.5 bg-slate-900 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 transition"
                   />
                   <div className="flex flex-wrap gap-1 mt-2">
@@ -588,13 +590,13 @@ export default function EditProfileModal({
           <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-4">
             <span className="text-xs uppercase font-bold text-slate-400 tracking-wider flex items-center gap-2">
               <Layers className="w-4 h-4 text-emerald-500" />
-              Oyun Stili & Taktiki Parametrlər
+              {t('profile.style_tactics', 'Oyun Stili & Taktiki Parametrlər')}
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Oyun Stili
+                  {t('profile.playstyle', 'Oyun Stili')}
                 </label>
                 <select
                   value={playingStyle}
@@ -611,7 +613,7 @@ export default function EditProfileModal({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Təcrübə Səviyyəsi
+                  {t('profile.experience_level', 'Təcrübə Səviyyəsi')}
                 </label>
                 <select
                   value={playingLevel}
@@ -620,7 +622,7 @@ export default function EditProfileModal({
                 >
                   {PLAYING_LEVELS.map((level) => (
                     <option key={level} value={level}>
-                      {level === 'Beginner' ? 'Başlanğıc' : level === 'Intermediate' ? 'Orta' : 'Qabaqcıl'}
+                      {level === 'Beginner' ? t('levels.Beginner', 'Başlanğıc') : level === 'Intermediate' ? t('levels.Intermediate', 'Orta') : t('levels.Advanced', 'Qabaqcıl')}
                     </option>
                   ))}
                 </select>
@@ -631,13 +633,13 @@ export default function EditProfileModal({
           <div className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-4">
             <span className="text-xs uppercase font-bold text-slate-400 tracking-wider flex items-center gap-2">
               <GraduationCap className="w-4 h-4 text-blue-400" />
-              Təhsil & Fakültə
+              {t('profile.education_faculty', 'Təhsil & Fakültə')}
             </span>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Fakültə / Departament
+                  {t('profile.faculty_dept', 'Fakültə / Departament')}
                 </label>
                 <select
                   value={majorFaculty}
@@ -646,7 +648,7 @@ export default function EditProfileModal({
                 >
                   {FACULTIES.map((fac) => (
                     <option key={fac} value={fac}>
-                      {fac}
+                      {t(`faculties.${fac}`, fac)}
                     </option>
                   ))}
                 </select>
@@ -654,7 +656,7 @@ export default function EditProfileModal({
 
               <div>
                 <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-                  Qəbul İli
+                  {t('profile.admission_year_label', 'Qəbul İli')}
                 </label>
                 <input
                   type="number"
@@ -676,7 +678,7 @@ export default function EditProfileModal({
               disabled={saving}
               className="px-4 py-2.5 rounded-xl border border-slate-800 hover:bg-slate-800 text-slate-300 text-xs font-semibold transition"
             >
-              Ləğv et
+              {t('profile.cancel', 'Ləğv et')}
             </button>
 
             <button
@@ -687,12 +689,12 @@ export default function EditProfileModal({
               {saving ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Saxlanılır...</span>
+                  <span>{t('profile.saving', 'Saxlanılır...')}</span>
                 </>
               ) : (
                 <>
                   <Save className="w-4 h-4" />
-                  <span>Dəyişiklikləri Yadda Saxla</span>
+                  <span>{t('profile.save_changes', 'Dəyişiklikləri Yadda Saxla')}</span>
                 </>
               )}
             </button>

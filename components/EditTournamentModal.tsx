@@ -6,6 +6,7 @@ import { Tournament, TournamentFormat, TournamentStatus, PlayerProfile } from '.
 import { BHOSDataStore } from '../lib/data/store';
 import { isTournamentRosterLocked } from '../lib/tournament';
 import TournamentRulesViewer from './TournamentRulesViewer';
+import { useTranslation } from '../lib/i18n';
 import {
   X,
   Settings,
@@ -34,6 +35,7 @@ export default function EditTournamentModal({
   onClose,
   onSaved,
 }: EditTournamentModalProps) {
+  const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
   const [activeTab, setActiveTab] = useState<'settings' | 'roster'>('settings');
 
@@ -245,10 +247,10 @@ export default function EditTournamentModal({
             </div>
             <div>
               <h2 className="text-xl font-display font-black text-white">
-                Turnir Tənzimləmələri & İştirakçı Redaktoru
+                {t('tournaments.modal_title', 'Turnir Tənzimləmələri & İştirakçı Redaktoru')}
               </h2>
               <p className="text-xs text-slate-400">
-                Parametrləri sazlayın, qeydiyyatı idarə edin və ELO əsaslı cədvəli yeniləyin
+                {t('tournaments.modal_sub', 'Parametrləri sazlayın, qeydiyyatı idarə edin və ELO əsaslı cədvəli yeniləyin')}
               </p>
             </div>
           </div>
@@ -273,7 +275,7 @@ export default function EditTournamentModal({
             }`}
           >
             <Settings className="w-3.5 h-3.5" />
-            <span>⚙️ Əsas Tənzimləmələr</span>
+            <span>{t('tournaments.tab_settings', '⚙️ Əsas Tənzimləmələr')}</span>
           </button>
 
           <button
@@ -286,7 +288,7 @@ export default function EditTournamentModal({
             }`}
           >
             <Users className="w-3.5 h-3.5" />
-            <span>👥 İştirakçı Siyahısı ({participantIds.length} / {maxParticipants})</span>
+            <span>{t('tournaments.tab_roster', '👥 İştirakçı Siyahısı ({current} / {max})').replace('{current}', String(participantIds.length)).replace('{max}', String(maxParticipants))}</span>
           </button>
         </div>
 
@@ -309,7 +311,7 @@ export default function EditTournamentModal({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2 space-y-1.5">
                 <label className="block text-slate-300 font-semibold">
-                  Turnirin Adı
+                  {t('tournaments.field_title', 'Turnirin Adı')}
                 </label>
                 <input
                   type="text"
@@ -330,35 +332,35 @@ export default function EditTournamentModal({
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500"
                 >
                   <option value="groups_and_knockout">
-                    Qrup Mərhələsi + Pley-off (Knockout)
+                    {t('tournaments.groups_knockout_opt', 'Qrup Mərhələsi + Pley-off (Knockout)')}
                   </option>
                   <option value="single_elimination">
-                    Yalnız Olimpiya Sistemi (Single Elimination)
+                    {t('tournaments.single_elimination_opt', 'Yalnız Olimpiya Sistemi (Single Elimination)')}
                   </option>
                   <option value="round_robin">
-                    Dairəvi Sistem (Round Robin)
+                    {t('tournaments.round_robin_opt', 'Dairəvi Sistem (Round Robin)')}
                   </option>
                 </select>
               </div>
 
               <div className="space-y-1.5">
                 <label className="block text-slate-300 font-semibold">
-                  Turnir Statusu
+                  {t('tournaments.stage', 'Turnir Statusu')}
                 </label>
                 <select
                   value={status}
                   onChange={(e) => setStatus(e.target.value as TournamentStatus)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500"
                 >
-                  <option value="upcoming">Gözləyir / Qeydiyyat Açıqdır (Upcoming)</option>
-                  <option value="ongoing">Canlı Gedir — Roster Kilidli (In Progress)</option>
-                  <option value="completed">Başa çatıb (Completed)</option>
+                  <option value="upcoming">{t('tournaments.status_upcoming_opt', 'Gözləyir / Qeydiyyat Açıqdır (Upcoming)')}</option>
+                  <option value="ongoing">{t('tournaments.status_ongoing_opt', 'Canlı Gedir — Roster Kilidli (In Progress)')}</option>
+                  <option value="completed">{t('tournaments.status_completed_opt', 'Başa çatıb (Completed)')}</option>
                 </select>
               </div>
 
               <div className="space-y-1.5">
                 <label className="block text-slate-300 font-semibold">
-                  Səbət Tutumu (Maksimum Oyunçu)
+                  {t('tournaments.capacity_label', 'Səbət Tutumu (Maksimum Oyunçu)')}
                 </label>
                 <select
                   value={maxParticipants}
@@ -379,15 +381,15 @@ export default function EditTournamentModal({
 
               <div className="space-y-1.5">
                 <label className="block text-slate-300 font-semibold">
-                  İştirakçı Uyğunluğu (Məhdudiyyət)
+                  {t('tournaments.eligibility_label', 'İştirakçı Uyğunluğu (Məhdudiyyət)')}
                 </label>
                 <select
                   value={allowedAdmissionYear}
                   onChange={(e) => setAllowedAdmissionYear(e.target.value)}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500"
                 >
-                  <option value="all">🌐 Hamı üçün açıq (Bütün tələbələr və heyət)</option>
-                  <option value="2026">🎓 Yalnız Foundation (2026 Qəbul Tələbələri)</option>
+                  <option value="all">{t('tournaments.eligibility_open_all', '🌐 Hamı üçün açıq (Bütün tələbələr və heyət)')}</option>
+                  <option value="2026">{t('tournaments.eligibility_foundation', '🎓 Yalnız Foundation (2026 Qəbul Tələbələri)')}</option>
                   <option value="2025">2025 Qəbul (1-ci kurs)</option>
                   <option value="2024">2024 Qəbul (2-ci kurs)</option>
                 </select>
@@ -397,7 +399,7 @@ export default function EditTournamentModal({
                 <>
                   <div className="space-y-1.5 p-3 rounded-2xl bg-slate-950/70 border border-blue-700/30">
                     <label className="block text-blue-300 font-bold">
-                      Qrup Ölçüsü (Nəfər)
+                      {t('tournaments.group_size_label', 'Qrup Ölçüsü (Nəfər)')}
                     </label>
                     <select
                       value={groupSize}
@@ -416,7 +418,7 @@ export default function EditTournamentModal({
 
                   <div className="space-y-1.5 p-3 rounded-2xl bg-slate-950/70 border border-blue-700/30">
                     <label className="block text-blue-300 font-bold">
-                      Pley-offa Keçən (Hər qrupdan)
+                      {t('tournaments.advance_per_group_label', 'Pley-offa Keçən (Hər qrupdan)')}
                     </label>
                     <select
                       value={advancePerGroup}
@@ -436,20 +438,20 @@ export default function EditTournamentModal({
 
               <div className="space-y-1.5">
                 <label className="block text-slate-300 font-semibold">
-                  Məkan
+                  {t('tournaments.field_location', 'Məkan')}
                 </label>
                 <input
                   type="text"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  placeholder="Məs: Bibiheybət Kampusu"
+                  placeholder={t('tournaments.field_location_placeholder', 'Məs: Bibiheybət Kampusu')}
                   className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-white font-medium focus:outline-none focus:border-blue-500"
                 />
               </div>
 
               <div className="space-y-1.5">
                 <label className="block text-slate-300 font-semibold">
-                  Başlama Tarixi və Saatı
+                  {t('tournaments.field_start_date', 'Başlama Tarixi və Saatı')}
                 </label>
                 <input
                   type="datetime-local"
@@ -461,7 +463,7 @@ export default function EditTournamentModal({
 
               <div className="sm:col-span-2 space-y-1.5">
                 <label className="block text-slate-300 font-semibold">
-                  Qısa Təsvir
+                  {t('tournaments.field_desc', 'Qısa Təsvir')}
                 </label>
                 <input
                   type="text"
@@ -474,7 +476,7 @@ export default function EditTournamentModal({
               <div className="sm:col-span-2 space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="block text-slate-300 font-semibold text-xs">
-                    Xüsusi Qaydalar (Markdown formatında)
+                    {t('tournaments.field_rules', 'Xüsusi Qaydalar (Markdown formatında)')}
                   </label>
                   <span className="text-[11px] text-blue-400 font-mono">
                     # Başlıq, **Qayda:** İzah
@@ -491,7 +493,7 @@ export default function EditTournamentModal({
                 {customRules && (
                   <div className="space-y-1.5 pt-1">
                     <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-                      Canlı Qaydalar Önizləməsi (Tələbələrin gördüyü görünüş):
+                      {t('tournaments.rules_preview', 'Canlı Qaydalar Önizləməsi:')}
                     </span>
                     <div className="p-3.5 rounded-2xl bg-slate-950/80 border border-white/5 max-h-48 overflow-y-auto">
                       <TournamentRulesViewer rules={customRules} />
@@ -507,7 +509,7 @@ export default function EditTournamentModal({
                 onClick={onClose}
                 className="px-4 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-300 hover:text-white font-semibold transition"
               >
-                Ləğv et
+                {t('common.cancel', 'Ləğv et')}
               </button>
               <button
                 type="submit"
@@ -515,7 +517,7 @@ export default function EditTournamentModal({
                 className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-display font-bold shadow-md transition active:scale-95"
               >
                 <CheckCircle2 className="w-4 h-4" />
-                <span>{isSubmitting ? 'Yadda saxlanılır...' : 'Tənzimləmələri Yadda Saxla'}</span>
+                <span>{isSubmitting ? t('tournaments.saving', 'Yadda saxlanılır...') : t('tournaments.save_settings', 'Tənzimləmələri Yadda Saxla')}</span>
               </button>
             </div>
           </form>
@@ -528,7 +530,7 @@ export default function EditTournamentModal({
               <div className="space-y-1">
                 <div className="flex items-center gap-2">
                   <span className="font-display font-bold text-white text-sm">
-                    Qeydiyyatdan Keçən Oyunçular
+                    {t('tournaments.registered_students', 'Qeydiyyatdan Keçən Oyunçular')}
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-blue-700/20 text-blue-300 border border-blue-600/30">
                     {participantIds.length} / {maxParticipants}
@@ -536,8 +538,8 @@ export default function EditTournamentModal({
                 </div>
                 <p className="text-[11px] text-slate-400">
                   {isLocked
-                    ? '⚠️ Turnir aktiv vəziyyətdədir. İştirakçı siyahısı kilidlənib.'
-                    : 'Qeydiyyat açıqdır. Oyunçuları əlavə edə, silə və cədvəli qura bilərsiniz.'}
+                    ? t('tournaments.roster_locked_notice', '⚠️ Turnir aktiv vəziyyətdədir. İştirakçı siyahısı kilidlənib.')
+                    : t('tournaments.roster_open_notice', 'Qeydiyyat açıqdır. Oyunçuları əlavə edə, silə və cədvəli qura bilərsiniz.')}
                 </p>
               </div>
 
@@ -548,7 +550,7 @@ export default function EditTournamentModal({
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 disabled:bg-slate-800 disabled:text-slate-500 text-white font-display font-bold text-xs shadow-sm active:scale-95 transition"
               >
                 <RefreshCw className={`w-3.5 h-3.5 ${isRegenerating ? 'animate-spin' : ''}`} />
-                <span>🔄 Cədvəli (Bracket) Yenidən Qur</span>
+                <span>{t('tournaments.rebuild_bracket', '🔄 Cədvəli (Bracket) Yenidən Qur')}</span>
               </button>
             </div>
 
@@ -558,7 +560,7 @@ export default function EditTournamentModal({
                 {currentUser && !isCurrentUserEnrolled && (
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
                     <span className="text-amber-300 font-semibold text-xs">
-                      👑 Təşkilatçı kimi bu turnirə qatılmaq istəyirsiniz?
+                      {t('tournaments.organizer_join_prompt', '👑 Təşkilatçı kimi bu turnirə qatılmaq istəyirsiniz?')}
                     </span>
                     <button
                       type="button"
@@ -566,7 +568,7 @@ export default function EditTournamentModal({
                       className="inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-sm transition active:scale-95"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
-                      <span>+ Özünü ({currentUser.full_name || 'Təşkilatçı'}) Əlavə Et</span>
+                      <span>+ {t('tournaments.add_self_btn', 'Özünü')} ({currentUser.full_name || 'Təşkilatçı'}) {t('tournaments.add_participant', 'Əlavə Et')}</span>
                     </button>
                   </div>
                 )}
@@ -577,7 +579,7 @@ export default function EditTournamentModal({
                     type="text"
                     value={playerSearchQuery}
                     onChange={(e) => setPlayerSearchQuery(e.target.value)}
-                    placeholder="Klub oyunçularını ada və ya ixtisasa görə axtar və əlavə et..."
+                    placeholder={t('tournaments.search_members', 'Klub oyunçularını ada və ya ixtisasa görə axtar və əlavə et...')}
                     className="w-full bg-transparent border-none text-white text-xs placeholder:text-slate-500 focus:outline-none"
                   />
                   {playerSearchQuery && (
@@ -586,7 +588,7 @@ export default function EditTournamentModal({
                       onClick={() => setPlayerSearchQuery('')}
                       className="text-slate-400 hover:text-white text-[11px]"
                     >
-                      Təmizlə
+                      {t('common.clear', 'Təmizlə')}
                     </button>
                   )}
                 </div>
@@ -595,7 +597,7 @@ export default function EditTournamentModal({
                   <div className="pt-2 border-t border-slate-800/80 space-y-1.5 max-h-48 overflow-y-auto">
                     {availableToAddProfiles.length === 0 ? (
                       <p className="text-[11px] text-slate-500 py-1 text-center">
-                        Uyğun oyunçu tapılmadı və ya artıq turnirə qeydiyyatdan keçib.
+                        {t('common.no_results', 'Uyğun oyunçu tapılmadı və ya artıq turnirə qeydiyyatdan keçib.')}
                       </p>
                     ) : (
                       availableToAddProfiles.map((p) => (
@@ -623,7 +625,7 @@ export default function EditTournamentModal({
                             className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-600 text-white font-bold text-[11px] transition shrink-0 ml-2"
                           >
                             <UserPlus className="w-3 h-3" />
-                            <span>Əlavə Et</span>
+                            <span>{t('tournaments.add_participant', 'Əlavə Et')}</span>
                           </button>
                         </div>
                       ))
@@ -636,15 +638,15 @@ export default function EditTournamentModal({
             {/* Current Enrolled Roster */}
             <div className="space-y-2">
               <span className="text-slate-300 font-semibold block">
-                Cari İştirakçılar ({participantProfiles.length})
+                {t('tournaments.current_participants', 'Cari İştirakçılar ({count})').replace('{count}', String(participantProfiles.length))}
               </span>
 
               {participantProfiles.length === 0 ? (
                 <div className="p-8 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
                   <Users className="w-8 h-8 text-slate-600 mx-auto" />
-                  <p className="text-slate-400 font-medium">Hələ heç bir iştirakçı qeydiyyatdan keçməyib.</p>
+                  <p className="text-slate-400 font-medium">{t('tournaments.no_participants_yet', 'Hələ heç bir iştirakçı qeydiyyatdan keçməyib.')}</p>
                   <p className="text-[11px] text-slate-500">
-                    Yuxarıdakı axtarış paneli ilə klub oyunçularını əlavə edə bilərsiniz.
+                    {t('tournaments.use_search_to_add', 'Yuxarıdakı axtarış paneli ilə klub oyunçularını əlavə edə bilərsiniz.')}
                   </p>
                 </div>
               ) : (
@@ -675,7 +677,7 @@ export default function EditTournamentModal({
                         <button
                           type="button"
                           onClick={() => handleRemovePlayer(p.id)}
-                          title="İştirakçını çıxar"
+                          title={t('tournaments.remove_participant', 'İştirakçını çıxar')}
                           className="p-1.5 rounded-lg bg-rose-600/10 hover:bg-rose-600 text-rose-400 hover:text-white transition shrink-0 ml-2"
                         >
                           <Trash2 className="w-3.5 h-3.5" />
@@ -689,7 +691,7 @@ export default function EditTournamentModal({
 
             <div className="flex items-center justify-between pt-3 border-t border-white/10">
               <span className="text-[11px] text-slate-400">
-                Dəyişikliklər avtomatik sinxronizasiya edilir.
+                {t('tournaments.auto_sync', 'Dəyişikliklər avtomatik sinxronizasiya edilir.')}
               </span>
               <button
                 type="button"

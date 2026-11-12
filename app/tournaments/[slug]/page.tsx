@@ -35,8 +35,10 @@ import {
   Lock,
 } from 'lucide-react';
 import { isTournamentRosterLocked } from '../../../lib/tournament';
+import { useTranslation } from '../../../lib/i18n';
 
 export default function TournamentDetailPage() {
+  const { t } = useTranslation();
   const params = useParams();
   const router = useRouter();
   const store = BHOSDataStore.getInstance();
@@ -314,18 +316,18 @@ export default function TournamentDetailPage() {
 
   const formatStatus = (status?: string) => {
     if (status === 'ongoing' || status === 'In Progress' || status === 'in_progress') {
-      return { label: 'Canlı Gedir (Püşkatma / Qruplar)', color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
+      return { label: t('tournaments.status_ongoing', 'Canlı Gedir (Püşkatma / Qruplar)'), color: 'bg-amber-500/15 text-amber-400 border-amber-500/30' };
     }
     if (status === 'completed' || status === 'Completed') {
-      return { label: 'Başa çatıb', color: 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30' };
+      return { label: t('tournaments.status_completed', 'Başa çatıb'), color: 'bg-[#22C55E]/15 text-[#22C55E] border-[#22C55E]/30' };
     }
-    return { label: 'Qeydiyyat Açıqdır', color: 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30' };
+    return { label: t('tournaments.status_upcoming', 'Qeydiyyat Açıqdır'), color: 'bg-[#3B82F6]/15 text-[#3B82F6] border-[#3B82F6]/30' };
   };
 
   const formatLabel = (fmt?: string) => {
-    if (fmt === 'groups_and_knockout') return 'Qrup Mərhələsi + Pley-off';
-    if (fmt === 'round_robin') return 'Dairəvi Sistem (Round Robin)';
-    return 'Single Elimination';
+    if (fmt === 'groups_and_knockout') return `${t('tournaments.group', 'Qrup')} + ${t('tournaments.playoff', 'Pley-off')}`;
+    if (fmt === 'round_robin') return t('tournaments.format_round_robin', 'Dairəvi Sistem');
+    return t('tournaments.format_single', 'Single Elimination');
   };
 
   const statusConfig = formatStatus(tournament.status);
@@ -351,10 +353,10 @@ export default function TournamentDetailPage() {
     setFeedback(null);
     try {
       await store.registerForTournament(tournament.id, currentUser.id);
-      setFeedback('Turnirə uğurla qeydiyyatdan keçdiniz!');
+      setFeedback(t('tournaments.toast_registered', 'Turnirə uğurla qeydiyyatdan keçdiniz!'));
       await loadData(true);
     } catch (e: any) {
-      setFeedback(e.message || 'Xəta baş verdi');
+      setFeedback(e.message || t('common.error', 'Xəta baş verdi'));
     } finally {
       setActionLoading(false);
     }
@@ -366,10 +368,10 @@ export default function TournamentDetailPage() {
     setFeedback(null);
     try {
       await store.withdrawFromTournament(tournament.id, currentUser.id);
-      setFeedback('Qeydiyyatınız ləğv edildi.');
+      setFeedback(t('tournaments.toast_cancelled', 'Qeydiyyatınız ləğv edildi.'));
       await loadData(true);
     } catch (e: any) {
-      setFeedback(e.message || 'Xəta baş verdi');
+      setFeedback(e.message || t('common.error', 'Xəta baş verdi'));
     } finally {
       setActionLoading(false);
     }
@@ -381,10 +383,10 @@ export default function TournamentDetailPage() {
     setFeedback(null);
     try {
       await store.withdrawFromTournament(tournament.id, pid);
-      setFeedback('İştirakçı turnir siyahısından çıxarıldı.');
+      setFeedback(t('tournaments.remove_participant', 'İştirakçı turnir siyahısından çıxarıldı.'));
       await loadData(true);
     } catch (e: any) {
-      setFeedback(e.message || 'Xəta baş verdi');
+      setFeedback(e.message || t('common.error', 'Xəta baş verdi'));
     } finally {
       setActionLoading(false);
     }
@@ -396,10 +398,10 @@ export default function TournamentDetailPage() {
     setFeedback(null);
     try {
       await store.addTournamentParticipant(tournament.id, pid);
-      setFeedback('Tələbə turnir siyahısına əlavə edildi!');
+      setFeedback(t('tournaments.auto_sync', 'Tələbə turnir siyahısına əlavə edildi!'));
       await loadData(true);
     } catch (e: any) {
-      setFeedback(e.message || 'Xəta baş verdi');
+      setFeedback(e.message || t('common.error', 'Xəta baş verdi'));
       throw e;
     } finally {
       setActionLoading(false);
@@ -414,7 +416,7 @@ export default function TournamentDetailPage() {
           className="inline-flex items-center gap-2 text-xs font-semibold text-slate-400 hover:text-white transition px-3 py-1.5 rounded-lg hover:bg-white/5 border border-transparent hover:border-white/10 self-start"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Turnirlər Siyahısına Qayıt</span>
+          <span>{t('tournaments.back_to_tournaments', 'Turnirlər Siyahısına Qayıt')}</span>
         </button>
 
         {isAdmin && (
@@ -425,11 +427,11 @@ export default function TournamentDetailPage() {
               className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white text-xs font-bold transition shadow-sm active:scale-95"
             >
               <Settings className="w-3.5 h-3.5" />
-              <span>Tənzimləmələri Redaktə Et (Təşkilatçı)</span>
+              <span>{t('tournaments.edit_btn', 'Tənzimləmələri Redaktə Et (Təşkilatçı)')}</span>
             </button>
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#3B82F6]/15 text-[#3B82F6] border border-[#3B82F6]/30 text-xs font-bold font-mono">
               <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Turnir Təşkilatçısı</span>
+              <span>{t('tournaments.organizer', 'Turnir Təşkilatçısı')}</span>
             </span>
           </div>
         )}
@@ -449,7 +451,7 @@ export default function TournamentDetailPage() {
               </span>
               {tournament.format === 'groups_and_knockout' && (
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/15 text-amber-300 border border-amber-500/30">
-                  {tournament.group_size || 4} nəfərlik qruplar • Top {tournament.advance_per_group || 2} pley-offa
+                  {tournament.group_size || 4} {t('tournaments.group_size_label', 'nəfərlik qruplar')} • Top {tournament.advance_per_group || 2} {t('tournaments.top_advancing', 'pley-offa')}
                 </span>
               )}
             </div>
@@ -474,12 +476,12 @@ export default function TournamentDetailPage() {
               {tournament.location && (
                 <span className="flex items-center gap-1.5">
                   <MapPin className="w-4 h-4 text-rose-500" />
-                  <span>Məkan: {tournament.location}</span>
+                  <span>{t('tournaments.location', 'Məkan')}: {tournament.location}</span>
                 </span>
               )}
               <span className="flex items-center gap-1.5">
                 <Users className="w-4 h-4 text-[#3B82F6]" />
-                <span>{participants.length} İştirakçı ({participants.length} / {tournament.max_participants || 12})</span>
+                <span>{participants.length} {t('tournaments.participants_badge', 'İştirakçı')} ({participants.length} / {tournament.max_participants || 12})</span>
               </span>
             </div>
 
@@ -489,11 +491,11 @@ export default function TournamentDetailPage() {
                   <div className="flex items-center gap-2">
                     <Trophy className="w-4 h-4 text-amber-400" />
                     <span className="text-xs font-display font-black uppercase tracking-wider text-amber-300">
-                      Rəsmi Turnir Fəxri Kürsüsü (Podium)
+                      {t('tournaments.podium_title', 'Rəsmi Turnir Fəxri Kürsüsü (Podium)')}
                     </span>
                   </div>
                   <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-[10px] font-mono font-bold">
-                    38 Rəsmi Oyun • Qrup A (15) + Qrup B (15) + Pley-off (8)
+                    38 {t('tournaments.matches_completed', 'Rəsmi Oyun Tamamlandı')}
                   </span>
                 </div>
 
@@ -545,13 +547,13 @@ export default function TournamentDetailPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="text-[10px] font-mono uppercase tracking-wider text-slate-300 font-bold">
-                            2-ci Yer • Gümüş
+                            {t('tournaments.second_place', '2-ci Yer • Gümüş')}
                           </div>
                           <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-blue-300 transition">
                             {name2}
                           </div>
                           <div className="text-[11px] font-mono text-slate-400">
-                            {elo2} ELO • Finalçı
+                            {elo2} ELO • {t('tournaments.finalist', 'Finalçı')}
                           </div>
                         </div>
                       </Link>
@@ -575,13 +577,13 @@ export default function TournamentDetailPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="text-[10px] font-mono uppercase tracking-wider text-orange-300 font-bold">
-                            3-cü Yer • Bürünc
+                            {t('tournaments.third_place_podium', '3-cü Yer • Bürünc')}
                           </div>
                           <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-orange-300 transition">
                             {name3}
                           </div>
                           <div className="text-[11px] font-mono text-orange-200/80">
-                            {elo3} ELO • 3-cü yer: 3-2
+                            {elo3} ELO • {t('tournaments.third_place_stat', '3-cü yer')}: 3-2
                           </div>
                         </div>
                       </Link>
@@ -599,22 +601,19 @@ export default function TournamentDetailPage() {
                     href={`/login?redirect=/tournaments/${slug}`}
                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-display font-bold text-xs shadow-md transition active:scale-95"
                   >
-                    <span>Daxil Ol →</span>
+                    <span>{t('auth.signin_btn', 'Daxil Ol')} →</span>
                   </Link>
                 ) : isAdmin ? (
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500/15 border border-amber-500/30 text-amber-300 font-display font-bold text-xs">
-                      👑 Turnir Təşkilatçısı (İdarəçi)
-                    </span>
-                    <span className="text-[11px] text-slate-400">
-                      Oyunçu deyilsiniz — yalnız 12 rəsmi iştirakçı turnirdə yarışır.
+                      👑 {t('tournaments.organizer', 'Turnir Təşkilatçısı')}
                     </span>
                   </div>
                 ) : isRegistered ? (
                   <div className="flex items-center gap-2.5 flex-wrap">
                     <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500 text-emerald-400 font-display font-bold text-xs">
                       <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Qeydiyyatdan Keçmisiniz ✓</span>
+                      <span>{t('tournaments.registered', 'Qeydiyyatdan Keçmisiniz')} ✓</span>
                     </span>
                     {!isLocked && (
                       <button
@@ -623,19 +622,19 @@ export default function TournamentDetailPage() {
                         onClick={handleWithdraw}
                         className="px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 hover:border-rose-500/50 text-slate-400 hover:text-rose-400 font-semibold text-xs transition"
                       >
-                        {actionLoading ? 'Ləğv edilir...' : 'Qeydiyyatı Ləğv Et'}
+                        {actionLoading ? t('common.loading', 'Ləğv edilir...') : t('tournaments.cancel_registration', 'Qeydiyyatı Ləğv Et')}
                       </button>
                     )}
                   </div>
                 ) : isLocked ? (
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-amber-500/30 text-amber-300 text-xs font-semibold">
                     <Lock className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Qeydiyyat Bağlanıb • Püşkatma Mərhələsi (Draft)</span>
+                    <span>{t('tournaments.registration_closed_draft', 'Qeydiyyat Bağlanıb • Püşkatma Mərhələsi (Draft)')}</span>
                   </span>
                 ) : !isEligible ? (
                   <span className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-400 text-xs font-semibold">
                     <Lock className="w-3.5 h-3.5 text-rose-400" />
-                    <span>Yalnız {tournament.allowed_admission_year} Qəbul Tələbələri</span>
+                    <span>{t('tournaments.eligibility_foundation', 'Yalnız 2026 Qəbul Tələbələri')}</span>
                   </span>
                 ) : (
                   <div className="flex items-center gap-2 flex-wrap">
@@ -645,7 +644,7 @@ export default function TournamentDetailPage() {
                       onClick={handleRegister}
                       className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs shadow-md transition active:scale-95"
                     >
-                      <span>{actionLoading ? 'Qeydiyyat aparılır...' : 'Turnirə Qoşul (1-Klik)'}</span>
+                      <span>{actionLoading ? t('tournaments.registering', 'Qeydiyyat aparılır...') : t('tournaments.register_now_btn', 'Turnirə Qoşul (1-Klik)')}</span>
                       <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   </div>
@@ -658,16 +657,16 @@ export default function TournamentDetailPage() {
                     onClick={async () => {
                       if (
                         confirm(
-                          'Turnir üçün qeydiyyat rəsmi olaraq bağlansın və Püşkatma (Draft) mərhələsinə keçilsin?\n\nArtıq yeni iştirakçı qeydiyyatı dayandırılacaq və mövcud 14 oyunçu 2 qrupa bölünəcək.'
+                          t('tournaments.confirm_create_playoffs', 'Turnir üçün qeydiyyat rəsmi olaraq bağlansın və Püşkatma (Draft) mərhələsinə keçilsin?')
                         )
                       ) {
                         setActionLoading(true);
                         try {
                           store.closeRegistrationAndLockRoster(tournament.id);
-                          setFeedback('Qeydiyyat bağlandı. Püşkatma mərhələsi başladı!');
+                          setFeedback(t('tournaments.proceed_draft', 'Qeydiyyat bağlandı. Püşkatma mərhələsi başladı!'));
                           await loadData(true);
                         } catch (err: any) {
-                          setFeedback(err.message || 'Xəta baş verdi');
+                          setFeedback(err.message || t('common.error', 'Xəta baş verdi'));
                         } finally {
                           setActionLoading(false);
                         }
@@ -676,7 +675,7 @@ export default function TournamentDetailPage() {
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 border border-amber-500/40 hover:bg-amber-500/15 text-amber-300 text-xs font-bold transition shadow-sm"
                   >
                     <Lock className="w-3.5 h-3.5 text-amber-400" />
-                    <span>Qeydiyyatı Bağla və Püşkatmaya Keç (Draft)</span>
+                    <span>{t('tournaments.proceed_draft', 'Qeydiyyatı Bağla və Püşkatmaya Keç (Draft)')}</span>
                   </button>
                 )}
 
@@ -712,19 +711,19 @@ export default function TournamentDetailPage() {
               </div>
               <div>
                 <h2 className="text-lg font-display font-black text-white">
-                  {isGroupStage ? 'Pley-off (Olimpiya) Mərhələsi' : 'Çempionat Səbəti (Bracket Draw)'}
+                  {isGroupStage ? t('tournaments.playoff', 'Pley-off (Olimpiya) Mərhələsi') : t('tournaments.bracket', 'Çempionat Səbəti (Bracket Draw)')}
                 </h2>
                 <p className="text-xs text-slate-400">
                   {isGroupStage
-                    ? 'Qrup mərhələsinin ilk 2 yer sahibləri arasında Olimpiya sistemi üzrə final oyunları'
-                    : 'Olimpiya sistemi üzrə turnir ağacı və canlı oyun nəticələri'}
+                    ? t('tournaments.group_stage_desc', 'Qrup mərhələsinin ilk 2 yer sahibləri arasında Olimpiya sistemi üzrə final oyunları')
+                    : t('tournaments.playoff_qualification_info', 'Olimpiya sistemi üzrə turnir ağacı və canlı oyun nəticələri')}
                 </p>
               </div>
             </div>
 
             {isAdmin && hasPlayoffRounds && (
               <span className="text-[11px] text-slate-400 font-mono hidden sm:inline-block">
-                Nəticə daxil etmək üçün oyuna klikləyin
+                {t('tournaments.click_to_enter_score', 'Nəticə daxil etmək üçün oyuna klikləyin')}
               </span>
             )}
           </div>
@@ -734,16 +733,16 @@ export default function TournamentDetailPage() {
           ) : isGroupStage ? (
             <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
               <p className="text-sm font-semibold text-white">
-                Pley-off səbəti qrup mərhələsindən sonra formalaşacaq
+                {t('tournaments.playoff_after_groups', 'Pley-off səbəti qrup mərhələsindən sonra formalaşacaq')}
               </p>
               <p className="text-xs text-slate-400 max-w-md mx-auto">
-                Hər qrupdan ən yaxşı {tournament.advance_per_group || 2} oyunçu qrup oyunları tamamlandıqdan sonra avtomatik pley-off mərhələsinə keçəcək.
+                {t('tournaments.playoff_qualification_info', 'Hər qrupdan ən yaxşı oyunçular pley-off mərhələsinə vəsiqə qazanacaq.')}
               </p>
             </div>
           ) : (
             <div className="p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-2">
               <p className="text-sm font-semibold text-white">
-                Səbət hələ formalaşdırılmayıb
+                {t('tournaments.bracket_not_formed', 'Səbət hələ formalaşdırılmayıb')}
               </p>
             </div>
           )}
@@ -776,10 +775,10 @@ export default function TournamentDetailPage() {
             </div>
             <div>
               <h2 className="text-lg font-display font-black text-white">
-                Rəsmi Turnir Reqlamenti & Qaydalar
+                {t('tournaments.rules', 'Rəsmi Turnir Reqlamenti & Qaydalar')}
               </h2>
               <p className="text-xs text-slate-400">
-                ITTF standartları və BANM Stolüstü Tennis Klubu daxili nizamnaməsi
+                {t('tournaments.rules_ittf_bhos', 'ITTF standartları və BANM Stolüstü Tennis Klubu daxili nizamnaməsi')}
               </p>
             </div>
           </div>

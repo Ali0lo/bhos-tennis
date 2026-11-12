@@ -810,7 +810,7 @@ export default function AdminDashboardPage() {
           <div>
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold mb-2">
               <ShieldAlert className="w-3.5 h-3.5" />
-              <span>Prezident və Məşqçi İdarəetmə Mərkəzi</span>
+              <span>{t('admin.badge_mgmt', 'Prezident və Məşqçi İdarəetmə Mərkəzi')}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-display font-extrabold text-white tracking-tight">
               {t('admin.title')}
@@ -827,7 +827,7 @@ export default function AdminDashboardPage() {
                 className="px-4 py-2.5 rounded-xl bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/40 text-indigo-300 font-display font-bold text-xs transition flex items-center gap-2"
               >
                 <UserPlus className="w-4 h-4" />
-                <span>Yeni Üzv Əlavə Et</span>
+                <span>{t('admin.add_new_member', 'Yeni Üzv Əlavə Et')}</span>
               </button>
             )}
             <button
@@ -858,10 +858,10 @@ export default function AdminDashboardPage() {
           <div className="p-8 rounded-3xl border border-rose-500/30 bg-rose-950/20 text-center space-y-3">
             <Lock className="w-10 h-10 text-rose-400 mx-auto" />
             <h2 className="text-lg font-display font-bold text-white">
-              Məhdudlaşdırılmış İdarəetmə Paneli
+              {t('admin.restricted_title', 'Məhdudlaşdırılmış İdarəetmə Paneli')}
             </h2>
             <p className="text-xs text-slate-300 max-w-md mx-auto">
-              Hazırda <strong>{currentUser?.full_name || 'Qonaq'}</strong> olaraq baxırsınız. ELO xallarına düzəliş etmək və ya turnir yaratmaq üçün <strong>Prezident (Ali Iskandarli)</strong> və ya <strong>Məşqçi (Iftixar Meherremov)</strong> hesabına keçin.
+              {t('admin.restricted_desc', 'Hazırda qonaq olaraq baxırsınız. Bu bölmə yalnız Klub Rəhbərliyi (Prezident və Məşqçi) üçün nəzərdə tutulub.')}
             </p>
           </div>
         ) : (
@@ -878,7 +878,7 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center gap-2">
                     <UserPlus className="w-5 h-5 text-indigo-400" />
                     <h2 className="text-base font-display font-bold text-white">
-                      Yeni Klub Üzvü Əlavə Et (Tələbə və ya Müəllim / Əməkdaş)
+                      {t('admin.add_member_title', 'Yeni Klub Üzvü Əlavə Et (Tələbə və ya Müəllim / Əməkdaş)')}
                     </h2>
                   </div>
                   <div className="flex items-center gap-2 p-1 rounded-xl bg-slate-950 border border-slate-800">
@@ -895,7 +895,7 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       <GraduationCap className="w-3.5 h-3.5" />
-                      <span>Tələbə</span>
+                      <span>{t('roles.player', 'Tələbə')}</span>
                     </button>
                     <button
                       type="button"
@@ -910,7 +910,7 @@ export default function AdminDashboardPage() {
                       }`}
                     >
                       <Briefcase className="w-3.5 h-3.5" />
-                      <span>Müəllim / Əməkdaş</span>
+                      <span>{t('roles.teacher', 'Müəllim / Əməkdaş')}</span>
                     </button>
                   </div>
                 </div>
@@ -918,14 +918,14 @@ export default function AdminDashboardPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   <div>
                     <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                      Ad və Soyad
+                      {t('auth.full_name', 'Ad və Soyad')}
                     </label>
                     <input
                       type="text"
                       required
                       value={newFullName}
                       onChange={(e) => setNewFullName(e.target.value)}
-                      placeholder="Məs: İftixar Məhərrəmov"
+                      placeholder={t('admin.placeholder_name', 'Məs: İftixar Məhərrəmov')}
                       className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-xs text-white focus:outline-none focus:border-cyan-400"
                     />
                   </div>
@@ -956,12 +956,12 @@ export default function AdminDashboardPage() {
                       {newUserType === 'student'
                         ? FACULTIES.map((fac) => (
                             <option key={fac} value={fac}>
-                              {fac}
+                              {t(`faculties.${fac}`, fac)}
                             </option>
                           ))
                         : STAFF_DEPARTMENTS.map((dept) => (
                             <option key={dept} value={dept}>
-                              {dept}
+                              {t(`faculties.${dept}`, dept)}
                             </option>
                           ))}
                     </select>
@@ -970,7 +970,7 @@ export default function AdminDashboardPage() {
                   {newUserType === 'student' ? (
                     <div>
                       <label className="block text-[11px] font-semibold text-slate-400 mb-1">
-                        Qəbul İli
+                        {t('profile.admission_year', 'Qəbul İli')}
                       </label>
                       <select
                         value={newAdmissionYear}
@@ -999,32 +999,32 @@ export default function AdminDashboardPage() {
                 <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-white/10">
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-400">Kateqoriya:</span>
+                      <span className="text-[11px] text-slate-400">{t('admin.category', 'Kateqoriya:')}</span>
                       <select
                         value={newGender}
                         onChange={(e) => setNewGender(e.target.value as 'male' | 'female')}
                         className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
                       >
-                        <option value="male">Oğlan / Bəy</option>
-                        <option value="female">Qız / Xanım</option>
+                        <option value="male">{t('admin.male_label', 'Oğlan / Bəy')}</option>
+                        <option value="female">{t('admin.female_label', 'Qız / Xanım')}</option>
                       </select>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-400">Rol:</span>
+                      <span className="text-[11px] text-slate-400">{t('admin.col_role', 'Rol:')}</span>
                       <select
                         value={newRole}
                         onChange={(e) => setNewRole(e.target.value as UserRole)}
                         className="px-2.5 py-1.5 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white"
                       >
-                        <option value="player">Oyunçu</option>
-                        <option value="coach">Məşqçi</option>
-                        <option value="president">Prezident</option>
+                        <option value="player">{t('roles.player')}</option>
+                        <option value="coach">{t('roles.coach')}</option>
+                        <option value="president">{t('roles.president')}</option>
                       </select>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      <span className="text-[11px] text-slate-400">Başlanğıc ELO:</span>
+                      <span className="text-[11px] text-slate-400">{t('admin.initial_elo', 'Başlanğıc ELO:')}</span>
                       <input
                         type="number"
                         min={0}
@@ -1039,7 +1039,7 @@ export default function AdminDashboardPage() {
                     type="submit"
                     className="px-5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-display font-bold text-xs shadow-lg shadow-emerald-500/20 transition"
                   >
-                    Üzvü Yadda Saxla
+                    {t('admin.save_member', 'Üzvü Yadda Saxla')}
                   </button>
                 </div>
               </form>
@@ -1056,13 +1056,13 @@ export default function AdminDashboardPage() {
                           {t('admin.elo_override')}
                         </h2>
                         <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400 font-medium">
-                          <span>Ümumi: {totalMembersCount}</span>
+                          <span>{t('admin.total', 'Ümumi')}: {totalMembersCount}</span>
                           <span>•</span>
-                          <span className="text-blue-400">Qeydiyyat: {registeredMembersCount}</span>
+                          <span className="text-blue-400">{t('admin.registered', 'Qeydiyyat')}: {registeredMembersCount}</span>
                           <span>•</span>
-                          <span className="text-amber-400">İlkin Heyət: {defaultMembersCount}</span>
+                          <span className="text-amber-400">{t('admin.default_roster', 'İlkin Heyət')}: {defaultMembersCount}</span>
                           <span>•</span>
-                          <span className="text-orange-400">Gözləyən: {pendingMembersCount}</span>
+                          <span className="text-orange-400">{t('admin.pending', 'Gözləyən')}: {pendingMembersCount}</span>
                         </div>
                       </div>
                     </div>
@@ -1077,7 +1077,7 @@ export default function AdminDashboardPage() {
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        Hamısı ({totalMembersCount})
+                        {t('admin.filter_all', 'Hamısı')} ({totalMembersCount})
                       </button>
                       <button
                         type="button"
@@ -1088,7 +1088,7 @@ export default function AdminDashboardPage() {
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        Qeydiyyat ({registeredMembersCount})
+                        {t('admin.registered', 'Qeydiyyat')} ({registeredMembersCount})
                       </button>
                       <button
                         type="button"
@@ -1099,7 +1099,7 @@ export default function AdminDashboardPage() {
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        İlkin Heyət ({defaultMembersCount})
+                        {t('admin.default_roster', 'İlkin Heyət')} ({defaultMembersCount})
                       </button>
                       <button
                         type="button"
@@ -1110,7 +1110,7 @@ export default function AdminDashboardPage() {
                             : 'text-slate-400 hover:text-white'
                         }`}
                       >
-                        Gözləyən ({pendingMembersCount})
+                        {t('admin.pending', 'Gözləyən')} ({pendingMembersCount})
                       </button>
                     </div>
                   </div>
@@ -1121,7 +1121,7 @@ export default function AdminDashboardPage() {
                       type="text"
                       value={memberSearchQuery}
                       onChange={(e) => setMemberSearchQuery(e.target.value)}
-                      placeholder="Üzv adı, email və ya ixtisas üzrə axtarış..."
+                      placeholder={t('admin.search_member_placeholder', 'Üzv adı, email və ya ixtisas üzrə axtarış...')}
                       className="w-full pl-9 pr-3 py-2 rounded-xl bg-slate-950 border border-white/10 text-xs text-white placeholder:text-slate-500 focus:outline-none focus:border-cyan-400"
                     />
                   </div>
@@ -1130,19 +1130,19 @@ export default function AdminDashboardPage() {
                     <table className="w-full text-left border-collapse">
                       <thead>
                         <tr className="border-b border-white/10 text-[11px] uppercase text-slate-400">
-                          <th className="py-2.5 px-3">Üzv</th>
-                          <th className="py-2.5 px-3 whitespace-nowrap">Qoşulub</th>
-                          <th className="py-2.5 px-3">Status</th>
-                          <th className="py-2.5 px-3">Rol</th>
-                          <th className="py-2.5 px-3">ELO Xalı</th>
-                          <th className="py-2.5 px-3 text-right">Əməliyyat</th>
+                          <th className="py-2.5 px-3">{t('admin.col_member', 'Üzv')}</th>
+                          <th className="py-2.5 px-3 whitespace-nowrap">{t('admin.col_joined', 'Qoşulub')}</th>
+                          <th className="py-2.5 px-3">{t('admin.col_status', 'Status')}</th>
+                          <th className="py-2.5 px-3">{t('admin.col_role', 'Rol')}</th>
+                          <th className="py-2.5 px-3">{t('admin.col_elo', 'ELO Xalı')}</th>
+                          <th className="py-2.5 px-3 text-right">{t('admin.col_actions', 'Əməliyyat')}</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-white/5 text-xs">
                         {filteredProfiles.length === 0 ? (
                           <tr>
                             <td colSpan={6} className="py-8 text-center text-xs text-slate-400">
-                              Seçilmiş filtrə və ya axtarışa uyğun heç bir üzv tapılmadı.
+                              {t('admin.no_members_found', 'Seçilmiş filtrə və ya axtarışa uyğun heç bir üzv tapılmadı.')}
                             </td>
                           </tr>
                         ) : (
@@ -1250,8 +1250,8 @@ export default function AdminDashboardPage() {
                                       )}
                                       <span>
                                         {getProfileOrigin(p) === 'İlkin Heyət'
-                                          ? 'Qızıl Heyət'
-                                          : '+ Qızıl Heyət'}
+                                          ? t('admin.golden_roster', 'Qızıl Heyət')
+                                          : `+ ${t('admin.golden_roster', 'Qızıl Heyət')}`}
                                       </span>
                                     </button>
 
@@ -1283,8 +1283,8 @@ export default function AdminDashboardPage() {
                                       )}
                                       <span>
                                         {isPresidentBadgeHolder(p)
-                                          ? 'Prezident'
-                                          : '+ Prezident'}
+                                          ? t('admin.president', 'Prezident')
+                                          : `+ ${t('admin.president', 'Prezident')}`}
                                       </span>
                                     </button>
 
@@ -1364,7 +1364,7 @@ export default function AdminDashboardPage() {
                                       className="inline-flex items-center gap-1 px-2 py-1.5 rounded-lg bg-slate-950 hover:bg-slate-800 text-amber-400 border border-amber-500/30 text-[11px] font-semibold transition"
                                     >
                                       <Award className="w-3.5 h-3.5" />
-                                      <span className="hidden xl:inline">Nişanlar</span>
+                                      <span className="hidden xl:inline">{t('admin.badges_btn', 'Nişanlar')}</span>
                                     </button>
                                     <button
                                       type="button"

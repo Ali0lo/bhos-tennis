@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import AvatarLightboxModal from './AvatarLightboxModal';
+import { useTranslation } from '../lib/i18n';
 
 interface ClickableAvatarProps {
   avatarUrl?: string | null;
@@ -26,6 +27,7 @@ export default function ClickableAvatar({
   imgClassName = 'w-full h-full object-cover',
   fallback = null,
 }: ClickableAvatarProps) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
 
   if (!avatarUrl) return <>{fallback}</>;
@@ -41,8 +43,8 @@ export default function ClickableAvatar({
       <span
         role="button"
         tabIndex={0}
-        aria-label={`${name} şəklini böyüt`}
-        title="Şəkli böyüt"
+        aria-label={t('profile.zoom_photo', '{name} şəklini böyüt').replace('{name}', name)}
+        title={t('profile.zoom_photo_title', 'Şəkli böyüt')}
         onClick={openLightbox}
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') openLightbox(e);

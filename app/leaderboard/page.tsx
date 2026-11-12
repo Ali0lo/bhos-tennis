@@ -43,17 +43,6 @@ const FACULTIES = [
   'İdman Klubu',
 ];
 
-const FACULTY_TABS: { id: string; label: string }[] = [
-  { id: 'Hamısı', label: 'Hamısı' },
-  { id: 'Information Security', label: 'İnformasiya təhlükəsizliyi' },
-  { id: 'Computer Engineering', label: 'Kompüter müh.' },
-  { id: 'Process Automation', label: 'Proseslərin avtomatlaşdırılması' },
-  { id: 'Chemical Engineering', label: 'Kimya müh.' },
-  { id: 'Petroleum Engineering', label: 'Neft-qaz müh.' },
-  { id: 'Business Administration', label: 'Biznesin idarə edilməsi' },
-  { id: 'Foundation', label: 'Hazırlıq (Foundation)' },
-];
-
 const COHORT_PILLS: { id: string; label: string }[] = [
   { id: 'ALL', label: 'Hamısı' },
   { id: 'STAFF', label: 'Müəllim / Əməkdaş' },
@@ -77,6 +66,17 @@ export default function LeaderboardPage() {
   const [selectedFaculty, setSelectedFaculty] = useState<string>('Hamısı');
   const [genderFilter, setGenderFilter] = useState<'ALL' | 'male' | 'female'>('ALL');
   const [cohortFilter, setCohortFilter] = useState<string>('ALL');
+
+  const facultyTabs = useMemo(() => [
+    { id: 'Hamısı', label: t('leaderboard.all', 'Hamısı') },
+    { id: 'Information Security', label: t('faculties.Information Security', 'İnformasiya təhlükəsizliyi') },
+    { id: 'Computer Engineering', label: t('faculties.Computer Engineering', 'Kompüter müh.') },
+    { id: 'Process Automation', label: t('faculties.Process Automation', 'Proseslərin avtomatlaşdırılması') },
+    { id: 'Chemical Engineering', label: t('faculties.Chemical Engineering', 'Kimya müh.') },
+    { id: 'Petroleum Engineering', label: t('faculties.Petroleum Engineering', 'Neft-qaz müh.') },
+    { id: 'Business Administration', label: t('faculties.Business Administration', 'Biznesin idarə edilməsi') },
+    { id: 'Foundation', label: t('faculties.Foundation', 'Hazırlıq (Foundation)') },
+  ], [t]);
 
   useEffect(() => {
     let isMounted = true;
@@ -356,7 +356,7 @@ export default function LeaderboardPage() {
               >
                 {FACULTIES.map((fac) => (
                   <option key={fac} value={fac} className="bg-slate-900 text-white">
-                    {fac === 'Hamısı' ? t('leaderboard.all_faculties') : fac}
+                    {fac === 'Hamısı' ? t('leaderboard.all_faculties') : t(`faculties.${fac}`, fac)}
                   </option>
                 ))}
               </select>
@@ -381,7 +381,7 @@ export default function LeaderboardPage() {
           </div>
 
           <FacultyFilterTabs
-            tabs={FACULTY_TABS}
+            tabs={facultyTabs}
             selectedFaculty={selectedFaculty}
             onSelect={setSelectedFaculty}
           />

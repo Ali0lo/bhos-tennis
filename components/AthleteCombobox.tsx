@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { Search, X, ChevronDown, Check } from 'lucide-react';
 import { PlayerProfile } from '../lib/data/types';
+import { useTranslation } from '../lib/i18n';
 
 interface AthleteComboboxProps {
   players: PlayerProfile[];
@@ -40,10 +41,12 @@ export default function AthleteCombobox({
   value,
   onChange,
   excludeIds = [],
-  placeholder = 'Oyunçu adı və ya fakültə üzrə axtar...',
+  placeholder,
   label,
   disabled = false,
 }: AthleteComboboxProps) {
+  const { t } = useTranslation();
+  const effectivePlaceholder = placeholder || t('matches.search_opponent_placeholder', 'Oyunçu adı və ya fakültə üzrə axtar...');
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
@@ -158,7 +161,7 @@ export default function AthleteCombobox({
               setOpen(true);
             }}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            placeholder={effectivePlaceholder}
             role="combobox"
             aria-expanded={open}
             className="w-full pl-10 pr-9 py-3 rounded-xl bg-[#131C2B] border border-white/10 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-[#3B82F6] transition disabled:opacity-50"
@@ -178,7 +181,7 @@ export default function AthleteCombobox({
             className="absolute z-40 mt-2 w-full max-h-72 overflow-y-auto rounded-xl bg-[#0F1623] border border-white/10 shadow-2xl p-1.5"
           >
             {results.length === 0 ? (
-              <li className="px-3 py-4 text-center text-xs text-slate-500">Uyğun oyunçu tapılmadı.</li>
+              <li className="px-3 py-4 text-center text-xs text-slate-500">{t('matches.no_matching_player', 'Uyğun oyunçu tapılmadı.')}</li>
             ) : (
               results.map((p, idx) => {
                 const isActive = idx === highlight;

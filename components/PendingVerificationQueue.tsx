@@ -100,7 +100,7 @@ export default function PendingVerificationQueue() {
 
     const parsedElo = parseInt(eloInputs[player.id] || '0', 10);
     if (isNaN(parsedElo) || parsedElo < 0 || parsedElo > 999) {
-      setErrorMsg('Zəhmət olmasa düzgün ELO daxil edin (0 - 999).');
+      setErrorMsg(t('admin.err_invalid_elo', 'Zəhmət olmasa düzgün ELO daxil edin (0 - 999).'));
       return;
     }
 
@@ -138,10 +138,14 @@ export default function PendingVerificationQueue() {
       await store.fetchProfilesFromCloud();
 
       setPendingPlayers((prev) => prev.filter((p) => p.id !== player.id));
-      setToastMsg(`${player.full_name} təsdiqləndi (Başlanğıc ELO: ${parsedElo})!`);
+      setToastMsg(
+        t('admin.player_approved_toast', '{name} təsdiqləndi (Başlanğıc ELO: {elo})!')
+          .replace('{name}', player.full_name)
+          .replace('{elo}', String(parsedElo))
+      );
       setTimeout(() => setToastMsg(null), 4000);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Oyunçunu təsdiqləmək mümkün olmadı.');
+      setErrorMsg(err.message || t('admin.err_approve_player', 'Oyunçunu təsdiqləmək mümkün olmadı.'));
     } finally {
       setApprovingId(null);
     }
@@ -149,7 +153,8 @@ export default function PendingVerificationQueue() {
 
   const handleReject = async (player: PlayerProfile) => {
     const confirmed = window.confirm(
-      `"${player.full_name}" adlı istifadəçinin qeydiyyat müraciətini ləğv edib silmək istədiyinizdən əminsiniz?`
+      t('admin.confirm_reject_player', '"{name}" adlı istifadəçinin qeydiyyat müraciətini ləğv edib silmək istədiyinizdən əminsiniz?')
+        .replace('{name}', player.full_name)
     );
     if (!confirmed) return;
 
@@ -157,10 +162,13 @@ export default function PendingVerificationQueue() {
     try {
       await store.deleteProfile(player.id);
       setPendingPlayers((prev) => prev.filter((p) => p.id !== player.id));
-      setToastMsg(`"${player.full_name}" müraciəti ləğv edildi və silindi.`);
+      setToastMsg(
+        t('admin.player_rejected_toast', '"{name}" müraciəti ləğv edildi və silindi.')
+          .replace('{name}', player.full_name)
+      );
       setTimeout(() => setToastMsg(null), 4000);
     } catch (err: any) {
-      setErrorMsg(err.message || 'Müraciəti silərkən xəta baş verdi.');
+      setErrorMsg(err.message || t('admin.err_reject_player', 'Müraciəti silərkən xəta baş verdi.'));
     } finally {
       setRejectingId(null);
     }
@@ -233,12 +241,12 @@ export default function PendingVerificationQueue() {
                         {isStaff ? (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
                             <Briefcase className="w-3 h-3" />
-                            <span>Müəllim / Əməkdaş</span>
+                            <span>{t('roles.staff_badge', 'Müəllim / Əməkdaş')}</span>
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-cyan-500/15 text-cyan-300 border border-cyan-500/30">
                             <GraduationCap className="w-3 h-3" />
-                            <span>Tələbə • {player.admission_year}</span>
+                            <span>{t('roles.player', 'Tələbə')} • {player.admission_year}</span>
                           </span>
                         )}
                       </div>
@@ -247,7 +255,7 @@ export default function PendingVerificationQueue() {
                       </p>
                       <div className="flex items-center gap-1.5 text-[11px] text-slate-400 font-mono mt-1">
                         <Calendar className="w-3 h-3 text-[#3B82F6] shrink-0" />
-                        <span>Qoşulub: {formatDateTimeAz(player.created_at)}</span>
+                        <span>{t('profile.joined', 'Qoşulub:')} {formatDateTimeAz(player.created_at)}</span>
                       </div>
                     </div>
 
@@ -320,11 +328,11 @@ export default function PendingVerificationQueue() {
                       type="button"
                       onClick={() => handleReject(player)}
                       disabled={rejectingId === player.id || approvingId === player.id}
-                      title="Müraciəti İmtina Et və Sil"
+                      title={t('admin.reject_btn', 'İmtina Et')}
                       className="px-3 py-2 rounded-xl bg-rose-500/15 hover:bg-rose-500/25 border border-rose-500/30 text-rose-300 text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>{rejectingId === player.id ? '...' : 'İmtina Et'}</span>
+                      <span>{rejectingId === player.id ? '...' : t('admin.reject_btn', 'İmtina Et')}</span>
                     </button>
 
                     <button
@@ -335,7 +343,7 @@ export default function PendingVerificationQueue() {
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" />
                       <span>
-                        {approvingId === player.id ? '...' : 'Təsdiqlə'}
+                        {approvingId === player.id ? '...' : t('admin.approve_btn', 'Təsdiqlə')}
                       </span>
                     </button>
                   </div>

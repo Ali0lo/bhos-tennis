@@ -142,7 +142,7 @@ export default function MatchesPage() {
           </div>
           <p className="text-xs text-slate-400 mt-1">
             {effectiveScope === 'MY_GAMES' && currentUser
-              ? `${currentUser.full_name} üçün qeydə alınmış rəsmi qarşılaşmalar və nəticələr`
+              ? t('matches.my_matches_sub', '{name} üçün qeydə alınmış rəsmi qarşılaşmalar və nəticələr').replace('{name}', currentUser.full_name)
               : t('matches.subtitle')}
           </p>
         </div>
@@ -301,8 +301,8 @@ export default function MatchesPage() {
             <Activity className="w-8 h-8 text-slate-600 mx-auto" />
             <p className="text-slate-300 font-semibold text-sm">
               {effectiveScope === 'MY_GAMES'
-                ? 'Hələ ki sizin heç bir rəsmi oyununuz qeydə alınmayıb.'
-                : 'Axtarışa uyğun oyun tapılmadı.'}
+                ? t('matches.no_my_matches', 'Hələ ki sizin heç bir rəsmi oyununuz qeydə alınmayıb.')
+                : t('matches.no_matches_found', 'Axtarışa uyğun oyun tapılmadı.')}
             </p>
             {effectiveScope === 'MY_GAMES' && (
               <div className="flex items-center justify-center gap-3 pt-2">
@@ -311,7 +311,7 @@ export default function MatchesPage() {
                   onClick={() => setMatchScope('ALL_GAMES')}
                   className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white transition"
                 >
-                  Bütün Oyunlara Bax ({matches.length})
+                  {t('matches.view_all_count', 'Bütün Oyunlara Bax ({count})').replace('{count}', String(matches.length))}
                 </button>
                 {canLog && (
                   <button
@@ -319,7 +319,7 @@ export default function MatchesPage() {
                     onClick={() => setShowModal(true)}
                     className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs transition"
                   >
-                    Oyun Qeyd Et
+                    {t('nav.log_match', 'Oyun Qeyd Et')}
                   </button>
                 )}
               </div>
@@ -329,8 +329,8 @@ export default function MatchesPage() {
           filteredMatches.map((m) => {
             const p1Id = m.player1?.id || m.player1_id;
             const p2Id = m.player2?.id || m.player2_id;
-            const p1Name = m.player1?.full_name || m.player1_name || 'Oyunçu 1';
-            const p2Name = m.player2?.full_name || m.player2_name || 'Oyunçu 2';
+            const p1Name = m.player1?.full_name || m.player1_name || t('matches.player1_fallback', 'Oyunçu 1');
+            const p2Name = m.player2?.full_name || m.player2_name || t('matches.player2_fallback', 'Oyunçu 2');
 
             const p1Won = m.winner_id
               ? m.winner_id === p1Id || m.player1_score > m.player2_score
@@ -466,7 +466,7 @@ export default function MatchesPage() {
 
                       <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-400 pt-0.5">
                         <span>
-                          Setlər: <span className="text-slate-300">{m.set_scores}</span>
+                          {t('home_recent.sets_label', 'Setlər')}: <span className="text-slate-300">{m.set_scores}</span>
                         </span>
                         {stageLabel && (
                           <span
@@ -522,7 +522,7 @@ export default function MatchesPage() {
                     </div>
 
                     <div className="text-[11px] text-slate-500">
-                      Qeyd edən: <span className="text-slate-300 font-semibold">{m.logged_by_name}</span>
+                      {t('pending_matches.logged_by', 'Qeyd edən:')} <span className="text-slate-300 font-semibold">{m.logged_by_name}</span>
                     </div>
 
                     {m.tournament_title && (

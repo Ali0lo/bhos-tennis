@@ -1,11 +1,13 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 import azMessages from '../messages/az.json';
 import enMessages from '../messages/en.json';
 import ruMessages from '../messages/ru.json';
 
 export type Locale = 'az' | 'en' | 'ru';
+export type MessageDictionary = typeof azMessages;
 
 interface I18nContextType {
   locale: Locale;
@@ -13,7 +15,7 @@ interface I18nContextType {
   t: (key: string, fallback?: string) => string;
 }
 
-const dictionaries: Record<Locale, Record<string, any>> = {
+const dictionaries: Record<Locale, MessageDictionary> = {
   az: azMessages,
   en: enMessages,
   ru: ruMessages,
@@ -57,8 +59,15 @@ const I18nContext = createContext<I18nContextType>({
   t: (key: string, fallback?: string) => translateKey('az', key, fallback),
 });
 
-export function I18nProvider({ children }: { children: React.ReactNode }) {
-  const [locale, setLocaleState] = useState<Locale>('az');
+export function I18nProvider({
+  children,
+  initialLocale = 'az',
+}: {
+  children: React.ReactNode;
+  initialLocale?: Locale;
+}) {
+  const router = useRouter();
+  const [locale, setLocaleState] = useState<Locale>(initialLocale);
 
   useEffect(() => {
     const savedLocal =
@@ -67,7 +76,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
     const cookieLoc = getCookieLocale();
     const initial = isValidLocale(savedLocal)
       ? savedLocal
-      : cookieLoc || 'az';
+      : cookieLoc || initialLocale;
     setLocaleState(initial);
     if (typeof document !== 'undefined') {
       document.documentElement.lang = initial;
@@ -75,17 +84,23 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('NEXT_LOCALE', initial);
       localStorage.setItem('bhos_tt_locale', initial);
     }
-  }, []);
+  }, [initialLocale]);
 
-  const setLocale = useCallback((newLocale: Locale) => {
-    setLocaleState(newLocale);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('NEXT_LOCALE', newLocale);
-      localStorage.setItem('bhos_tt_locale', newLocale);
-      document.documentElement.lang = newLocale;
-      document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
-    }
-  }, []);
+  const setLocale = useCallback(
+    (newLocale: Locale) => {
+      setLocaleState(newLocale);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('NEXT_LOCALE', newLocale);
+        localStorage.setItem('bhos_tt_locale', newLocale);
+        document.documentElement.lang = newLocale;
+        document.cookie = `NEXT_LOCALE=${newLocale}; path=/; max-age=31536000; SameSite=Lax`;
+        try {
+          router.refresh();
+        } catch {}
+      }
+    },
+    [router]
+  );
 
   const t = useCallback(
     (path: string, fallback?: string): string => {

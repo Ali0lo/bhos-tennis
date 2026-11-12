@@ -7,12 +7,14 @@ import { MatchRecord, PlayerProfile } from '../lib/data/types';
 import { calculateEloDelta, getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '../lib/elo/calculator';
 import { validateMatchSetSummary } from '../lib/elo';
 import { Check, X, ShieldAlert, Clock, Loader2, CheckCircle2 } from 'lucide-react';
+import { useTranslation } from '../lib/i18n';
 
 interface PendingApprovalsProps {
   onMatchUpdated?: () => void;
 }
 
 export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsProps) {
+  const { t } = useTranslation();
   const store = BHOSDataStore.getInstance();
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [pendingMatches, setPendingMatches] = useState<MatchRecord[]>([]);
@@ -146,7 +148,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
     if (!isAdminOrCoach && (!isParticipant || currentUser.id === match.logged_by)) {
       setFeedback({
         type: 'error',
-        message: 'Yalnız qarşı tərəf və ya klub rəhbərliyi matçı təsdiqləyə bilər.',
+        message: t('matches.err_must_be_participant', 'Yalnız qarşı tərəf və ya klub rəhbərliyi matçı təsdiqləyə bilər.'),
       });
       return;
     }
@@ -154,7 +156,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
     if (match.player1_id === match.player2_id) {
       setFeedback({
         type: 'error',
-        message: 'Etibarsız matç: oyunçu özü ilə oynaya bilməz.',
+        message: t('matches.err_same_player', 'Etibarsız matç: oyunçu özü ilə oynaya bilməz.'),
       });
       return;
     }
@@ -163,7 +165,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
     if (!scoreCheck.isValid) {
       setFeedback({
         type: 'error',
-        message: scoreCheck.errorMessage || 'Matç set hesabı qaydalara uyğun deyil.',
+        message: scoreCheck.errorMessage || t('matches.err_valid_sets', 'Matç set hesabı qaydalara uyğun deyil.'),
       });
       return;
     }
@@ -316,14 +318,14 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       setPendingMatches((prev) => prev.filter((m) => m.id !== match.id));
       setFeedback({
         type: 'success',
-        message: `Oyun təsdiqləndi! Reytinqlər yeniləndi (${p1Profile?.full_name || match.player1_name || 'Qalib'} +${delta} XAL, ${p2Profile?.full_name || match.player2_name || 'Məğlub'} -${delta} XAL).`,
+        message: `${t('admin.approve_btn', 'Oyun təsdiqləndi!')} (${p1Profile?.full_name || match.player1_name || 'Qalib'} +${delta} ELO, ${p2Profile?.full_name || match.player2_name || 'Məğlub'} -${delta} ELO).`,
       });
 
       onMatchUpdated?.();
     } catch (err: any) {
       setFeedback({
         type: 'error',
-        message: err.message || 'Oyunu təsdiqləmək mümkün olmadı.',
+        message: err.message || t('common.error', 'Oyunu təsdiqləmək mümkün olmadı.'),
       });
     } finally {
       processingRef.current = null;
@@ -362,7 +364,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
 
       setFeedback({
         type: 'success',
-        message: 'Matç nəticəsi rədd edildi və siyahıdan çıxarıldı.',
+        message: t('admin.player_rejected_toast', 'Matç nəticəsi rədd edildi və siyahıdan çıxarıldı.'),
       });
       setTimeout(() => {
         setFeedback((prev) => (prev?.type === 'success' ? null : prev));
@@ -373,7 +375,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
       console.error('Error rejecting match:', err);
       setFeedback({
         type: 'error',
-        message: 'Xəta baş verdi: Matç rədd edilə bilmədi.',
+        message: t('common.error', 'Xəta baş verdi: Matç rədd edilə bilmədi.'),
       });
     } finally {
       processingRef.current = null;
@@ -413,15 +415,15 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
           </div>
           <div>
             <h3 className="text-sm font-display font-bold text-white flex items-center gap-2">
-              Təsdiq Gözləyən Oyunlar
+              {t('pending_matches.title', 'Təsdiq Gözləyən Oyunlar')}
               <span className="px-2 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
                 {pendingMatches.length}
               </span>
             </h3>
             <p className="text-[11px] text-slate-400">
               {currentUser.role === 'president' || currentUser.role === 'coach'
-                ? 'Klub üzvləri tərəfindən qeyd olunmuş və təsdiq gözləyən oyunlar. Nəticəni yoxlayıb rəsmi təsdiq verə və ya rədd edə bilərsiniz.'
-                : 'Rəqibiniz sizinlə olan oyun nəticəsini təqdim edib. Zəhmət olmasa hesabı yoxlayın və təsdiq və ya rədd edin.'}
+                ? t('pending_matches.admin_desc', 'Klub üzvləri tərəfindən qeyd olunmuş və təsdiq gözləyən oyunlar. Nəticəni yoxlayıb rəsmi təsdiq verə və ya rədd edə bilərsiniz.')
+                : t('pending_matches.player_desc', 'Rəqibiniz sizinlə olan oyun nəticəsini təqdim edib. Zəhmət olmasa hesabı yoxlayın və təsdiq və ya rədd edin.')}
             </p>
           </div>
         </div>
@@ -449,7 +451,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
           const submitterName =
             m.logged_by_name ||
             (m.logged_by === m.player1_id ? m.player1_name : m.player2_name) ||
-            'Klub Üzvü';
+            t('roles.player', 'Klub Üzvü');
 
           const isPlayerInMatch = m.player1_id === currentUser.id || m.player2_id === currentUser.id;
           const isWinner = m.player1_id === currentUser.id;
@@ -458,9 +460,9 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
 
           let outcomeText = '';
           if (isPlayerInMatch) {
-            outcomeText = isWinner ? 'Qələbəniz qeyd olunub' : 'Məğlubiyyətiniz qeyd olunub';
+            outcomeText = isWinner ? t('pending_matches.submitted_win', 'Qələbəniz qeyd olunub') : t('pending_matches.submitted_loss', 'Məğlubiyyətiniz qeyd olunub');
           } else {
-            outcomeText = `${m.player1_name} qələbəsi (${m.player1_score} - ${m.player2_score})`;
+            outcomeText = `${m.player1_name} ${t('common.win', 'qələbəsi')} (${m.player1_score} - ${m.player2_score})`;
           }
 
           return (
@@ -484,16 +486,16 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
                 <div>
                   <div className="text-xs font-bold text-white">
                     {isPlayerInMatch ? (
-                      <>Qeyd edən: <span className="text-[#3B82F6]">{submitterName}</span></>
+                      <>{t('pending_matches.logged_by', 'Qeyd edən:')} <span className="text-[#3B82F6]">{submitterName}</span></>
                     ) : (
-                      <>Oyunçular: <span className="text-emerald-400 font-bold">{m.player1_name}</span> vs <span className="text-rose-400 font-bold">{m.player2_name}</span> (Qeyd edən: {submitterName})</>
+                      <>{t('pending_matches.players_label', 'Oyunçular:')} <span className="text-emerald-400 font-bold">{m.player1_name}</span> vs <span className="text-rose-400 font-bold">{m.player2_name}</span> ({t('pending_matches.logged_by', 'Qeyd edən:')} {submitterName})</>
                     )}
                   </div>
                   <div className="text-[11px] text-slate-400 font-mono flex items-center gap-2 mt-0.5">
                     {isPlayerInMatch ? (
-                      <span>Hesab: <strong className="text-white">{userScore} - {oppScore}</strong></span>
+                      <span>{t('matches.games', 'Hesab')}: <strong className="text-white">{userScore} - {oppScore}</strong></span>
                     ) : (
-                      <span>Hesab: <strong className="text-white">{m.player1_score} - {m.player2_score}</strong></span>
+                      <span>{t('matches.games', 'Hesab')}: <strong className="text-white">{m.player1_score} - {m.player2_score}</strong></span>
                     )}
                     {m.set_scores && <span>({m.set_scores})</span>}
                     <span>•</span>
@@ -514,7 +516,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
                   ) : (
                     <X className="w-3.5 h-3.5" />
                   )}
-                  <span>Rədd et</span>
+                  <span>{t('pending_matches.reject', 'Rədd et')}</span>
                 </button>
 
                 <button
@@ -528,7 +530,7 @@ export default function PendingApprovals({ onMatchUpdated }: PendingApprovalsPro
                   ) : (
                     <Check className="w-3.5 h-3.5 stroke-[3]" />
                   )}
-                  <span>Təsdiqlə</span>
+                  <span>{t('pending_matches.approve', 'Təsdiqlə')}</span>
                 </button>
               </div>
             </div>
