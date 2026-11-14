@@ -58,6 +58,39 @@ export function isPlayoffStage(stage?: string | null, roundNumber?: number | nul
   );
 }
 
+/**
+ * Formats detailed game-by-game set point scores (e.g. "11–8, 11–6").
+ * Returns null when the stored string only repeats the overall match set score (e.g. "2-0").
+ */
+export function formatDetailedSetScores(
+  setScores?: string | null,
+  p1Score?: number,
+  p2Score?: number
+): string | null {
+  if (!setScores || !setScores.trim()) return null;
+
+  const normalized = setScores.trim().replace(/\s*([-–:])\s*/g, '$1');
+  const tokens = normalized.split(/[,\s]+/).filter(Boolean);
+  if (tokens.length === 0) return null;
+
+  if (tokens.length === 1) {
+    const match = tokens[0].match(/^(\d+)[-–:](\d+)$/);
+    if (match) {
+      const a = Number(match[1]);
+      const b = Number(match[2]);
+      const matchesOverallScore =
+        p1Score !== undefined &&
+        p2Score !== undefined &&
+        ((a === p1Score && b === p2Score) || (a === p2Score && b === p1Score));
+      if (matchesOverallScore || (a < 11 && b < 11)) {
+        return null;
+      }
+    }
+  }
+
+  return tokens.map((token) => token.replace(/[-:]/g, '–')).join(', ');
+}
+
 function unwrapJoinedProfile(raw: any): MatchCompetitorProfile | null {
   if (!raw) return null;
   const item = Array.isArray(raw) ? raw[0] : raw;

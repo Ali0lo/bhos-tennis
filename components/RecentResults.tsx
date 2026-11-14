@@ -4,7 +4,7 @@ import React, { useMemo } from 'react';
 import Link from 'next/link';
 import { MatchRecord } from '../lib/data/types';
 import { BHOSDataStore, getPlayerHref } from '../lib/data/store';
-import { formatMatchStageAz, isPlayoffStage } from '../lib/data/matches';
+import { formatDetailedSetScores, formatMatchStageAz, isPlayoffStage } from '../lib/data/matches';
 import { useTranslation, useTranslations } from '../lib/i18n';
 import EloToastBadge from './EloToastBadge';
 import { Activity, ArrowRight, Award, Calendar } from 'lucide-react';
@@ -105,48 +105,50 @@ export default function RecentResults({ matches, onSelectMatch }: RecentResultsP
                   </div>
 
                   <div className="space-y-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={getPlayerHref(p1Id, p1Name)}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`text-sm hover:text-blue-400 transition truncate ${
-                          p1Won ? 'text-emerald-400 font-bold' : 'text-slate-300 font-medium'
-                        }`}
-                      >
-                        {p1Name}
-                      </Link>
-                      {p1Won && <Award className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={getPlayerHref(p2Id, p2Name)}
-                        onClick={(e) => e.stopPropagation()}
-                        className={`text-sm hover:text-blue-400 transition truncate ${
-                          p2Won ? 'text-emerald-400 font-bold' : 'text-slate-300 font-medium'
-                        }`}
-                      >
-                        {p2Name}
-                      </Link>
-                      {p2Won && <Award className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 pt-0.5 text-[11px] font-mono text-slate-400">
-                      <span>
-                        {rootT('home_recent.sets_label')}: <strong className="text-slate-300">{m.set_scores}</strong>
-                      </span>
-                      {stageLabel && (
-                        <span
-                          className={`px-2 py-0.5 rounded-full text-[9px] font-sans font-extrabold uppercase tracking-wider border ${
-                            isPlayoff
-                              ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                              : 'bg-blue-700/15 text-blue-300 border-blue-600/30'
+                    {[
+                      { id: p1Id, name: p1Name, won: p1Won },
+                      { id: p2Id, name: p2Name, won: p2Won },
+                    ].map((p, idx) => (
+                      <div key={`${m.id}-p-${idx}`} className="flex items-center gap-2">
+                        <Link
+                          href={getPlayerHref(p.id, p.name)}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`text-sm transition-colors truncate no-underline ${
+                            p.won
+                              ? 'text-emerald-400 hover:text-emerald-300 font-semibold'
+                              : 'text-slate-200 hover:text-white font-medium'
                           }`}
                         >
-                          {stageLabel}
-                        </span>
-                      )}
-                    </div>
+                          {p.name}
+                        </Link>
+                        {p.won && <Award className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                      </div>
+                    ))}
+
+                    {(() => {
+                      const detailedSets = formatDetailedSetScores(m.set_scores, m.player1_score, m.player2_score);
+                      if (!detailedSets && !stageLabel) return null;
+                      return (
+                        <div className="flex flex-wrap items-center gap-2 pt-0.5 text-[11px] font-mono text-slate-400">
+                          {detailedSets && (
+                            <span>
+                              {rootT('home_recent.sets_label')}: <strong className="text-slate-300">{detailedSets}</strong>
+                            </span>
+                          )}
+                          {stageLabel && (
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-sans font-extrabold uppercase tracking-wider border ${
+                                isPlayoff
+                                  ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                                  : 'bg-blue-700/15 text-blue-300 border-blue-600/30'
+                              }`}
+                            >
+                              {stageLabel}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </div>
 

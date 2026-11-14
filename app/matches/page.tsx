@@ -4,7 +4,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { BHOSDataStore, isApprovedMatch, getPlayerHref } from '../../lib/data/store';
 import { MatchRecord, PlayerProfile, isAutoApprovedMatch } from '../../lib/data/types';
-import { formatMatchStageAz, isPlayoffStage } from '../../lib/data/matches';
+import { formatDetailedSetScores, formatMatchStageAz, isPlayoffStage } from '../../lib/data/matches';
 import { useTranslation } from '../../lib/i18n';
 import MatchLoggerModal from '../../components/MatchLoggerModal';
 import MatchDetailModal from '../../components/MatchDetailModal';
@@ -368,6 +368,27 @@ export default function MatchesPage() {
 
             const stageLabel = formatMatchStageAz(m.stage, m.round_number, m.tournament_id);
             const isPlayoff = isPlayoffStage(m.stage, m.round_number);
+            const detailedSets = formatDetailedSetScores(m.set_scores, m.player1_score, m.player2_score);
+            const participants = [
+              {
+                id: p1Id,
+                name: p1Name,
+                won: p1Won,
+                isUser: isUserP1,
+                before: m.player1_elo_before,
+                after: m.player1_elo_after,
+                delta: p1Delta,
+              },
+              {
+                id: p2Id,
+                name: p2Name,
+                won: p2Won,
+                isUser: isUserP2,
+                before: m.player2_elo_before,
+                after: m.player2_elo_after,
+                delta: p2Delta,
+              },
+            ];
 
             return (
               <div
@@ -391,95 +412,75 @@ export default function MatchesPage() {
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                   <div className="flex items-center gap-4 flex-1">
-                    <div className="flex flex-col items-center justify-center w-16 h-16 rounded-2xl bg-slate-950 border border-slate-800 font-mono font-black text-xl text-white shrink-0">
-                      <span className={p1Won ? 'text-emerald-400' : 'text-slate-300'}>
+                    <div className="min-h-[68px] w-14 py-2 px-3 flex flex-col items-center justify-center rounded-xl bg-slate-950/90 border border-slate-800 leading-none gap-1 shrink-0">
+                      <span className={`text-base font-bold font-mono leading-none ${p1Won ? 'text-emerald-400' : 'text-slate-300'}`}>
                         {m.player1_score}
                       </span>
-                      <span className="text-[10px] text-slate-500 -mt-1 font-normal">:</span>
-                      <span className={p2Won ? 'text-emerald-400' : 'text-slate-300'}>
+                      <span className="text-xs text-slate-500 leading-none">:</span>
+                      <span className={`text-base font-bold font-mono leading-none ${p2Won ? 'text-emerald-400' : 'text-slate-300'}`}>
                         {m.player2_score}
                       </span>
                     </div>
 
                     <div className="space-y-2 flex-1">
-                      <div className="flex items-center justify-between max-w-md gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Link
-                            href={getPlayerHref(p1Id, p1Name)}
-                            onClick={(e) => e.stopPropagation()}
-                            className={`text-sm hover:text-blue-400 transition truncate ${
-                              isUserP1
-                                ? 'text-blue-400 font-bold underline underline-offset-2'
-                                : p1Won
-                                ? 'text-emerald-400 font-bold'
-                                : 'text-slate-300 font-medium'
-                            }`}
-                          >
-                            {p1Name}
-                          </Link>
-                          {p1Won && <Award className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                      {participants.map((p, idx) => (
+                        <div key={`${m.id}-p-${idx}`} className="flex items-center justify-between max-w-md gap-2">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <Link
+                              href={getPlayerHref(p.id, p.name)}
+                              onClick={(e) => e.stopPropagation()}
+                              className={`text-sm transition-colors truncate no-underline ${
+                                p.won
+                                  ? 'text-emerald-400 hover:text-emerald-300 font-semibold'
+                                  : p.isUser
+                                  ? 'text-white hover:text-slate-200 font-semibold'
+                                  : 'text-slate-200 hover:text-white font-medium'
+                              }`}
+                            >
+                              {p.name}
+                            </Link>
+                            {p.isUser && (
+                              <span className="text-[11px] font-medium text-slate-400 shrink-0">
+                                ({t('leaderboard.you', 'Siz')})
+                              </span>
+                            )}
+                            {p.won && <Award className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                          </div>
+                          <div className="font-mono text-xs flex items-center gap-1.5 shrink-0">
+                            <span className="text-slate-500">{p.before}</span>
+                            <span className="text-slate-600">→</span>
+                            <span className="font-bold text-white">{p.after}</span>
+                            <span
+                              className={`text-[11px] font-bold ${
+                                p.delta >= 0 ? 'text-emerald-500' : 'text-rose-500'
+                              }`}
+                            >
+                              ({p.delta >= 0 ? `+${p.delta}` : p.delta})
+                            </span>
+                          </div>
                         </div>
-                        <div className="font-mono text-xs flex items-center gap-1.5 shrink-0">
-                          <span className="text-slate-500">{m.player1_elo_before}</span>
-                          <span className="text-slate-600">→</span>
-                          <span className="font-bold text-white">{m.player1_elo_after}</span>
-                          <span
-                            className={`text-[11px] font-bold ${
-                              p1Delta >= 0 ? 'text-emerald-500' : 'text-rose-500'
-                            }`}
-                          >
-                            ({p1Delta >= 0 ? `+${p1Delta}` : p1Delta})
-                          </span>
-                        </div>
-                      </div>
+                      ))}
 
-                      <div className="flex items-center justify-between max-w-md gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <Link
-                            href={getPlayerHref(p2Id, p2Name)}
-                            onClick={(e) => e.stopPropagation()}
-                            className={`text-sm hover:text-blue-400 transition truncate ${
-                              isUserP2
-                                ? 'text-blue-400 font-bold underline underline-offset-2'
-                                : p2Won
-                                ? 'text-emerald-400 font-bold'
-                                : 'text-slate-300 font-medium'
-                            }`}
-                          >
-                            {p2Name}
-                          </Link>
-                          {p2Won && <Award className="w-3.5 h-3.5 text-emerald-500 shrink-0" />}
+                      {(detailedSets || stageLabel) && (
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-400 pt-0.5">
+                          {detailedSets && (
+                            <span>
+                              {t('home_recent.sets_label', 'Setlər')}: <span className="text-slate-300">{detailedSets}</span>
+                            </span>
+                          )}
+                          {stageLabel && (
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[9px] font-sans font-extrabold uppercase tracking-wider border ${
+                                isPlayoff
+                                  ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
+                                  : 'bg-blue-700/15 text-blue-300 border-blue-600/30'
+                              }`}
+                            >
+                              {stageLabel}
+                            </span>
+                          )}
                         </div>
-                        <div className="font-mono text-xs flex items-center gap-1.5 shrink-0">
-                          <span className="text-slate-500">{m.player2_elo_before}</span>
-                          <span className="text-slate-600">→</span>
-                          <span className="font-bold text-white">{m.player2_elo_after}</span>
-                          <span
-                            className={`text-[11px] font-bold ${
-                              p2Delta >= 0 ? 'text-emerald-500' : 'text-rose-500'
-                            }`}
-                          >
-                            ({p2Delta >= 0 ? `+${p2Delta}` : p2Delta})
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-slate-400 pt-0.5">
-                        <span>
-                          {t('home_recent.sets_label', 'Setlər')}: <span className="text-slate-300">{m.set_scores}</span>
-                        </span>
-                        {stageLabel && (
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[9px] font-sans font-extrabold uppercase tracking-wider border ${
-                              isPlayoff
-                                ? 'bg-rose-500/15 text-rose-300 border-rose-500/30'
-                                : 'bg-blue-700/15 text-blue-300 border-blue-600/30'
-                            }`}
-                          >
-                            {stageLabel}
-                          </span>
-                        )}
-                      </div>
+                      )}
                     </div>
                   </div>
 

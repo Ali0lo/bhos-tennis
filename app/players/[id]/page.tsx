@@ -30,6 +30,7 @@ import PlayerProfileSkeleton from '../../../components/PlayerProfileSkeleton';
 import HoloCard from '../../../components/HoloCard';
 import RecentFormBadges from '../../../components/RecentFormBadges';
 import { getCustomRacket, translatePlayingStyle } from '../../../lib/utils/equipment';
+import { formatDetailedSetScores } from '../../../lib/data/matches';
 import { useTranslation } from '../../../lib/i18n';
 import {
   evaluatePlayerAchievements,
@@ -1248,6 +1249,8 @@ export default function PlayerProfilePage() {
                   typeof specificDelta === 'number' ? specificDelta : m.elo_delta
                 );
 
+                const detailedSets = formatDetailedSetScores(m.set_scores, m.player1_score, m.player2_score);
+
                 return (
                   <div
                     key={m.id}
@@ -1281,7 +1284,7 @@ export default function PlayerProfilePage() {
                           <Link
                             href={getPlayerHref(opponentId, opponentName)}
                             onClick={(e) => e.stopPropagation()}
-                            className="text-sm font-bold text-white hover:text-[#3B82F6] transition"
+                            className="text-sm font-medium text-slate-200 hover:text-white transition-colors no-underline"
                           >
                             {opponentName}
                           </Link>
@@ -1320,9 +1323,9 @@ export default function PlayerProfilePage() {
                         <div className="text-sm font-mono font-bold text-white">
                           {myScore} <span className="text-slate-500">-</span> {opScore}
                         </div>
-                        {m.set_scores && (
+                        {detailedSets && (
                           <div className="text-[11px] font-mono text-slate-400">
-                            {m.set_scores}
+                            {detailedSets}
                           </div>
                         )}
                       </div>
