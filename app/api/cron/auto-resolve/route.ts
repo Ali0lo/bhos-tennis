@@ -7,6 +7,14 @@ export const dynamic = 'force-dynamic';
 async function handleAutoResolve(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET;
   const authHeader = request.headers.get('authorization');
+  const isProduction = process.env.NODE_ENV === 'production';
+
+  if (isProduction && !cronSecret) {
+    return NextResponse.json(
+      { error: 'Server misconfiguration: CRON_SECRET is not set' },
+      { status: 500 }
+    );
+  }
 
   if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
     return NextResponse.json(
@@ -16,14 +24,17 @@ async function handleAutoResolve(request: NextRequest) {
   }
 
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey =
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !supabaseKey) {
-    return NextResponse.json({
-      processed_count: 0,
-      timestamp: new Date().toISOString(),
-    });
+    return NextResponse.json(
+      {
+        error: 'Server misconfiguration: Supabase service credentials are not configured',
+        processed_count: 0,
+        timestamp: new Date().toISOString(),
+      },
+      { status: 500 }
+    );
   }
 
   const supabase = createClient(supabaseUrl, supabaseKey);
