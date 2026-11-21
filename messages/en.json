@@ -399,7 +399,15 @@
     "current_active_rating": "Current Active Rating",
     "initial_rating": "Initial Rating",
     "zoom_photo": "Zoom photo of {name}",
-    "zoom_photo_title": "Zoom photo"
+    "zoom_photo_title": "Zoom photo",
+    "quick_match_qr": "Quick Match QR",
+    "qr_modal_title": "Quick Match QR Code",
+    "qr_modal_subtitle": "Your opponent can scan this code to immediately log a match against you.",
+    "qr_download_png": "Download PNG",
+    "qr_copy_link": "Copy Link",
+    "qr_copied": "Copied!",
+    "qr_scan_footer": "Scan to log an official match",
+    "qr_close": "Close"
   },
   "matches": {
     "title": "Official Match Archive",

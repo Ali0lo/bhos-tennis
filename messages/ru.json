@@ -399,7 +399,15 @@
     "current_active_rating": "Текущий активный рейтинг",
     "initial_rating": "Начальный рейтинг",
     "zoom_photo": "Увеличить фото {name}",
-    "zoom_photo_title": "Увеличить фото"
+    "zoom_photo_title": "Увеличить фото",
+    "quick_match_qr": "Быстрый матч QR",
+    "qr_modal_title": "QR-код быстрого матча",
+    "qr_modal_subtitle": "Соперник может отсканировать этот код, чтобы сразу записать матч с вами.",
+    "qr_download_png": "Скачать PNG",
+    "qr_copy_link": "Копировать ссылку",
+    "qr_copied": "Скопировано!",
+    "qr_scan_footer": "Сканируйте для записи матча",
+    "qr_close": "Закрыть"
   },
   "matches": {
     "title": "Архив официальных матчей",

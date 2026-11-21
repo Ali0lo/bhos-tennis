@@ -399,7 +399,15 @@
     "current_active_rating": "Hazırkı Aktiv Reytinq",
     "initial_rating": "İlkin Reytinq",
     "zoom_photo": "{name} şəklini böyüt",
-    "zoom_photo_title": "Şəkli böyüt"
+    "zoom_photo_title": "Şəkli böyüt",
+    "quick_match_qr": "Sürətli Matç QR",
+    "qr_modal_title": "Sürətli Matç QR Kodu",
+    "qr_modal_subtitle": "Rəqibiniz bu kodu skan edərək dərhal sizinlə matç qeyd edə bilər.",
+    "qr_download_png": "PNG Yüklə",
+    "qr_copy_link": "Linki Kopyala",
+    "qr_copied": "Kopyalandı!",
+    "qr_scan_footer": "Matç qeydiyyatı üçün skan edin",
+    "qr_close": "Bağla"
   },
   "matches": {
     "title": "Rəsmi Oyun Arxivləri",

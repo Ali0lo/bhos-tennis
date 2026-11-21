@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { Suspense, useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { getSupabaseClient } from '../lib/supabase/client';
 import { BHOSDataStore } from '../lib/data/store';
@@ -127,19 +128,21 @@ function ScoreStepper({
   );
 }
 
-export default function MatchLogger({
+function MatchLoggerInner({
   onMatchLogged,
   initialOpponentId,
 }: MatchLoggerProps) {
   const { t } = useTranslation();
+  const searchParams = useSearchParams();
+  const queryOpponentParam = searchParams.get('opponentId') || searchParams.get('opponent');
   const store = BHOSDataStore.getInstance();
   const [players, setPlayers] = useState<PlayerProfile[]>([]);
   const [loadingPlayers, setLoadingPlayers] = useState(true);
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
 
-  const [opponentId, setOpponentId] = useState<string>(initialOpponentId || '');
+  const [opponentId, setOpponentId] = useState<string>('');
   const [adminP1Id, setAdminP1Id] = useState<string>('');
-  const [adminP2Id, setAdminP2Id] = useState<string>(initialOpponentId || '');
+  const [adminP2Id, setAdminP2Id] = useState<string>('');
   const [scoreA, setScoreA] = useState<number>(0);
   const [scoreB, setScoreB] = useState<number>(0);
   const [detailedScores, setDetailedScores] = useState<string>('');
@@ -147,6 +150,7 @@ export default function MatchLogger({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingLockRef = useRef(false);
   const lastSubmissionRef = useRef<{ signature: string; timestamp: number } | null>(null);
+  const appliedOpponentRef = useRef<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successToast, setSuccessToast] = useState<{
     message: string;
@@ -211,22 +215,29 @@ export default function MatchLogger({
   useEffect(() => {
     fetchCurrentUser();
     fetchActivePlayers();
-    const urlParams =
-      typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
-    const rawOpponent =
-      initialOpponentId ||
-      urlParams?.get('opponent') ||
-      urlParams?.get('opponentId') ||
-      null;
-    // Accept readable slugs as well as legacy UUIDs.
-    const resolvedOpponentId = rawOpponent
-      ? store.resolvePlayerIdentifier(rawOpponent) || rawOpponent
-      : null;
-    if (resolvedOpponentId) {
-      setOpponentId(resolvedOpponentId);
-      setAdminP2Id(resolvedOpponentId);
+  }, [fetchCurrentUser, fetchActivePlayers]);
+
+  useEffect(() => {
+    const rawRequested = (initialOpponentId || queryOpponentParam || '').trim();
+    if (!rawRequested || loadingPlayers || players.length === 0) return;
+    if (appliedOpponentRef.current === rawRequested) return;
+
+    const resolvedId = store.resolvePlayerIdentifier(rawRequested) || rawRequested;
+    const normalizedRaw = rawRequested.toLowerCase();
+    const matchedPlayer = players.find(
+      (p) =>
+        p.id === resolvedId ||
+        p.id === rawRequested ||
+        (p.slug && p.slug.toLowerCase() === normalizedRaw)
+    );
+
+    appliedOpponentRef.current = rawRequested;
+
+    if (matchedPlayer && matchedPlayer.id !== currentUser?.id) {
+      setOpponentId(matchedPlayer.id);
+      setAdminP2Id(matchedPlayer.id);
     }
-  }, [fetchCurrentUser, fetchActivePlayers, initialOpponentId, store]);
+  }, [initialOpponentId, queryOpponentParam, players, loadingPlayers, currentUser, store]);
 
   useEffect(() => {
     if (currentUser?.id && adminP2Id && !adminP1Id && currentUser.id !== adminP2Id) {
@@ -235,10 +246,14 @@ export default function MatchLogger({
   }, [currentUser, adminP2Id, adminP1Id]);
 
   useEffect(() => {
-    if (currentUser?.id && opponentId === currentUser.id) {
+    if (!currentUser?.id) return;
+    if (opponentId === currentUser.id) {
       setOpponentId('');
     }
-  }, [currentUser, opponentId]);
+    if (!adminP1Id && adminP2Id === currentUser.id) {
+      setAdminP2Id('');
+    }
+  }, [currentUser, opponentId, adminP1Id, adminP2Id]);
 
   const isAdminOrCoach = useMemo(() => {
     return currentUser?.role === 'coach' || currentUser?.role === 'president';
@@ -844,5 +859,13 @@ export default function MatchLogger({
         </div>
       </form>
     </div>
+  );
+}
+
+export default function MatchLogger(props: MatchLoggerProps) {
+  return (
+    <Suspense fallback={null}>
+      <MatchLoggerInner {...props} />
+    </Suspense>
   );
 }

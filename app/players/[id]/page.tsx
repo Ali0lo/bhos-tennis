@@ -23,6 +23,7 @@ import {
 import SmoothReveal from '../../../components/SmoothReveal';
 import NumberTicker from '../../../components/NumberTicker';
 import EditProfileModal from '../../../components/EditProfileModal';
+import PlayerQrModal from '../../../components/PlayerQrModal';
 import MatchDetailModal from '../../../components/MatchDetailModal';
 import WhatIfSimulator from '../../../components/WhatIfSimulator';
 import HeadToHeadDuel from '../../../components/HeadToHeadDuel';
@@ -55,6 +56,7 @@ import {
   CheckCheck,
   Lock,
   CheckCircle2,
+  QrCode,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -145,6 +147,7 @@ export default function PlayerProfilePage() {
     () => store.getCurrentUser()
   );
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isQrModalOpen, setIsQrModalOpen] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
@@ -682,6 +685,15 @@ export default function PlayerProfilePage() {
                       <span>{t('profile.edit_profile')}</span>
                     </button>
                   )}
+
+                  <button
+                    type="button"
+                    onClick={() => setIsQrModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-bold bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 hover:text-white border border-white/10 transition shadow-sm"
+                  >
+                    <QrCode className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>{t('profile.quick_match_qr', 'Sürətli Matç QR')}</span>
+                  </button>
 
                   <span
                     className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold uppercase tracking-wider border ${
@@ -1367,6 +1379,17 @@ export default function PlayerProfilePage() {
           onProfileUpdated={(updated) => {
             setProfile(updated);
           }}
+        />
+      )}
+      {profile && (
+        <PlayerQrModal
+          isOpen={isQrModalOpen}
+          onClose={() => setIsQrModalOpen(false)}
+          playerId={playerId}
+          playerName={profile.full_name}
+          playerSlug={profile.slug}
+          department={profile.department || profile.major_faculty}
+          currentElo={profile.current_elo}
         />
       )}
       {selectedMatch && (
