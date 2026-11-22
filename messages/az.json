@@ -1,7 +1,7 @@
 {
   "brand": {
-    "title": "BANM Stolüstü Tennis Klubu",
-    "subtitle": "Bakı Ali Neft Məktəbi Stolüstü Tennis İdarəetmə və Reytinq Portalı",
+    "title": "BANM Masaüstü Tennis Klubu",
+    "subtitle": "Bakı Ali Neft Məktəbi Masaüstü Tennis İdarəetmə və Reytinq Portalı",
     "motto": "Mühəndis Dəqiqliyi, İdman Əzmi"
   },
   "nav": {
@@ -29,7 +29,7 @@
   },
   "auth": {
     "signin_title": "Hesaba Daxil Ol",
-    "signin_sub": "BANM Stolüstü Tennis Klubunun rəsmi üzvlük və ELO reytinq sisteminə xoş gəlmisiniz.",
+    "signin_sub": "BANM Masaüstü Tennis Klubunun rəsmi üzvlük və ELO reytinq sisteminə xoş gəlmisiniz.",
     "signup_title": "Yeni Üzv Qeydiyyatı",
     "signup_sub": "BANM tələbə və ya müəllim/əməkdaş profilinizi yaradın və rəsmi reytinqə qoşulun.",
     "signin_btn": "Daxil Ol",
@@ -90,8 +90,8 @@
     "coach_badge": "Məşqçi"
   },
   "home": {
-    "badge": "Rəsmi Stolüstü Tennis Portalı",
-    "hero_title_1": "BANM Stolüstü Tennis",
+    "badge": "Rəsmi Masaüstü Tennis Portalı",
+    "hero_title_1": "BANM Masaüstü Tennis",
     "hero_title_2": "Reytinq və Liqa Sistemi",
     "hero_desc": "Bakı Ali Neft Məktəbinin tələbə və əməkdaşları üçün ITTF standartlı ELO reytinqi, canlı turnir cədvəli və rəsmi klub platforması.",
     "cta_join": "Qoşul və Reytinq Qazan",
@@ -108,7 +108,7 @@
       "view_all_leaderboard": "Bütün Reytinqə Bax",
       "tables_num": "02",
       "tables_title": "İdman Zalının Masaları",
-      "tables_subtitle": "Bakı Ali Neft Məktəbi idman zalında yerləşən stolüstü tennis masaları və qaydalar",
+      "tables_subtitle": "Bakı Ali Neft Məktəbi idman zalında yerləşən masaüstü tennis masaları və qaydalar",
       "table_1_label": "Masa 1 — Xanımlar üçün Ayrılmış Masa",
       "table_standard_label": "Masalar 2–4 — Ümumi Məşq və Yarış Masaları",
       "hall_info_title": "İdman Zalı Qaydaları",
@@ -141,8 +141,8 @@
       "cta": "Tezliklə • Hazır Olun"
     },
     "about": {
-      "title": "BANM Stolüstü Tennis Klubu",
-      "desc": "Bakı Ali Neft Məktəbinin tələbə və əməkdaşları üçün rəsmi stolüstü tennis platforması. Klubumuz Bibiheybət korpusunun idman zalında gündəlik məşqlər, rəsmi ELO reytinq matçları və semestr turnirləri təşkil edir.",
+      "title": "BANM Masaüstü Tennis Klubu",
+      "desc": "Bakı Ali Neft Məktəbinin tələbə və əməkdaşları üçün rəsmi masaüstü tennis platforması. Klubumuz Bibiheybət korpusunun idman zalında gündəlik məşqlər, rəsmi ELO reytinq matçları və semestr turnirləri təşkil edir.",
       "card1_title": "ITTF Standartlı Arena",
       "card1_desc": "4 ədəd Donic Waldner 25mm peşəkar yarış masası (1 Xanımlar / 3 Ümumi).",
       "card2_title": "Rəsmi ELO Sistemi",
@@ -153,7 +153,7 @@
     "hall_rules": {
       "badge": "BANM İdman Kompleksi • Rəsmi Təlimat",
       "title": "İdman Zalı Qaydaları və Masa Bölgüsü",
-      "subtitle": "Bakı Ali Neft Məktəbinin İdman Kompleksində yerləşən 4 peşəkar stolüstü tennis masasının təyinatı və İdman Klubu rəhbərliyi tərəfindən təsdiqlənmiş rəsmi zal qaydaları.",
+      "subtitle": "Bakı Ali Neft Məktəbinin İdman Kompleksində yerləşən 4 peşəkar masaüstü tennis masasının təyinatı və İdman Klubu rəhbərliyi tərəfindən təsdiqlənmiş rəsmi zal qaydaları.",
       "location": "BANM Kampusu • İdman Zalı",
       "tables_summary": "4 Rəsmi Masa (1 Xanımlar / 3 Ümumi)",
       "table1_badge": "Masa 1 • Xanımlar",
@@ -190,7 +190,7 @@
       "rule3_desc": "Zalda qətiyyən nalayiq ifadələrdən və küçə sözlərindən istifadə etmək olmaz. Zaldan xanım tələbələr və müəllimlər də istifadə edir.",
       "rule4_title": "İnventarlardan Düzgün İstifadə",
       "rule4_tag": "İnventar",
-      "rule4_desc": "Bütün idman avadanlıqları təyinatı üzrə işlədilməlidir (futbol, voleybol, basketbol və stolüstü tennis inventarları).",
+      "rule4_desc": "Bütün idman avadanlıqları təyinatı üzrə işlədilməlidir (futbol, voleybol, basketbol və masaüstü tennis inventarları).",
       "rule5_title": "Qaydaların Mənimsənilməsi",
       "rule5_tag": "Oyun Qaydaları",
       "rule5_desc": "İdman yarışlarına və oyunlarına qoşularkən qayda və təlimatları tam mənimsəyib qaydalar çərçivəsində oynayın.",
@@ -206,7 +206,7 @@
   "hero": {
     "portal_tag": "Rəsmi Kampus Portalı",
     "community_tag": "100+ BANM Oyunçusuna WhatsApp-da Qoşul",
-    "headline": "Rəsmi BANM Stolüstü Tennis Portalı",
+    "headline": "Rəsmi BANM Masaüstü Tennis Portalı",
     "subtitle": "Bakı Ali Neft Məktəbi tələbələri, yığma komandası və məşqçiləri üçün rəsmi reytinq və klub portalı.",
     "hall_tables_btn": "Zal & Masalar",
     "join_whatsapp_btn": "WhatsApp Qrupuna Qoşul",
@@ -221,7 +221,7 @@
   },
   "facility": {
     "badge": "Kampus Zalı Bələdçisi",
-    "title": "BANM Stolüstü Tennis Zalı & Masa Təyinatı",
+    "title": "BANM Masaüstü Tennis Zalı & Masa Təyinatı",
     "subtitle": "Masa 1 Xanımlar üçün, Masalar 2, 3 və 4 ümumi istifadə üçün nəzərdə tutulub.",
     "full_guide": "Tam Zal Bələdçisi",
     "allocation_rule": "Masa Bölgüsü Qaydası",
@@ -313,7 +313,7 @@
     "next": "Növbəti",
     "official_title": "Rəsmi Universitet Reytinqi",
     "page_title": "BANM Canlı ELO Reytinq Cədvəli",
-    "page_subtitle": "Bakı Ali Neft Məktəbinin təsdiqlənmiş stolüstü tennis oyunçularının rəsmi reytinq siyahısı. Dinamik ELO hesablama sistemi (K=32).",
+    "page_subtitle": "Bakı Ali Neft Məktəbinin təsdiqlənmiş masaüstü tennis oyunçularının rəsmi reytinq siyahısı. Dinamik ELO hesablama sistemi (K=32).",
     "your_rank": "Sizin Reytinqiniz",
     "all": "Hamısı",
     "male": "Oğlan",
@@ -555,12 +555,12 @@
     "spots_left": "boş yer qalır",
     "roster_full": "Siyahı dolub",
     "organizer": "Təşkilatçı",
-    "default_rules": "Standart ITTF və BANM Stolüstü Tennis Klubu rəsmi reqlamenti və oyun qaydaları tətbiq olunur.",
+    "default_rules": "Standart ITTF və BANM Masaüstü Tennis Klubu rəsmi reqlamenti və oyun qaydaları tətbiq olunur.",
     "foundation_title": "\"Zəfər Günü\" Foundation Kuboku",
     "foundation_banner_tag": "🏆 RƏSMİ YEKUN NƏTİCƏLƏR • TURNİR BAŞA ÇATDI",
     "foundation_banner_stats": "✓ 38 Oyun • 7 Noyabr 2026",
     "foundation_banner_title": "“Zəfər Günü” Foundation Kuboku — Fəxri Kürsü",
-    "foundation_banner_cta": "Tam Turnir Cədvəli və Oyunlar →",
+    "foundation_banner_cta": "Tam Turnir Cədvəli və Oyunlar",
     "finalist": "Finalçı",
     "third_place_stat": "3-cü yer",
     "dismiss_banner": "Elanı bağla",
@@ -623,7 +623,7 @@
     "click_to_enter_score": "Nəticə daxil etmək üçün oyuna klikləyin",
     "playoff_after_groups": "Pley-off səbəti qrup mərhələsindən sonra formalaşacaq",
     "bracket_not_formed": "Səbət hələ formalaşdırılmayıb",
-    "rules_ittf_bhos": "ITTF standartları və BANM Stolüstü Tennis Klubu daxili nizamnaməsi",
+    "rules_ittf_bhos": "ITTF standartları və BANM Masaüstü Tennis Klubu daxili nizamnaməsi",
     "group_match_result": "Qrup Oyunu Nəticəsi",
     "sets_score": "Setlər",
     "individual_set_scores": "Fərdi Set Hesabları (istəyə bağlı)",
@@ -819,12 +819,12 @@
     "close": "Bağla"
   },
   "footer": {
-    "tagline": "Bakı Ali Neft Məktəbinin mühəndislik fakültələri arasında stolüstü tennis istedadlarının, kollec reytinq sistemlərinin və idman əzminin inkişafına həsr edilmişdir.",
+    "tagline": "Bakı Ali Neft Məktəbinin mühəndislik fakültələri arasında masaüstü tennis istedadlarının, kollec reytinq sistemlərinin və idman əzminin inkişafına həsr edilmişdir.",
     "campus": "BANM Bibiheybət Kampusu İdman Kompleksi",
     "affiliations": "Standartlar & Əməkdaşlıq",
     "ittf_compliant": "ITTF Qaydalarına Uyğun",
     "whatsapp_chat": "Rəsmi WhatsApp Çatı",
-    "rights": "BANM Stolüstü Tennis Klubu. Bakı Ali Neft Məktəbi üçün yaradılmışdır.",
+    "rights": "BANM Masaüstü Tennis Klubu. Bakı Ali Neft Məktəbi üçün yaradılmışdır.",
     "elo_badge": "Rəsmi ELO Reytinq Mühərriki (K=32 / K=48)"
   },
   "common": {

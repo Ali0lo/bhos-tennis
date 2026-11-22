@@ -45,15 +45,15 @@ export default function FoundationTournamentBanner() {
         onClick={handleDismiss}
         aria-label={t('tournaments.dismiss_banner', 'Elanı bağla')}
         title={t('common.cancel', 'Bağla')}
-        className="absolute top-3.5 right-3.5 z-20 inline-flex items-center justify-center w-8 h-8 rounded-xl bg-slate-950/90 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition"
+        className="absolute top-3 right-3 z-20 inline-flex items-center justify-center w-8 h-8 rounded-xl bg-slate-950/90 border border-slate-800 text-slate-400 hover:text-white hover:border-slate-700 transition"
       >
         <X className="w-4 h-4" />
       </button>
 
-      <div className="relative z-10 flex flex-col gap-5 pr-6 sm:pr-8">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div className="space-y-2 max-w-2xl">
-            <div className="flex flex-wrap items-center gap-2">
+      <div className="relative z-10 flex flex-col gap-5">
+        <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4">
+          <div className="space-y-2 max-w-3xl flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 pr-10">
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/50 text-amber-300 text-[11px] font-display font-extrabold uppercase tracking-wider">
                 <Trophy className="w-3.5 h-3.5 text-amber-400" />
                 <span>{t('tournaments.foundation_banner_tag', '🏆 RƏSMİ YEKUN NƏTİCƏLƏR • TURNİR BAŞA ÇATDI')}</span>
@@ -64,16 +64,16 @@ export default function FoundationTournamentBanner() {
               </span>
             </div>
 
-            <h2 className="text-xl sm:text-2xl lg:text-3xl font-display font-black text-white tracking-tight leading-snug">
+            <h2 className="text-xl sm:text-2xl lg:text-3xl font-display font-black text-white tracking-tight leading-snug text-balance">
               {t('tournaments.foundation_banner_title', '“Zəfər Günü” Foundation Kuboku — Fəxri Kürsü')}
             </h2>
           </div>
 
           <Link
             href="/tournaments/foundation-kuboku-2026"
-            className="group inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-display font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition whitespace-nowrap self-start lg:self-center"
+            className="group inline-flex items-center justify-center gap-2 px-5 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-display font-extrabold text-xs sm:text-sm shadow-md active:scale-95 transition whitespace-nowrap self-start lg:self-end shrink-0"
           >
-            <span>{t('tournaments.foundation_banner_cta', 'Tam Turnir Cədvəli və Oyunlar →')}</span>
+            <span>{t('tournaments.foundation_banner_cta', 'Tam Turnir Cədvəli və Oyunlar')}</span>
             <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </div>
@@ -94,7 +94,7 @@ export default function FoundationTournamentBanner() {
               <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-amber-300 transition">
                 Yusif Xanlarov
               </div>
-              <div className="text-[11px] font-mono text-amber-200/80">
+              <div className="text-[11px] font-mono text-slate-300">
                 462 ELO • 7{t('leaderboard.win_abbr', 'Q')} - 1{t('leaderboard.loss_abbr', 'M')} ({t('tournaments.final', 'Final')}: 3-0)
               </div>
             </div>
@@ -114,7 +114,7 @@ export default function FoundationTournamentBanner() {
               <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-blue-300 transition">
                 Məharət Kərimli
               </div>
-              <div className="text-[11px] font-mono text-slate-400">
+              <div className="text-[11px] font-mono text-slate-300">
                 441 ELO • 6{t('leaderboard.win_abbr', 'Q')} - 2{t('leaderboard.loss_abbr', 'M')} ({t('tournaments.finalist', 'Finalçı')})
               </div>
             </div>
@@ -134,7 +134,7 @@ export default function FoundationTournamentBanner() {
               <div className="text-sm sm:text-base font-display font-black text-white truncate group-hover:text-orange-300 transition">
                 Əhəd Zamanlı
               </div>
-              <div className="text-[11px] font-mono text-orange-200/80">
+              <div className="text-[11px] font-mono text-slate-300">
                 458 ELO • 7{t('leaderboard.win_abbr', 'Q')} - 1{t('leaderboard.loss_abbr', 'M')} ({t('tournaments.third_place_stat', '3-cü yer')}: 3-2)
               </div>
             </div>

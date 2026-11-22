@@ -83,7 +83,7 @@ export default function TournamentsTab({
     }
 
     const cleanDesc =
-      sanitizeMultilineText(tDesc, 600) || 'Rəsmi BANM Stolüstü Tennis Klubu turniri.';
+      sanitizeMultilineText(tDesc, 600) || 'Rəsmi BANM Masaüstü Tennis Klubu turniri.';
     const cleanRules = sanitizeMultilineText(tRules, 1500);
     const maxParticipants =
       uniqueParticipants.length <= 2

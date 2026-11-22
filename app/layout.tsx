@@ -22,13 +22,13 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   metadataBase: new URL('https://www.tabletennisbhos.me'),
   title: {
-    default: 'BANM Stolüstü Tennis Portalı | Rəsmi Liqa və Reytinq',
-    template: '%s | BANM Stolüstü Tennis',
+    default: 'BANM Masaüstü Tennis Portalı | Rəsmi Liqa və Reytinq',
+    template: '%s | BANM Masaüstü Tennis',
   },
   description:
-    'Bakı Ali Neft Məktəbinin rəsmi stolüstü tennis platforması. Canlı ELO reytinqi, matç nəticələri və zal qaydaları.',
+    'Bakı Ali Neft Məktəbinin rəsmi masaüstü tennis platforması. Canlı ELO reytinqi, matç nəticələri və zal qaydaları.',
   openGraph: {
-    title: 'BANM Stolüstü Tennis Portalı',
+    title: 'BANM Masaüstü Tennis Portalı',
     description: 'Öz reytinqini öyrən, rəqiblərinə meydan oxu və liqada yüksəl!',
     url: 'https://www.tabletennisbhos.me',
     siteName: 'BANM Table Tennis',
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'BANM Stolüstü Tennis Portalı',
+    title: 'BANM Masaüstü Tennis Portalı',
     description: 'Bakı Ali Neft Məktəbi rəsmi ELO reytinq sistemi.',
     images: ['/og-image.png'],
   },

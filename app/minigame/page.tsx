@@ -22,7 +22,7 @@ export default function MiniGamePage() {
             <span>{t('arcade.back_to_leaderboard', 'Reytinq Cədvəlinə Qayıt')}</span>
           </Link>
           <span className="text-[11px] font-mono text-slate-400">
-            {t('brand.title', 'BANM Stolüstü Tennis Klubu')}
+            {t('brand.title', 'BANM Masaüstü Tennis Klubu')}
           </span>
         </div>
 

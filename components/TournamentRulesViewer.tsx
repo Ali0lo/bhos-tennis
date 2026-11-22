@@ -43,7 +43,7 @@ function parseRules(text?: string | null, defaultRuleText?: string): RuleItem[] 
       {
         id: 'default',
         type: 'paragraph',
-        body: defaultRuleText || 'Standart ITTF və BANM Stolüstü Tennis Klubu rəsmi reqlamenti və oyun qaydaları tətbiq olunur.',
+        body: defaultRuleText || 'Standart ITTF və BANM Masaüstü Tennis Klubu rəsmi reqlamenti və oyun qaydaları tətbiq olunur.',
       },
     ];
   }
@@ -103,7 +103,7 @@ export default function TournamentRulesViewer({
   const { t } = useTranslation();
   const parsed = parseRules(
     rules,
-    t('tournaments.default_rules', 'Standart ITTF və BANM Stolüstü Tennis Klubu rəsmi reqlamenti və oyun qaydaları tətbiq olunur.')
+    t('tournaments.default_rules', 'Standart ITTF və BANM Masaüstü Tennis Klubu rəsmi reqlamenti və oyun qaydaları tətbiq olunur.')
   );
 
   const renderIcon = (type?: RuleItem['iconType']) => {

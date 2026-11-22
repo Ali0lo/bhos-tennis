@@ -177,9 +177,7 @@ export default function HomePage() {
         <FoundationTournamentBanner />
       </SmoothReveal>
 
-      <SmoothReveal delay={0.08}>
-        <OnboardingBanner />
-      </SmoothReveal>
+      {!currentUser && <OnboardingBanner isLoggedIn={Boolean(currentUser)} />}
 
       <SmoothReveal delay={0.1}>
         <section className="space-y-6">

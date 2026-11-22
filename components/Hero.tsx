@@ -79,45 +79,45 @@ export default function Hero({
       </SmoothReveal>
 
       <div className="relative z-20 pt-6 mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
-        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3 px-4 text-center flex flex-col items-center justify-center">
-          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3.5 px-4 text-center flex flex-col items-center justify-start">
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight leading-none min-h-[2rem] sm:min-h-[2.25rem] flex items-center justify-center">
             <NumberTicker value={totalPlayersCount} startValue={0} durationMs={850} />
           </div>
-          <div className="text-xs uppercase font-medium text-slate-400 mt-1">
+          <div className="text-xs uppercase font-medium text-slate-400 mt-1.5 leading-snug">
             {t('hero_stats.players') || 'Aktiv Oyunçu'}
           </div>
         </div>
 
-        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3 px-4 text-center flex flex-col items-center justify-center">
-          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3.5 px-4 text-center flex flex-col items-center justify-start">
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight leading-none min-h-[2rem] sm:min-h-[2.25rem] flex items-center justify-center">
             <NumberTicker value={matchesCount} startValue={0} durationMs={850} />
           </div>
-          <div className="text-xs uppercase font-medium text-slate-400 mt-1">
+          <div className="text-xs uppercase font-medium text-slate-400 mt-1.5 leading-snug">
             {t('hero_stats.matches') || 'Oynanılmış Matç'}
           </div>
         </div>
 
-        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3 px-4 text-center flex flex-col items-center justify-center">
-          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3.5 px-4 text-center flex flex-col items-center justify-start">
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight leading-none min-h-[2rem] sm:min-h-[2.25rem] flex items-center justify-center">
             4
           </div>
-          <div className="text-xs uppercase font-medium text-slate-400 mt-1">
-            {t('hero_stats.tables') || 'İdman Zalı Masaları'}{' '}
-            <span className="text-[10px] text-slate-500 normal-case font-normal block sm:inline">
-              {tablesSubCaption}
-            </span>
+          <div className="text-xs uppercase font-medium text-slate-400 mt-1.5 leading-snug">
+            {t('hero_stats.tables') || 'İdman Zalı Masaları'}
+          </div>
+          <div className="text-[11px] text-slate-400 font-normal mt-0.5 leading-tight sm:whitespace-nowrap text-balance">
+            {tablesSubCaption}
           </div>
         </div>
 
-        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3 px-4 text-center flex flex-col items-center justify-center">
-          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3.5 px-4 text-center flex flex-col items-center justify-start">
+          <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight leading-none min-h-[2rem] sm:min-h-[2.25rem] flex items-center justify-center">
             <NumberTicker
               value={leaderElo}
               startValue={Math.min(500, leaderElo)}
               durationMs={850}
             />
           </div>
-          <div className="text-xs uppercase font-medium text-slate-400 mt-1">
+          <div className="text-xs uppercase font-medium text-slate-400 mt-1.5 leading-snug">
             {rootT('hero.stats_leader') || '#1 ELO Lideri'}
           </div>
         </div>

@@ -1,7 +1,7 @@
 {
-  "name": "BANM Stolüstü Tennis Portalı",
+  "name": "BANM Masaüstü Tennis Portalı",
   "short_name": "BANM TT",
-  "description": "Bakı Ali Neft Məktəbi Stolüstü Tennis Klubu Liqası və ELO Reytinqi",
+  "description": "Bakı Ali Neft Məktəbi Masaüstü Tennis Klubu Liqası və ELO Reytinqi",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#080D16",

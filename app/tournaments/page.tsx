@@ -238,7 +238,7 @@ export default function TournamentsPage() {
           <div className="space-y-2">
             <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-700/15 border border-blue-600/30 text-blue-400 text-[11px] font-display font-extrabold uppercase tracking-widest">
               <Trophy className="w-3.5 h-3.5" />
-              <span>{t('brand.title', 'BANM Stolüstü Tennis Klubu')}</span>
+              <span>{t('brand.title', 'BANM Masaüstü Tennis Klubu')}</span>
             </span>
             <h1 className="text-3xl sm:text-4xl font-display font-black text-white tracking-tight">
               {t('tournaments.title')}
@@ -264,7 +264,7 @@ export default function TournamentsPage() {
             <Trophy className="w-10 h-10 text-amber-400 mx-auto" />
             <h3 className="text-base font-bold text-white">{t('tournaments.upcoming_tournament', 'Bu semestr üçün turnir')}</h3>
             <p className="text-xs text-slate-400 max-w-md mx-auto">
-              {t('tournaments.foundation_banner_stats', 'Bu semestr üçün rəsmi yarış Foundation Tələbələri Üçün Stolüstü Tennis Turniridir.')}
+              {t('tournaments.foundation_banner_stats', 'Bu semestr üçün rəsmi yarış Foundation Tələbələri Üçün Masaüstü Tennis Turniridir.')}
             </p>
           </div>
         ) : (

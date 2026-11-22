@@ -207,7 +207,7 @@ export default function LeaderboardPage() {
                 {t('leaderboard.page_title', 'BANM Canlı ELO Reytinq Cədvəli')}
               </h1>
               <p className="text-xs sm:text-sm text-slate-400 max-w-2xl">
-                {t('leaderboard.page_subtitle', 'Bakı Ali Neft Məktəbinin təsdiqlənmiş stolüstü tennis oyunçularının rəsmi reytinq siyahısı. Dinamik ELO hesablama sistemi (K=32).')}
+                {t('leaderboard.page_subtitle', 'Bakı Ali Neft Məktəbinin təsdiqlənmiş masaüstü tennis oyunçularının rəsmi reytinq siyahısı. Dinamik ELO hesablama sistemi (K=32).')}
               </p>
             </div>
 

@@ -58,7 +58,7 @@ export default function ArcadeDiscoveryBanner() {
 
       <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
         {/* Left / Info Section */}
-        <div className="space-y-1.5">
+        <div className="space-y-1.5 flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600/20 border border-rose-500/30 text-[10px] font-bold uppercase tracking-wider text-rose-300">
               <Gamepad2 className="w-3 h-3 text-rose-400" />
@@ -84,7 +84,7 @@ export default function ArcadeDiscoveryBanner() {
             <span>{t('arcade.discovery_title', '🏓 Masaüstü Ralli: Sonsuz rejimdə rekordu qır və profil nişanları qazan!')}</span>
           </h3>
 
-          <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+          <p className="text-xs text-slate-400 max-w-4xl leading-relaxed text-pretty">
             {t('arcade.discovery_desc', 'Bot rəqiblə sonsuz rallidə reflekslərini sına, sürətlənən topu masada saxla və BANM liderlər lövhəsində 1-ci pilləyə yüksəl!')}
           </p>
         </div>

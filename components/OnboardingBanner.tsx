@@ -12,21 +12,77 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { useTranslation } from '../lib/i18n';
+import { BHOSDataStore } from '../lib/data/store';
+import { getSupabaseClient } from '../lib/supabase/client';
 
 const STORAGE_KEY = 'bhos_onboarding_dismissed_v1';
 
-export default function OnboardingBanner() {
+interface OnboardingBannerProps {
+  isLoggedIn?: boolean;
+}
+
+export default function OnboardingBanner({ isLoggedIn = false }: OnboardingBannerProps) {
   const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(true);
+  const [hasActiveSession, setHasActiveSession] = useState<boolean>(
+    () => isLoggedIn || BHOSDataStore.getInstance().isAuthenticated()
+  );
+  const [authResolved, setAuthResolved] = useState(false);
 
   useEffect(() => {
+    let isMounted = true;
+    const store = BHOSDataStore.getInstance();
+
     try {
       const isDismissed = localStorage.getItem(STORAGE_KEY) === 'true';
       setDismissed(isDismissed);
     } catch {
       setDismissed(false);
     }
-  }, []);
+
+    setHasActiveSession(isLoggedIn || store.isAuthenticated());
+
+    const unsubStore = store.subscribe(() => {
+      if (isMounted) {
+        setHasActiveSession(isLoggedIn || store.isAuthenticated());
+      }
+    });
+
+    const supabase = getSupabaseClient();
+    let authSub: { unsubscribe: () => void } | null = null;
+
+    if (supabase) {
+      supabase.auth
+        .getSession()
+        .then(({ data: { session } }) => {
+          if (isMounted) {
+            setHasActiveSession(Boolean(session?.user) || store.isAuthenticated());
+          }
+        })
+        .catch(() => {})
+        .finally(() => {
+          if (isMounted) {
+            setAuthResolved(true);
+          }
+        });
+
+      const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+        if (isMounted) {
+          setHasActiveSession(Boolean(session?.user) || store.isAuthenticated());
+          setAuthResolved(true);
+        }
+      });
+      authSub = data?.subscription ?? null;
+    } else {
+      setAuthResolved(true);
+    }
+
+    return () => {
+      isMounted = false;
+      unsubStore();
+      authSub?.unsubscribe();
+    };
+  }, [isLoggedIn]);
 
   const handleDismiss = () => {
     setDismissed(true);
@@ -35,7 +91,7 @@ export default function OnboardingBanner() {
     } catch {}
   };
 
-  if (dismissed) return null;
+  if (dismissed || isLoggedIn || hasActiveSession || !authResolved) return null;
 
   return (
     <AnimatePresence>

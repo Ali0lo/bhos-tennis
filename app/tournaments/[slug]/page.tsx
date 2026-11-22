@@ -778,7 +778,7 @@ export default function TournamentDetailPage() {
                 {t('tournaments.rules', 'Rəsmi Turnir Reqlamenti & Qaydalar')}
               </h2>
               <p className="text-xs text-slate-400">
-                {t('tournaments.rules_ittf_bhos', 'ITTF standartları və BANM Stolüstü Tennis Klubu daxili nizamnaməsi')}
+                {t('tournaments.rules_ittf_bhos', 'ITTF standartları və BANM Masaüstü Tennis Klubu daxili nizamnaməsi')}
               </p>
             </div>
           </div>
