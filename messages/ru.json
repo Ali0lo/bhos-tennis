@@ -25,7 +25,12 @@
     "about": "О клубе",
     "pending": "ожидает",
     "customize_profile": "Настроить профиль",
-    "challenges": "Вызовы"
+    "challenges": "Вызовы",
+    "search_placeholder": "Поиск игроков...",
+    "search_input_placeholder": "Поиск по имени или факультету...",
+    "search_top_players": "Топ игроки",
+    "search_empty": "Игроки не найдены",
+    "search_esc_hint": "Закрыть"
   },
   "auth": {
     "signin_title": "Вход в портал",

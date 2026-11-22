@@ -25,7 +25,12 @@
     "about": "Haqqında",
     "pending": "gözləyir",
     "customize_profile": "Profili Fərdiləşdir",
-    "challenges": "Meydan Oxu"
+    "challenges": "Meydan Oxu",
+    "search_placeholder": "Oyunçu axtar...",
+    "search_input_placeholder": "Ad, soyad və ya fakültə axtar...",
+    "search_top_players": "Top Oyunçular",
+    "search_empty": "Uyğun oyunçu tapılmadı",
+    "search_esc_hint": "Bağla"
   },
   "auth": {
     "signin_title": "Hesaba Daxil Ol",

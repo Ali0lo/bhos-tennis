@@ -25,7 +25,12 @@
     "about": "About",
     "pending": "pending",
     "customize_profile": "Customize Profile",
-    "challenges": "Challenges"
+    "challenges": "Challenges",
+    "search_placeholder": "Search players...",
+    "search_input_placeholder": "Search by name or faculty...",
+    "search_top_players": "Top Players",
+    "search_empty": "No matching players found",
+    "search_esc_hint": "Close"
   },
   "auth": {
     "signin_title": "Sign In to Portal",

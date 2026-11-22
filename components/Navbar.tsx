@@ -23,9 +23,11 @@ import {
   LogIn,
   LogOut,
   Settings,
+  Search,
 } from 'lucide-react';
 import MatchLoggerModal from './MatchLoggerModal';
 import EditProfileModal from './EditProfileModal';
+import PlayerSearchModal from './PlayerSearchModal';
 
 export default function Navbar() {
   const { t, locale, setLocale } = useTranslation();
@@ -39,6 +41,7 @@ export default function Navbar() {
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
 
   const navRef = useRef<HTMLDivElement>(null);
   const pendingMatchesCount = usePendingMatchesCount(currentUser?.id);
@@ -62,6 +65,20 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setUserDropdownOpen(false);
+        setMoreDropdownOpen(false);
+        setMobileMenuOpen(false);
+        setShowSearchModal((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
   const leaderboardLabel = t('nav.ranking', 'Reytinq');
   const matchesLabel = t('nav.my_matches', 'Oyunlarım');
   const tournamentsLabel = t('nav.tournaments', 'Turnirlər');
@@ -75,18 +92,17 @@ export default function Navbar() {
     href: string;
     label: string;
     showBadge?: boolean;
-    isArcade?: boolean;
   }
 
   const primaryNavLinks: NavLinkItem[] = [
     { href: '/leaderboard', label: leaderboardLabel },
     { href: '/matches', label: matchesLabel, showBadge: true },
     { href: '/tournaments', label: tournamentsLabel },
-    { href: '/minigame', label: `🏓 ${miniGameLabel}`, isArcade: true },
+    { href: '/challenges', label: challengesLabel },
+    { href: '/minigame', label: `🏓 ${miniGameLabel}` },
   ];
 
   const moreNavLinks: { href: string; label: string }[] = [
-    { href: '/challenges', label: challengesLabel },
     { href: '/tables', label: tablesLabel },
     { href: '/#about', label: aboutLabel },
   ];
@@ -95,8 +111,8 @@ export default function Navbar() {
     { href: '/leaderboard', label: leaderboardLabel },
     { href: '/matches', label: matchesLabel, showBadge: true },
     { href: '/tournaments', label: tournamentsLabel },
-    { href: '/minigame', label: `🏓 ${miniGameLabel}` },
     { href: '/challenges', label: challengesLabel },
+    { href: '/minigame', label: `🏓 ${miniGameLabel}` },
     { href: '/tables', label: tablesLabel },
     { href: '/#about', label: aboutLabel },
     ...(canAccessAdminPanel(currentUser)
@@ -167,7 +183,7 @@ export default function Navbar() {
               )}
             </button>
 
-            <nav className="hidden lg:flex items-center gap-3.5 text-xs font-medium shrink-0 pl-1">
+            <nav className="hidden lg:flex items-center gap-3 xl:gap-3.5 text-xs font-medium shrink-0 pl-1">
               {primaryNavLinks.map((link) => {
                 const isActive = pathname === link.href;
                 const hasBadge = link.showBadge && pendingMatchesCount > 0;
@@ -176,13 +192,7 @@ export default function Navbar() {
                     key={link.href}
                     href={link.href}
                     className={`relative inline-flex items-center gap-1.5 whitespace-nowrap transition ${
-                      link.isArcade
-                        ? isActive
-                          ? 'text-rose-400 font-semibold drop-shadow-sm'
-                          : 'text-rose-400/90 hover:text-white font-medium hover:drop-shadow-sm'
-                        : isActive
-                        ? 'text-white font-semibold'
-                        : 'text-slate-300 hover:text-white'
+                      isActive ? 'text-white font-semibold' : 'text-slate-300 hover:text-white'
                     }`}
                   >
                     <span>{link.label}</span>
@@ -217,7 +227,7 @@ export default function Navbar() {
                 </button>
 
                 {moreDropdownOpen && (
-                  <div className="absolute left-0 mt-2.5 w-44 rounded-xl border border-slate-800 bg-slate-900 p-1.5 shadow-xl z-50">
+                  <div className="absolute left-0 mt-2.5 w-48 rounded-xl border border-slate-800 bg-slate-900 p-1.5 shadow-xl z-50">
                     {moreNavLinks.map((item) => (
                       <Link
                         key={item.href}
@@ -228,25 +238,45 @@ export default function Navbar() {
                         {item.label}
                       </Link>
                     ))}
+                    <a
+                      href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMoreDropdownOpen(false)}
+                      className="mt-1 pt-2 border-t border-slate-800 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-slate-800 transition whitespace-nowrap"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5 shrink-0" />
+                      <span>{t('nav.join_whatsapp') || 'WhatsApp'}</span>
+                    </a>
                   </div>
                 )}
               </div>
-
-              <a
-                href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label={t('common.whatsapp_community', 'Rəsmi WhatsApp İcması')}
-                title={t('nav.join_whatsapp') || 'WhatsApp'}
-                className="inline-flex items-center justify-center h-8 w-8 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-slate-800/70 transition shrink-0"
-              >
-                <MessageCircle className="w-4 h-4" />
-              </a>
             </nav>
           </div>
 
           {/* Right Zone: Actions & Profile (strictly inline, h-8 aligned, no wrap) */}
           <div className="flex items-center gap-2 shrink-0 ml-auto">
+            {/* Compact Player Quick-Search Pill */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowSearchModal(true);
+                setMoreDropdownOpen(false);
+                setUserDropdownOpen(false);
+                setMobileMenuOpen(false);
+              }}
+              aria-label={t('nav.search_placeholder', 'Oyunçu axtar...')}
+              className="inline-flex items-center gap-2 h-8 px-2.5 sm:px-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-xs text-slate-400 hover:text-slate-200 transition shrink-0"
+            >
+              <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+              <span className="hidden md:inline whitespace-nowrap">
+                {t('nav.search_placeholder', 'Oyunçu axtar...')}
+              </span>
+              <kbd className="hidden xl:inline-flex items-center px-1.5 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-[10px] font-mono text-slate-400 leading-none">
+                ⌘K
+              </kbd>
+            </button>
+
             {/* Multi-Language Switcher (AZ | EN | RU) */}
             <div
               role="group"
@@ -286,7 +316,7 @@ export default function Navbar() {
             {canAccessAdminPanel(currentUser) && (
               <Link
                 href="/admin"
-                className="hidden lg:inline-flex items-center justify-center gap-1.5 h-8 bg-slate-800/80 hover:bg-slate-800 text-amber-400 border border-amber-500/20 px-3 rounded-lg text-xs font-medium transition whitespace-nowrap shrink-0"
+                className="hidden xl:inline-flex items-center justify-center gap-1.5 h-8 bg-slate-800/80 hover:bg-slate-800 text-amber-400 border border-amber-500/20 px-3 rounded-lg text-xs font-medium transition whitespace-nowrap shrink-0"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span>{t('nav.admin') || 'Prezident Paneli'}</span>
@@ -545,6 +575,11 @@ export default function Navbar() {
           </div>
         )}
       </header>
+
+      <PlayerSearchModal
+        isOpen={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+      />
 
       {showMatchModal && (
         <MatchLoggerModal onClose={() => setShowMatchModal(false)} />
