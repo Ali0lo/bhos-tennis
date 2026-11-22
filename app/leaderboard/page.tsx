@@ -17,6 +17,7 @@ import LeaderboardSkeleton from '../../components/LeaderboardSkeleton';
 import AnimatedCounter from '../../components/AnimatedCounter';
 import HoloCard from '../../components/HoloCard';
 import FacultyFilterTabs from '../../components/FacultyFilterTabs';
+import FacultyPowerRankings from '../../components/FacultyPowerRankings';
 import { useTranslation } from '../../lib/i18n';
 import {
   Search,
@@ -26,6 +27,8 @@ import {
   Briefcase,
   GraduationCap,
   Crown,
+  Users,
+  Building2,
 } from 'lucide-react';
 
 const FACULTIES = [
@@ -66,6 +69,7 @@ export default function LeaderboardPage() {
   const [selectedFaculty, setSelectedFaculty] = useState<string>('Hamısı');
   const [genderFilter, setGenderFilter] = useState<'ALL' | 'male' | 'female'>('ALL');
   const [cohortFilter, setCohortFilter] = useState<string>('ALL');
+  const [activeTab, setActiveTab] = useState<'players' | 'faculties'>('players');
 
   const facultyTabs = useMemo(() => [
     { id: 'Hamısı', label: t('leaderboard.all', 'Hamısı') },
@@ -237,7 +241,46 @@ export default function LeaderboardPage() {
           </div>
         </div>
 
-        {top3Podium.length >= 3 && (
+        {/* Players vs Faculties View Switcher */}
+        <div className="inline-flex p-1 rounded-2xl bg-slate-900 border border-slate-800 shadow-sm">
+          <button
+            type="button"
+            onClick={() => setActiveTab('players')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-display font-bold transition ${
+              activeTab === 'players'
+                ? 'bg-blue-700 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>{t('leaderboard.tab_players', 'Oyunçular')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('faculties')}
+            className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-display font-bold transition ${
+              activeTab === 'faculties'
+                ? 'bg-blue-700 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Building2 className="w-4 h-4" />
+            <span>{t('leaderboard.tab_faculties', 'Fakültələr')}</span>
+          </button>
+        </div>
+
+        {activeTab === 'faculties' ? (
+          <FacultyPowerRankings
+            players={profiles}
+            loading={loading}
+            onSelectFaculty={(facFilter) => {
+              setSelectedFaculty(facFilter);
+              setActiveTab('players');
+            }}
+          />
+        ) : (
+          <>
+            {top3Podium.length >= 3 && (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
             <HoloCard className="order-2 md:order-1 rounded-3xl border border-slate-300/40 shadow-sm shadow-slate-300/10 bg-gradient-to-b from-slate-800/60 to-slate-900/80 p-6">
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 via-slate-400 to-slate-500 text-slate-950 font-bold shadow-inner border border-slate-200/80 flex items-center justify-center font-display text-base absolute -top-4 left-6 z-30">
@@ -442,6 +485,8 @@ export default function LeaderboardPage() {
             </motion.div>
           )}
         </div>
+          </>
+        )}
       </div>
     </SmoothReveal>
   );

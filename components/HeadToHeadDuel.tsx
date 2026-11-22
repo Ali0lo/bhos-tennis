@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
@@ -10,6 +10,10 @@ import {
   TrendingDown,
   Zap,
   ShieldAlert,
+  Clock,
+  CheckCircle2,
+  Loader2,
+  X,
 } from 'lucide-react';
 import { PlayerProfile } from '../lib/data/types';
 import {
@@ -19,6 +23,7 @@ import {
 } from '../lib/elo/calculator';
 import MagneticButton from './MagneticButton';
 import { BHOSDataStore } from '../lib/data/store';
+import { ChallengeFormat, createChallenge } from '../lib/data/challenges';
 import { useTranslation } from '../lib/i18n';
 
 export interface DuelPlayerSummary {
@@ -38,6 +43,44 @@ export default function HeadToHeadDuel({
   targetPlayer,
 }: HeadToHeadDuelProps) {
   const { t } = useTranslation();
+  const [showChallengeForm, setShowChallengeForm] = useState(false);
+  const [challengeFormat, setChallengeFormat] = useState<ChallengeFormat>('bo5');
+  const [challengeTime, setChallengeTime] = useState('');
+  const [challengeNote, setChallengeNote] = useState('');
+  const [sendingChallenge, setSendingChallenge] = useState(false);
+  const [challengeError, setChallengeError] = useState<string | null>(null);
+  const [challengeSent, setChallengeSent] = useState(false);
+
+  const canSendDirectChallenge = currentUser.id !== targetPlayer.id;
+
+  const handleSendChallenge = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSendDirectChallenge) return;
+    setChallengeError(null);
+
+    const timeVal =
+      challengeTime.trim() || t('challenges.preset_today_1330', 'Bu gün 13:30 • Bibiheybət Zalı');
+
+    setSendingChallenge(true);
+    const { error } = await createChallenge({
+      challengerId: currentUser.id,
+      opponentId: targetPlayer.id,
+      format: challengeFormat,
+      proposedTime: timeVal,
+      note: challengeNote,
+      expiresInHours: 24,
+    });
+    setSendingChallenge(false);
+
+    if (error) {
+      setChallengeError(error);
+      return;
+    }
+
+    setChallengeSent(true);
+    setShowChallengeForm(false);
+    setChallengeNote('');
+  };
   const safeUserElo = Math.min(
     MAX_ELO,
     Math.max(MIN_ELO, Number(currentUser.current_elo) || 0)
@@ -247,16 +290,142 @@ export default function HeadToHeadDuel({
         </div>
       </div>
 
-      <MagneticButton className="w-full">
-        <Link
-          href={`/log-match?opponent=${encodeURIComponent(BHOSDataStore.getInstance().getPlayerSlug(targetPlayer.id))}`}
-          className="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-sm"
+      {challengeSent && (
+        <div className="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex flex-wrap items-center justify-between gap-2 text-xs text-emerald-300">
+          <div className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <span>{t('challenges.created_success', 'Çağırışınız uğurla dərc olundu!')}</span>
+          </div>
+          <Link
+            href="/challenges"
+            className="font-bold text-emerald-200 hover:underline whitespace-nowrap"
+          >
+            {t('challenges.view_board_link', 'Lövhəyə Bax →')}
+          </Link>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {canSendDirectChallenge && (
+          <button
+            type="button"
+            onClick={() => {
+              setChallengeSent(false);
+              setChallengeError(null);
+              if (!challengeTime) {
+                setChallengeTime(
+                  t('challenges.preset_today_1330', 'Bu gün 13:30 • Bibiheybət Zalı')
+                );
+              }
+              setShowChallengeForm((prev) => !prev);
+            }}
+            className="w-full inline-flex items-center justify-center gap-2 px-5 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-display font-bold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-sm active:scale-95"
+          >
+            <Swords className="w-4 h-4" />
+            <span>{t('challenges.direct_challenge_btn', 'Meydan Oxu')}</span>
+          </button>
+        )}
+
+        <MagneticButton className={canSendDirectChallenge ? 'w-full' : 'sm:col-span-2 w-full'}>
+          <Link
+            href={`/log-match?opponent=${encodeURIComponent(BHOSDataStore.getInstance().getPlayerSlug(targetPlayer.id))}`}
+            className="w-full inline-flex items-center justify-center gap-2.5 px-5 py-3.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-display font-bold text-xs sm:text-sm uppercase tracking-wider transition-all shadow-sm"
+          >
+            <Swords className="w-4 h-4" />
+            <span>{t('whatif.log_match_with', 'Meydan Oxu / Matç Qeyd Et')}</span>
+            <ChevronRight className="w-4 h-4" />
+          </Link>
+        </MagneticButton>
+      </div>
+
+      {showChallengeForm && canSendDirectChallenge && (
+        <form
+          onSubmit={handleSendChallenge}
+          className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3"
         >
-          <Swords className="w-4 h-4" />
-          <span>{t('whatif.log_match_with', 'Meydan Oxu / Matç Qeyd Et')}</span>
-          <ChevronRight className="w-4 h-4" />
-        </Link>
-      </MagneticButton>
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-xs font-display font-bold text-white flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5 text-amber-400" />
+              <span>{t('challenges.direct_modal_title', 'Birbaşa Çağırış Göndər')}</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setShowChallengeForm(false)}
+              className="text-slate-400 hover:text-white p-1"
+              aria-label={t('challenges.cancel_btn', 'Ləğv Et')}
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {(['bo3', 'bo5'] as ChallengeFormat[]).map((fmt) => (
+              <button
+                key={fmt}
+                type="button"
+                onClick={() => setChallengeFormat(fmt)}
+                className={`px-3 py-1.5 rounded-lg border font-mono text-xs font-bold uppercase transition ${
+                  challengeFormat === fmt
+                    ? 'bg-blue-700/30 border-blue-500 text-blue-300'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-white'
+                }`}
+              >
+                {fmt.toUpperCase()}
+              </button>
+            ))}
+          </div>
+
+          <input
+            type="text"
+            maxLength={120}
+            value={challengeTime}
+            onChange={(e) => setChallengeTime(e.target.value)}
+            placeholder={t(
+              'challenges.proposed_time_placeholder',
+              'Bu gün 13:30 • Bibiheybət İdman Zalı'
+            )}
+            className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500"
+          />
+
+          <input
+            type="text"
+            maxLength={280}
+            value={challengeNote}
+            onChange={(e) => setChallengeNote(e.target.value)}
+            placeholder={t(
+              'challenges.note_placeholder',
+              'Məs: Masa 2-də isinmədən sonra rəsmi ELO oyunu'
+            )}
+            className="w-full px-3 py-2.5 rounded-lg bg-slate-900 border border-slate-800 text-xs text-white placeholder:text-slate-600 focus:outline-none focus:border-blue-500"
+          />
+
+          {challengeError && (
+            <p className="text-[11px] text-rose-400">{challengeError}</p>
+          )}
+
+          <div className="flex items-center justify-end gap-2">
+            <button
+              type="button"
+              onClick={() => setShowChallengeForm(false)}
+              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-300 transition"
+            >
+              {t('challenges.cancel_btn', 'Ləğv Et')}
+            </button>
+            <button
+              type="submit"
+              disabled={sendingChallenge}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-bold text-white transition disabled:opacity-50"
+            >
+              {sendingChallenge ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <Swords className="w-3.5 h-3.5" />
+              )}
+              <span>{t('challenges.send_direct_btn', 'Çağırış Göndər')}</span>
+            </button>
+          </div>
+        </form>
+      )}
     </motion.div>
   );
 }

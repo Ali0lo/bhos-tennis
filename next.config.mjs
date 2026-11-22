@@ -62,6 +62,7 @@ const nextConfig = {
       { source: "/oyuncular/:id", destination: "/players/:id" },
       { source: "/masalar", destination: "/tables" },
       { source: "/mini-oyun", destination: "/minigame" },
+      { source: "/meydan-oxu", destination: "/challenges" },
     ];
   },
 };

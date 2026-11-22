@@ -96,6 +96,7 @@ export default function Navbar() {
   const matchesLabel = t('nav.my_matches', 'Oyunlarım');
   const tournamentsLabel = t('nav.tournaments', 'Turnirlər');
   const miniGameLabel = t('nav.minigame', 'Mini-Oyun');
+  const challengesLabel = t('nav.challenges', 'Meydan Oxu');
   const tablesLabel = t('nav.tables', 'Zal Qaydaları');
   const aboutLabel = t('nav.about', 'Haqqında');
   const moreLabel = t('nav.more', 'Daha çox');
@@ -115,6 +116,7 @@ export default function Navbar() {
   ];
 
   const moreNavLinks: { href: string; label: string }[] = [
+    { href: '/challenges', label: challengesLabel },
     { href: '/tables', label: tablesLabel },
     { href: '/#about', label: aboutLabel },
   ];
@@ -124,6 +126,7 @@ export default function Navbar() {
     { href: '/matches', label: matchesLabel, showBadge: true },
     { href: '/tournaments', label: tournamentsLabel },
     { href: '/minigame', label: `🏓 ${miniGameLabel}` },
+    { href: '/challenges', label: challengesLabel },
     { href: '/tables', label: tablesLabel },
     { href: '/#about', label: aboutLabel },
     ...(canAccessAdminPanel(currentUser)
