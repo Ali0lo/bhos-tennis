@@ -39,10 +39,8 @@ export default function Navbar() {
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [showEditProfileModal, setShowEditProfileModal] = useState(false);
-  const [isNavHidden, setIsNavHidden] = useState(false);
 
   const navRef = useRef<HTMLDivElement>(null);
-  const lastScrollYRef = useRef<number>(0);
   const pendingMatchesCount = usePendingMatchesCount(currentUser?.id);
 
   useEffect(() => {
@@ -52,34 +50,6 @@ export default function Navbar() {
     });
     return unsub;
   }, [store]);
-
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      const lastScrollY = lastScrollYRef.current;
-      const delta = currentScrollY - lastScrollY;
-
-      if (currentScrollY <= 60) {
-        setIsNavHidden(false);
-        lastScrollYRef.current = currentScrollY;
-        return;
-      }
-
-      if (delta > 10 && currentScrollY > 60) {
-        setIsNavHidden(true);
-        setUserDropdownOpen(false);
-        setMoreDropdownOpen(false);
-        setMobileMenuOpen(false);
-        lastScrollYRef.current = currentScrollY;
-      } else if (delta < -6) {
-        setIsNavHidden(false);
-        lastScrollYRef.current = currentScrollY;
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -159,17 +129,9 @@ export default function Navbar() {
     <>
       <header
         ref={navRef}
-        className={`transition-all duration-300 ease-in-out fixed top-0 inset-x-0 z-50 pt-4 sm:pt-6 flex flex-col items-center px-3 sm:px-4 pointer-events-none ${
-          isNavHidden
-            ? '-translate-y-full opacity-0 pointer-events-none'
-            : 'translate-y-0 opacity-100'
-        }`}
+        className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md supports-[backdrop-filter]:bg-slate-950/75"
       >
-        <div
-          className={`w-full max-w-6xl rounded-full border border-slate-800 bg-slate-900/95 backdrop-blur-md px-3.5 sm:px-5 py-2 shadow-md relative flex items-center justify-between flex-nowrap gap-3 transition-all ${
-            isNavHidden ? 'pointer-events-none' : 'pointer-events-auto'
-          }`}
-        >
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 relative flex items-center justify-between flex-nowrap gap-3">
           {/* Left Zone: Brand + Navigation Links */}
           <div className="flex items-center gap-3 shrink-0">
             <Link
@@ -465,124 +427,124 @@ export default function Navbar() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="lg:hidden w-full max-w-6xl mt-2.5 max-h-[calc(100dvh-6rem)] overflow-y-auto overscroll-contain rounded-3xl border border-slate-800 bg-slate-900 p-4 shadow-lg pointer-events-auto space-y-3">
-            <div className="grid grid-cols-3 gap-1">
-              {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
-                <button
-                  key={loc}
-                  type="button"
-                  onClick={() => setLocale(loc)}
-                  className={`py-1.5 text-xs text-center rounded-xl uppercase font-semibold ${
-                    locale === loc
-                      ? 'bg-blue-700 text-white font-bold'
-                      : 'bg-slate-800 text-slate-300'
-                  }`}
-                >
-                  {loc}
-                </button>
-              ))}
-            </div>
-
-            <div className="space-y-1">
-              {allMobileNavLinks.map((link) => {
-                const hasBadge = link.showBadge && pendingMatchesCount > 0;
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold ${
-                      pathname === link.href
-                        ? 'bg-blue-700 text-white'
-                        : 'text-slate-300 hover:bg-slate-800'
+          <div className="lg:hidden absolute top-full inset-x-0 px-3 sm:px-4 pt-2 z-50">
+            <div className="w-full max-w-6xl mx-auto max-h-[calc(100dvh-5rem)] overflow-y-auto overscroll-contain rounded-3xl border border-slate-800 bg-slate-900/95 backdrop-blur-md p-4 shadow-xl space-y-3">
+              <div className="grid grid-cols-3 gap-1">
+                {(['az', 'en', 'ru'] as Locale[]).map((loc) => (
+                  <button
+                    key={loc}
+                    type="button"
+                    onClick={() => setLocale(loc)}
+                    className={`py-1.5 text-xs text-center rounded-xl uppercase font-semibold ${
+                      locale === loc
+                        ? 'bg-blue-700 text-white font-bold'
+                        : 'bg-slate-800 text-slate-300'
                     }`}
                   >
-                    <span>{link.label}</span>
-                    {hasBadge && (
-                      <span className="relative flex h-5 min-w-[1.25rem] items-center justify-center">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                        <span className="relative inline-flex items-center justify-center rounded-full bg-rose-600 px-1.5 text-[10px] font-black text-white h-5 min-w-[1.25rem]">
-                          {pendingMatchesCount}
-                        </span>
-                      </span>
-                    )}
-                  </Link>
-                );
-              })}
-            </div>
+                    {loc}
+                  </button>
+                ))}
+              </div>
 
-            <div className="pt-3 border-t border-slate-800">
-              {currentUser ? (
-                <div className="space-y-2">
-                  <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
-                    <div>
-                      <p className="font-bold text-xs text-white truncate">{currentUser.full_name}</p>
-                      <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
-                    </div>
-                    <span
-                      className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${getRoleBadgeColor(
-                        currentUser
-                      )}`}
+              <div className="space-y-1">
+                {allMobileNavLinks.map((link) => {
+                  const hasBadge = link.showBadge && pendingMatchesCount > 0;
+                  return (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold ${
+                        pathname === link.href
+                          ? 'bg-blue-700 text-white'
+                          : 'text-slate-300 hover:bg-slate-800'
+                      }`}
                     >
-                      {isPresidentBadgeHolder(currentUser)
-                        ? t('roles.president_badge', 'Prezident')
-                        : currentUser.role === 'coach'
-                        ? t('roles.coach', 'Məşqçi')
-                        : t('roles.player', 'Oyunçu')}
-                    </span>
-                  </div>
-                  <Link
-                    href={getPlayerHref(currentUser.id)}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="block text-center py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold"
-                  >
-                    {t('profile.details') || 'Profilim'}
-                  </Link>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMobileMenuOpen(false);
-                      setShowEditProfileModal(true);
-                    }}
-                    className="w-full text-center py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold"
-                  >
-                    {t('nav.customize_profile', 'Profili Fərdiləşdir')}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleSignOut}
-                    className="w-full py-2 rounded-xl bg-rose-600/15 border border-rose-600/30 text-rose-400 text-xs font-bold flex items-center justify-center gap-1.5"
-                  >
-                    <LogOut className="w-3.5 h-3.5" />
-                    <span>{t('nav.signout', 'Çıxış')}</span>
-                  </button>
-                </div>
-              ) : (
-                <Link
-                  href="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="w-full py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <LogIn className="w-4 h-4" />
-                  <span>{t('nav.signin', 'Daxil ol')}</span>
-                </Link>
-              )}
-            </div>
+                      <span>{link.label}</span>
+                      {hasBadge && (
+                        <span className="relative flex h-5 min-w-[1.25rem] items-center justify-center">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                          <span className="relative inline-flex items-center justify-center rounded-full bg-rose-600 px-1.5 text-[10px] font-black text-white h-5 min-w-[1.25rem]">
+                            {pendingMatchesCount}
+                          </span>
+                        </span>
+                      )}
+                    </Link>
+                  );
+                })}
+              </div>
 
-            <a
-              href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2"
-            >
-              <MessageCircle className="w-4 h-4 fill-white" />
-              <span>{t('hero.join_whatsapp_btn') || 'WhatsApp Qrupuna Qoşul'}</span>
-            </a>
+              <div className="pt-3 border-t border-slate-800">
+                {currentUser ? (
+                  <div className="space-y-2">
+                    <div className="p-3 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                      <div>
+                        <p className="font-bold text-xs text-white truncate">{currentUser.full_name}</p>
+                        <p className="text-[10px] text-slate-400 truncate">{currentUser.email}</p>
+                      </div>
+                      <span
+                        className={`text-[9px] px-2 py-0.5 rounded-full border uppercase ${getRoleBadgeColor(
+                          currentUser
+                        )}`}
+                      >
+                        {isPresidentBadgeHolder(currentUser)
+                          ? t('roles.president_badge', 'Prezident')
+                          : currentUser.role === 'coach'
+                          ? t('roles.coach', 'Məşqçi')
+                          : t('roles.player', 'Oyunçu')}
+                      </span>
+                    </div>
+                    <Link
+                      href={getPlayerHref(currentUser.id)}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="block text-center py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold"
+                    >
+                      {t('profile.details') || 'Profilim'}
+                    </Link>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMobileMenuOpen(false);
+                        setShowEditProfileModal(true);
+                      }}
+                      className="w-full text-center py-2 rounded-xl bg-slate-800 text-slate-300 hover:text-white text-xs font-semibold"
+                    >
+                      {t('nav.customize_profile', 'Profili Fərdiləşdir')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSignOut}
+                      className="w-full py-2 rounded-xl bg-rose-600/15 border border-rose-600/30 text-rose-400 text-xs font-bold flex items-center justify-center gap-1.5"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>{t('nav.signout', 'Çıxış')}</span>
+                    </button>
+                  </div>
+                ) : (
+                  <Link
+                    href="/login"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full py-2.5 rounded-xl bg-blue-700 hover:bg-blue-600 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <LogIn className="w-4 h-4" />
+                    <span>{t('nav.signin', 'Daxil ol')}</span>
+                  </Link>
+                )}
+              </div>
+
+              <a
+                href="https://chat.whatsapp.com/KTd3144iWxXHdqHmQJW6QN"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center justify-center gap-2"
+              >
+                <MessageCircle className="w-4 h-4 fill-white" />
+                <span>{t('hero.join_whatsapp_btn') || 'WhatsApp Qrupuna Qoşul'}</span>
+              </a>
+            </div>
           </div>
         )}
       </header>
-
-      <div className="h-24" />
 
       {showMatchModal && (
         <MatchLoggerModal onClose={() => setShowMatchModal(false)} />

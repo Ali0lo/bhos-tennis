@@ -48,8 +48,8 @@ export default function LiveMatches({ matches, onSelectMatch }: LiveMatchesProps
         </span>
       </div>
 
-      <div className="relative flex-1 overflow-hidden py-2 pl-4 sm:pl-6 [mask-image:linear-gradient(to_right,black_88%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,black_88%,transparent_100%)]">
-        <div className="animate-broadcast-ticker items-center gap-3.5 pl-4 pr-3">
+      <div className="relative flex-1 overflow-hidden py-2 [mask-image:linear-gradient(to_right,transparent_0%,black_4%,black_90%,transparent_100%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_4%,black_90%,transparent_100%)]">
+        <div className="animate-broadcast-ticker items-center gap-3.5 pl-3 pr-3">
           {tickerMatches.map((m, idx) => {
             const p1Id = m.player1?.id || m.player1_id;
             const p2Id = m.player2?.id || m.player2_id;

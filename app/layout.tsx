@@ -92,7 +92,7 @@ export default function RootLayout({
         <I18nProvider initialLocale={initialLocale}>
           <PWARegistration />
           <Navbar />
-          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-5 pb-8 sm:pt-6 sm:pb-8">
             {children}
           </main>
           <Footer />

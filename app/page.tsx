@@ -33,6 +33,7 @@ import {
   Flame,
   Users,
   UserPlus,
+  Swords,
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -147,7 +148,7 @@ export default function HomePage() {
   };
 
   return (
-    <div className="relative space-y-10">
+    <div className="relative space-y-7 sm:space-y-8">
       <CourtBackground className="fixed" />
 
       <SmoothReveal delay={0.02}>
@@ -161,17 +162,11 @@ export default function HomePage() {
 
       {matches.length > 0 && (
         <SmoothReveal delay={0.04}>
-          <div className="my-6 sm:mt-8 sm:mb-10 w-full">
+          <div className="w-full">
             <LiveMatches matches={matches} onSelectMatch={(m) => setSelectedMatch(m)} />
           </div>
         </SmoothReveal>
       )}
-
-      <SmoothReveal delay={0.05}>
-        <div className="w-full">
-          <ArcadeDiscoveryBanner />
-        </div>
-      </SmoothReveal>
 
       <SmoothReveal delay={0.06}>
         <FoundationTournamentBanner />
@@ -193,13 +188,22 @@ export default function HomePage() {
                 {t('sections.leaderboard_subtitle')}
               </p>
             </div>
-            <Link
-              href="/leaderboard"
-              className="group text-xs font-semibold text-blue-400 hover:underline flex items-center gap-1 self-start sm:self-auto"
-            >
-              <span>{t('sections.view_all_leaderboard')} ({totalPlayersCount})</span>
-              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
-            </Link>
+            <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
+              <Link
+                href="/challenges"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600/15 hover:bg-rose-600/25 border border-rose-500/35 text-rose-300 hover:text-rose-200 text-xs font-semibold transition"
+              >
+                <Swords className="w-3.5 h-3.5 text-rose-400" />
+                <span>{t('cta_challenges') || rootT('nav.challenges', 'Meydan Oxu')}</span>
+              </Link>
+              <Link
+                href="/leaderboard"
+                className="group text-xs font-semibold text-blue-400 hover:underline flex items-center gap-1"
+              >
+                <span>{t('sections.view_all_leaderboard')} ({totalPlayersCount})</span>
+                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+              </Link>
+            </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
@@ -289,8 +293,8 @@ export default function HomePage() {
                         <div className="animate-champion-shimmer absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-amber-400/15 to-transparent" />
                       </div>
 
-                      <div className="w-12 h-12 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-display font-black text-xl absolute -top-6 left-1/2 -translate-x-1/2 shadow-sm z-30">
-                        <span className="animate-crown-bob text-base leading-none mr-0.5">👑</span>
+                      <div className="h-11 min-w-[4.25rem] px-3.5 gap-1.5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-display font-black text-lg leading-none absolute -top-5 left-1/2 -translate-x-1/2 shadow-md ring-4 ring-slate-950/80 z-30">
+                        <span className="animate-crown-bob text-base leading-none">👑</span>
                         <span>1</span>
                       </div>
                       <div className="pt-4 text-center relative z-20">
@@ -470,6 +474,12 @@ export default function HomePage() {
             </div>
           )}
         </section>
+      </SmoothReveal>
+
+      <SmoothReveal delay={0.05}>
+        <div className="w-full">
+          <ArcadeDiscoveryBanner />
+        </div>
       </SmoothReveal>
 
       <section className="space-y-6">

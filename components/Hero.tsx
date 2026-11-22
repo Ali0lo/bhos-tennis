@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { Swords } from 'lucide-react';
 import { PlayerProfile } from '../lib/data/types';
 import { useTranslation, useTranslations } from '../lib/i18n';
 import NumberTicker from './NumberTicker';
@@ -27,7 +28,7 @@ export default function Hero({
   const tablesSubCaption = rootT('hero.tables_distribution', '(1 Xanımlar / 3 Ümumi)');
 
   return (
-    <section className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-lg min-h-[580px] md:min-h-[660px] flex flex-col justify-between p-6 sm:p-10 lg:p-12">
+    <section className="relative rounded-3xl overflow-hidden border border-slate-800 shadow-lg min-h-[400px] md:min-h-[440px] flex flex-col justify-between p-5 sm:p-7 lg:p-8">
       <div
         className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-1000 scale-100"
         style={{ backgroundImage: "url('/images/hero-bg.jpg')" }}
@@ -50,9 +51,9 @@ export default function Hero({
         </div>
       </div>
 
-      <SmoothReveal staggerChildren={0.1} className="relative z-20 max-w-2xl space-y-6 pt-20 pb-4">
+      <SmoothReveal staggerChildren={0.1} className="relative z-20 max-w-2xl space-y-4 pt-6 sm:pt-8 pb-2">
         <SmoothRevealItem className="space-y-3">
-          <h1 className="text-3xl sm:text-5xl lg:text-6xl font-display font-black text-white tracking-tight leading-[1.08]">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-display font-black text-white tracking-tight leading-[1.08]">
             <span className="block text-white">{t('hero_title_1')}</span>
             <span className="block text-blue-400">{t('hero_title_2')}</span>
           </h1>
@@ -61,7 +62,7 @@ export default function Hero({
           </p>
         </SmoothRevealItem>
 
-        <SmoothRevealItem className="flex flex-wrap items-center gap-3 pt-2">
+        <SmoothRevealItem className="flex flex-wrap items-center gap-2.5 pt-1">
           <Link
             href={currentUser ? '/log-match' : '/login'}
             className="inline-flex items-center justify-center px-5 py-2.5 rounded-lg text-sm font-medium bg-rose-600 hover:bg-rose-500 text-white shadow-sm transition"
@@ -75,11 +76,19 @@ export default function Hero({
           >
             <span>{t('cta_view_leaderboard') || 'Liderlər Cədvəli'}</span>
           </Link>
+
+          <Link
+            href="/challenges"
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-lg text-sm font-medium bg-slate-900/75 hover:bg-slate-800 text-amber-200 border border-amber-500/30 hover:border-amber-400/50 transition"
+          >
+            <Swords className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+            <span>{t('cta_challenges') || rootT('nav.challenges', 'Meydan Oxu')}</span>
+          </Link>
         </SmoothRevealItem>
       </SmoothReveal>
 
-      <div className="relative z-20 pt-6 mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4 items-stretch">
-        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3.5 px-4 text-center flex flex-col items-center justify-start">
+      <div className="relative z-20 pt-4 mt-2 grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5 items-stretch">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-2.5 px-3.5 text-center flex flex-col items-center justify-start">
           <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight leading-none min-h-[2rem] sm:min-h-[2.25rem] flex items-center justify-center">
             <NumberTicker value={totalPlayersCount} startValue={0} durationMs={850} />
           </div>
@@ -88,7 +97,7 @@ export default function Hero({
           </div>
         </div>
 
-        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3.5 px-4 text-center flex flex-col items-center justify-start">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-2.5 px-3.5 text-center flex flex-col items-center justify-start">
           <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight leading-none min-h-[2rem] sm:min-h-[2.25rem] flex items-center justify-center">
             <NumberTicker value={matchesCount} startValue={0} durationMs={850} />
           </div>
@@ -97,7 +106,7 @@ export default function Hero({
           </div>
         </div>
 
-        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3.5 px-4 text-center flex flex-col items-center justify-start">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-2.5 px-3.5 text-center flex flex-col items-center justify-start">
           <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight leading-none min-h-[2rem] sm:min-h-[2.25rem] flex items-center justify-center">
             4
           </div>
@@ -109,7 +118,7 @@ export default function Hero({
           </div>
         </div>
 
-        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-3.5 px-4 text-center flex flex-col items-center justify-start">
+        <div className="bg-slate-900/40 border border-slate-800/60 rounded-xl py-2.5 px-3.5 text-center flex flex-col items-center justify-start">
           <div className="text-2xl sm:text-3xl font-bold font-mono text-white tracking-tight leading-none min-h-[2rem] sm:min-h-[2.25rem] flex items-center justify-center">
             <NumberTicker
               value={leaderElo}
