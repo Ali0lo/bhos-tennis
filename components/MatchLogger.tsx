@@ -10,8 +10,10 @@ import { calculateEloDelta, getSetDominanceMultiplier, MAX_ELO, MIN_ELO } from '
 import { parseSetScores, validateMatchSetSummary } from '../lib/elo';
 import { sanitizeTextInput } from '../lib/security/sanitize';
 import AthleteCombobox from './AthleteCombobox';
+import LiveScoreboardModal, { LiveScoreboardResult } from './LiveScoreboardModal';
 import { useTranslation } from '../lib/i18n';
 import {
+  Activity,
   Swords,
   CheckCircle2,
   AlertCircle,
@@ -146,6 +148,7 @@ function MatchLoggerInner({
   const [scoreA, setScoreA] = useState<number>(0);
   const [scoreB, setScoreB] = useState<number>(0);
   const [detailedScores, setDetailedScores] = useState<string>('');
+  const [showLiveScoreboard, setShowLiveScoreboard] = useState(false);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const submittingLockRef = useRef(false);
@@ -317,6 +320,14 @@ function MatchLoggerInner({
     setScoreA(a);
     setScoreB(b);
   };
+
+  const handleApplyScoreboardResult = useCallback((result: LiveScoreboardResult) => {
+    setScoreA(result.scoreA);
+    setScoreB(result.scoreB);
+    setDetailedScores(result.detailedScores);
+    setErrorMessage(null);
+    setShowLiveScoreboard(false);
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -694,9 +705,19 @@ function MatchLoggerInner({
         )}
 
         <div className="space-y-3">
-          <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
-            {t('matches.set_score_label', 'Set Hesabı')} ({labelA} – {labelB})
-          </label>
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300">
+              {t('matches.set_score_label', 'Set Hesabı')} ({labelA} – {labelB})
+            </label>
+            <button
+              type="button"
+              onClick={() => setShowLiveScoreboard(true)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-500/15 hover:bg-cyan-500/25 border border-cyan-500/35 text-cyan-300 hover:text-cyan-200 text-xs font-bold transition active:scale-95"
+            >
+              <Activity className="w-3.5 h-3.5" />
+              <span>{t('scoreboard.open_button', 'Canlı Tablo')}</span>
+            </button>
+          </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <span className="text-[10px] uppercase tracking-wider font-bold text-[#22C55E]">
@@ -858,6 +879,14 @@ function MatchLoggerInner({
           </button>
         </div>
       </form>
+
+      <LiveScoreboardModal
+        isOpen={showLiveScoreboard}
+        onClose={() => setShowLiveScoreboard(false)}
+        playerAName={labelA}
+        playerBName={labelB}
+        onApplyScores={handleApplyScoreboardResult}
+      />
     </div>
   );
 }
