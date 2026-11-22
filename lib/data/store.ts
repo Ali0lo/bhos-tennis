@@ -35,355 +35,68 @@ import { getSupabaseClient } from '../supabase/client';
 import { buildSlugMap, generateSlug, isUuid, normalizeForSearch, shortIdSuffix } from '../utils/slug';
 import { hydrateMatchCompetitors } from './matches';
 import { isCustomRacket } from '../utils/equipment';
+import {
+  STORAGE_KEYS,
+  SESSION_LEADERBOARD_KEY,
+  SESSION_RECENT_MATCHES_KEY,
+  LEADERBOARD_TTL_MS,
+  LeaderboardCacheEntry,
+  getSessionLeaderboardCache,
+  setSessionLeaderboardCache,
+  normalizeAvatarUrl,
+  getStored,
+  setStored,
+} from '../services/storage';
+import {
+  OFFICIAL_FOUNDATION_CUP_PLAYERS,
+  isCoachIftixarProfile,
+  resolvePlayerRealElo,
+  deduplicatePlayerProfiles,
+  findMatchingSeedProfile,
+  PlayerProfileSummaryResult,
+  inMemoryPlayerCache,
+  registerProfileStoreAdapter,
+  invalidatePlayerProfileCache,
+  getCachedPlayerProfile,
+  fetchPlayerProfile,
+  updateProfileInCloud,
+  overrideEloInCloud,
+  updateUserRoleInCloud,
+  deleteProfileInCloud,
+} from '../services/profiles';
+import {
+  isApprovedMatch,
+  propagateBracketMatchInCloud,
+  voidMatchInCloud,
+  deleteMatchInCloud,
+  deleteMatchesBulkInCloud,
+  updateMatchInCloud,
+} from '../services/matches';
+import {
+  OBSOLETE_TOURNAMENT_IDENTIFIERS,
+  isFoundationCupTournament,
+  getBracketCacheKey,
+  getBracketDataFromCache,
+  saveBracketDataToCache,
+  syncTournamentBracketToCloud as syncTournamentBracketService,
+  registerForTournamentInCloud,
+  withdrawFromTournamentInCloud,
+  addTournamentParticipantInCloud,
+  removeTournamentParticipantInCloud,
+} from '../services/tournaments';
 
-const STORAGE_KEYS = {
-  PROFILES: 'bhos_tt_profiles_v14',
-  MATCHES: 'bhos_tt_matches_v13',
-  TOURNAMENTS: 'bhos_tt_tournaments_v13',
-  RESERVATIONS: 'bhos_tt_reservations_v8',
-  CURRENT_USER_ID: 'bhos_tt_active_user_id_v8',
+export {
+  OFFICIAL_FOUNDATION_CUP_PLAYERS,
+  isFoundationCupTournament,
+  isCoachIftixarProfile,
+  resolvePlayerRealElo,
+  isApprovedMatch,
+  invalidatePlayerProfileCache,
+  getCachedPlayerProfile,
+  fetchPlayerProfile,
 };
-
-/**
- * The 12 verified official participants of the November 7 Foundation Cup
- * ("Zəfər Günü" Foundation Kuboku).
- */
-export const OFFICIAL_FOUNDATION_CUP_PLAYERS: ReadonlyArray<{
-  name: string;
-  slug: string;
-  seedId: string;
-  aliases: string[];
-}> = [
-  {
-    name: 'Yusif Xanlarov',
-    slug: 'yusif-xanlarov',
-    seedId: 'p-f-yusif-xanlarov',
-    aliases: ['yusif xanlarov'],
-  },
-  {
-    name: 'Məharət Kərimli',
-    slug: 'maharat-karimli',
-    seedId: 'p-f-meharet-kerimli',
-    aliases: ['meharet kerimli', 'maharat karimli'],
-  },
-  {
-    name: 'Əhəd Zamanlı',
-    slug: 'ahad-zamanli',
-    seedId: 'p-f-ehed-zamanli',
-    aliases: ['ehed zamanli', 'ahad zamanli'],
-  },
-  {
-    name: 'Qulam Rüstəmzadə',
-    slug: 'qulam-rustamzada',
-    seedId: 'p-f-qulam-rustemzade',
-    aliases: ['qulam rustemzade', 'qulam rustamzada'],
-  },
-  {
-    name: 'Sabir Məhərrəmli',
-    slug: 'sabir-maharramli',
-    seedId: 'p-f-sabir-meherremli',
-    aliases: ['sabir meherremli', 'sabir maharramli'],
-  },
-  {
-    name: 'Adil Süleymanov',
-    slug: 'adil-suleymanov',
-    seedId: 'p-f-adil-suleymanov',
-    aliases: ['adil suleymanov'],
-  },
-  {
-    name: 'Kazım Fətəlizadə',
-    slug: 'kazim-fatalizada',
-    seedId: 'p-f-kazim-fetelizade',
-    aliases: ['kazim fetelizade', 'kazim fatalizada'],
-  },
-  {
-    name: 'Faiq Hüseynli',
-    slug: 'faiq-huseynli',
-    seedId: 'p-f-faiq-huseynli',
-    aliases: ['faiq huseynli'],
-  },
-  {
-    name: 'Məhəmməd Əsədov',
-    slug: 'muhammad-asadov',
-    seedId: 'p-f-mehemmed-esedov',
-    aliases: ['mehemmed esedov', 'muhammad asadov'],
-  },
-  {
-    name: 'Kamran Əliyev',
-    slug: 'kamran-aliyev',
-    seedId: 'p-f-kamran-aliev',
-    aliases: ['kamran aliyev', 'kamran aliev', 'kamran eliyev'],
-  },
-  {
-    name: 'Məhərrəm Mirzəxanlı',
-    slug: 'maharram-mirzaxanli',
-    seedId: 'p-f-meherrem-mirzexanli',
-    aliases: ['meherrem mirzexanli', 'maharram mirzaxanli'],
-  },
-  {
-    name: 'Rafiq Həsənli',
-    slug: 'rafiq-hasanli',
-    seedId: 'p-f-rafiq-hesenli',
-    aliases: ['rafiq hesenli', 'rafiq hasanli'],
-  },
-];
-
-export function isFoundationCupTournament(
-  t?: Partial<Tournament> | string | null
-): boolean {
-  if (!t) return false;
-  if (typeof t === 'string') {
-    const val = t.trim().toLowerCase();
-    return (
-      val === 'foundation-kuboku-2026' ||
-      val === 'tourn-foundation-2026' ||
-      val.includes('foundation')
-    );
-  }
-  const id = (t.id || '').toLowerCase();
-  const slug = (t.slug || '').toLowerCase();
-  const title = (t.title || '').toLowerCase();
-  return (
-    id === 'tourn-foundation-2026' ||
-    slug === 'foundation-kuboku-2026' ||
-    title.includes('foundation')
-  );
-}
-
-const OBSOLETE_TOURNAMENT_IDENTIFIERS = new Set([
-  'tourn-1',
-  'tourn-2',
-  '11111111-1111-1111-1111-111111111111',
-  'bhos-autumn-open-2026',
-  'inter-faculty-engineering-cup-2026',
-]);
-
-const SESSION_LEADERBOARD_KEY = 'bhos_tt_leaderboard_cache_v5';
-const SESSION_RECENT_MATCHES_KEY = 'bhos_tt_recent_matches';
-const LEADERBOARD_TTL_MS = 60_000;
-
-export function isCoachIftixarProfile(raw: any): boolean {
-  if (!raw) return false;
-  const email = typeof raw.email === 'string' ? raw.email.trim().toLowerCase() : '';
-  if (email === 'iftixar.coach@gmail.com' || email === 'iftixar@bhos.edu.az') return true;
-  if (raw.role === 'coach') return true;
-  if (raw.id === 'p-2' || raw.id === '00000000-0000-0000-0000-000000000002') return true;
-  const norm = normalizeForSearch(raw.full_name || '');
-  return norm.includes('iftixar');
-}
-
-export function resolvePlayerRealElo(
-  raw: any,
-  rawMatches: number,
-  prev?: PlayerProfile,
-  prevMatches: number = 0,
-  seed?: PlayerProfile,
-  seedMatches: number = 0,
-  matches?: MatchRecord[]
-): number {
-  const isCoach =
-    isCoachIftixarProfile(raw) || isCoachIftixarProfile(prev) || isCoachIftixarProfile(seed);
-
-  if (matches && matches.length > 0) {
-    const rawId = raw?.id || prev?.id;
-    const rawNorm = normalizeForSearch(raw?.full_name || prev?.full_name || '');
-    const playerMatches = matches
-      .filter((m) => {
-        if (rawId && (m.player1_id === rawId || m.player2_id === rawId)) return true;
-        if (rawNorm) {
-          const p1Norm = normalizeForSearch(m.player1_name || '');
-          const p2Norm = normalizeForSearch(m.player2_name || '');
-          if (p1Norm === rawNorm || p2Norm === rawNorm) return true;
-          if (isCoach && (p1Norm.includes('iftixar') || p2Norm.includes('iftixar'))) return true;
-        }
-        return false;
-      })
-      .sort((a, b) => new Date(b.match_date).getTime() - new Date(a.match_date).getTime());
-
-    if (playerMatches.length > 0) {
-      const latest = playerMatches[0];
-      const isP1 =
-        (rawId && latest.player1_id === rawId) ||
-        (rawNorm && normalizeForSearch(latest.player1_name || '') === rawNorm) ||
-        (isCoach && normalizeForSearch(latest.player1_name || '').includes('iftixar'));
-      const eloAfter = isP1 ? latest.player1_elo_after : latest.player2_elo_after;
-      if (typeof eloAfter === 'number' && eloAfter > 0) {
-        if (isCoach || Number(raw?.current_elo ?? 0) === 999 || Number(raw?.current_elo ?? 0) === 0) {
-          return eloAfter;
-        }
-      }
-    }
-  }
-
-  const rawElo = Number(raw?.current_elo ?? raw?.elo_rating ?? 0);
-  if (isCoach) {
-    if (rawElo > 0 && rawElo < 999) return rawElo;
-    const prevElo = Number(prev?.current_elo ?? 0);
-    if (prevElo > 0 && prevElo < 999) return prevElo;
-    return 966;
-  }
-
-  if (rawMatches === 0 && (prevMatches > 0 || seedMatches > 0)) {
-    return Math.max(
-      rawElo,
-      Number(prev?.current_elo ?? 0),
-      Number(seed?.current_elo ?? 0)
-    );
-  }
-
-  return Number(raw?.current_elo ?? raw?.elo_rating ?? prev?.current_elo ?? seed?.current_elo ?? 0);
-}
-
-function deduplicatePlayerProfiles(profiles: PlayerProfile[]): PlayerProfile[] {
-  const result: PlayerProfile[] = [];
-  const byKey = new Map<string, number>();
-
-  for (const p of profiles) {
-    const emailKey = (p.email || '').trim().toLowerCase();
-    const normName = normalizeForSearch(p.full_name || '');
-    const isCoach = isCoachIftixarProfile(p);
-    const key = isCoach
-      ? 'coach:iftixar'
-      : emailKey || (normName ? `name:${normName}` : `id:${p.id}`);
-
-    const existingIdx = byKey.get(key);
-    if (existingIdx === undefined) {
-      byKey.set(key, result.length);
-      result.push(p);
-    } else {
-      const existing = result[existingIdx];
-      const preferNew =
-        (isUuid(p.id) && !isUuid(existing.id)) ||
-        (isCoach && p.current_elo !== 999 && existing.current_elo === 999) ||
-        ((p.matches_played || 0) > (existing.matches_played || 0));
-
-      if (preferNew) {
-        result[existingIdx] = {
-          ...existing,
-          ...p,
-          current_elo: isCoach && p.current_elo === 999 ? existing.current_elo : p.current_elo,
-        };
-      } else if (isCoach && existing.current_elo === 999 && p.current_elo !== 999 && p.current_elo > 0) {
-        result[existingIdx] = {
-          ...existing,
-          current_elo: p.current_elo,
-          matches_played: Math.max(existing.matches_played || 0, p.matches_played || 0),
-          wins: Math.max(existing.wins || 0, p.wins || 0),
-          losses: Math.max(existing.losses || 0, p.losses || 0),
-        };
-      }
-    }
-  }
-
-  return result;
-}
-
-function findMatchingSeedProfile(raw: any): PlayerProfile | undefined {
-  if (!raw) return undefined;
-  const rawId = typeof raw.id === 'string' ? raw.id.trim() : '';
-  const rawEmail = typeof raw.email === 'string' ? raw.email.trim().toLowerCase() : '';
-  const rawSlug = typeof raw.slug === 'string' ? raw.slug.trim().toLowerCase() : '';
-  const rawNorm = normalizeForSearch(raw.full_name || '');
-
-  if (rawId) {
-    const byId = INITIAL_PROFILES.find((p) => p.id === rawId);
-    if (byId) return byId;
-  }
-  if (rawEmail) {
-    const byEmail = INITIAL_PROFILES.find((p) => (p.email || '').trim().toLowerCase() === rawEmail);
-    if (byEmail) return byEmail;
-  }
-  if (rawSlug) {
-    const bySlug = INITIAL_PROFILES.find((p) => (p.slug || '').trim().toLowerCase() === rawSlug);
-    if (bySlug) return bySlug;
-  }
-  if (rawNorm) {
-    const byNorm = INITIAL_PROFILES.find((p) => normalizeForSearch(p.full_name) === rawNorm);
-    if (byNorm) return byNorm;
-    const official = OFFICIAL_FOUNDATION_CUP_PLAYERS.find((o) =>
-      o.aliases.some((alias) => alias === rawNorm)
-    );
-    if (official) {
-      return INITIAL_PROFILES.find((p) => p.id === official.seedId);
-    }
-  }
-  return undefined;
-}
-
-export function isApprovedMatch(
-  match?: Partial<MatchRecord> | null,
-  resolvedMap?: Record<string, 'confirmed' | 'rejected'>,
-  deletedIds?: string[]
-): boolean {
-  if (!match || !match.id) return false;
-  if (match.id.startsWith('m-seed-')) return false;
-  if (deletedIds && deletedIds.includes(match.id)) return false;
-  const effectiveStatus = (resolvedMap && resolvedMap[match.id]) || match.status || 'confirmed';
-  if (
-    effectiveStatus === 'rejected' ||
-    effectiveStatus === 'pending' ||
-    effectiveStatus === 'waiting' ||
-    effectiveStatus === 'scheduled'
-  ) {
-    return false;
-  }
-  return effectiveStatus === 'confirmed' || effectiveStatus === 'approved';
-}
-
-interface LeaderboardCacheEntry {
-  data: PlayerProfile[];
-  timestamp: number;
-  isFull: boolean;
-}
-
-function getSessionLeaderboardCache(): LeaderboardCacheEntry | null {
-  if (typeof window === 'undefined') return null;
-  try {
-    const raw = sessionStorage.getItem(SESSION_LEADERBOARD_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-function setSessionLeaderboardCache(entry: LeaderboardCacheEntry): void {
-  if (typeof window === 'undefined') return;
-  try {
-    sessionStorage.setItem(SESSION_LEADERBOARD_KEY, JSON.stringify(entry));
-  } catch {}
-}
-
-function normalizeAvatarUrl(url?: string): string | undefined {
-  if (!url) return url;
-  if (url.includes('unsplash.com')) {
-    if (url.includes('1609710228159')) return '/images/avatars/topspin-pro.jpg';
-    if (url.includes('1517649763962')) return '/images/avatars/carbon-blade.jpg';
-    if (url.includes('1579952363873')) return '/images/avatars/varsity-champion.jpg';
-    if (url.includes('1546519638')) return '/images/avatars/smash-master.jpg';
-    if (url.includes('1534158914592')) return '/images/avatars/match-point.jpg';
-    return '/images/avatars/bhos-varsity.jpg';
-  }
-  return url;
-}
-
-function getStored<T>(key: string, fallback: T): T {
-  if (typeof window === 'undefined') return fallback;
-  try {
-    const item = localStorage.getItem(key);
-    return item ? JSON.parse(item) : fallback;
-  } catch {
-    return fallback;
-  }
-}
-
-function setStored<T>(key: string, value: T): void {
-  if (typeof window === 'undefined') return;
-  try {
-    localStorage.setItem(key, JSON.stringify(value));
-  } catch (err) {
-    console.warn(`Failed to store key ${key}:`, err);
-  }
-}
+export type { PlayerProfileSummaryResult };
+export * from '../services/arcade';
 
 export class BHOSDataStore {
   private static instance: BHOSDataStore;
@@ -478,6 +191,16 @@ export class BHOSDataStore {
     return this.getProfile(id) || this.getSlugUniverse().find((p) => p.id === id);
   }
   private constructor() {
+    registerProfileStoreAdapter({
+      getMatches: () => this.getMatches(),
+      getProfile: (id: string) => this.getProfile(id),
+      getPlayerMatches: (playerId: string) => this.getPlayerMatches(playerId),
+      resolvePlayerIdentifier: (identifier: string | null | undefined) =>
+        this.resolvePlayerIdentifier(identifier),
+      getResolvedMatchIds: () => this.getResolvedMatchIds(),
+      enrichMatchRecord: (raw: any) => this.enrichMatchRecord(raw),
+    });
+
     if (typeof window !== 'undefined') {
       const oldKeys = [
         'bhos_tt_profiles_v13',
@@ -628,26 +351,15 @@ export class BHOSDataStore {
   }
 
   public getBracketCacheKey(identifier: string): string {
-    return `bhos_tt_bracket_cache_${identifier}`;
+    return getBracketCacheKey(identifier);
   }
 
   public getBracketDataFromCache(identifier: string): Tournament['bracket_data'] | null {
-    if (typeof window === 'undefined') return null;
-    try {
-      const raw = localStorage.getItem(this.getBracketCacheKey(identifier));
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
-    }
+    return getBracketDataFromCache(identifier);
   }
 
   public saveBracketDataToCache(identifier: string, data: Tournament['bracket_data']): void {
-    if (typeof window === 'undefined' || !data) return;
-    try {
-      localStorage.setItem(this.getBracketCacheKey(identifier), JSON.stringify(data));
-    } catch (e) {
-      console.warn('[BHOS Store] Could not cache bracket data:', e);
-    }
+    saveBracketDataToCache(identifier, data);
   }
 
   private async initializeCloudSync() {
@@ -2228,32 +1940,7 @@ export class BHOSDataStore {
     this.saveLocal();
     this.notify();
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
-      if (isUuid) {
-        supabase
-          .from('profiles')
-          .update(safeUpdates)
-          .eq('id', id)
-          .then(({ error }) => {
-            if (error) console.warn('[BHOS Store] Supabase updateProfile failed:', error.message);
-          });
-      } else if (this.profiles[index].email) {
-        supabase
-          .from('profiles')
-          .update(safeUpdates)
-          .eq('email', this.profiles[index].email)
-          .then(({ error }) => {
-            if (error) console.warn('[BHOS Store] Supabase updateProfile by email failed:', error.message);
-          });
-      }
-      if (safeUpdates.full_name) {
-        supabase.from('matches').update({ player1_name: safeUpdates.full_name }).eq('player1_id', id).then();
-        supabase.from('matches').update({ player2_name: safeUpdates.full_name }).eq('player2_id', id).then();
-        supabase.from('matches').update({ logged_by_name: safeUpdates.full_name }).eq('logged_by', id).then();
-      }
-    }
+    updateProfileInCloud(id, safeUpdates, this.profiles[index].email);
 
     return this.profiles[index];
   }
@@ -2271,16 +1958,7 @@ export class BHOSDataStore {
     this.recalculateRanks();
     this.saveLocal();
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      supabase
-        .from('profiles')
-        .update({ current_elo: profile.current_elo })
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.warn('[BHOS Store] Supabase overrideElo failed:', error.message);
-        });
-    }
+    overrideEloInCloud(id, profile.current_elo);
 
     return profile;
   }
@@ -2309,21 +1987,7 @@ export class BHOSDataStore {
     this.saveLocal();
     this.notify();
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      const payload: Record<string, any> = { role };
-      if (role === 'president' || role === 'coach') {
-        payload.is_verified = true;
-        payload.status = 'approved';
-      }
-      supabase
-        .from('profiles')
-        .update(payload)
-        .eq('id', id)
-        .then(({ error }) => {
-          if (error) console.warn('[BHOS Store] Supabase updateUserRole failed:', error.message);
-        });
-    }
+    updateUserRoleInCloud(id, role);
 
     return profile;
   }
@@ -2349,17 +2013,7 @@ export class BHOSDataStore {
       this.notify();
     }
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        await supabase.from('tournament_registrations').delete().eq('player_id', id);
-        await supabase.from('table_reservations').delete().eq('reserved_by', id);
-        await supabase.from('tournaments').update({ created_by: null }).eq('created_by', id);
-        await supabase.from('profiles').delete().eq('id', id);
-      } catch (err) {
-        console.warn('[BHOS Store] Supabase deleteProfile failed:', err);
-      }
-    }
+    await deleteProfileInCloud(id);
     return true;
   }
 
@@ -2520,29 +2174,7 @@ export class BHOSDataStore {
     setStored(STORAGE_KEYS.TOURNAMENTS, this.tournaments);
 
     if (syncToCloud) {
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        supabase
-          .from('tournaments')
-          .update({
-            bracket_data: tournament.bracket_data,
-            status: tournament.status,
-            winner_id: tournament.winner_id || null,
-          })
-          .eq('id', tournament.id)
-          .then(({ error }) => {
-            if (error) {
-              console.warn('[BHOS Store] Bracket progression sync warning:', error.message);
-            }
-          });
-
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-          match.id
-        );
-        if (isUuid) {
-          supabase.rpc('advance_tournament_bracket', { p_match_id: match.id }).then(() => {});
-        }
-      }
+      void propagateBracketMatchInCloud(tournament, match.id);
     }
   }
 
@@ -2560,15 +2192,7 @@ export class BHOSDataStore {
   }
 
   public async voidMatch(matchId: string): Promise<void> {
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      throw new Error('Supabase bağlantısı mövcud deyil.');
-    }
-
-    const { error } = await supabase.rpc('admin_void_match', { target_match_id: matchId });
-    if (error) {
-      throw new Error(error.message || 'Matç ləğv edilə bilmədi.');
-    }
+    await voidMatchInCloud(matchId);
 
     this.matches = this.matches.filter((m) => m.id !== matchId);
     setStored(STORAGE_KEYS.MATCHES, this.matches);
@@ -2624,20 +2248,7 @@ export class BHOSDataStore {
       setStored('bhos_deleted_matches', deleted);
     }
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(matchId);
-        if (isUuid) {
-          const { error } = await supabase.from('matches').delete().eq('id', matchId);
-          if (error) {
-            console.warn('[BHOS Store] Could not delete match from Supabase:', error.message);
-          }
-        }
-      } catch (err) {
-        console.warn('[BHOS Store] Error deleting match:', err);
-      }
-    }
+    await deleteMatchInCloud(matchId);
 
     return true;
   }
@@ -2671,22 +2282,7 @@ export class BHOSDataStore {
 
     this.notify();
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const validUuids = matchIds.filter((id) =>
-          /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
-        );
-        if (validUuids.length > 0) {
-          const { error } = await supabase.from('matches').delete().in('id', validUuids);
-          if (error) {
-            console.warn('[BHOS Store] Could not delete matches batch from Supabase:', error.message);
-          }
-        }
-      } catch (err) {
-        console.warn('[BHOS Store] Error deleting matches batch:', err);
-      }
-    }
+    await deleteMatchesBulkInCloud(matchIds);
 
     return true;
   }
@@ -2750,30 +2346,15 @@ export class BHOSDataStore {
     setStored(STORAGE_KEYS.MATCHES, this.matches);
     this.notify();
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const payload: Record<string, any> = {};
-        if (updates.player1_score !== undefined) payload.player1_score = nextP1Score;
-        if (updates.player2_score !== undefined) payload.player2_score = nextP2Score;
-        if (updates.set_scores !== undefined) payload.set_scores = nextSetScores;
-        if (updates.status !== undefined) payload.status = updates.status;
-        if (updates.match_date !== undefined) payload.match_date = updates.match_date;
-        if (updates.tournament_title !== undefined) payload.tournament_title = safeTournamentTitle;
-        if (updates.elo_delta !== undefined) payload.elo_delta = updates.elo_delta;
-
-        const { error } = await supabase
-          .from('matches')
-          .update(payload)
-          .eq('id', matchId);
-
-        if (error) {
-          console.warn('[BHOS Store] Could not update match in Supabase:', error.message);
-        }
-      } catch (err) {
-        console.warn('[BHOS Store] Error updating match in Supabase:', err);
-      }
-    }
+    const payload: Record<string, any> = {};
+    if (updates.player1_score !== undefined) payload.player1_score = nextP1Score;
+    if (updates.player2_score !== undefined) payload.player2_score = nextP2Score;
+    if (updates.set_scores !== undefined) payload.set_scores = nextSetScores;
+    if (updates.status !== undefined) payload.status = updates.status;
+    if (updates.match_date !== undefined) payload.match_date = updates.match_date;
+    if (updates.tournament_title !== undefined) payload.tournament_title = safeTournamentTitle;
+    if (updates.elo_delta !== undefined) payload.elo_delta = updates.elo_delta;
+    await updateMatchInCloud(matchId, payload);
 
     return updated;
   }
@@ -3270,36 +2851,7 @@ export class BHOSDataStore {
   }
 
   private async syncTournamentBracketToCloud(tournament: Tournament): Promise<void> {
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
-
-    try {
-      const payload: any = {
-        bracket_data: tournament.bracket_data,
-        status: tournament.status,
-        format: tournament.format,
-        group_size: tournament.group_size,
-        advance_per_group: tournament.advance_per_group,
-        participants: tournament.participants,
-      };
-
-      if (tournament.slug) {
-        await supabase
-          .from('tournaments')
-          .update(payload)
-          .eq('slug', tournament.slug);
-      }
-
-      const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournament.id);
-      if (isUuid) {
-        await supabase
-          .from('tournaments')
-          .update(payload)
-          .eq('id', tournament.id);
-      }
-    } catch (err: any) {
-      console.warn('[BHOS Store] syncTournamentBracketToCloud error:', err?.message || err);
-    }
+    await syncTournamentBracketService(tournament);
   }
 
   public generateTournamentGroupsAction(
@@ -3579,50 +3131,13 @@ export class BHOSDataStore {
     this.saveLocal();
     this.notify();
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.rpc('register_for_tournament', {
-          target_tournament_id: tournament.slug || tournament.id,
-          p_target_player_id: targetId,
-        });
-        if (!error && data) {
-          if (Array.isArray(data.participants)) {
-            tournament.participants = Array.from(
-              new Set([...tournament.participants, ...data.participants])
-            );
-            this.saveLocal();
-            this.notify();
-          }
-        } else {
-          if (error) {
-            console.warn('[BHOS Store] Supabase register_for_tournament notice:', error.message);
-          }
-          if (tournament.slug) {
-            await supabase
-              .from('tournaments')
-              .update({ participants: tournament.participants })
-              .eq('slug', tournament.slug);
-          }
-          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournament.id);
-          if (isUuid) {
-            await supabase
-              .from('tournaments')
-              .update({ participants: tournament.participants })
-              .eq('id', tournament.id);
-          }
-          const regPayload: any = {
-            player_id: targetId,
-            tournament_slug: tournament.slug,
-          };
-          if (isUuid) regPayload.tournament_id = tournament.id;
-          await supabase
-            .from('tournament_registrations')
-            .upsert(regPayload, { onConflict: 'tournament_slug,player_id' });
-        }
-      } catch (e: any) {
-        console.warn('[BHOS Store] Error registering for tournament in Supabase:', e?.message || e);
-      }
+    const cloudParticipants = await registerForTournamentInCloud(tournament, targetId);
+    if (cloudParticipants) {
+      tournament.participants = Array.from(
+        new Set([...tournament.participants, ...cloudParticipants])
+      );
+      this.saveLocal();
+      this.notify();
     }
 
     return tournament;
@@ -3650,47 +3165,11 @@ export class BHOSDataStore {
     this.saveLocal();
     this.notify();
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        const { data, error } = await supabase.rpc('withdraw_from_tournament', {
-          target_tournament_id: tournament.slug || tournament.id,
-          p_target_player_id: targetId,
-        });
-        if (!error && data) {
-          if (Array.isArray(data.participants)) {
-            tournament.participants = data.participants;
-            this.saveLocal();
-            this.notify();
-          }
-        } else {
-          if (error) {
-            console.warn('[BHOS Store] Supabase withdraw_from_tournament notice:', error.message);
-          }
-          if (tournament.slug) {
-            await supabase
-              .from('tournaments')
-              .update({ participants: tournament.participants })
-              .eq('slug', tournament.slug);
-          }
-          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournament.id);
-          if (isUuid) {
-            await supabase
-              .from('tournaments')
-              .update({ participants: tournament.participants })
-              .eq('id', tournament.id);
-          }
-          if (tournament.slug) {
-            await supabase
-              .from('tournament_registrations')
-              .delete()
-              .eq('player_id', targetId)
-              .eq('tournament_slug', tournament.slug);
-          }
-        }
-      } catch (e: any) {
-        console.warn('[BHOS Store] Error withdrawing from tournament in Supabase:', e?.message || e);
-      }
+    const cloudParticipants = await withdrawFromTournamentInCloud(tournament, targetId);
+    if (cloudParticipants) {
+      tournament.participants = cloudParticipants;
+      this.saveLocal();
+      this.notify();
     }
 
     return tournament;
@@ -3713,49 +3192,7 @@ export class BHOSDataStore {
       this.saveLocal();
       this.notify();
 
-      const supabase = getSupabaseClient();
-      if (supabase) {
-        try {
-          // 1. Try dedicated admin RPC
-          const { error: rpcError } = await supabase.rpc('admin_add_tournament_participant', {
-            target_tournament_id: tournament.slug || tournament.id,
-            target_player_id: playerId,
-          });
-
-          if (rpcError) {
-            console.warn('[BHOS Store] admin_add_tournament_participant notice:', rpcError.message);
-          }
-
-          // 2. Direct fallback update by slug
-          if (tournament.slug) {
-            await supabase
-              .from('tournaments')
-              .update({ participants: tournament.participants })
-              .eq('slug', tournament.slug);
-          }
-
-          const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournament.id);
-          if (isUuid) {
-            await supabase
-              .from('tournaments')
-              .update({ participants: tournament.participants })
-              .eq('id', tournament.id);
-          }
-
-          // 3. Upsert into tournament_registrations
-          const regPayload: any = {
-            player_id: playerId,
-            tournament_slug: tournament.slug,
-          };
-          if (isUuid) regPayload.tournament_id = tournament.id;
-
-          await supabase
-            .from('tournament_registrations')
-            .upsert(regPayload, { onConflict: 'tournament_slug,player_id' });
-        } catch (err: any) {
-          console.warn('[BHOS Store] addTournamentParticipant Supabase failed:', err?.message || err);
-        }
-      }
+      await addTournamentParticipantInCloud(tournament, playerId);
     }
     return tournament;
   }
@@ -3770,39 +3207,7 @@ export class BHOSDataStore {
     this.saveLocal();
     this.notify();
 
-    const supabase = getSupabaseClient();
-    if (supabase) {
-      try {
-        if (tournament.slug) {
-          await supabase
-            .from('tournaments')
-            .update({ participants: tournament.participants })
-            .eq('slug', tournament.slug);
-
-          await supabase
-            .from('tournament_registrations')
-            .delete()
-            .eq('player_id', playerId)
-            .eq('tournament_slug', tournament.slug);
-        }
-
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(tournament.id);
-        if (isUuid) {
-          await supabase
-            .from('tournaments')
-            .update({ participants: tournament.participants })
-            .eq('id', tournament.id);
-
-          await supabase
-            .from('tournament_registrations')
-            .delete()
-            .eq('player_id', playerId)
-            .eq('tournament_id', tournament.id);
-        }
-      } catch (err: any) {
-        console.warn('[BHOS Store] removeTournamentParticipant Supabase failed:', err?.message || err);
-      }
-    }
+    await removeTournamentParticipantInCloud(tournament, playerId);
     return tournament;
   }
 
@@ -3950,484 +3355,8 @@ export class BHOSDataStore {
   }
 }
 
-export interface PlayerProfileSummaryResult {
-  profile: PlayerProfile | null;
-  recent_matches: MatchRecord[];
-  achievements: Record<string, string>;
-}
-
-const PLAYER_PROFILE_TTL_MS = 45_000;
-const inMemoryPlayerCache = new Map<
-  string,
-  { data: PlayerProfileSummaryResult; timestamp: number }
->();
-
-function isUuidString(val: string): boolean {
-  return isUuid(val);
-}
-
 /** Readable profile URL (`/players/ali-iskandarli`); falls back to the UUID link if unknown. */
 export function getPlayerHref(id: string | null | undefined, fallbackName?: string | null): string {
   return BHOSDataStore.getInstance().getPlayerHref(id, fallbackName);
 }
 
-/**
- * Resolves a slug / legacy name URL to a profile UUID via Supabase.
- * Tries the `profiles.slug` column first (migration 033), then a transliterated name match.
- */
-async function resolvePlayerIdentifierRemote(identifier: string): Promise<string | null> {
-  const supabase = getSupabaseClient();
-  if (!supabase) return null;
-  const slug = identifier.trim().toLowerCase();
-
-  try {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('slug', slug)
-      .maybeSingle();
-    if (!error && data?.id) return data.id as string;
-  } catch {}
-
-  try {
-    const { data } = await supabase.from('profiles').select('id, full_name, created_at');
-    if (Array.isArray(data) && data.length > 0) {
-      const slugMap = buildSlugMap(data as PlayerProfile[]);
-      let match: string | null = null;
-      slugMap.forEach((s, id) => {
-        if (!match && s === slug) match = id;
-      });
-      if (match) return match;
-      const wanted = normalizeForSearch(slug.replace(/-/g, ' '));
-      const byName = (data as PlayerProfile[]).find(
-        (p) => normalizeForSearch(p.full_name) === wanted
-      );
-      if (byName) return byName.id;
-    }
-  } catch {}
-
-  return null;
-}
-
-function mapRawProfileToPlayerProfile(
-  raw: any,
-  fallback?: PlayerProfile
-): PlayerProfile {
-  const seed = findMatchingSeedProfile(raw) || (fallback ? findMatchingSeedProfile(fallback) : undefined);
-
-  const rawWins = Number(raw.wins ?? 0);
-  const rawLosses = Number(raw.losses ?? 0);
-  const rawMatches = Math.max(
-    Number(raw.matches_played ?? raw.total_matches ?? 0),
-    rawWins + rawLosses
-  );
-
-  const fbWins = Number(fallback?.wins ?? 0);
-  const fbLosses = Number(fallback?.losses ?? 0);
-  const fbMatches = Math.max(Number(fallback?.matches_played ?? 0), fbWins + fbLosses);
-
-  const seedWins = Number(seed?.wins ?? 0);
-  const seedLosses = Number(seed?.losses ?? 0);
-  const seedMatches = Math.max(Number(seed?.matches_played ?? 0), seedWins + seedLosses);
-
-  let wins = rawWins;
-  let losses = rawLosses;
-  let totalMatches = rawMatches;
-
-  if (totalMatches === 0) {
-    if (fbMatches > 0) {
-      wins = fbWins;
-      losses = fbLosses > 0 ? fbLosses : Math.max(0, fbMatches - fbWins);
-      totalMatches = Math.max(fbMatches, wins + losses);
-    } else if (seedMatches > 0) {
-      wins = seedWins;
-      losses = seedLosses > 0 ? seedLosses : Math.max(0, seedMatches - seedWins);
-      totalMatches = Math.max(seedMatches, wins + losses);
-    }
-  } else {
-    losses = rawLosses > 0 ? rawLosses : Math.max(0, totalMatches - wins);
-    totalMatches = Math.max(totalMatches, wins + losses);
-  }
-
-  const winRate = totalMatches > 0 ? Math.round((wins / totalMatches) * 100) : 0;
-
-  const rawDept =
-    getProfileDepartment(raw) ||
-    getProfileDepartment(fallback) ||
-    getProfileDepartment(seed) ||
-    'Computer Engineering';
-  const canonicalDept = resolveCanonicalDepartment(rawDept) || rawDept;
-
-  const admissionYear =
-    raw.admission_year ??
-    raw.year_of_study ??
-    fallback?.admission_year ??
-    fallback?.year_of_study ??
-    seed?.admission_year ??
-    2024;
-  const yearOfStudy =
-    raw.year_of_study ??
-    raw.admission_year ??
-    fallback?.year_of_study ??
-    fallback?.admission_year ??
-    seed?.year_of_study ??
-    admissionYear;
-
-  const isFoundation =
-    Number(admissionYear) === 2026 ||
-    Number(yearOfStudy) === 2026 ||
-    raw.is_foundation === true ||
-    fallback?.is_foundation === true ||
-    seed?.is_foundation === true ||
-    (raw.department || fallback?.department || seed?.department || '')
-      .toLowerCase()
-      .includes('foundation') ||
-    (raw.department || fallback?.department || seed?.department || '')
-      .toLowerCase()
-      .includes('hazirliq') ||
-    (raw.group || fallback?.group || seed?.group || '').toLowerCase().startsWith('f-') ||
-    (raw.group || fallback?.group || seed?.group || '').toLowerCase().startsWith('fnd-');
-
-  const resolvedElo = resolvePlayerRealElo(
-    raw,
-    rawMatches,
-    fallback,
-    fbMatches,
-    seed,
-    seedMatches,
-    BHOSDataStore.getInstance().getMatches()
-  );
-
-  return {
-    id: raw.id || fallback?.id || '',
-    full_name: raw.full_name || fallback?.full_name || 'Unknown',
-    slug: raw.slug || fallback?.slug || seed?.slug || null,
-    email: raw.email || fallback?.email || seed?.email || '',
-    major_faculty: canonicalDept,
-    faculty: raw.faculty || fallback?.faculty || canonicalDept,
-    department:
-      raw.department ||
-      fallback?.department ||
-      seed?.department ||
-      (isFoundation ? 'Foundation' : canonicalDept),
-    major: raw.major || fallback?.major || canonicalDept,
-    group:
-      raw.group ||
-      fallback?.group ||
-      seed?.group ||
-      (isFoundation ? 'Foundation / 2026' : ''),
-    admission_year: admissionYear,
-    year_of_study: yearOfStudy,
-    is_foundation: isFoundation,
-    user_type:
-      raw.user_type ||
-      fallback?.user_type ||
-      (raw.full_name?.includes('İftixar') ? 'staff' : 'student'),
-    gender: raw.gender || fallback?.gender || 'male',
-    role:
-      raw.role ||
-      fallback?.role ||
-      (raw.full_name?.includes('İftixar')
-        ? 'coach'
-        : raw.full_name?.includes('İsgəndərli')
-        ? 'president'
-        : 'player'),
-    playing_level: raw.playing_level || fallback?.playing_level || 'Intermediate',
-    playing_style: raw.playing_style || fallback?.playing_style || 'Shakehand Attack',
-    racket:
-      raw.racket !== undefined
-        ? (isCustomRacket(raw.racket) ? raw.racket : null)
-        : (fallback?.racket ?? (isCustomRacket(raw.blade_equipment) ? raw.blade_equipment : null)),
-    blade_equipment: raw.blade_equipment || fallback?.blade_equipment || 'Butterfly Viscaria',
-    forehand_rubber: raw.forehand_rubber || fallback?.forehand_rubber || 'Tenergy 05',
-    backhand_rubber: raw.backhand_rubber || fallback?.backhand_rubber || 'Dignics 09C',
-    current_elo: resolvedElo,
-    elo_rating: resolvedElo,
-    matches_played: totalMatches,
-    wins,
-    losses,
-    win_rate: winRate,
-    status: raw.status || fallback?.status || 'approved',
-    origin: raw.origin || fallback?.origin || 'Qeydiyyat',
-    is_verified: raw.is_verified ?? fallback?.is_verified ?? true,
-    is_active: raw.is_active ?? fallback?.is_active ?? true,
-    avatar_url: normalizeAvatarUrl(raw.avatar_url || fallback?.avatar_url),
-    rank: raw.rank ?? fallback?.rank,
-    created_at: raw.created_at || fallback?.created_at || new Date().toISOString(),
-  };
-}
-
-/** Drops cached profile summary (e.g. after arcade badges were awarded server-side). */
-export function invalidatePlayerProfileCache(playerId: string): void {
-  if (!playerId) return;
-  const cacheKey = `bhos_player_${playerId}`;
-  inMemoryPlayerCache.delete(cacheKey);
-  if (typeof window !== 'undefined') {
-    try {
-      sessionStorage.removeItem(cacheKey);
-    } catch {}
-  }
-}
-
-export function getCachedPlayerProfile(
-  identifier: string
-): PlayerProfileSummaryResult | null {
-  if (!identifier) return null;
-  const playerId =
-    BHOSDataStore.getInstance().resolvePlayerIdentifier(identifier) || identifier;
-  const cacheKey = `bhos_player_${playerId}`;
-  const now = Date.now();
-  const store = BHOSDataStore.getInstance();
-  const resolved = store.getResolvedMatchIds();
-  const deleted = getStored<string[]>('bhos_deleted_matches', []);
-
-  const mem = inMemoryPlayerCache.get(cacheKey);
-  if (mem && now - mem.timestamp < PLAYER_PROFILE_TTL_MS) {
-    return {
-      ...mem.data,
-      recent_matches: (mem.data.recent_matches || []).filter((m) =>
-        isApprovedMatch(m, resolved, deleted)
-      ),
-    };
-  }
-
-  if (typeof window !== 'undefined') {
-    const cached = sessionStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed?.data && now - parsed.timestamp < PLAYER_PROFILE_TTL_MS) {
-          const filteredData: PlayerProfileSummaryResult = {
-            ...parsed.data,
-            recent_matches: (parsed.data.recent_matches || []).filter((m: MatchRecord) =>
-              isApprovedMatch(m, resolved, deleted)
-            ),
-          };
-          inMemoryPlayerCache.set(cacheKey, {
-            data: filteredData,
-            timestamp: parsed.timestamp,
-          });
-          return filteredData;
-        }
-      } catch {}
-    }
-  }
-
-  const localProfile = store.getProfile(playerId);
-  if (localProfile && localProfile.is_verified !== false) {
-    const localMatches = store.getPlayerMatches(localProfile.id);
-    return {
-      profile: localProfile,
-      recent_matches: localMatches,
-      achievements: {},
-    };
-  }
-
-  return null;
-}
-
-export async function fetchPlayerProfile(
-  identifier: string,
-  options?: { force?: boolean }
-): Promise<PlayerProfileSummaryResult> {
-  // Accept readable slugs (/players/ali-iskandarli) as well as legacy UUID links.
-  let playerId = identifier;
-  if (identifier && !isUuidString(identifier)) {
-    const localId = BHOSDataStore.getInstance().resolvePlayerIdentifier(identifier);
-    const resolvedId = localId || (await resolvePlayerIdentifierRemote(identifier));
-    if (resolvedId) playerId = resolvedId;
-  }
-
-  const cacheKey = `bhos_player_${playerId}`;
-  const force = Boolean(options?.force);
-  const store = BHOSDataStore.getInstance();
-  const resolved = store.getResolvedMatchIds();
-  const deleted = getStored<string[]>('bhos_deleted_matches', []);
-
-  if (!force && typeof window !== 'undefined') {
-    const mem = inMemoryPlayerCache.get(cacheKey);
-    if (mem && Date.now() - mem.timestamp < PLAYER_PROFILE_TTL_MS) {
-      return {
-        ...mem.data,
-        recent_matches: (mem.data.recent_matches || []).filter((m) =>
-          isApprovedMatch(m, resolved, deleted)
-        ),
-      };
-    }
-
-    const cached = sessionStorage.getItem(cacheKey);
-    if (cached) {
-      try {
-        const parsed = JSON.parse(cached);
-        if (parsed?.data && Date.now() - parsed.timestamp < PLAYER_PROFILE_TTL_MS) {
-          const filteredData: PlayerProfileSummaryResult = {
-            ...parsed.data,
-            recent_matches: (parsed.data.recent_matches || []).filter((m: MatchRecord) =>
-              isApprovedMatch(m, resolved, deleted)
-            ),
-          };
-          inMemoryPlayerCache.set(cacheKey, {
-            data: filteredData,
-            timestamp: parsed.timestamp,
-          });
-          return filteredData;
-        }
-      } catch {}
-    }
-  }
-
-  const localProfile = store.getProfile(playerId);
-  const supabase = getSupabaseClient();
-
-  if (!supabase) {
-    const fallbackResult: PlayerProfileSummaryResult = {
-      profile: localProfile || null,
-      recent_matches: localProfile ? store.getPlayerMatches(localProfile.id) : [],
-      achievements: {},
-    };
-    return fallbackResult;
-  }
-
-  const validUuid = isUuidString(playerId);
-
-  if (validUuid) {
-    const { data: rpcData, error: rpcError } = await supabase.rpc(
-      'get_player_profile_summary',
-      {
-        target_player_id: playerId,
-      }
-    );
-
-    if (!rpcError && rpcData && rpcData.profile) {
-      const normalizedProfile = mapRawProfileToPlayerProfile(
-        rpcData.profile,
-        localProfile
-      );
-      const cloudMatches: MatchRecord[] = Array.isArray(rpcData.recent_matches)
-        ? rpcData.recent_matches.map((m: any) => store.enrichMatchRecord(m))
-        : [];
-      const localMatches = store.getPlayerMatches(normalizedProfile.id);
-      const matchMap = new Map<string, MatchRecord>();
-      cloudMatches.forEach((m) => {
-        if (isApprovedMatch(m, resolved, deleted)) {
-          matchMap.set(m.id, m);
-        }
-      });
-      localMatches.forEach((m) => {
-        if (!matchMap.has(m.id) && isApprovedMatch(m, resolved, deleted)) {
-          matchMap.set(m.id, m);
-        }
-      });
-
-      const mergedMatches = Array.from(matchMap.values()).sort(
-        (a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
-      );
-
-      const summary: PlayerProfileSummaryResult = {
-        profile: normalizedProfile,
-        recent_matches: mergedMatches,
-        achievements:
-          rpcData.achievements && typeof rpcData.achievements === 'object'
-            ? rpcData.achievements
-            : {},
-      };
-
-      const entry = { data: summary, timestamp: Date.now() };
-      inMemoryPlayerCache.set(cacheKey, entry);
-      if (typeof window !== 'undefined') {
-        try {
-          sessionStorage.setItem(cacheKey, JSON.stringify(entry));
-        } catch {}
-      }
-
-      return summary;
-    }
-  }
-
-  const [standingsRes, profileRes, matchesRes, achRes] = await Promise.all([
-    validUuid
-      ? supabase.from('leaderboard_standings').select('*').eq('id', playerId).maybeSingle()
-      : Promise.resolve({ data: null, error: null }),
-    validUuid
-      ? supabase.from('profiles').select('*').eq('id', playerId).maybeSingle()
-      : supabase
-          .from('profiles')
-          .select('*')
-          .ilike('full_name', playerId.replace(/-/g, ' '))
-          .maybeSingle(),
-    validUuid
-      ? supabase
-          .from('matches')
-          .select(
-            'id, created_at, match_date, tournament_id, tournament_title, player1_id, player1_name, player2_id, player2_name, logged_by, logged_by_name, winner_id, player1_score, player2_score, set_scores, player1_elo_before, player2_elo_before, player1_elo_after, player2_elo_after, player1_elo_delta, player2_elo_delta, elo_delta, status, stage, auto_approved, player1:profiles!player1_id(id, full_name, slug, elo_rating, current_elo, department, major_faculty), player2:profiles!player2_id(id, full_name, slug, elo_rating, current_elo, department, major_faculty)'
-          )
-          .in('status', ['confirmed', 'approved'])
-          .or(`player1_id.eq.${playerId},player2_id.eq.${playerId}`)
-          .order('match_date', { ascending: false })
-          .limit(25)
-      : Promise.resolve({ data: [] as any[], error: null }),
-    validUuid
-      ? supabase
-          .from('profile_achievements')
-          .select('badge_id, unlocked_at')
-          .eq('profile_id', playerId)
-      : Promise.resolve({ data: [] as any[], error: null }),
-  ]);
-
-  const rawProfile = profileRes.data || standingsRes.data || localProfile;
-  if (!rawProfile || rawProfile.is_verified === false) {
-    return {
-      profile: null,
-      recent_matches: [],
-      achievements: {},
-    };
-  }
-
-  const resolvedProfile = mapRawProfileToPlayerProfile(
-    { ...(standingsRes.data || {}), ...(profileRes.data || {}) },
-    localProfile
-  );
-
-  const cloudMatches = ((matchesRes.data || []) as any[]).map((m) => store.enrichMatchRecord(m));
-  const localMatches = store.getPlayerMatches(resolvedProfile.id || playerId);
-  const matchMap = new Map<string, MatchRecord>();
-  cloudMatches.forEach((m) => {
-    if (isApprovedMatch(m, resolved, deleted)) {
-      matchMap.set(m.id, m);
-    }
-  });
-  localMatches.forEach((m) => {
-    if (!matchMap.has(m.id) && isApprovedMatch(m, resolved, deleted)) {
-      matchMap.set(m.id, m);
-    }
-  });
-
-  const combinedMatches = Array.from(matchMap.values()).sort(
-    (a, b) => new Date(a.match_date).getTime() - new Date(b.match_date).getTime()
-  );
-
-  const achMap: Record<string, string> = {};
-  if (Array.isArray(achRes.data)) {
-    achRes.data.forEach((row: any) => {
-      if (row.badge_id) {
-        achMap[row.badge_id] = row.unlocked_at || new Date().toISOString();
-      }
-    });
-  }
-
-  const fallbackData: PlayerProfileSummaryResult = {
-    profile: resolvedProfile,
-    recent_matches: combinedMatches,
-    achievements: achMap,
-  };
-
-  const entry = { data: fallbackData, timestamp: Date.now() };
-  inMemoryPlayerCache.set(cacheKey, entry);
-  if (typeof window !== 'undefined') {
-    try {
-      sessionStorage.setItem(cacheKey, JSON.stringify(entry));
-    } catch {}
-  }
-
-  return fallbackData;
-}
