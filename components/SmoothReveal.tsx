@@ -12,8 +12,7 @@ interface SmoothRevealProps {
   className?: string;
 }
 
-// Fast, crisp exponential ease-out for broadcast-grade transitions
-const EDITORIAL_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+const SMOOTH_EASE: [number, number, number, number] = [0.21, 0.47, 0.32, 0.98];
 
 export default function SmoothReveal({
   children,
@@ -24,10 +23,10 @@ export default function SmoothReveal({
   className = '',
 }: SmoothRevealProps) {
   const initialOffset = {
-    up: { y: 12, x: 0 },
-    down: { y: -12, x: 0 },
-    left: { x: 14, y: 0 },
-    right: { x: -14, y: 0 },
+    up: { y: 32, x: 0 },
+    down: { y: -32, x: 0 },
+    left: { x: 32, y: 0 },
+    right: { x: -32, y: 0 },
     none: { x: 0, y: 0 },
   }[direction];
 
@@ -37,8 +36,8 @@ export default function SmoothReveal({
       visible: {
         opacity: 1,
         transition: {
-          delayChildren: Math.min(delay, 0.08),
-          staggerChildren: Math.min(staggerChildren, 0.06),
+          delayChildren: delay,
+          staggerChildren,
         },
       },
     };
@@ -48,7 +47,7 @@ export default function SmoothReveal({
         variants={containerVariants}
         initial="hidden"
         whileInView="visible"
-        viewport={{ once: true, margin: '-40px' }}
+        viewport={{ once: true, margin: '-60px' }}
         className={className}
       >
         {children}
@@ -62,20 +61,31 @@ export default function SmoothReveal({
         opacity: 0,
         y: initialOffset.y,
         x: initialOffset.x,
-        scale: scale ? 0.985 : 1,
+        scale: scale ? 0.96 : 1,
+        filter: 'blur(6px)',
       }}
       whileInView={{
         opacity: 1,
         y: 0,
         x: 0,
         scale: 1,
+        filter: 'blur(0px)',
       }}
-      viewport={{ once: true, margin: '-40px' }}
-      transition={{
-        duration: 0.36,
-        delay: Math.min(delay, 0.12),
-        ease: EDITORIAL_EASE,
-      }}
+      viewport={{ once: true, margin: '-60px' }}
+      transition={
+        scale
+          ? {
+              type: 'spring',
+              stiffness: 180,
+              damping: 22,
+              delay,
+            }
+          : {
+              duration: 0.65,
+              delay,
+              ease: SMOOTH_EASE,
+            }
+      }
       className={className}
     >
       {children}
@@ -97,10 +107,10 @@ export function SmoothRevealItem({
   className = '',
 }: SmoothRevealItemProps) {
   const initialOffset = {
-    up: { y: 12, x: 0 },
-    down: { y: -12, x: 0 },
-    left: { x: 14, y: 0 },
-    right: { x: -14, y: 0 },
+    up: { y: 32, x: 0 },
+    down: { y: -32, x: 0 },
+    left: { x: 32, y: 0 },
+    right: { x: -32, y: 0 },
     none: { x: 0, y: 0 },
   }[direction];
 
@@ -109,16 +119,18 @@ export function SmoothRevealItem({
       opacity: 0,
       y: initialOffset.y,
       x: initialOffset.x,
-      scale: scale ? 0.985 : 1,
+      scale: scale ? 0.96 : 1,
+      filter: 'blur(6px)',
     },
     visible: {
       opacity: 1,
       y: 0,
       x: 0,
       scale: 1,
+      filter: 'blur(0px)',
       transition: {
-        duration: 0.34,
-        ease: EDITORIAL_EASE,
+        duration: 0.65,
+        ease: SMOOTH_EASE,
       },
     },
   };

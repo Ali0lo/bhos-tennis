@@ -207,8 +207,7 @@
       "rotation_desc": "When players are waiting, tables rotate on a fair first-come, first-served 11-point or 21-point set rotation.",
       "equipment_title": "Club Equipment & Paddles",
       "equipment_desc": "Donic 3-Star ITTF balls and club paddles can be checked out at the Sports Complex desk and must be returned after play."
-    },
-    "cta_log_match": "Log a Match"
+    }
   },
   "hero": {
     "portal_tag": "Official Campus Portal",
@@ -564,8 +563,8 @@
     "organizer": "Organizer",
     "default_rules": "Standard ITTF and BHOS Table Tennis Club official regulations and game rules apply.",
     "foundation_title": "\"Victory Day\" Foundation Cup",
-    "foundation_banner_tag": "OFFICIAL FINAL RESULTS • TOURNAMENT COMPLETED",
-    "foundation_banner_stats": "38 Matches • November 7, 2026",
+    "foundation_banner_tag": "🏆 OFFICIAL FINAL RESULTS • TOURNAMENT COMPLETED",
+    "foundation_banner_stats": "✓ 38 Matches • November 7, 2026",
     "foundation_banner_title": "\"Victory Day\" Foundation Cup — Podium",
     "foundation_banner_cta": "Full Bracket & Matches",
     "finalist": "Finalist",
@@ -770,7 +769,7 @@
     "sound_on": "Turn sound on",
     "sound_off": "Mute sound",
     "discovery_tag": "BHOS Arcade • Infinity Rally",
-    "discovery_title": "Desktop Rally: Break the record in infinity mode and earn profile badges!",
+    "discovery_title": "🏓 Desktop Rally: Break the record in infinity mode and earn profile badges!",
     "discovery_desc": "Test your reflexes in an endless rally against the bot, keep the accelerating ball on the table, and rise to #1 on the BHOS leaderboard!",
     "play_and_compete": "Play & Compete",
     "online_ranking": "Online Ranking",

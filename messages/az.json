@@ -207,8 +207,7 @@
       "rotation_desc": "Gözləyən oyunçular olduqda masalar 11 və ya 21 xallıq set rotasiyası (növbə sistemi) ilə paylaşılır.",
       "equipment_title": "Klub İnventarı və Raketkalar",
       "equipment_desc": "Donic 3-Ulduz ITTF topları və məşq raketkaları İdman Kompleksinin qeydiyyat masasından götürülə və istifadədən sonra təhvil verilə bilər."
-    },
-    "cta_log_match": "Oyun Qeyd Et"
+    }
   },
   "hero": {
     "portal_tag": "Rəsmi Kampus Portalı",
@@ -564,8 +563,8 @@
     "organizer": "Təşkilatçı",
     "default_rules": "Standart ITTF və BANM Masaüstü Tennis Klubu rəsmi reqlamenti və oyun qaydaları tətbiq olunur.",
     "foundation_title": "\"Zəfər Günü\" Foundation Kuboku",
-    "foundation_banner_tag": "RƏSMİ YEKUN NƏTİCƏLƏR • TURNİR BAŞA ÇATDI",
-    "foundation_banner_stats": "38 Oyun • 7 Noyabr 2026",
+    "foundation_banner_tag": "🏆 RƏSMİ YEKUN NƏTİCƏLƏR • TURNİR BAŞA ÇATDI",
+    "foundation_banner_stats": "✓ 38 Oyun • 7 Noyabr 2026",
     "foundation_banner_title": "“Zəfər Günü” Foundation Kuboku — Fəxri Kürsü",
     "foundation_banner_cta": "Tam Turnir Cədvəli və Oyunlar",
     "finalist": "Finalçı",
@@ -770,7 +769,7 @@
     "sound_on": "Səsi aç",
     "sound_off": "Səsi söndür",
     "discovery_tag": "BHOS Arcade • Sonsuz Ralli",
-    "discovery_title": "Masaüstü Ralli: Sonsuz rejimdə rekordu qır və profil nişanları qazan!",
+    "discovery_title": "🏓 Masaüstü Ralli: Sonsuz rejimdə rekordu qır və profil nişanları qazan!",
     "discovery_desc": "Bot rəqiblə sonsuz rallidə reflekslərini sına, sürətlənən topu masada saxla və BANM liderlər lövhəsində 1-ci pilləyə yüksəl!",
     "play_and_compete": "Oyna və Yarış",
     "online_ranking": "Online Reytinq",

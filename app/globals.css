@@ -2,137 +2,51 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ==========================================================================
-   BHOS Table Tennis — Dark Editorial Sports Club Design Tokens (90 / 8 / 2)
-   90% Obsidian court ground · 8% Matte elevated surfaces & hairline grids
-   2% Disciplined BHOS Crimson (primary CTAs / live) & Championship Gold (#1)
-   ========================================================================== */
 :root {
-  /* Surfaces */
-  --bg-canvas: #070a11;
-  --bg-surface: #0d121e;
-  --bg-elevated: #121a2b;
-  --bg-subtle: rgba(255, 255, 255, 0.03);
-  --bg-glass: rgba(7, 10, 17, 0.88);
+  --background: #0B0F19;
+  --foreground: #F8FAFC;
+}
 
-  /* Borders */
-  --border-hairline: rgba(148, 163, 184, 0.14);
-  --border-strong: rgba(148, 163, 184, 0.28);
-
-  /* Typography Hierarchy (WCAG AA+ on #070A11 / #0D121E) */
-  --text-primary: #f8fafc;
-  --text-secondary: #cbd5e1;
-  --text-muted: #94a3b8;
-  --text-faint: #64748b;
-
-  /* Disciplined Sports Accents (2% rule) */
-  --accent-crimson: #e11d48;
-  --accent-crimson-hover: #f43f5e;
-  --accent-gold: #f59e0b;
-  --accent-gold-soft: rgba(245, 158, 11, 0.14);
-  --accent-silver: #cbd5e1;
-  --accent-bronze: #d97706;
-  --accent-club-blue: #2563eb;
-  --accent-club-blue-soft: #60a5fa;
-
-  /* Semantic Status */
-  --status-win: #10b981;
-  --status-loss: #f43f5e;
-
-  /* Backward-compatible aliases */
-  --background: var(--bg-canvas);
-  --foreground: var(--text-primary);
+body {
+  color: var(--foreground);
+  background-color: var(--background);
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+  overflow-x: clip;
+  -webkit-tap-highlight-color: transparent;
 }
 
 html {
   overflow-x: clip;
   min-width: 320px;
-  background-color: var(--bg-canvas);
-  color-scheme: dark;
-}
-
-body {
-  color: var(--text-primary);
-  background-color: var(--bg-canvas);
-  background-image: radial-gradient(
-    ellipse 85% 42% at 50% -10%,
-    rgba(37, 99, 235, 0.075),
-    transparent 65%
-  );
-  background-repeat: no-repeat;
-  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
-  overflow-x: clip;
-  caret-color: var(--accent-crimson);
-  -webkit-tap-highlight-color: transparent;
 }
 
 main {
   min-width: 0;
 }
 
-/* Browser-surface craft: selection, focus rings, links, scrollbars */
-::selection {
-  background-color: rgba(225, 29, 72, 0.35);
-  color: #ffffff;
-}
-
-:focus-visible {
-  outline: 2px solid var(--accent-club-blue-soft);
-  outline-offset: 2px;
-}
-
-a {
-  text-underline-offset: 3px;
-}
-
 ::-webkit-scrollbar {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: var(--bg-canvas);
+  background: #0B0F19;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 9999px;
+  background: #1E293B;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
 
-/* Strict tabular numerals for all scores, ELO ratings, and standings tables */
-.tabular-nums,
-.font-mono,
-table,
-td,
-th {
-  font-variant-numeric: tabular-nums lining-nums;
-}
-
-.font-display {
-  font-family: var(--font-display), var(--font-sans), system-ui, sans-serif;
-  letter-spacing: -0.015em;
-}
-
 .glass-panel {
-  background: var(--bg-surface);
-  border: 1px solid var(--border-hairline);
+  background: #0F172A;
+  border: 1px solid #1E293B;
 }
 
-.editorial-panel {
-  background-color: var(--bg-surface);
-  border: 1px solid var(--border-hairline);
-}
-
-.editorial-panel-elevated {
-  background-color: var(--bg-elevated);
-  border: 1px solid var(--border-strong);
-}
-
-/* Subtle broadcast ticker & restrained keyframes */
 @keyframes shimmer {
   0% {
     background-position: 200% 0;
@@ -146,6 +60,58 @@ th {
   animation: shimmer 3s linear infinite;
 }
 
+@keyframes podium-float-champion {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -14px, 0);
+  }
+}
+
+@keyframes podium-float-runner {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+  50% {
+    transform: translate3d(0, -10px, 0);
+  }
+}
+
+@keyframes podium-floor-shadow {
+  0%,
+  100% {
+    transform: scaleX(1) scaleY(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scaleX(0.74) scaleY(0.82);
+    opacity: 0.22;
+  }
+}
+
+@keyframes crown-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-6deg);
+  }
+  50% {
+    transform: translateY(-4px) rotate(6deg);
+  }
+}
+
+@keyframes champion-border-shimmer {
+  0% {
+    transform: translateX(-150%) skewX(-24deg);
+  }
+  40%,
+  100% {
+    transform: translateX(250%) skewX(-24deg);
+  }
+}
+
 @keyframes broadcast-ticker {
   0% {
     transform: translate3d(0, 0, 0);
@@ -155,10 +121,57 @@ th {
   }
 }
 
+.animate-podium-champion {
+  animation: podium-float-champion 3.4s ease-in-out infinite;
+  animation-delay: 0s;
+  will-change: transform;
+}
+
+.animate-podium-second {
+  animation: podium-float-runner 3.4s ease-in-out infinite;
+  animation-delay: 0.6s;
+  will-change: transform;
+}
+
+.animate-podium-third {
+  animation: podium-float-runner 3.4s ease-in-out infinite;
+  animation-delay: 1.2s;
+  will-change: transform;
+}
+
+.animate-shadow-champion {
+  animation: podium-floor-shadow 3.4s ease-in-out infinite;
+  animation-delay: 0s;
+  will-change: transform, opacity;
+}
+
+.animate-shadow-second {
+  animation: podium-floor-shadow 3.4s ease-in-out infinite;
+  animation-delay: 0.6s;
+  will-change: transform, opacity;
+}
+
+.animate-shadow-third {
+  animation: podium-floor-shadow 3.4s ease-in-out infinite;
+  animation-delay: 1.2s;
+  will-change: transform, opacity;
+}
+
+.animate-crown-bob {
+  display: inline-block;
+  animation: crown-bob 2.6s ease-in-out infinite;
+  will-change: transform;
+}
+
+.animate-champion-shimmer {
+  animation: champion-border-shimmer 4.2s ease-in-out infinite;
+  will-change: transform;
+}
+
 .animate-broadcast-ticker {
   display: flex;
   width: max-content;
-  animation: broadcast-ticker 36s linear infinite;
+  animation: broadcast-ticker 32s linear infinite;
   will-change: transform;
 }
 
@@ -166,10 +179,4 @@ th {
 .ticker-viewport:active .animate-broadcast-ticker,
 .ticker-viewport:focus-within .animate-broadcast-ticker {
   animation-play-state: paused;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .animate-broadcast-ticker {
-    animation: none;
-  }
 }

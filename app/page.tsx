@@ -1,10 +1,10 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { BHOSDataStore, isApprovedMatch, getPlayerHref } from '../lib/data/store';
-import { PlayerProfile, MatchRecord, Tournament } from '../lib/data/types';
+import { PlayerProfile, MatchRecord, Tournament, canAccessAdminPanel } from '../lib/data/types';
 import { useTranslation, useTranslations } from '../lib/i18n';
 import HallRulesSection from '../components/HallRulesSection';
 import Hero from '../components/Hero';
@@ -17,23 +17,24 @@ import NumberTicker from '../components/NumberTicker';
 import AnimatedCounter from '../components/AnimatedCounter';
 import CourtBackground from '../components/CourtBackground';
 import LeaderboardSkeleton from '../components/LeaderboardSkeleton';
+import HoloCard from '../components/HoloCard';
+import TiltCard from '../components/TiltCard';
 import OnboardingBanner from '../components/OnboardingBanner';
 import FoundationTournamentBanner from '../components/FoundationTournamentBanner';
-import SmoothReveal from '../components/SmoothReveal';
+import SmoothReveal, { SmoothRevealItem } from '../components/SmoothReveal';
 import {
   Trophy,
+  Table as TableIcon,
   ArrowRight,
   Award,
+  Zap,
   ShieldCheck,
   Target,
   Flame,
+  Users,
+  UserPlus,
   Swords,
-  Crown,
-  Medal,
-  Gamepad2,
 } from 'lucide-react';
-
-const EDITORIAL_EASE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
 export default function HomePage() {
   const t = useTranslations('home');
@@ -56,7 +57,7 @@ export default function HomePage() {
     const resolved = store.getResolvedMatchIds();
     return store.getMatches().filter((m) => isApprovedMatch(m, resolved));
   });
-  const [, setTournaments] = useState<Tournament[]>(() => store.getTournaments());
+  const [tournaments, setTournaments] = useState<Tournament[]>(() => store.getTournaments());
   const [currentUser, setCurrentUser] = useState<PlayerProfile | null>(store.getCurrentUser());
   const [showMatchModal, setShowMatchModal] = useState(false);
   const [selectedMatch, setSelectedMatch] = useState<MatchRecord | null>(null);
@@ -148,9 +149,9 @@ export default function HomePage() {
 
   return (
     <div className="relative space-y-7 sm:space-y-8">
-      <CourtBackground className="fixed opacity-50" />
+      <CourtBackground className="fixed" />
 
-      <SmoothReveal delay={0.01}>
+      <SmoothReveal delay={0.02}>
         <Hero
           currentUser={currentUser}
           totalPlayersCount={totalPlayersCount}
@@ -160,332 +161,266 @@ export default function HomePage() {
       </SmoothReveal>
 
       {matches.length > 0 && (
-        <SmoothReveal delay={0.03}>
+        <SmoothReveal delay={0.04}>
           <div className="w-full">
             <LiveMatches matches={matches} onSelectMatch={(m) => setSelectedMatch(m)} />
           </div>
         </SmoothReveal>
       )}
 
-      <SmoothReveal delay={0.04}>
+      <SmoothReveal delay={0.06}>
         <FoundationTournamentBanner />
       </SmoothReveal>
 
       {!currentUser && <OnboardingBanner isLoggedIn={Boolean(currentUser)} />}
 
-      {/* Main Leaderboard Podium & Standings Section */}
-      <SmoothReveal delay={0.06}>
+      <SmoothReveal delay={0.1}>
         <section className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="space-y-1">
-              <h2 className="font-display text-2xl sm:text-3xl font-black uppercase tracking-[-0.015em] text-white flex items-center gap-2.5">
-                <Award className="w-6 h-6 text-amber-400 shrink-0" />
-                <span>{t('sections.leaderboard_title')}</span>
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-400">
+              <div className="flex items-center gap-2.5">
+                <h2 className="text-xl md:text-2xl font-display font-bold text-white flex items-center gap-2">
+                  <Award className="w-6 h-6 text-amber-400" />
+                  <span>{t('sections.leaderboard_title')}</span>
+                </h2>
+              </div>
+              <p className="text-xs text-slate-400">
                 {t('sections.leaderboard_subtitle')}
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-3 self-start sm:self-auto">
               <Link
                 href="/challenges"
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-[var(--border-hairline)] hover:border-amber-400/40 text-slate-200 hover:text-white text-xs font-semibold transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-600/15 hover:bg-rose-600/25 border border-rose-500/35 text-rose-300 hover:text-rose-200 text-xs font-semibold transition"
               >
-                <Swords className="w-3.5 h-3.5 text-amber-400" />
+                <Swords className="w-3.5 h-3.5 text-rose-400" />
                 <span>{t('cta_challenges') || rootT('nav.challenges', 'Meydan Oxu')}</span>
               </Link>
               <Link
                 href="/leaderboard"
-                className="group text-xs font-semibold text-blue-400 hover:text-blue-300 hover:underline flex items-center gap-1"
+                className="group text-xs font-semibold text-blue-400 hover:underline flex items-center gap-1"
               >
-                <span>
-                  {t('sections.view_all_leaderboard')} ({totalPlayersCount})
-                </span>
-                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
+                <span>{t('sections.view_all_leaderboard')} ({totalPlayersCount})</span>
+                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
               </Link>
             </div>
           </div>
 
-          {/* Grounded Championship Top-3 Podium */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 items-end pt-5">
-            {/* #2 Silver */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-end pt-4">
             {top3[1] && (() => {
               const streak2 = getActiveWinStreak(top3[1]);
-              const winRate2 =
-                top3[1].matches_played > 0
-                  ? Math.round((top3[1].wins / top3[1].matches_played) * 100)
-                  : 0;
 
               return (
                 <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{ duration: 0.34, delay: 0.05, ease: EDITORIAL_EASE }}
-                  className="order-2 md:order-1"
+                  initial={{ opacity: 0, y: 36, scale: 0.94 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.18 }}
+                  className="order-2 md:order-1 flex flex-col items-center"
                 >
-                  <div className="relative rounded-2xl border border-slate-400/35 bg-[var(--bg-surface)] p-5 sm:p-6 transition-all duration-200 hover:border-slate-300/65 hover:-translate-y-1 shadow-lg shadow-black/30">
-                    <div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute top-0 inset-x-4 h-[2px] bg-gradient-to-r from-transparent via-slate-300/70 to-transparent"
-                    />
-                    <div className="h-8 px-3 gap-1.5 rounded-full bg-slate-200 text-slate-950 font-display font-black text-sm leading-none flex items-center justify-center absolute -top-4 left-5 ring-4 ring-[#070A11] z-20">
-                      <Medal className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span className="tabular-nums">#2</span>
-                    </div>
-
-                    <div className="pt-2 space-y-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <Link
-                            href={getPlayerHref(top3[1].id)}
-                            className="block font-display font-extrabold text-xl text-white hover:text-slate-200 transition-colors truncate"
-                          >
-                            {top3[1].full_name}
-                          </Link>
-                          <p className="text-xs text-slate-400 truncate mt-0.5">
-                            {translateFaculty(top3[1].major_faculty)}
-                          </p>
-                        </div>
-                        {streak2 >= 3 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[10px] font-semibold shrink-0 tabular-nums">
-                            <Flame className="w-3 h-3 text-rose-400" />
-                            <span>{streak2}</span>
-                          </span>
-                        )}
+                  <div className="w-full animate-podium-second">
+                    <HoloCard className="rounded-3xl border border-slate-300/40 shadow-sm shadow-slate-300/10 bg-gradient-to-b from-slate-800/60 to-slate-900/80 p-6 relative group hover:border-slate-200/60 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 will-change-transform">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-200 via-slate-400 to-slate-500 text-slate-950 font-bold shadow-inner border border-slate-200/80 flex items-center justify-center font-display text-base absolute -top-4 left-6 z-30">
+                        2
                       </div>
-
-                      <div className="flex items-baseline justify-between gap-2">
-                        <div className="font-display text-3xl font-black text-slate-100 tabular-nums leading-none flex items-baseline gap-1.5">
-                          <NumberTicker
-                            value={top3[1].current_elo}
-                            startValue={Math.min(500, top3[1].current_elo)}
-                            durationMs={750}
-                          />
-                          <span className="text-[11px] font-mono font-semibold text-slate-400 tracking-wider">
-                            ELO
+                      <div className="pt-2 relative z-10">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Link
+                                href={getPlayerHref(top3[1].id)}
+                                className="font-display font-bold text-base text-white hover:text-slate-200 transition"
+                              >
+                                {top3[1].full_name}
+                              </Link>
+                              <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold border bg-slate-200/10 text-slate-200 border-slate-400/30">
+                                🥈 #2
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-300/80 mt-0.5">{translateFaculty(top3[1].major_faculty)}</p>
+                          </div>
+                          {streak2 >= 3 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600/15 border border-rose-600/40 text-rose-400 text-[10px] font-bold animate-pulse shrink-0">
+                              <span>🔥 {streak2} {rootT('common.streak', 'Qələbə Seriyası')}</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-4 flex items-baseline justify-between">
+                          <div className="font-mono text-2xl font-extrabold text-slate-100 flex items-baseline gap-1">
+                            <NumberTicker
+                              value={top3[1].current_elo}
+                              startValue={Math.min(500, top3[1].current_elo)}
+                              durationMs={850}
+                            />
+                            <span className="text-xs text-slate-300 font-sans">ELO</span>
+                          </div>
+                          <span className="text-xs text-emerald-400 font-semibold">
+                            {top3[1].matches_played > 0
+                              ? Math.round((top3[1].wins / top3[1].matches_played) * 100)
+                              : 0}% {t('table_headers.win_rate')}
                           </span>
                         </div>
-                        <span className="font-mono text-xs text-emerald-400 font-semibold tabular-nums">
-                          {winRate2}% {t('table_headers.win_rate')}
-                        </span>
-                      </div>
 
-                      <div className="space-y-2.5">
-                        <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-slate-300"
-                            style={{ width: `${winRate2}%` }}
-                          />
-                        </div>
-                        <div className="pt-2 border-t border-[var(--border-hairline)] text-[11px] font-mono tabular-nums text-slate-400 flex justify-between">
-                          <span>
-                            {t('table_headers.matches')}: {top3[1].matches_played}
-                          </span>
-                          <span>
-                            <span className="text-emerald-400 font-semibold">{top3[1].wins}W</span>
-                            {' – '}
-                            <span className="text-rose-400 font-semibold">{top3[1].losses}L</span>
-                          </span>
+                        <div className="mt-4 pt-3 border-t border-slate-400/20 text-[11px] text-slate-300/90 flex justify-between">
+                          <span>{t('table_headers.matches')}: {top3[1].matches_played}</span>
+                          <span>{top3[1].wins}W - {top3[1].losses}L</span>
                         </div>
                       </div>
-                    </div>
+                    </HoloCard>
                   </div>
+                  <div
+                    aria-hidden="true"
+                    className="w-3/4 h-3 mt-3 rounded-full bg-slate-950/90 blur-md animate-shadow-second pointer-events-none"
+                  />
                 </motion.div>
               );
             })()}
 
-            {/* #1 Championship Gold */}
             {top3[0] && (() => {
               const streak1 = getActiveWinStreak(top3[0]);
-              const winRate1 =
-                top3[0].matches_played > 0
-                  ? Math.round((top3[0].wins / top3[0].matches_played) * 100)
-                  : 0;
-
               return (
                 <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{ duration: 0.34, delay: 0.02, ease: EDITORIAL_EASE }}
-                  className="order-1 md:order-2 md:-translate-y-2"
+                  initial={{ opacity: 0, y: 44, scale: 0.92 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 250, damping: 18, delay: 0.32 }}
+                  className="order-1 md:order-2 flex flex-col items-center md:-translate-y-3"
                 >
-                  <div className="relative rounded-2xl border border-amber-400/55 bg-[var(--bg-surface)] p-6 sm:p-7 transition-all duration-200 hover:border-amber-400/85 hover:-translate-y-1 shadow-2xl shadow-black/50">
-                    <div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute top-0 inset-x-4 h-[2px] bg-gradient-to-r from-transparent via-amber-400 to-transparent"
-                    />
-                    <div className="h-9 min-w-[4.5rem] px-3.5 gap-1.5 rounded-full bg-amber-400 text-slate-950 font-display font-black text-base leading-none flex items-center justify-center absolute -top-[18px] left-1/2 -translate-x-1/2 shadow-md ring-4 ring-[#070A11] z-20">
-                      <Crown className="w-4 h-4 stroke-[2.5] shrink-0" />
-                      <span className="tabular-nums">#1</span>
-                    </div>
+                  <div className="w-full animate-podium-champion">
+                    <HoloCard className="rounded-3xl border-2 border-amber-500/80 bg-slate-900 p-7 shadow-md relative group hover:border-amber-400 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 will-change-transform">
+                      <div
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-0 rounded-3xl overflow-hidden z-10"
+                      >
+                        <div className="animate-champion-shimmer absolute inset-y-0 w-1/3 bg-gradient-to-r from-transparent via-amber-400/15 to-transparent" />
+                      </div>
 
-                    <div className="pt-3 text-center space-y-4">
-                      <div className="space-y-1.5">
-                        <div className="flex flex-wrap items-center justify-center gap-1.5">
-                          <span className="px-2.5 py-0.5 rounded-md bg-amber-400/12 text-amber-300 text-[10px] font-semibold uppercase tracking-[0.08em] border border-amber-400/30">
-                            {rootT(`roles.${top3[0].role}`)}
-                          </span>
+                      <div className="h-11 min-w-[4.25rem] px-3.5 gap-1.5 rounded-full bg-amber-400 text-slate-950 flex items-center justify-center font-display font-black text-lg leading-none absolute -top-5 left-1/2 -translate-x-1/2 shadow-md ring-4 ring-slate-950/80 z-30">
+                        <span className="animate-crown-bob text-base leading-none">👑</span>
+                        <span>1</span>
+                      </div>
+                      <div className="pt-4 text-center relative z-20">
+                        <div className="flex flex-wrap items-center justify-center gap-1.5 mb-2">
+                          <div className="inline-block px-3 py-0.5 rounded-full bg-amber-500/15 text-amber-300 text-[10px] font-bold uppercase tracking-wider border border-amber-500/30">
+                            {rootT(`roles.${top3[0].role}`)} • #1
+                          </div>
                           {streak1 >= 3 && (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[10px] font-semibold tabular-nums">
-                              <Flame className="w-3 h-3 text-rose-400" />
-                              <span>
-                                {streak1} {rootT('common.streak', 'Qələbə Seriyası')}
-                              </span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-rose-600/15 border border-rose-600/40 text-rose-400 text-[10px] font-bold animate-pulse">
+                              <span>🔥 {streak1} {rootT('common.streak', 'Qələbə Seriyası')}</span>
                             </span>
                           )}
                         </div>
-
                         <Link
                           href={getPlayerHref(top3[0].id)}
-                          className="block font-display font-black text-2xl sm:text-[1.65rem] text-white hover:text-amber-300 transition-colors tracking-tight"
+                          className="block font-display font-black text-xl text-white hover:text-blue-400 transition"
                         >
                           {top3[0].full_name}
                         </Link>
-                        <p className="text-xs text-slate-400">
-                          {translateFaculty(top3[0].major_faculty)}
-                        </p>
-                      </div>
-
-                      <div className="font-display text-4xl sm:text-[2.6rem] font-black text-amber-400 tabular-nums leading-none flex items-baseline justify-center gap-1.5">
-                        <NumberTicker
-                          value={top3[0].current_elo}
-                          startValue={Math.min(500, top3[0].current_elo)}
-                          durationMs={750}
-                        />
-                        <span className="text-xs font-mono font-semibold text-slate-300 tracking-wider">
-                          ELO
-                        </span>
-                      </div>
-
-                      <div className="space-y-2.5">
-                        <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-amber-400"
-                            style={{ width: `${winRate1}%` }}
+                        <p className="text-xs text-slate-400">{translateFaculty(top3[0].major_faculty)}</p>
+                        <div className="mt-4 font-mono text-3xl font-black text-amber-400 flex items-baseline justify-center gap-1">
+                          <NumberTicker
+                            value={top3[0].current_elo}
+                            startValue={Math.min(500, top3[0].current_elo)}
+                            durationMs={850}
                           />
+                          <span className="text-xs text-slate-300 font-sans">ELO</span>
                         </div>
-                        <div className="text-xs font-mono tabular-nums text-emerald-400 font-semibold">
-                          {winRate1}% {t('table_headers.win_rate')} ({top3[0].wins}W – {top3[0].losses}L)
+                        <div className="mt-2 text-xs text-emerald-500 font-semibold">
+                          {top3[0].matches_played > 0
+                            ? Math.round((top3[0].wins / top3[0].matches_played) * 100)
+                            : 0}% {t('table_headers.win_rate')} ({top3[0].wins}W - {top3[0].losses}L)
                         </div>
-                        <div className="pt-2.5 border-t border-[var(--border-hairline)] text-[11px] text-slate-400 flex justify-center">
+                        <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-center">
                           <span>
-                            {top3[0].user_type === 'teacher' ||
-                            top3[0].user_type === 'staff' ||
-                            top3[0].role === 'coach' ||
-                            !top3[0].admission_year
+                            {top3[0].user_type === 'teacher' || top3[0].user_type === 'staff' || top3[0].role === 'coach' || !top3[0].admission_year
                               ? rootT('roles.staff_badge')
                               : `${top3[0].admission_year} ${rootT('roles.admission_suffix')}`}
                           </span>
                         </div>
                       </div>
-                    </div>
+                    </HoloCard>
                   </div>
+                  <div
+                    aria-hidden="true"
+                    className="w-4/5 h-3.5 mt-3.5 rounded-full bg-amber-500/20 blur-md animate-shadow-champion pointer-events-none"
+                  />
                 </motion.div>
               );
             })()}
 
-            {/* #3 Bronze */}
             {top3[2] && (() => {
               const streak3 = getActiveWinStreak(top3[2]);
-              const winRate3 =
-                top3[2].matches_played > 0
-                  ? Math.round((top3[2].wins / top3[2].matches_played) * 100)
-                  : 0;
 
               return (
                 <motion.div
-                  initial={{ opacity: 0, y: 12 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-40px' }}
-                  transition={{ duration: 0.34, delay: 0.08, ease: EDITORIAL_EASE }}
-                  className="order-3"
+                  initial={{ opacity: 0, y: 36, scale: 0.94 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  transition={{ type: 'spring', stiffness: 260, damping: 20, delay: 0.05 }}
+                  className="order-3 flex flex-col items-center"
                 >
-                  <div className="relative rounded-2xl border border-amber-700/45 bg-[var(--bg-surface)] p-5 sm:p-6 transition-all duration-200 hover:border-amber-600/75 hover:-translate-y-1 shadow-lg shadow-black/30">
-                    <div
-                      aria-hidden="true"
-                      className="pointer-events-none absolute top-0 inset-x-4 h-[2px] bg-gradient-to-r from-transparent via-amber-600/75 to-transparent"
-                    />
-                    <div className="h-8 px-3 gap-1.5 rounded-full bg-amber-700 text-amber-100 border border-amber-500/40 font-display font-black text-sm leading-none flex items-center justify-center absolute -top-4 left-5 ring-4 ring-[#070A11] z-20">
-                      <Medal className="w-3.5 h-3.5 stroke-[2.5]" />
-                      <span className="tabular-nums">#3</span>
-                    </div>
-
-                    <div className="pt-2 space-y-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0">
-                          <Link
-                            href={getPlayerHref(top3[2].id)}
-                            className="block font-display font-extrabold text-xl text-white hover:text-amber-300 transition-colors truncate"
-                          >
-                            {top3[2].full_name}
-                          </Link>
-                          <p className="text-xs text-slate-400 truncate mt-0.5">
-                            {translateFaculty(top3[2].major_faculty)}
-                          </p>
-                        </div>
-                        {streak3 >= 3 && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-500/10 border border-rose-500/30 text-rose-300 text-[10px] font-semibold shrink-0 tabular-nums">
-                            <Flame className="w-3 h-3 text-rose-400" />
-                            <span>{streak3}</span>
-                          </span>
-                        )}
+                  <div className="w-full animate-podium-third">
+                    <HoloCard className="rounded-3xl border border-amber-800/80 bg-slate-900 p-6 shadow-sm relative group hover:border-amber-500/80 hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 will-change-transform">
+                      <div className="w-10 h-10 rounded-full bg-amber-800 text-amber-200 border-2 border-amber-600 flex items-center justify-center font-display font-black text-base absolute -top-4 right-6 shadow-sm z-30">
+                        3
                       </div>
-
-                      <div className="flex items-baseline justify-between gap-2">
-                        <div className="font-display text-3xl font-black text-white tabular-nums leading-none flex items-baseline gap-1.5">
-                          <NumberTicker
-                            value={top3[2].current_elo}
-                            startValue={Math.min(500, top3[2].current_elo)}
-                            durationMs={750}
-                          />
-                          <span className="text-[11px] font-mono font-semibold text-slate-400 tracking-wider">
-                            ELO
+                      <div className="pt-2 relative z-10">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <Link
+                              href={getPlayerHref(top3[2].id)}
+                              className="font-display font-bold text-base text-white hover:text-blue-400 transition"
+                            >
+                              {top3[2].full_name}
+                            </Link>
+                            <p className="text-xs text-slate-400">{translateFaculty(top3[2].major_faculty)}</p>
+                          </div>
+                          {streak3 >= 3 && (
+                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-rose-600/15 border border-rose-600/40 text-rose-400 text-[10px] font-bold animate-pulse shrink-0">
+                              <span>🔥 {streak3} {rootT('common.streak', 'Qələbə Seriyası')}</span>
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-4 flex items-baseline justify-between">
+                          <div className="font-mono text-2xl font-extrabold text-white flex items-baseline gap-1">
+                            <NumberTicker
+                              value={top3[2].current_elo}
+                              startValue={Math.min(500, top3[2].current_elo)}
+                              durationMs={850}
+                            />
+                            <span className="text-xs text-slate-400 font-sans">ELO</span>
+                          </div>
+                          <span className="text-xs text-emerald-500 font-semibold">
+                            {top3[2].matches_played > 0
+                              ? Math.round((top3[2].wins / top3[2].matches_played) * 100)
+                              : 0}% {t('table_headers.win_rate')}
                           </span>
                         </div>
-                        <span className="font-mono text-xs text-emerald-400 font-semibold tabular-nums">
-                          {winRate3}% {t('table_headers.win_rate')}
-                        </span>
-                      </div>
 
-                      <div className="space-y-2.5">
-                        <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-amber-600"
-                            style={{ width: `${winRate3}%` }}
-                          />
-                        </div>
-                        <div className="pt-2 border-t border-[var(--border-hairline)] text-[11px] font-mono tabular-nums text-slate-400 flex justify-between">
-                          <span>
-                            {t('table_headers.matches')}: {top3[2].matches_played}
-                          </span>
-                          <span>
-                            <span className="text-emerald-400 font-semibold">{top3[2].wins}W</span>
-                            {' – '}
-                            <span className="text-rose-400 font-semibold">{top3[2].losses}L</span>
-                          </span>
+                        <div className="mt-4 pt-3 border-t border-slate-800 text-[11px] text-slate-400 flex justify-between">
+                          <span>{t('table_headers.matches')}: {top3[2].matches_played}</span>
+                          <span>{top3[2].wins}W - {top3[2].losses}L</span>
                         </div>
                       </div>
-                    </div>
+                    </HoloCard>
                   </div>
+                  <div
+                    aria-hidden="true"
+                    className="w-3/4 h-3 mt-3 rounded-full bg-slate-950/90 blur-md animate-shadow-third pointer-events-none"
+                  />
                 </motion.div>
               );
             })()}
           </div>
 
-          {/* Top-5 Compact Standings Table */}
           {top5.length === 0 ? (
-            <div className="rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-hairline)] overflow-hidden">
+            <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-sm">
               <LeaderboardSkeleton rows={5} />
             </div>
           ) : (
-            <div className="rounded-2xl bg-[var(--bg-surface)] border border-[var(--border-hairline)] overflow-hidden">
+            <div className="rounded-2xl bg-slate-900 border border-slate-800 overflow-hidden shadow-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-[var(--border-hairline)] bg-[#070A11]/85 text-[10px] uppercase tracking-[0.08em] font-semibold text-slate-400">
-                      <th className="py-3 px-4 w-16">{t('table_headers.rank')}</th>
+                    <tr className="border-b border-slate-800 bg-slate-950 text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                      <th className="py-3 px-4">{t('table_headers.rank')}</th>
                       <th className="py-3 px-4">{t('table_headers.player')}</th>
                       <th className="py-3 px-4 hidden sm:table-cell">{t('table_headers.faculty')}</th>
                       <th className="py-3 px-4 text-right">{t('table_headers.points')}</th>
@@ -493,39 +428,18 @@ export default function HomePage() {
                       <th className="py-3 px-4 text-right">{t('table_headers.win_rate')}</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-[var(--border-hairline)] text-xs">
+                  <tbody className="divide-y divide-slate-800 text-xs">
                     {top5.map((p, idx) => {
-                      const rank = idx + 1;
-                      const winRate =
-                        p.matches_played > 0 ? Math.round((p.wins / p.matches_played) * 100) : 0;
+                      const winRate = p.matches_played > 0 ? Math.round((p.wins / p.matches_played) * 100) : 0;
                       return (
-                        <tr
-                          key={p.id}
-                          className={`transition-colors ${
-                            rank === 1
-                              ? 'bg-amber-400/[0.03] hover:bg-amber-400/[0.06]'
-                              : 'hover:bg-white/[0.03]'
-                          }`}
-                        >
-                          <td className="py-3 px-4 font-mono tabular-nums font-bold">
-                            <span
-                              className={`inline-flex items-center justify-center w-6 h-6 rounded-md text-[11px] font-bold ${
-                                rank === 1
-                                  ? 'bg-amber-400 text-slate-950'
-                                  : rank === 2
-                                  ? 'bg-slate-300 text-slate-950'
-                                  : rank === 3
-                                  ? 'bg-amber-700 text-amber-100'
-                                  : 'bg-white/[0.05] text-slate-300'
-                              }`}
-                            >
-                              {rank}
-                            </span>
+                        <tr key={p.id} className="hover:bg-slate-800/60 transition-all">
+                          <td className="py-3 px-4 font-mono font-bold text-slate-400">
+                            #{idx + 1}
                           </td>
                           <td className="py-3 px-4">
                             <Link
                               href={getPlayerHref(p.id)}
-                              className="font-semibold text-white hover:text-blue-400 transition-colors"
+                              className="font-semibold text-white hover:text-blue-400 transition"
                             >
                               {p.full_name}
                             </Link>
@@ -533,13 +447,13 @@ export default function HomePage() {
                           <td className="py-3 px-4 text-slate-400 hidden sm:table-cell">
                             {translateFaculty(p.major_faculty)}
                           </td>
-                          <td className="py-3 px-4 text-right font-display text-base font-black tabular-nums text-white">
+                          <td className="py-3 px-4 text-right font-mono font-bold text-blue-400">
                             <AnimatedCounter value={p.current_elo} />
                           </td>
-                          <td className="py-3 px-4 text-right font-mono tabular-nums text-slate-300 hidden md:table-cell">
-                            {p.matches_played} ({p.wins}W–{p.losses}L)
+                          <td className="py-3 px-4 text-right font-mono text-slate-300 hidden md:table-cell">
+                            {p.matches_played} ({p.wins}W-{p.losses}L)
                           </td>
-                          <td className="py-3 px-4 text-right font-mono tabular-nums font-semibold text-emerald-400">
+                          <td className="py-3 px-4 text-right font-mono font-semibold text-emerald-500">
                             {winRate}%
                           </td>
                         </tr>
@@ -548,13 +462,13 @@ export default function HomePage() {
                   </tbody>
                 </table>
               </div>
-              <div className="px-4 py-3 border-t border-[var(--border-hairline)] bg-[#070A11]/60 flex justify-end">
+              <div className="px-4 py-3 border-t border-slate-800 bg-slate-950/60 flex justify-end">
                 <Link
                   href="/leaderboard"
-                  className="group text-xs font-semibold text-blue-400 hover:text-blue-300 hover:underline inline-flex items-center gap-1"
+                  className="group text-xs font-semibold text-blue-400 hover:underline inline-flex items-center gap-1"
                 >
                   <span>{t('sections.view_all_leaderboard')}</span>
-                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-150 group-hover:translate-x-0.5" />
+                  <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
                 </Link>
               </div>
             </div>
@@ -562,7 +476,7 @@ export default function HomePage() {
         </section>
       </SmoothReveal>
 
-      <SmoothReveal delay={0.04}>
+      <SmoothReveal delay={0.05}>
         <div className="w-full">
           <ArcadeDiscoveryBanner />
         </div>
@@ -572,43 +486,49 @@ export default function HomePage() {
         <HallRulesSection showGuideLink />
       </section>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-7">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2">
           <RecentResults matches={matches} onSelectMatch={(m) => setSelectedMatch(m)} />
         </div>
 
-        <SmoothReveal delay={0.05} className="space-y-4">
-          <div className="space-y-0.5">
-            <h3 className="font-display text-xl font-black uppercase tracking-tight text-white flex items-center gap-2">
-              <Trophy className="w-5 h-5 text-amber-400" />
-              <span>{t('sections.tournament_title')}</span>
-            </h3>
-            <p className="text-[11px] text-slate-400">{t('sections.tournament_subtitle')}</p>
+        <SmoothReveal delay={0.1} scale className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-display font-bold text-white flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-400" />
+                  <span>{t('sections.tournament_title')}</span>
+                </h3>
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {t('sections.tournament_subtitle')}
+              </p>
+            </div>
           </div>
 
           <div className="space-y-3">
-            <div className="p-5 rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] hover:border-[var(--border-strong)] transition-colors space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[10px] px-2 py-0.5 rounded-md font-semibold uppercase tracking-wider bg-blue-500/15 text-blue-300 border border-blue-500/25">
+            <TiltCard className="p-5 rounded-2xl border border-slate-800 bg-slate-900 hover:border-blue-600/40 transition shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase bg-blue-700/20 text-blue-300 border border-blue-600/30">
                   {t('tournament_card.status_badge')}
                 </span>
-                <span className="text-[11px] text-slate-400 font-mono tabular-nums">
+                <span className="text-[11px] text-slate-400 font-mono">
                   {t('tournament_card.date_range')}
                 </span>
               </div>
 
               <Link
                 href="/tournaments"
-                className="block font-display font-extrabold text-lg text-white hover:text-blue-400 transition-colors"
+                className="block font-display font-bold text-base text-white hover:text-blue-400 transition"
               >
                 {t('tournament_card.title')}
               </Link>
 
-              <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
+              <p className="text-xs text-slate-400 line-clamp-2">
                 {t('tournament_card.desc')}
               </p>
 
-              <div className="pt-2.5 border-t border-[var(--border-hairline)] flex items-center justify-between">
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                 <Link
                   href="/tournaments"
                   className="text-xs text-blue-400 font-semibold hover:underline flex items-center gap-1"
@@ -620,32 +540,31 @@ export default function HomePage() {
                   {t('tournament_card.cta')}
                 </span>
               </div>
-            </div>
+            </TiltCard>
 
-            {/* BHOS Arcade Sidebar Card */}
-            <div className="p-5 rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] hover:border-rose-500/35 transition-colors space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <span className="inline-flex items-center gap-1.5 text-[10px] px-2 py-0.5 rounded-md font-semibold uppercase tracking-wider bg-rose-500/10 text-rose-300 border border-rose-500/25">
-                  <Gamepad2 className="w-3 h-3 text-rose-400" />
-                  <span>{rootT('arcade.discovery_tag', 'BHOS Arcade • Sonsuz Ralli')}</span>
+            {/* BHOS Arcade Discovery Card */}
+            <TiltCard className="p-5 rounded-2xl border border-rose-500/25 bg-gradient-to-b from-slate-900 via-slate-900 to-rose-950/20 hover:border-rose-500/40 transition shadow-sm space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] px-2.5 py-0.5 rounded-full font-bold uppercase bg-rose-600/20 text-rose-300 border border-rose-500/30">
+                  {rootT('arcade.discovery_tag', '🏓 BHOS Arcade • Sonsuz Ralli')}
+                </span>
+                <span className="text-[11px] text-amber-400 font-mono font-semibold flex items-center gap-1">
+                  <span>{rootT('arcade.infinity_badge', '♾️ Sonsuz Ralli')}</span>
                 </span>
               </div>
 
               <Link
                 href="/minigame"
-                className="block font-display font-extrabold text-lg text-white hover:text-rose-400 transition-colors"
+                className="block font-display font-bold text-base text-white hover:text-rose-400 transition"
               >
                 {rootT('arcade.title', 'Masaüstü Ralli')}
               </Link>
 
-              <p className="text-xs text-slate-400 line-clamp-2 leading-relaxed">
-                {rootT(
-                  'arcade.discovery_desc',
-                  'Bot rəqiblə sonsuz rallidə reflekslərini sına, sürətlənən topu masada saxla və BANM liderlər lövhəsində 1-ci pilləyə yüksəl!'
-                )}
+              <p className="text-xs text-slate-400 line-clamp-2">
+                {rootT('arcade.discovery_desc', 'Bot rəqiblə sonsuz rallidə reflekslərini sına, sürətlənən topu masada saxla və BANM liderlər lövhəsində 1-ci pilləyə yüksəl!')}
               </p>
 
-              <div className="pt-2.5 border-t border-[var(--border-hairline)] flex items-center justify-between">
+              <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                 <Link
                   href="/minigame"
                   className="text-xs text-rose-400 font-semibold hover:underline flex items-center gap-1"
@@ -657,43 +576,40 @@ export default function HomePage() {
                   {rootT('arcade.online_ranking', 'Online Reytinq')}
                 </span>
               </div>
-            </div>
+            </TiltCard>
           </div>
         </SmoothReveal>
       </div>
 
-      {/* Institutional About Section */}
-      <SmoothReveal delay={0.05}>
-        <section id="about" className="pt-8 border-t border-[var(--border-hairline)] scroll-mt-24">
-          <div className="rounded-2xl border border-[var(--border-hairline)] bg-[var(--bg-surface)] p-6 sm:p-9 relative overflow-hidden">
-            <div className="max-w-4xl space-y-5 relative z-10">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-md border border-[var(--border-hairline)] bg-[#070A11]/70 text-slate-300 text-xs font-semibold">
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+      <SmoothReveal delay={0.12}>
+        <section id="about" className="pt-8 border-t border-slate-800 scroll-mt-28 space-y-6">
+          <div className="rounded-3xl border border-slate-800 bg-slate-900 p-8 sm:p-10 shadow-sm relative overflow-hidden">
+            <div className="max-w-3xl space-y-4 relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-blue-600/30 bg-blue-700/15 text-blue-300 text-xs font-semibold">
+                <ShieldCheck className="w-3.5 h-3.5" />
                 <span>{rootT('brand.title')}</span>
               </div>
-              <div className="space-y-2">
-                <h2 className="font-display text-2xl sm:text-3xl font-black uppercase text-white tracking-tight">
-                  {t('about.title')}
-                </h2>
-                <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-3xl">
-                  {t('about.desc')}
-                </p>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 rounded-xl border border-[var(--border-hairline)] bg-[#070A11]/60 divide-y sm:divide-y-0 sm:divide-x divide-[var(--border-hairline)] overflow-hidden">
-                <div className="p-4 sm:p-5 space-y-1.5">
-                  <Target className="w-4 h-4 text-blue-400" />
+              <h2 className="text-2xl sm:text-3xl font-display font-black text-white tracking-tight">
+                {t('about.title')}
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+                {t('about.desc')}
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                  <Target className="w-5 h-5 text-blue-400" />
                   <h4 className="font-bold text-white text-xs">{t('about.card1_title')}</h4>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">{t('about.card1_desc')}</p>
+                  <p className="text-[11px] text-slate-400">{t('about.card1_desc')}</p>
                 </div>
-                <div className="p-4 sm:p-5 space-y-1.5">
-                  <Flame className="w-4 h-4 text-rose-500" />
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                  <Flame className="w-5 h-5 text-rose-500" />
                   <h4 className="font-bold text-white text-xs">{t('about.card2_title')}</h4>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">{t('about.card2_desc')}</p>
+                  <p className="text-[11px] text-slate-400">{t('about.card2_desc')}</p>
                 </div>
-                <div className="p-4 sm:p-5 space-y-1.5">
-                  <Trophy className="w-4 h-4 text-amber-400" />
+                <div className="p-4 rounded-2xl bg-slate-950 border border-slate-800 space-y-1">
+                  <Trophy className="w-5 h-5 text-emerald-500" />
                   <h4 className="font-bold text-white text-xs">{t('about.card3_title')}</h4>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">{t('about.card3_desc')}</p>
+                  <p className="text-[11px] text-slate-400">{t('about.card3_desc')}</p>
                 </div>
               </div>
             </div>
@@ -701,7 +617,9 @@ export default function HomePage() {
         </section>
       </SmoothReveal>
 
-      {showMatchModal && <MatchLoggerModal onClose={() => setShowMatchModal(false)} />}
+      {showMatchModal && (
+        <MatchLoggerModal onClose={() => setShowMatchModal(false)} />
+      )}
       {selectedMatch && (
         <MatchDetailModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />
       )}

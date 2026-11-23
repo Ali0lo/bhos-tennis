@@ -10,30 +10,22 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        canvas: "var(--bg-canvas)",
-        surface: "var(--bg-surface)",
-        elevated: "var(--bg-elevated)",
-        hairline: "var(--border-hairline)",
         bhos: {
-          navy: "#070A11",
-          midnight: "#0D121E",
-          darkCard: "#0D121E",
+          navy: "#0B0F19",
+          midnight: "#0F172A",
+          darkCard: "#0F172A",
           border: "#1E293B",
           cyan: "#1D4ED8",
           cyanGlow: "#2563EB",
-          blue: "#2563EB",
-          gold: "#F59E0B",
-          emerald: "#10B981",
+          blue: "#1D4ED8",
+          gold: "#D97706",
+          emerald: "#059669",
           crimson: "#E11D48",
         },
       },
       fontFamily: {
-        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
-        display: ["var(--font-display)", "var(--font-sans)", "system-ui", "sans-serif"],
-        mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
-      },
-      letterSpacing: {
-        editorial: "-0.02em",
+        sans: ["var(--font-inter)", "system-ui", "sans-serif"],
+        display: ["var(--font-inter)", "system-ui", "sans-serif"],
       },
     },
   },
