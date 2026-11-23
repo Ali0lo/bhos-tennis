@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Golos_Text, Sofia_Sans_Condensed, JetBrains_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
 import './globals.css';
 import Navbar from '../components/Navbar';
@@ -7,14 +7,26 @@ import Footer from '../components/Footer';
 import PWARegistration from '../components/PWARegistration';
 import { I18nProvider, Locale } from '../lib/i18n';
 
-const inter = Inter({
-  subsets: ['latin', 'latin-ext'],
-  variable: '--font-inter',
+const golos = Golos_Text({
+  subsets: ['latin', 'latin-ext', 'cyrillic'],
+  variable: '--font-sans',
+  display: 'swap',
+});
+
+const sofiaCondensed = Sofia_Sans_Condensed({
+  subsets: ['latin', 'latin-ext', 'cyrillic'],
+  variable: '--font-display',
+  display: 'swap',
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin', 'latin-ext', 'cyrillic'],
+  variable: '--font-mono',
   display: 'swap',
 });
 
 export const viewport: Viewport = {
-  themeColor: '#0B0F19',
+  themeColor: '#070A11',
   width: 'device-width',
   initialScale: 1,
 };
@@ -87,8 +99,11 @@ export default function RootLayout({
   const initialLocale: Locale = rawLocale === 'en' || rawLocale === 'ru' ? rawLocale : 'az';
 
   return (
-    <html lang={initialLocale} className={`dark ${inter.variable}`}>
-      <body className={`${inter.className} font-sans min-h-screen flex flex-col bg-slate-950 text-slate-100 antialiased selection:bg-blue-700 selection:text-white`}>
+    <html
+      lang={initialLocale}
+      className={`dark ${golos.variable} ${sofiaCondensed.variable} ${jetbrainsMono.variable}`}
+    >
+      <body className="font-sans min-h-screen flex flex-col bg-[var(--bg-canvas)] text-[var(--text-primary)] antialiased">
         <I18nProvider initialLocale={initialLocale}>
           <PWARegistration />
           <Navbar />

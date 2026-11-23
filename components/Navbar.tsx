@@ -24,6 +24,7 @@ import {
   LogOut,
   Settings,
   Search,
+  Gamepad2,
 } from 'lucide-react';
 import MatchLoggerModal from './MatchLoggerModal';
 import EditProfileModal from './EditProfileModal';
@@ -92,6 +93,7 @@ export default function Navbar() {
     href: string;
     label: string;
     showBadge?: boolean;
+    isArcade?: boolean;
   }
 
   const primaryNavLinks: NavLinkItem[] = [
@@ -99,7 +101,7 @@ export default function Navbar() {
     { href: '/matches', label: matchesLabel, showBadge: true },
     { href: '/tournaments', label: tournamentsLabel },
     { href: '/challenges', label: challengesLabel },
-    { href: '/minigame', label: `🏓 ${miniGameLabel}` },
+    { href: '/minigame', label: miniGameLabel, isArcade: true },
   ];
 
   const moreNavLinks: { href: string; label: string }[] = [
@@ -112,7 +114,7 @@ export default function Navbar() {
     { href: '/matches', label: matchesLabel, showBadge: true },
     { href: '/tournaments', label: tournamentsLabel },
     { href: '/challenges', label: challengesLabel },
-    { href: '/minigame', label: `🏓 ${miniGameLabel}` },
+    { href: '/minigame', label: miniGameLabel, isArcade: true },
     { href: '/tables', label: tablesLabel },
     { href: '/#about', label: aboutLabel },
     ...(canAccessAdminPanel(currentUser)
@@ -145,7 +147,7 @@ export default function Navbar() {
     <>
       <header
         ref={navRef}
-        className="sticky top-0 z-50 w-full border-b border-slate-800/80 bg-slate-950/85 backdrop-blur-md supports-[backdrop-filter]:bg-slate-950/75"
+        className="sticky top-0 z-50 w-full border-b border-[var(--border-hairline)] bg-[var(--bg-glass)] backdrop-blur-md"
       >
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 relative flex items-center justify-between flex-nowrap gap-3">
           {/* Left Zone: Brand + Navigation Links */}
@@ -153,7 +155,7 @@ export default function Navbar() {
             <Link
               href="/"
               aria-label="BHOS Table Tennis"
-              className="group flex items-center justify-center w-9 h-9 rounded-full bg-blue-700/15 border border-blue-600/40 hover:scale-105 transition-transform shrink-0"
+              className="group flex items-center justify-center w-9 h-9 rounded-full bg-white/[0.04] border border-[var(--border-strong)] hover:border-white/40 transition-colors shrink-0"
             >
               <img
                 src="/images/bhos-crest.png"
@@ -170,20 +172,20 @@ export default function Navbar() {
                 setUserDropdownOpen(false);
                 setMoreDropdownOpen(false);
               }}
-              className="relative lg:hidden inline-flex items-center justify-center h-8 w-8 rounded-full border border-slate-700 bg-slate-800 text-slate-300 hover:text-white transition shrink-0"
+              className="relative lg:hidden inline-flex items-center justify-center h-8 w-8 rounded-lg border border-[var(--border-hairline)] bg-[var(--bg-surface)] text-slate-300 hover:text-white transition-colors shrink-0"
             >
               {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
               {pendingMatchesCount > 0 && (
                 <span className="absolute -top-1 -right-1 flex h-4 min-w-[1rem] items-center justify-center">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                  <span className="relative inline-flex items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-black text-white h-4 min-w-[1rem]">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E11D48] opacity-75" />
+                  <span className="relative inline-flex items-center justify-center rounded-full bg-[#E11D48] px-1 text-[9px] font-black text-white h-4 min-w-[1rem] tabular-nums">
                     {pendingMatchesCount}
                   </span>
                 </span>
               )}
             </button>
 
-            <nav className="hidden lg:flex items-center gap-3 xl:gap-3.5 text-xs font-medium shrink-0 pl-1">
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 text-xs font-medium shrink-0 pl-1">
               {primaryNavLinks.map((link) => {
                 const isActive = pathname === link.href;
                 const hasBadge = link.showBadge && pendingMatchesCount > 0;
@@ -191,15 +193,20 @@ export default function Navbar() {
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`relative inline-flex items-center gap-1.5 whitespace-nowrap transition ${
-                      isActive ? 'text-white font-semibold' : 'text-slate-300 hover:text-white'
+                    className={`relative inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
+                      isActive
+                        ? 'text-white font-semibold bg-white/[0.06] after:content-[""] after:absolute after:inset-x-2.5 after:-bottom-[17px] after:h-[2px] after:rounded-full after:bg-[#E11D48]'
+                        : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
                     }`}
                   >
+                    {link.isArcade && (
+                      <Gamepad2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                    )}
                     <span>{link.label}</span>
                     {hasBadge && (
                       <span className="relative flex h-4 min-w-[1rem] items-center justify-center">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                        <span className="relative inline-flex items-center justify-center rounded-full bg-rose-600 px-1 text-[9px] font-black text-white h-4 min-w-[1rem]">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E11D48] opacity-75" />
+                        <span className="relative inline-flex items-center justify-center rounded-full bg-[#E11D48] px-1 text-[9px] font-black text-white h-4 min-w-[1rem] tabular-nums">
                           {pendingMatchesCount}
                         </span>
                       </span>
@@ -216,10 +223,10 @@ export default function Navbar() {
                     setMoreDropdownOpen((prev) => !prev);
                     setUserDropdownOpen(false);
                   }}
-                  className={`inline-flex items-center gap-1 whitespace-nowrap transition ${
+                  className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg whitespace-nowrap transition-colors ${
                     moreNavLinks.some((l) => pathname === l.href)
-                      ? 'text-white font-semibold'
-                      : 'text-slate-300 hover:text-white'
+                      ? 'text-white font-semibold bg-white/[0.06]'
+                      : 'text-slate-300 hover:text-white hover:bg-white/[0.04]'
                   }`}
                 >
                   <span>{moreLabel}</span>
@@ -227,13 +234,13 @@ export default function Navbar() {
                 </button>
 
                 {moreDropdownOpen && (
-                  <div className="absolute left-0 mt-2.5 w-48 rounded-xl border border-slate-800 bg-slate-900 p-1.5 shadow-xl z-50">
+                  <div className="absolute left-0 mt-2.5 w-48 rounded-xl border border-[var(--border-strong)] bg-[var(--bg-surface)] p-1.5 shadow-2xl shadow-black/60 z-50">
                     {moreNavLinks.map((item) => (
                       <Link
                         key={item.href}
                         href={item.href}
                         onClick={() => setMoreDropdownOpen(false)}
-                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition whitespace-nowrap"
+                        className="block px-3 py-2 rounded-lg text-xs font-medium text-slate-300 hover:text-white hover:bg-white/[0.06] transition-colors whitespace-nowrap"
                       >
                         {item.label}
                       </Link>
@@ -243,7 +250,7 @@ export default function Navbar() {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => setMoreDropdownOpen(false)}
-                      className="mt-1 pt-2 border-t border-slate-800 flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-slate-800 transition whitespace-nowrap"
+                      className="mt-1 pt-2 border-t border-[var(--border-hairline)] flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-emerald-400 hover:text-emerald-300 hover:bg-white/[0.06] transition-colors whitespace-nowrap"
                     >
                       <MessageCircle className="w-3.5 h-3.5 shrink-0" />
                       <span>{t('nav.join_whatsapp') || 'WhatsApp'}</span>
@@ -266,13 +273,13 @@ export default function Navbar() {
                 setMobileMenuOpen(false);
               }}
               aria-label={t('nav.search_placeholder', 'Oyunçu axtar...')}
-              className="inline-flex items-center gap-2 h-8 px-2.5 sm:px-3 rounded-full bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20 text-xs text-slate-400 hover:text-slate-200 transition shrink-0"
+              className="inline-flex items-center gap-2 h-8 px-2.5 sm:px-3 rounded-full bg-white/[0.04] border border-[var(--border-hairline)] hover:bg-white/[0.08] hover:border-[var(--border-strong)] text-xs text-slate-400 hover:text-slate-100 transition-colors shrink-0"
             >
               <Search className="w-3.5 h-3.5 text-slate-400 shrink-0" />
               <span className="hidden md:inline whitespace-nowrap">
                 {t('nav.search_placeholder', 'Oyunçu axtar...')}
               </span>
-              <kbd className="hidden xl:inline-flex items-center px-1.5 py-0.5 rounded bg-slate-800/90 border border-slate-700/80 text-[10px] font-mono text-slate-400 leading-none">
+              <kbd className="hidden xl:inline-flex items-center px-1.5 py-0.5 rounded bg-white/[0.06] border border-[var(--border-hairline)] text-[10px] font-mono text-slate-400 leading-none">
                 ⌘K
               </kbd>
             </button>
@@ -281,7 +288,7 @@ export default function Navbar() {
             <div
               role="group"
               aria-label="Language switcher"
-              className="inline-flex items-center gap-0.5 h-8 px-1.5 rounded-lg bg-slate-950/70 border border-slate-800/80 text-[11px] uppercase shrink-0"
+              className="inline-flex items-center gap-0.5 h-8 p-1 rounded-lg bg-[var(--bg-surface)] border border-[var(--border-hairline)] text-[11px] uppercase shrink-0"
             >
               {(['az', 'en', 'ru'] as Locale[]).map((loc) => {
                 const isActive = locale === loc;
@@ -290,10 +297,10 @@ export default function Navbar() {
                     key={loc}
                     type="button"
                     onClick={() => setLocale(loc)}
-                    className={`uppercase transition whitespace-nowrap ${
+                    className={`uppercase transition-colors whitespace-nowrap rounded-md px-1.5 py-0.5 leading-none ${
                       isActive
-                        ? 'text-white font-bold bg-slate-800/90 rounded px-1.5 py-0.5'
-                        : 'text-slate-400 hover:text-slate-200 px-1.5 py-0.5 font-medium'
+                        ? 'text-white font-semibold bg-white/[0.11]'
+                        : 'text-slate-400 hover:text-slate-200 font-medium'
                     }`}
                   >
                     {loc}
@@ -306,7 +313,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setShowMatchModal(true)}
-                className="hidden md:inline-flex items-center justify-center gap-1.5 h-8 px-3.5 rounded-lg bg-rose-600 text-white text-xs font-semibold hover:bg-rose-500 shadow-sm shadow-rose-950/40 transition active:scale-95 whitespace-nowrap shrink-0"
+                className="hidden md:inline-flex items-center justify-center gap-1.5 h-8 px-3.5 rounded-lg bg-[#E11D48] text-white text-xs font-semibold hover:bg-[#F43F5E] transition active:scale-[0.98] whitespace-nowrap shrink-0"
               >
                 <PlusCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>{t('nav.log_match') || 'Oyun Qeydiyyatı'}</span>
@@ -316,7 +323,7 @@ export default function Navbar() {
             {canAccessAdminPanel(currentUser) && (
               <Link
                 href="/admin"
-                className="hidden xl:inline-flex items-center justify-center gap-1.5 h-8 bg-slate-800/80 hover:bg-slate-800 text-amber-400 border border-amber-500/20 px-3 rounded-lg text-xs font-medium transition whitespace-nowrap shrink-0"
+                className="hidden xl:inline-flex items-center justify-center gap-1.5 h-8 bg-[var(--bg-surface)] hover:bg-white/[0.06] text-amber-300 border border-amber-500/25 px-3 rounded-lg text-xs font-medium transition-colors whitespace-nowrap shrink-0"
               >
                 <ShieldCheck className="w-3.5 h-3.5 text-amber-400 shrink-0" />
                 <span>{t('nav.admin') || 'Prezident Paneli'}</span>
@@ -361,8 +368,8 @@ export default function Navbar() {
                 </button>
 
                 {userDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-slate-800 bg-slate-900 p-3 shadow-lg z-50">
-                    <div className="px-2.5 py-2 border-b border-slate-800 mb-2">
+                  <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-[var(--border-strong)] bg-[var(--bg-surface)] p-3 shadow-2xl shadow-black/60 z-50">
+                    <div className="px-2.5 py-2 border-b border-[var(--border-hairline)] mb-2">
                       <p className="font-bold text-xs text-white truncate">{currentUser.full_name}</p>
                       <p className="text-[11px] text-slate-400 truncate">{currentUser.email}</p>
                       <div className="flex items-center gap-2 mt-2">
@@ -479,6 +486,7 @@ export default function Navbar() {
               <div className="space-y-1">
                 {allMobileNavLinks.map((link) => {
                   const hasBadge = link.showBadge && pendingMatchesCount > 0;
+                  const isArcade = 'isArcade' in link && Boolean(link.isArcade);
                   return (
                     <Link
                       key={link.href}
@@ -486,15 +494,18 @@ export default function Navbar() {
                       onClick={() => setMobileMenuOpen(false)}
                       className={`flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold ${
                         pathname === link.href
-                          ? 'bg-blue-700 text-white'
-                          : 'text-slate-300 hover:bg-slate-800'
+                          ? 'bg-white/[0.1] text-white'
+                          : 'text-slate-300 hover:bg-white/[0.05] hover:text-white'
                       }`}
                     >
-                      <span>{link.label}</span>
+                      <span className="inline-flex items-center gap-2">
+                        {isArcade && <Gamepad2 className="w-3.5 h-3.5 text-slate-400" />}
+                        <span>{link.label}</span>
+                      </span>
                       {hasBadge && (
                         <span className="relative flex h-5 min-w-[1.25rem] items-center justify-center">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
-                          <span className="relative inline-flex items-center justify-center rounded-full bg-rose-600 px-1.5 text-[10px] font-black text-white h-5 min-w-[1.25rem]">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#E11D48] opacity-75" />
+                          <span className="relative inline-flex items-center justify-center rounded-full bg-[#E11D48] px-1.5 text-[10px] font-black text-white h-5 min-w-[1.25rem] tabular-nums">
                             {pendingMatchesCount}
                           </span>
                         </span>
